@@ -9,5 +9,10 @@ pluginManagement {
 	}
 }
 
-// Local Citadel Fabric (use "../citadel-fabric" if your folder is named that)
-includeBuild("../Citadel (Fabric)")
+// Local Fabric 1.21.1 Citadel (not published) - required dependency.
+// Path is relative to this project directory; must point to your Citadel 1.21.1 clone.
+includeBuild("../Citadel fabric 1.21.1") {
+	dependencySubstitution {
+		substitute(module("com.github.alexthe666:citadel")).using(project(":"))
+	}
+}

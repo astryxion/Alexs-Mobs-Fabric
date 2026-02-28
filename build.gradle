@@ -11,15 +11,19 @@ base {
 }
 
 repositories {
-	maven { name = "Jared's maven"; url = "https://maven.blamejared.com/" }
-	maven { name = "ModMaven"; url = "https://modmaven.dev" }
+	// Add repositories to retrieve artifacts from in here.
+	// You should only use this when depending on other mods because
+	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
+	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
+	// for more information about repositories.
+	maven { url = "https://maven.blamejared.com/" }
 }
 
 loom {
 	splitEnvironmentSourceSets()
 
 	mods {
-		"template-mod" {
+		"alexsmobs" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}
@@ -36,14 +40,18 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	// Citadel (local composite build)
-	modImplementation("com.yourgroup:citadel:1.20.1-1.0.0")
-
-	// JEI (optional, client-only compat)
-	modCompileOnlyApi("mezz.jei:jei-1.20.1-fabric-api:15.2.0.27")
-
-	// javax.annotation (Nullable, etc.) for migration compatibility
+	// JSR305 for javax.annotation.Nullable/Nonnull (not on JDK classpath in Java 21)
 	compileOnly "com.google.code.findbugs:jsr305:3.0.2"
+
+	// Citadel: local jar dependency (build Citadel first: cd "C:/ModProjects/Citadel Fabric 1.21.1" && .\gradlew build)
+	modImplementation fileTree(
+		dir: "C:/ModProjects/Citadel Fabric 1.21.1/build/libs",
+		include: ["*.jar"],
+		exclude: ["*-sources.jar"]
+	)
+
+	// JEI: optional compile-only for client compat (optional at runtime)
+	modCompileOnly "mezz.jei:jei-1.21.1-fabric-api:19.21.0.246"
 }
 
 processResources {
@@ -55,7 +63,7 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 17
+	it.options.release = 21
 }
 
 java {
@@ -64,8 +72,8 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_17
-	targetCompatibility = JavaVersion.VERSION_17
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 
 jar {
