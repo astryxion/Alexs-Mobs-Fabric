@@ -43,12 +43,8 @@ dependencies {
 	// JSR305 for javax.annotation.Nullable/Nonnull (not on JDK classpath in Java 21)
 	compileOnly "com.google.code.findbugs:jsr305:3.0.2"
 
-	// Citadel: local jar dependency (build Citadel first: cd "C:/ModProjects/Citadel Fabric 1.21.1" && .\gradlew build)
-	modImplementation fileTree(
-		dir: "C:/ModProjects/Citadel Fabric 1.21.1/build/libs",
-		include: ["*.jar"],
-		exclude: ["*-sources.jar"]
-	)
+	// Citadel Fabric port: jar in project root (update filename if you replace the file)
+	modImplementation files("citadel-1.21.1-1.0.0.jar")
 
 	// JEI: optional compile-only for client compat (optional at runtime)
 	modCompileOnly "mezz.jei:jei-1.21.1-fabric-api:19.21.0.246"
