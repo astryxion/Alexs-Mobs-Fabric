@@ -36,8 +36,8 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	// Citadel (local composite build)
-	modImplementation("com.yourgroup:citadel:1.20.1-1.0.0")
+	// Citadel (local Fabric port JAR in project root)
+	modImplementation(files("citadel-1.20.1-1.0.0.jar"))
 
 	// JEI (optional, client-only compat)
 	modCompileOnlyApi("mezz.jei:jei-1.20.1-fabric-api:15.2.0.27")

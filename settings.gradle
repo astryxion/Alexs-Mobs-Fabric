@@ -8,6 +8,3 @@ pluginManagement {
 		gradlePluginPortal()
 	}
 }
-
-// Local Citadel Fabric (use "../citadel-fabric" if your folder is named that)
-includeBuild("../Citadel (Fabric)")
