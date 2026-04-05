@@ -1,1 +1,40 @@
-{"schemaVersion":1,"id":"alexsmobs","version":"${version}","name":"Alex's Mobs","description":"New, original, engaging, and aesthetic mobs for Minecraft.","authors":["Alexthe668","Carro1001","Paint_Ninja"],"contact":{"homepage":"https://www.curseforge.com/minecraft/mc-mods/alexs-mobs","issues":"https://github.com/Alex-the-666/AlexsMobs/issues"},"license":"LGPL-3.0-or-later","environment":"*","entrypoints":{"main":["com.github.alexthe666.alexsmobs.AlexsMobs"],"client":["com.github.alexthe666.alexsmobs.ClientNetworkInit"],"jei_mod_plugin":["com.github.alexthe666.alexsmobs.compat.jei.AlexMobsJEIPlugin"]},"mixins":["alexsmobs.mixins.json"],"depends":{"fabricloader":">=0.18.0","minecraft":"~1.21.1","java":">=21","fabric-api":"*","citadel":"*"}}
+{
+  "schemaVersion": 1,
+  "authors": [
+    "Alexthe668",
+    "Carro1001",
+    "Paint_Ninja"
+  ],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/alexs-mobs",
+    "issues": "https://github.com/Alex-the-666/AlexsMobs/issues"
+  },
+  "depends": {
+    "fabricloader": ">=0.18.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*",
+    "citadel": "*"
+  },
+  "description": "New, original, engaging, and aesthetic mobs for Minecraft.",
+  "entrypoints": {
+    "main": [
+      "com.github.alexthe666.alexsmobs.AlexsMobs"
+    ],
+    "client": [
+      "com.github.alexthe666.alexsmobs.ClientNetworkInit"
+    ],
+    "jei_mod_plugin": [
+      "com.github.alexthe666.alexsmobs.compat.jei.AlexMobsJEIPlugin"
+    ]
+  },
+  "environment": "*",
+  "id": "alexsmobs",
+  "license": "LGPL-3.0-or-later",
+  "mixins": [
+    "alexsmobs.mixins.json",
+    "alexsmobs.client.mixins.json"
+  ],
+  "name": "Alex's Mobs",
+  "version": "${version}"
+}

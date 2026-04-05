@@ -1,6 +1,6 @@
 {
   "parent": "block/cube_all",
-  "render_type": "translucent",
+  "render_type": "minecraft:translucent",
   "textures": {
     "all": "alexsmobs:block/rainbow_glass_all"
   }

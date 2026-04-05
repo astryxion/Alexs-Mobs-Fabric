@@ -1,0 +1,7 @@
+{
+  "__comment": "Used to make Blue Jay sing and make monsters glow",
+  "replace": false,
+  "values": [
+    "minecraft:wheat_seeds","minecraft:melon_seeds","minecraft:pumpkin_seeds","minecraft:beetroot_seeds","minecraft:torchflower_seeds","minecraft:pitcher_pod"
+  ]
+}

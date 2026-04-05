@@ -24,14 +24,16 @@ public class MessageKangarooInventorySync {
     }
 
     public static MessageKangarooInventorySync read(FriendlyByteBuf buf, net.minecraft.core.HolderLookup.Provider registryAccess) {
+        int kangaroo = buf.readInt();
+        int slotId = buf.readInt();
         net.minecraft.nbt.CompoundTag tag = buf.readNbt();
-        return new MessageKangarooInventorySync(buf.readInt(), buf.readInt(), tag != null ? ItemStack.parseOptional(registryAccess, tag) : ItemStack.EMPTY);
+        return new MessageKangarooInventorySync(kangaroo, slotId, tag != null ? ItemStack.parseOptional(registryAccess, tag) : ItemStack.EMPTY);
     }
 
     public static void write(MessageKangarooInventorySync message, FriendlyByteBuf buf, net.minecraft.core.HolderLookup.Provider registryAccess) {
         buf.writeInt(message.kangaroo);
         buf.writeInt(message.slotId);
-        buf.writeNbt(message.stack.save(registryAccess));
+        buf.writeNbt(message.stack.isEmpty() ? null : message.stack.save(registryAccess));
     }
 
     public static class Handler {
