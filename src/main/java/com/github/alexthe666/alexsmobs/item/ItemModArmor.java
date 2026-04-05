@@ -31,7 +31,9 @@ public class ItemModArmor extends ArmorItem {
     private final AMArmorMaterial armorMaterialWrapper;
 
     public ItemModArmor(AMArmorMaterial armorMaterial, ArmorItem.Type slot) {
-        super(armorMaterial.getHolder(), slot, new Item.Properties());
+        super(armorMaterial.getHolder(), slot, new Item.Properties()
+            .stacksTo(1)
+            .durability(armorMaterial.getDurabilityForType(slot)));
         this.armorMaterialWrapper = armorMaterial;
     }
 

@@ -104,7 +104,7 @@ public class RecipeMimicreamRepair extends CustomRecipe {
                 compoundnbt.put("Enchantments", newNBTList);
             }
             itemstack2.set(DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(compoundnbt));
-            itemstack2.setDamageValue(itemstack2.getMaxDamage());
+            itemstack2.setDamageValue(0);
             return itemstack2;
         } else {
             return ItemStack.EMPTY;

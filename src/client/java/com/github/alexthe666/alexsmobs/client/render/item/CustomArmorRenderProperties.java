@@ -25,6 +25,9 @@ public class CustomArmorRenderProperties {
     public static ModelRockyChestplate ROCKY_CHESTPLATE_MODEL;
     public static ModelFlyingFishBoots FLYING_FISH_BOOTS_MODEL;
     public static ModelNoveltyHat NOVELTY_HAT_MODEL;
+    public static ModelCrocodileChestplate CROCODILE_CHESTPLATE_MODEL;
+    public static ModelCentipedeLeggings CENTIPEDE_LEGGINGS_MODEL;
+    public static ModelEmuLeggings EMU_LEGGINGS_MODEL;
     public static ModelUnsettlingKimono UNSETTLING_KIMONO_MODEL;
 
     public static void initializeModels() {
@@ -41,6 +44,9 @@ public class CustomArmorRenderProperties {
         ROCKY_CHESTPLATE_MODEL = new ModelRockyChestplate(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.ROCKY_CHESTPLATE));
         FLYING_FISH_BOOTS_MODEL = new ModelFlyingFishBoots(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.FLYING_FISH_BOOTS));
         NOVELTY_HAT_MODEL = new ModelNoveltyHat(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.NOVELTY_HAT));
+        CROCODILE_CHESTPLATE_MODEL = new ModelCrocodileChestplate(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.CROCODILE_CHESTPLATE));
+        CENTIPEDE_LEGGINGS_MODEL = new ModelCentipedeLeggings(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.CENTIPEDE_LEGGINGS));
+        EMU_LEGGINGS_MODEL = new ModelEmuLeggings(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.EMU_LEGGINGS));
         UNSETTLING_KIMONO_MODEL = new ModelUnsettlingKimono(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.UNSETTLING_KIMONO));
     }
 
@@ -75,6 +81,15 @@ public class CustomArmorRenderProperties {
         }
         if(item == AMItemRegistry.ROCKY_CHESTPLATE){
             return ROCKY_CHESTPLATE_MODEL;
+        }
+        if(item == AMItemRegistry.CROCODILE_CHESTPLATE){
+            return CROCODILE_CHESTPLATE_MODEL;
+        }
+        if(item == AMItemRegistry.CENTIPEDE_LEGGINGS){
+            return CENTIPEDE_LEGGINGS_MODEL;
+        }
+        if(item == AMItemRegistry.EMU_LEGGINGS){
+            return EMU_LEGGINGS_MODEL;
         }
         if(item == AMItemRegistry.FLYING_FISH_BOOTS){
             return FLYING_FISH_BOOTS_MODEL.withAnimations(entityLiving);

@@ -7,9 +7,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Fabric 1.20.1: Add LayerRainbow to every LivingEntityRenderer (1:1 with Forge EntityRenderersEvent.AddLayers).
- */
 @Mixin(LivingEntityRenderer.class)
 public class LivingEntityRendererMixin {
 

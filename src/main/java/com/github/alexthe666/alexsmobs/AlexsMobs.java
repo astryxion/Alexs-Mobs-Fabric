@@ -153,7 +153,7 @@ public class AlexsMobs implements ModInitializer {
         AMEnchantmentRegistry.init();
         AMMenuRegistry.init();
         AMRecipeRegistry.init();
-        // AMLootRegistry.init(), AMBannerRegistry.init() deferred to client/server lifecycle (registries not in root at mod init in 1.21.1)
+        AMLootRegistry.init();
         AMCreativeTabRegistry.init();
         AMMobSpawnBiomeModifier.register();
         AMWorldRegistry.logSpawnDiagnosticStartup();
@@ -170,9 +170,6 @@ public class AlexsMobs implements ModInitializer {
 
         ServerLifecycleEvents.SERVER_STARTING.register(s -> {
             server = s;
-            com.github.alexthe666.alexsmobs.misc.AMPaintingRegistry.init();
-            com.github.alexthe666.alexsmobs.misc.AMBannerRegistry.init();
-            com.github.alexthe666.alexsmobs.misc.AMLootRegistry.init();
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> server = null);
         ServerEvents.register();
@@ -287,6 +284,7 @@ public class AlexsMobs implements ModInitializer {
     }
 
     /** @deprecated Use {@link #writeMessageToBuf(Object, net.minecraft.core.HolderLookup.Provider)} */
+    @Deprecated
     public static FriendlyByteBuf writeMessageToBuf(Object message) {
         return writeMessageToBuf(message, net.minecraft.core.RegistryAccess.EMPTY);
     }

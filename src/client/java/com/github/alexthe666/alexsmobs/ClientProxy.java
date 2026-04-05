@@ -275,12 +275,14 @@ public class ClientProxy extends CommonProxy {
                         case HEAD -> { model.head.visible = true; model.hat.visible = true; }
                         case CHEST -> {
                             model.body.visible = true;
-                            if (useDefaultModel) {
-                                model.leftArm.visible = true;
-                                model.rightArm.visible = true;
-                            }
+                            model.leftArm.visible = true;
+                            model.rightArm.visible = true;
                         }
-                        case LEGS -> { model.leftLeg.visible = true; model.rightLeg.visible = true; }
+                        case LEGS -> {
+                            model.body.visible = true;
+                            model.leftLeg.visible = true;
+                            model.rightLeg.visible = true;
+                        }
                         case FEET -> { model.leftLeg.visible = true; model.rightLeg.visible = true; }
                         default -> { }
                     }

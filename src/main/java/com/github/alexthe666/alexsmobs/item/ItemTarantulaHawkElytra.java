@@ -17,7 +17,7 @@ import javax.annotation.Nullable;
 public class ItemTarantulaHawkElytra extends ArmorItem implements FabricElytraItem {
 
     public ItemTarantulaHawkElytra(Item.Properties props, AMArmorMaterial mat) {
-        super(mat.getHolder(), Type.CHESTPLATE, props);
+        super(mat.getHolder(), Type.CHESTPLATE, props.stacksTo(1));
     }
 
     public static boolean isUsable(ItemStack stack) {

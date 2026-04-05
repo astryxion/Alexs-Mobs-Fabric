@@ -16,6 +16,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -31,6 +32,8 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 
@@ -115,6 +118,30 @@ public class BlockLeafcutterAnthill extends BaseEntityBlock {
                 this.angerNearbyAnts(worldIn, pos);
             }
         }
+    }
+
+    @Override
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
+        ItemStack tool = builder.getOptionalParameter(LootContextParams.TOOL);
+        BlockEntity blockEntity = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
+        boolean silkTouch = false;
+        if (tool != null) {
+            Level level = builder.getLevel();
+            silkTouch = EnchantmentHelper.getItemEnchantmentLevel(
+                level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.SILK_TOUCH),
+                tool
+            ) > 0;
+        }
+        if (silkTouch && blockEntity instanceof TileEntityLeafcutterAnthill anthill) {
+            ItemStack stack = new ItemStack(this);
+            if (!anthill.hasNoAnts()) {
+                CompoundTag tag = new CompoundTag();
+                tag.put("Ants", anthill.getAnts());
+                BlockItem.setBlockEntityData(stack, AMTileEntityRegistry.LEAFCUTTER_ANTHILL, tag);
+            }
+            return List.of(stack);
+        }
+        return List.of();
     }
 
     private void angerNearbyAnts(Level world, BlockPos pos) {

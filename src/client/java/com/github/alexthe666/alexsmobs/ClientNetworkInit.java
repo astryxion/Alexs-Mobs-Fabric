@@ -1,8 +1,6 @@
 package com.github.alexthe666.alexsmobs;
 
-import com.github.alexthe666.alexsmobs.misc.AMBannerRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMLootRegistry;
-import com.github.alexthe666.alexsmobs.misc.AMPaintingRegistry;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -16,8 +14,6 @@ public class ClientNetworkInit implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
-            AMPaintingRegistry.init();
-            AMBannerRegistry.init();
             AMLootRegistry.init();
         });
         AlexsMobs.setProxy(new ClientProxy());
