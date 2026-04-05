@@ -1,0 +1,74 @@
+package com.github.alexthe666.alexsmobs.item;
+
+import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.item.component.ItemContainerContents;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.*;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.ShulkerBoxBlock;
+import net.minecraft.world.phys.BlockHitResult;
+
+public class AMBlockItem extends BlockItem implements CustomTabBehavior {
+
+    private final Block block;
+
+    public AMBlockItem(Block block, Item.Properties props) {
+        super(block, props);
+        this.block = block;
+    }
+
+    @Override
+    public Block getBlock() {
+        return block;
+    }
+
+    public boolean canFitInsideCraftingRemainingItems() {
+        return !(block instanceof ShulkerBoxBlock);
+    }
+
+    public void onDestroyed(ItemEntity p_150700_) {
+        if (this.block instanceof ShulkerBoxBlock) {
+            ItemStack itemstack = p_150700_.getItem();
+            ItemContainerContents container = itemstack.get(DataComponents.CONTAINER);
+            if (container != null) {
+                ItemUtils.onContainerDestroyed(p_150700_, container.nonEmptyItems());
+            }
+        }
+    }
+
+
+
+    @Override
+    public void fillItemCategory(CreativeModeTab.Output contents) {
+        if (block == AMBlockRegistry.SAND_CIRCLE || block == AMBlockRegistry.RED_SAND_CIRCLE) {
+
+        } else {
+            contents.accept(this);
+        }
+    }
+
+    public InteractionResult useOn(UseOnContext context) {
+        return block == AMBlockRegistry.TRIOPS_EGGS ? InteractionResult.PASS : super.useOn(context);
+    }
+
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        if (block == AMBlockRegistry.TRIOPS_EGGS) {
+            BlockHitResult blockhitresult = getPlayerPOVHitResult(level, player, ClipContext.Fluid.SOURCE_ONLY);
+            BlockHitResult blockhitresult1 = blockhitresult.withPosition(blockhitresult.getBlockPos().above());
+            InteractionResult interactionresult = super.useOn(new UseOnContext(player, hand, blockhitresult1));
+            return new InteractionResultHolder<>(interactionresult, player.getItemInHand(hand));
+        }else{
+            return super.use(level, player, hand);
+        }
+    }
+}

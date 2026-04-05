@@ -1,0 +1,62 @@
+package com.github.alexthe666.alexsmobs.effect;
+
+import com.github.alexthe666.alexsmobs.AlexsMobs;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeMap;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+
+public class EffectFleetFooted extends MobEffect {
+
+    private static final ResourceLocation FLEET_FOOTED_SPEED_ID = ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, "fleet_footed_speed");
+    private static final AttributeModifier SPRINT_JUMP_SPEED_BONUS = new AttributeModifier(FLEET_FOOTED_SPEED_ID, 0.2, AttributeModifier.Operation.ADD_VALUE);
+    private int lastDuration = -1;
+    private int removeEffectAfter = 0;
+
+    public EffectFleetFooted() {
+        super(MobEffectCategory.BENEFICIAL, 0X685441);
+    }
+
+    public boolean tick(ServerLevel level, LivingEntity entity, int amplifier) {
+        AttributeInstance modifiableattributeinstance = entity.getAttribute(Attributes.MOVEMENT_SPEED);
+        boolean applyEffect = entity.isSprinting() && !entity.onGround() && lastDuration > 2;
+        if(removeEffectAfter > 0){
+            removeEffectAfter--;
+        }
+        if (applyEffect) {
+            if(modifiableattributeinstance != null && !modifiableattributeinstance.hasModifier(FLEET_FOOTED_SPEED_ID)){
+                modifiableattributeinstance.addPermanentModifier(SPRINT_JUMP_SPEED_BONUS);
+            }
+            removeEffectAfter = 5;
+        }
+        if (removeEffectAfter <= 0 || lastDuration < 2) {
+            if(modifiableattributeinstance != null) {
+                modifiableattributeinstance.removeModifier(FLEET_FOOTED_SPEED_ID);
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void removeAttributeModifiers(AttributeMap attributeMap) {
+        AttributeInstance modifiableattributeinstance = attributeMap.getInstance(Attributes.MOVEMENT_SPEED);
+        if(modifiableattributeinstance != null && modifiableattributeinstance.hasModifier(FLEET_FOOTED_SPEED_ID)){
+            modifiableattributeinstance.removeModifier(FLEET_FOOTED_SPEED_ID);
+        }
+    }
+
+    public boolean isDurationEffectTick(int duration, int amplifier) {
+        lastDuration = duration;
+        return duration > 0;
+    }
+
+    public String getDescriptionId() {
+        return "alexsmobs.potion.fleet_footed";
+    }
+
+}
