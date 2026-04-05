@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "alexsmobs:armor/shield_of_the_deep"
+  },
+  "overrides": [
+    {"predicate": {"blocking": 1}, "model": "alexsmobs:item/shield_of_the_deep_blocking"}
+  ]
+}
