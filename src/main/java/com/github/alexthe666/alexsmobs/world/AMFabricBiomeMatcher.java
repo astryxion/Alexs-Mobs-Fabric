@@ -17,11 +17,14 @@ import java.util.stream.Collectors;
  * SpawnBiomeData.matches() which fails on Fabric (NoSuchFieldException: ROOT when
  * resolving biome registry for tag checks), causing zero mod mob spawns.
  * <p>
- * Uses only Holder.is(TagKey) and biome ResourceLocation so no registry reflection is needed.
+ * Keys must match the left side of {@link com.github.alexthe666.alexsmobs.config.BiomeConfig}
+ * pairs — including short ids ({@code alexsmobs:farseer}, {@code alexsmobs:skreecher}, etc.).
  */
 public final class AMFabricBiomeMatcher {
 
     private static final Map<String, TagKey<Biome>> TAG_CACHE = new HashMap<>();
+    private static final ResourceLocation MUSHROOM_FIELDS = loc("minecraft:mushroom_fields");
+    private static final ResourceLocation DEEP_DARK = loc("minecraft:deep_dark");
 
     private static TagKey<Biome> tag(String id) {
         return TAG_CACHE.computeIfAbsent(id, s -> {
@@ -39,6 +42,21 @@ public final class AMFabricBiomeMatcher {
         ResourceLocation biomeLoc = biome.unwrapKey().map(k -> k.location()).orElse(null);
         if (biomeLoc == null) return false;
 
+        if ("alexsmobs:void_worm_spawns".equals(configKey) || "alexsmobs:warped_mosco_spawns".equals(configKey)) {
+            return false;
+        }
+
+        if (isFarseerKey(configKey)) {
+            return MUSHROOM_FIELDS == null || !biomeLoc.equals(MUSHROOM_FIELDS);
+        }
+        if (isSkreecherKey(configKey)) {
+            TagKey<Biome> sk = tag("alexsmobs:skreechers_can_spawn_wardens");
+            return sk != null && biome.is(sk);
+        }
+        if (isUnderminerKey(configKey) || isMurmurKey(configKey)) {
+            return matchesCaveSpawnSurface(biome, biomeLoc);
+        }
+
         String[] tags = tagsFor(configKey);
         String[] biomeIds = biomeIdsFor(configKey);
         if (tags == null && biomeIds == null) return false;
@@ -52,6 +70,33 @@ public final class AMFabricBiomeMatcher {
                 : Set.of();
         if (ids.contains(biomeLoc)) return true;
         return false;
+    }
+
+    private static boolean isFarseerKey(String configKey) {
+        return "alexsmobs:farseer".equals(configKey) || "alexsmobs:farseer_spawns".equals(configKey);
+    }
+
+    private static boolean isSkreecherKey(String configKey) {
+        return "alexsmobs:skreecher".equals(configKey) || "alexsmobs:skreecher_spawns".equals(configKey);
+    }
+
+    private static boolean isUnderminerKey(String configKey) {
+        return "alexsmobs:underminer".equals(configKey) || "alexsmobs:underminer_spawns".equals(configKey);
+    }
+
+    private static boolean isMurmurKey(String configKey) {
+        return "alexsmobs:murmur".equals(configKey) || "alexsmobs:murmur_spawns".equals(configKey);
+    }
+
+    /** Mirrors {@link com.github.alexthe666.alexsmobs.config.DefaultBiomes#CAVES} / {@code CAVES_MONSTER} deny list for surface natural spawns. */
+    private static boolean matchesCaveSpawnSurface(Holder<Biome> biome, ResourceLocation biomeLoc) {
+        TagKey<Biome> overworld = tag("minecraft:is_overworld");
+        if (overworld == null || !biome.is(overworld)) return false;
+        TagKey<Biome> ocean = tag("minecraft:is_ocean");
+        if (ocean != null && biome.is(ocean)) return false;
+        if (MUSHROOM_FIELDS != null && biomeLoc.equals(MUSHROOM_FIELDS)) return false;
+        if (DEEP_DARK != null && biomeLoc.equals(DEEP_DARK)) return false;
+        return true;
     }
 
     private static String[] tagsFor(String configKey) {
@@ -75,6 +120,8 @@ public final class AMFabricBiomeMatcher {
                 return new String[]{"minecraft:is_jungle"};
             case "alexsmobs:orca_spawns":
                 return new String[]{"minecraft:is_ocean"};
+            case "alexsmobs:sunbird_spawns":
+                return new String[]{"minecraft:is_mountain", "minecraft:is_badlands"};
             case "alexsmobs:gorilla_spawns":
                 return new String[]{"minecraft:is_jungle"};
             case "alexsmobs:crimson_mosquito_spawns":
@@ -94,7 +141,7 @@ public final class AMFabricBiomeMatcher {
             case "alexsmobs:cave_centipede_spawns":
                 return new String[]{"minecraft:is_overworld"};
             case "alexsmobs:warped_toad_spawns":
-                return null; // nether warp only; use biome IDs
+                return null;
             case "alexsmobs:moose_spawns":
                 return new String[]{"minecraft:is_taiga"};
             case "alexsmobs:mimicube_spawns":
@@ -118,14 +165,15 @@ public final class AMFabricBiomeMatcher {
             case "alexsmobs:alligator_snapping_turtle_spawns":
                 return new String[]{"minecraft:allows_surface_slime_spawns"};
             case "alexsmobs:mungus_spawns":
-                return new String[]{"minecraft:is_nether"};
+            case "alexsmobs:bunfungus_spawns":
+                return new String[0];
             case "alexsmobs:mantis_shrimp_spawns":
                 return new String[]{"minecraft:is_ocean"};
             case "alexsmobs:guster_spawns":
-                return new String[]{"minecraft:is_badlands"};
+                return new String[]{"minecraft:is_badlands", "minecraft:is_savanna", "minecraft:is_beach"};
             case "alexsmobs:straddler_spawns":
             case "alexsmobs:stradpole_spawns":
-                return new String[]{"minecraft:is_end"};
+                return new String[]{"minecraft:is_nether"};
             case "alexsmobs:emu_spawns":
             case "alexsmobs:kangaroo_spawns":
                 return new String[]{"minecraft:is_badlands", "minecraft:is_savanna"};
@@ -180,12 +228,15 @@ public final class AMFabricBiomeMatcher {
             case "alexsmobs:terrapin_spawns":
                 return new String[]{"minecraft:allows_surface_slime_spawns"};
             case "alexsmobs:comb_jelly_spawns":
+                return null;
             case "alexsmobs:cosmic_cod_spawns":
-                return new String[]{"minecraft:is_ocean"};
+                return new String[]{"minecraft:is_end"};
             case "alexsmobs:bison_spawns":
                 return new String[]{"minecraft:is_plains"};
             case "alexsmobs:giant_squid_spawns":
-                return new String[]{"minecraft:is_ocean"};
+                return new String[]{"minecraft:is_deep_ocean"};
+            case "alexsmobs:devils_hole_pupfish_spawns":
+                return new String[]{"minecraft:is_overworld"};
             case "alexsmobs:catfish_spawns":
                 return new String[]{"minecraft:is_river", "minecraft:allows_surface_slime_spawns"};
             case "alexsmobs:flying_fish_spawns":
@@ -195,21 +246,13 @@ public final class AMFabricBiomeMatcher {
             case "alexsmobs:rain_frog_spawns":
                 return new String[]{"minecraft:is_jungle"};
             case "alexsmobs:potoo_spawns":
-                return new String[]{"minecraft:is_jungle"};
+                return null;
             case "alexsmobs:mudskipper_spawns":
                 return new String[]{"minecraft:allows_surface_slime_spawns"};
             case "alexsmobs:rhinoceros_spawns":
                 return new String[]{"minecraft:is_savanna"};
             case "alexsmobs:sugar_glider_spawns":
                 return new String[]{"minecraft:is_forest", "minecraft:is_jungle"};
-            case "alexsmobs:farseer_spawns":
-                return new String[]{"minecraft:is_end"};
-            case "alexsmobs:skreecher_spawns":
-                return new String[]{"minecraft:is_end"};
-            case "alexsmobs:underminer_spawns":
-                return new String[]{"minecraft:is_overworld"};
-            case "alexsmobs:murmur_spawns":
-                return new String[]{"minecraft:is_overworld"};
             case "alexsmobs:skunk_spawns":
                 return new String[]{"minecraft:is_forest"};
             case "alexsmobs:banana_slug_spawns":
@@ -220,8 +263,6 @@ public final class AMFabricBiomeMatcher {
                 return new String[]{"minecraft:allows_surface_slime_spawns"};
             case "alexsmobs:triops_spawns":
                 return new String[]{"minecraft:is_desert"};
-            case "alexsmobs:bunfungus_spawns":
-                return new String[]{"minecraft:is_nether"};
             default:
                 return null;
         }
@@ -266,9 +307,19 @@ public final class AMFabricBiomeMatcher {
             case "alexsmobs:tiger_spawns":
                 return new String[]{"minecraft:jungle", "minecraft:bamboo_jungle", "minecraft:sparse_jungle"};
             case "alexsmobs:sunbird_spawns":
-                return new String[]{"minecraft:badlands", "minecraft:wooded_badlands", "minecraft:eroded_badlands"};
+                return null;
             case "alexsmobs:devils_hole_pupfish_spawns":
                 return new String[]{"minecraft:desert"};
+            case "alexsmobs:mungus_spawns":
+            case "alexsmobs:bunfungus_spawns":
+                return new String[]{"minecraft:mushroom_fields"};
+            case "alexsmobs:straddler_spawns":
+            case "alexsmobs:stradpole_spawns":
+                return new String[]{"minecraft:basalt_deltas"};
+            case "alexsmobs:comb_jelly_spawns":
+                return new String[]{"minecraft:frozen_ocean", "minecraft:deep_frozen_ocean", "alexscaves:abyssal_chasm"};
+            case "alexsmobs:potoo_spawns":
+                return new String[]{"minecraft:dark_forest"};
             default:
                 return null;
         }
