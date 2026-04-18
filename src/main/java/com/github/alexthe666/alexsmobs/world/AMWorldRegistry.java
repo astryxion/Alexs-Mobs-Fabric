@@ -6,7 +6,6 @@ import com.github.alexthe666.alexsmobs.config.BiomeConfig;
 import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.fabricmc.fabric.api.biome.v1.BiomeModificationContext;
-import net.fabricmc.fabric.api.biome.v1.BiomeSelectionContext;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
