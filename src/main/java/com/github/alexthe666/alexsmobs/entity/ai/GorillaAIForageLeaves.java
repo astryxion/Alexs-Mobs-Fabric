@@ -11,6 +11,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.ai.goal.MoveToBlockGoal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
@@ -81,7 +82,7 @@ public class GorillaAIForageLeaves extends MoveToBlockGoal {
     }
 
     private void breakLeaves() {
-        if (gorilla.level().getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING)) {
+        if (this.gorilla.level() instanceof ServerLevel serverLevel && serverLevel.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
             BlockState blockstate = gorilla.level().getBlockState(this.blockPos);
             if (blockstate.is(AMTagRegistry.GORILLA_BREAKABLES)) {
                 gorilla.level().destroyBlock(blockPos, false);

@@ -1,5 +1,6 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIWanderRanged;
 import com.github.alexthe666.alexsmobs.entity.ai.DirectPathNavigator;
@@ -28,21 +29,21 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.RangedAttackMob;
-import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.entity.projectile.ProjectileUtil;
-import net.minecraft.world.entity.projectile.ThrownTrident;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.entity.projectile.arrow.ThrownTrident;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ProjectileWeaponItem;
+import net.minecraft.world.item.ArrowItem;
 import net.minecraft.world.item.TridentItem;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
-import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
-
 public class EntityMimicube extends Monster implements RangedAttackMob {
 
     private static final EntityDataAccessor<Integer> ATTACK_TICK = SynchedEntityData.defineId(EntityMimicube.class, EntityDataSerializers.INT);
@@ -74,7 +75,7 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
     }
 
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.mimicubeSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -82,9 +83,11 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(ATTACK_TICK, 0);
+
     }
 
-    public boolean doHurtTarget(Entity entityIn) {
+    @Override
+    public boolean doHurtTarget(ServerLevel level, Entity entityIn) {
         this.entityData.set(ATTACK_TICK, 5);
         return true;
     }
@@ -99,7 +102,7 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
     }
 
     public void setCombatTask() {
-        if (this.level() != null && !this.level().isClientSide) {
+        if (this.level() != null && !this.level().isClientSide()) {
             this.goalSelector.removeGoal(this.aiAttackOnCollide);
             this.goalSelector.removeGoal(this.aiArrowAttack);
             ItemStack itemstack = this.getMainHandItem();
@@ -137,7 +140,12 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
         }
         ItemStack itemstack = this.getProjectile(this.getMainHandItem());
         AbstractArrow abstractarrowentity = this.fireArrow(itemstack, distanceFactor);
-        // Fabric: vanilla BowItem has no customArrow; use arrow as-is
+        if (abstractarrowentity == null) {
+            return;
+        }
+        if (this.getMainHandItem().getItem() instanceof net.minecraft.world.item.BowItem bowItem) {
+            // Bow custom arrow hook removed in 1.21; keep projectile produced by fireArrow.
+        }
         double d0 = target.getX() - this.getX();
         double d1 = target.getY(0.3333333333333333D) - abstractarrowentity.getY();
         double d2 = target.getZ() - this.getZ();
@@ -149,14 +157,17 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
     }
 
     protected AbstractArrow fireArrow(ItemStack arrowStack, float distanceFactor) {
-        return ProjectileUtil.getMobArrow(this, arrowStack, distanceFactor, this.getMainHandItem());
+        if (arrowStack.isEmpty() || !(arrowStack.getItem() instanceof ArrowItem arrowItem)) {
+            return null;
+        }
+        return arrowItem.createArrow(this.level(), arrowStack, this, this.getMainHandItem());
     }
 
     public boolean canFireProjectileWeapon(ProjectileWeaponItem p_230280_1_) {
         return p_230280_1_ == Items.BOW;
     }
 
-    public void setItemSlot(EquipmentSlot slotIn, ItemStack stack) {
+    public void setSlot(EquipmentSlot slotIn, ItemStack stack) {
         switch (slotIn) {
             case HEAD -> {
                 if (!ItemStack.isSameItem(stack, this.getItemBySlot(EquipmentSlot.HEAD))) {
@@ -177,8 +188,8 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
                 }
             }
         }
-        super.setItemSlot(slotIn, stack);
-        if (!this.level().isClientSide) {
+        // super.setSlot() - API changed in 1.21.1
+        if (!this.level().isClientSide()) {
             this.setCombatTask();
         }
     }
@@ -193,23 +204,24 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
     }
 
     public boolean isBlocking() {
-        return AMItemRegistry.isShieldBlocking(this.getMainHandItem()) || AMItemRegistry.isShieldBlocking(this.getOffhandItem());
+        return this.getMainHandItem().has(DataComponents.BLOCKS_ATTACKS) || this.getOffhandItem().has(DataComponents.BLOCKS_ATTACKS);
     }
 
-    public boolean hurt(DamageSource source, float amount) {
+    @Override
+    public boolean hurtServer(net.minecraft.server.level.ServerLevel level, DamageSource source, float amount) {
         Entity trueSource = source.getEntity();
         if (trueSource != null && trueSource instanceof LivingEntity attacker) {
             if (!attacker.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
-                this.setItemSlot(EquipmentSlot.HEAD, mimicStack(attacker.getItemBySlot(EquipmentSlot.HEAD)));
+                this.setSlot(EquipmentSlot.HEAD, mimicStack(attacker.getItemBySlot(EquipmentSlot.HEAD)));
             }
             if (!attacker.getItemBySlot(EquipmentSlot.OFFHAND).isEmpty()) {
-                this.setItemSlot(EquipmentSlot.OFFHAND, mimicStack(attacker.getItemBySlot(EquipmentSlot.OFFHAND)));
+                this.setSlot(EquipmentSlot.OFFHAND, mimicStack(attacker.getItemBySlot(EquipmentSlot.OFFHAND)));
             }
             if (!attacker.getItemBySlot(EquipmentSlot.MAINHAND).isEmpty()) {
-                this.setItemSlot(EquipmentSlot.MAINHAND, mimicStack(attacker.getItemBySlot(EquipmentSlot.MAINHAND)));
+                this.setSlot(EquipmentSlot.MAINHAND, mimicStack(attacker.getItemBySlot(EquipmentSlot.MAINHAND)));
             }
         }
-        return super.hurt(source, amount);
+        return super.hurtServer(level, source, amount);
     }
 
     private ItemStack mimicStack(ItemStack stack){
@@ -244,7 +256,7 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
                 float f1 = this.random.nextFloat() * 0.5F + 0.5F;
                 float f2 = Mth.sin(f) * 0.5F * f1;
                 float f3 = Mth.cos(f) * 0.5F * f1;
-                this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, new ItemStack(AMItemRegistry.MIMICREAM)), this.getX() + (double)f2, this.getY(), this.getZ() + (double)f3, 0.0D, 0.0D, 0.0D);
+                this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, AMItemRegistry.MIMICREAM), this.getX() + (double)f2, this.getY(), this.getZ() + (double)f3, 0.0D, 0.0D, 0.0D);
             }
 
             this.playSound(this.getSquishSound(), this.getSoundVolume(), ((this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F) / 0.8F);
@@ -255,17 +267,17 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
         if(this.isInWater()){
             this.setDeltaMovement(this.getDeltaMovement().add(0, 0.05D, 0));
         }
-        if (this.getOffhandItem().get(net.minecraft.core.component.DataComponents.FOOD) != null && this.getHealth() < this.getMaxHealth()) {
+        if (this.getOffhandItem().has(net.minecraft.core.component.DataComponents.FOOD) && this.getHealth() < this.getMaxHealth()) {
             if (eatingTicks < 100) {
                 for (int i = 0; i < 3; i++) {
                     double d2 = this.random.nextGaussian() * 0.02D;
                     double d0 = this.random.nextGaussian() * 0.02D;
                     double d1 = this.random.nextGaussian() * 0.02D;
-                    this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, this.getItemInHand(InteractionHand.OFF_HAND)), this.getX() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, this.getY() + this.getBbHeight() * 0.5F + (double) (this.random.nextFloat() * this.getBbHeight() * 0.5F), this.getZ() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, d0, d1, d2);
+                    this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, this.getItemInHand(InteractionHand.OFF_HAND).getItem()), this.getX() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, this.getY() + this.getBbHeight() * 0.5F + (double) (this.random.nextFloat() * this.getBbHeight() * 0.5F), this.getZ() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, d0, d1, d2);
                 }
                 if (eatingTicks % 6 == 0) {
                     this.gameEvent(GameEvent.EAT);
-                    this.playSound(SoundEvents.GENERIC_EAT, this.getSoundVolume(), this.getVoicePitch());
+                    this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
                 }
                 eatingTicks++;
             }
@@ -276,19 +288,19 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
                 this.heal(5);
                 eatingTicks = 0;
             }
-        } else if (this.getMainHandItem().get(net.minecraft.core.component.DataComponents.FOOD) != null && this.getHealth() < this.getMaxHealth()) {
+        } else if (this.getMainHandItem().has(net.minecraft.core.component.DataComponents.FOOD) && this.getHealth() < this.getMaxHealth()) {
             if (eatingTicks < 100) {
                 for (int i = 0; i < 3; i++) {
                     double d2 = this.random.nextGaussian() * 0.02D;
                     double d0 = this.random.nextGaussian() * 0.02D;
                     double d1 = this.random.nextGaussian() * 0.02D;
-                    this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, this.getItemInHand(InteractionHand.MAIN_HAND)), this.getX() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, this.getY() + this.getBbHeight() * 0.5F + (double) (this.random.nextFloat() * this.getBbHeight() * 0.5F), this.getZ() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, d0, d1, d2);
+                    this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, this.getItemInHand(InteractionHand.MAIN_HAND).getItem()), this.getX() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, this.getY() + this.getBbHeight() * 0.5F + (double) (this.random.nextFloat() * this.getBbHeight() * 0.5F), this.getZ() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, d0, d1, d2);
                 }
                 this.gameEvent(GameEvent.EAT);
-                this.playSound(SoundEvents.GENERIC_EAT, this.getSoundVolume(), this.getVoicePitch());
+                this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
                 if (eatingTicks % 6 == 0) {
                     this.gameEvent(GameEvent.EAT);
-                    this.playSound(SoundEvents.GENERIC_EAT, this.getSoundVolume(), this.getVoicePitch());
+                    this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
                 }
                 eatingTicks++;
             }
@@ -309,8 +321,8 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
             this.wasOnGround = true;
         }
         if (this.entityData.get(ATTACK_TICK) > 0) {
-            if (this.entityData.get(ATTACK_TICK) == 2 && this.getTarget() != null && this.distanceTo(this.getTarget()) < 2.3D) {
-                super.doHurtTarget(this.getTarget());
+            if (this.entityData.get(ATTACK_TICK) == 2 && this.getTarget() != null && this.distanceTo(this.getTarget()) < 2.3D && this.level() instanceof ServerLevel serverLevel) {
+                super.doHurtTarget(serverLevel, this.getTarget());
             }
             this.entityData.set(ATTACK_TICK, this.entityData.get(ATTACK_TICK) - 1);
             if (attackProgress < 3F) {
@@ -336,11 +348,10 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
         return AMSoundRegistry.MIMICUBE_JUMP;
     }
 
-    /** Custom jump; LivingEntity.jumpFromGround() is final in 1.21.1. Called from LivingEntityJumpMixin. */
-    public void applyMimicubeJump() {
+    public void jumpFromGround() {
         Vec3 vector3d = this.getDeltaMovement();
         this.setDeltaMovement(vector3d.x, this.getJumpPower(), vector3d.z);
-        this.hasImpulse = true;
+        this.needsSync = true;
     }
 
     protected int getJumpDelay() {

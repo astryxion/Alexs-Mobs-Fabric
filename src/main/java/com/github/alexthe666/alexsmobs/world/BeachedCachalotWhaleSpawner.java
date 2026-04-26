@@ -8,10 +8,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.SpawnPlacementType;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.GameRules;
-import net.minecraft.world.entity.SpawnPlacements;
+import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 
 import javax.annotation.Nullable;
@@ -51,7 +52,7 @@ public class BeachedCachalotWhaleSpawner {
             worldinfo.setBeachedCachalotSpawnDelay(this.delay);
             if (this.delay <= 0) {
                 this.delay = AMConfig.beachedCachalotWhaleSpawnDelay;
-                if (this.world.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING)) {
+                if (this.world.getGameRules().get(GameRules.SPAWN_MOBS)) {
                     int i = this.chance;
                     this.chance = Mth.clamp(this.chance + AMConfig.beachedCachalotWhaleSpawnChance, 5, 100);
                     worldinfo.setBeachedCachalotSpawnChance(this.chance);
@@ -75,13 +76,13 @@ public class BeachedCachalotWhaleSpawner {
             BlockPos blockpos2 = this.func_221244_a(blockpos, 84);
             if (blockpos2 != null && this.func_226559_a_(blockpos2) && blockpos2.distSqr(blockpos) > 225) {
                 BlockPos upPos = new BlockPos(blockpos2.getX(), blockpos2.getY() + 2, blockpos2.getZ());
-                EntityCachalotWhale whale = AMEntityRegistry.CACHALOT_WHALE.create(world);
-                whale.moveTo(upPos.getX() + 0.5D, upPos.getY() + 0.5D, upPos.getZ() + 0.5D, random.nextFloat() * 360 - 180F, 0);
-                whale.finalizeSpawn(world, world.getCurrentDifficultyAt(upPos), MobSpawnType.SPAWNER, null, null);
+                EntityCachalotWhale whale = AMEntityRegistry.CACHALOT_WHALE.create(world, EntitySpawnReason.SPAWNER);
+                whale.snapTo(upPos.getX() + 0.5D, upPos.getY() + 0.5D, upPos.getZ() + 0.5D, random.nextFloat() * 360 - 180F, 0);
+                whale.finalizeSpawn(world, world.getCurrentDifficultyAt(upPos), EntitySpawnReason.SPAWNER, null);
                 whale.setBeached(true);
                 AMWorldData worldinfo = AMWorldData.get(world);
                 worldinfo.setBeachedCachalotID(whale.getUUID());
-                whale.restrictTo(upPos, 16);
+                whale.setHomeTo(upPos, 16);
                 whale.setDespawnBeach(true);
                 world.addFreshEntity(whale);
                 return true;
@@ -97,9 +98,9 @@ public class BeachedCachalotWhaleSpawner {
         for(int i = 0; i < 10; ++i) {
             int j = p_221244_1_.getX() + this.random.nextInt(p_221244_2_ * 2) - p_221244_2_;
             int k = p_221244_1_.getZ() + this.random.nextInt(p_221244_2_ * 2) - p_221244_2_;
-            int l = this.world.getHeightmapPos(Types.WORLD_SURFACE, new BlockPos(j, 0, k)).getY();
+            int l = this.world.getHeight(Types.WORLD_SURFACE, j, k);
             BlockPos blockpos1 = new BlockPos(j, l, k);
-            if (AMWorldRegistry.testBiome(BiomeConfig.cachalot_whale_beached_spawns, world.getBiome(blockpos1)) && SpawnPlacements.isSpawnPositionOk(EntityType.WANDERING_TRADER, this.world, blockpos1)) {
+            if (AMWorldRegistry.testBiome(BiomeConfig.cachalot_whale_beached_spawns, world.getBiome(blockpos1)) && NaturalSpawner.isValidEmptySpawnBlock(world, blockpos1, world.getBlockState(blockpos1), world.getFluidState(blockpos1), AMEntityRegistry.CACHALOT_WHALE)) {
                 blockpos = blockpos1;
                 break;
             }

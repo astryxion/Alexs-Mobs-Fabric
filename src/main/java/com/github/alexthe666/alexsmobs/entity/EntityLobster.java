@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIFindWater;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAILeaveWater;
@@ -10,6 +13,7 @@ import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -29,7 +33,7 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.animal.Bucketable;
-import net.minecraft.world.entity.animal.WaterAnimal;
+import net.minecraft.world.entity.animal.fish.WaterAnimal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -70,7 +74,7 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 5D).add(Attributes.ARMOR, 2.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.MOVEMENT_SPEED, 0.15F);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.lobsterSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -150,14 +154,13 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
         Bucketable.saveDefaultDataToBucketTag(this, bucket);
         CompoundTag compoundnbt = bucket.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
         compoundnbt.putInt("BucketVariantTag", this.getVariant());
-        bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(compoundnbt));
     }
 
     @Override
     public void loadFromBucketTag(@Nonnull CompoundTag compound) {
         Bucketable.loadDefaultDataFromBucketTag(this, compound);
-        if (compound.contains("BucketVariantTag", 3)) {
-            this.setVariant(compound.getInt("BucketVariantTag"));
+        if (compound.contains("BucketVariantTag")) {
+            this.setVariant(compound.getIntOr("BucketVariantTag", 0));
         }
     }
 
@@ -179,9 +182,18 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
         return worldIn.getFluidState(pos.below()).isEmpty() && worldIn.getFluidState(pos).is(FluidTags.WATER) ? 10.0F : super.getWalkTargetValue(pos, worldIn);
     }
 
-    public boolean doHurtTarget(Entity entityIn) {
+    public boolean doHurtTarget(ServerLevel level, Entity entityIn) {
         this.entityData.set(ATTACK_TICK, 5);
-        return super.doHurtTarget(entityIn);
+        return super.doHurtTarget(level, entityIn);
+    }
+
+    public void baseTick() {
+        int i = this.getAirSupply();
+        super.baseTick();
+        // Restore air supply to prevent drowning - lobsters can breathe underwater
+        if (this.isInWater()) {
+            this.setAirSupply(i);
+        }
     }
 
     public void tick() {
@@ -191,8 +203,8 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
             if(attackProgress == 3){
                 this.playSound(AMSoundRegistry.LOBSTER_ATTACK, this.getSoundVolume(), this.getVoicePitch());
             }
-            if (this.entityData.get(ATTACK_TICK) == 2 && this.getTarget() != null && this.distanceTo(this.getTarget()) < 1.3D) {
-                this.getTarget().hurt(this.damageSources().mobAttack(this), 2);
+            if (this.entityData.get(ATTACK_TICK) == 2 && this.getTarget() != null && this.distanceTo(this.getTarget()) < 1.3D && this.getTarget() instanceof LivingEntity livingTarget && this.level() instanceof ServerLevel serverLevel) {
+                livingTarget.hurtServer(serverLevel, this.damageSources().mobAttack(this), 2);
             }
             this.entityData.set(ATTACK_TICK, this.entityData.get(ATTACK_TICK) - 1);
             if (attackProgress < 5F) {
@@ -206,15 +218,11 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
         if(attackCooldown > 0){
             attackCooldown--;
         }
-        if(this.getTarget() != null && this.distanceTo(this.getTarget()) <= 1F && attackCooldown == 0){
+        if(this.getTarget() != null && this.distanceTo(this.getTarget()) <= 1F && attackCooldown == 0 && this.level() instanceof ServerLevel serverLevel){
             this.lookAt(this.getTarget(), 180F, 20F);
-            doHurtTarget(this.getTarget());
+            doHurtTarget(serverLevel, this.getTarget());
             attackCooldown = 20;
         }
-    }
-
-    protected void handleAirSupply(int air) {
-
     }
 
     public int getVariant() {
@@ -225,16 +233,16 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
         this.entityData.set(VARIANT, Integer.valueOf(variant));
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putInt("Variant", this.getVariant());
         compound.putBoolean("FromBucket", this.fromBucket());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setVariant(compound.getInt("Variant"));
-        this.setFromBucket(compound.getBoolean("FromBucket"));
+        this.setVariant(compound.getIntOr("Variant", 0));
+        this.setFromBucket(compound.getBooleanOr("FromBucket", false));
     }
 
     @Override
@@ -254,7 +262,7 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
         float variantChange = this.getRandom().nextFloat();
         if(variantChange <= 0.00001){
             this.setVariant(5);
@@ -301,7 +309,7 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
         return 5;
     }
 
-    public static <T extends Mob> boolean canLobsterSpawn(EntityType type, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource randomIn) {
+    public static <T extends Mob> boolean canLobsterSpawn(EntityType type, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource randomIn) {
         boolean spawnBlock = worldIn.getBlockState(pos.below()).is(AMTagRegistry.LOBSTER_SPAWNS);
         return spawnBlock || worldIn.getFluidState(pos).is(FluidTags.WATER);
     }

@@ -5,7 +5,7 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.phys.AABB;
 
 import javax.annotation.Nullable;
@@ -32,7 +32,7 @@ public class MungusAIAlertBunfungus  extends TargetGoal {
         int i = this.mob.getLastHurtByMobTimestamp();
         LivingEntity livingentity = this.mob.getLastHurtByMob();
         if (i != this.timestamp && livingentity != null) {
-            if (livingentity.getType() == EntityType.PLAYER && this.mob.level().getGameRules().getBoolean(GameRules.RULE_UNIVERSAL_ANGER)) {
+            if (livingentity.getType() == EntityType.PLAYER && this.mob.level().getServer().getGameRules().get(GameRules.UNIVERSAL_ANGER)) {
                 return false;
             } else {
                 for(Class<?> oclass : this.toIgnoreDamage) {

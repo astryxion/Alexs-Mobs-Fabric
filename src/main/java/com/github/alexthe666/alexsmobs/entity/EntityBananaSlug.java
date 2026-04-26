@@ -8,7 +8,7 @@ import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -21,7 +21,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -36,6 +36,8 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -79,11 +81,11 @@ public class EntityBananaSlug extends Animal {
     }
 
 
-    public static boolean checkBananaSlugSpawnRules(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean checkBananaSlugSpawnRules(EntityType<? extends Animal> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         return !worldIn.getBlockState(pos.below()).isAir();
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.bananaSlugSpawnRolls, this.getRandom(), spawnReasonIn) && super.checkSpawnRules(worldIn, spawnReasonIn);
     }
 
@@ -110,17 +112,21 @@ public class EntityBananaSlug extends Animal {
 
     }
 
+    public boolean canBreatheUnderwaterAM() {
+        return true;
+    }
 
-    @javax.annotation.Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @javax.annotation.Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable CompoundTag dataTag) {
+    @Override
+    @Nullable
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
         this.setVariant(random.nextInt(4));
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
     }
 
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return source.is(DamageTypes.IN_WALL) || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.IN_WALL) || super.isInvulnerableTo(level, source);
     }
 
     @Override
@@ -153,7 +159,7 @@ public class EntityBananaSlug extends Animal {
 
     protected void registerGoals() {
         this.goalSelector.addGoal(1, new FloatGoal(this));
-        this.goalSelector.addGoal(2, new TemptGoal(this, 1.0D, Ingredient.of(AMTagRegistry.BANANA_SLUG_BREEDABLES), false));
+        this.goalSelector.addGoal(2, new TemptGoal(this, 1.0D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.BANANA_SLUG_BREEDABLES)), false));
         this.goalSelector.addGoal(3, new BreedGoal(this, 1.0D));
         this.goalSelector.addGoal(4, new AnimalAIWanderRanged(this, 40, 1.0D, 10, 7));
         this.goalSelector.addGoal(5, new LookAtPlayerGoal(this, Player.class, 5.0F));
@@ -161,7 +167,7 @@ public class EntityBananaSlug extends Animal {
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 4.0D).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.1F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 4.0D).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.1F);
     }
 
     public void tick(){
@@ -192,10 +198,10 @@ public class EntityBananaSlug extends Animal {
         }
 
         Vec3 vector3d = this.getDeltaMovement();
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.setBesideClimbableBlock(this.horizontalCollision);
             this.setBesideClimbableBlock(this.horizontalCollision || this.verticalCollision && !this.onGround());
-            if (this.onGround() || this.isInWaterOrBubble() || this.isInLava()) {
+            if (this.onGround() || this.isInWater() || this.isInLava()) {
                 this.entityData.set(ATTACHED_FACE, Direction.DOWN);
             } else  if (this.verticalCollision) {
                 this.entityData.set(ATTACHED_FACE, Direction.UP);
@@ -221,7 +227,7 @@ public class EntityBananaSlug extends Animal {
                 this.setDeltaMovement(this.getDeltaMovement().add(0, 1, 0));
             }else{
                 if (!this.horizontalCollision && this.getAttachmentFacing() != Direction.UP) {
-                    Vec3 vec = Vec3.atLowerCornerOf(this.getAttachmentFacing().getNormal());
+                    Vec3 vec = Vec3.atLowerCornerOf(this.getAttachmentFacing().getUnitVec3i());
                     this.setDeltaMovement(this.getDeltaMovement().add(vec.normalize().multiply(0.1F, 0.1F, 0.1F)));
                 }
                 if (!this.onGround() && vector3d.y < 0.0D) {
@@ -241,8 +247,8 @@ public class EntityBananaSlug extends Animal {
                 this.setDeltaMovement(vector3d.multiply(1.0D, 0.4D, 1.0D));
             }
         }
-        if (!this.level().isClientSide && this.isAlive() && !this.isBaby() && --this.timeUntilSlime <= 0) {
-            this.spawnAtLocation(AMItemRegistry.BANANA_SLUG_SLIME);
+        if (!this.level().isClientSide() && this.isAlive() && !this.isBaby() && --this.timeUntilSlime <= 0) {
+            this.spawnAtLocation((ServerLevel) this.level(), AMItemRegistry.BANANA_SLUG_SLIME);
             this.timeUntilSlime = this.random.nextInt(12000) + 24000;
         }
     }
@@ -264,7 +270,7 @@ public class EntityBananaSlug extends Animal {
     }
 
     private boolean isTrailVisible() {
-        if(this.isInWaterOrBubble()){
+        if(this.isInWater()){
             return false;
         }
         if(this.onGround()){
@@ -300,29 +306,29 @@ public class EntityBananaSlug extends Animal {
     public void calculateEntityAnimation( boolean flying) {
         float f1 = (float)Mth.length(this.getX() - this.xo, 0.5F * (this.getY() - this.yo), this.getZ() - this.zo);
         float f2 = Math.min(f1 * 16.0F, 1.0F);
-        this.walkAnimation.update(f2, 0.4F);
+        this.walkAnimation.update(f2, 0.4F, 1.0F);
     }
 
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel level, AgeableMob mob) {
-        EntityBananaSlug slug = AMEntityRegistry.BANANA_SLUG.create(level());
+        EntityBananaSlug slug = (EntityBananaSlug) AMEntityRegistry.BANANA_SLUG.create(level, EntitySpawnReason.BREEDING);
         slug.setVariant(this.getVariant());
         return slug;
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
-        super.addAdditionalSaveData(compound);
-        compound.putInt("Variant", this.getVariant());
-        compound.putInt("SlimeTime", this.timeUntilSlime);
+    @Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.putInt("Variant", this.getVariant());
+        output.putInt("SlimeTime", this.timeUntilSlime);
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
-        super.readAdditionalSaveData(compound);
-        if (compound.contains("SlimeTime")) {
-            this.timeUntilSlime = compound.getInt("SlimeTime");
-        }
-        this.setVariant(compound.getInt("Variant"));
+    @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        this.timeUntilSlime = input.getIntOr("SlimeTime", this.timeUntilSlime);
+        this.setVariant(input.getIntOr("Variant", 0));
     }
 
 

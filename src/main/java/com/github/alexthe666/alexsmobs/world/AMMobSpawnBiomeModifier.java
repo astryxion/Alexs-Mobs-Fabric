@@ -1,18 +1,25 @@
 package com.github.alexthe666.alexsmobs.world;
 
-import com.github.alexthe666.alexsmobs.AlexsMobs;
 import net.fabricmc.fabric.api.biome.v1.BiomeModificationContext;
-import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
-import net.fabricmc.fabric.api.biome.v1.ModificationPhase;
-import net.minecraft.resources.ResourceLocation;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.biome.Biome;
 
-/** Fabric: 1:1 replacement for Forge BiomeModifier; applies same mob spawns via BiomeModifications. */
 public class AMMobSpawnBiomeModifier {
+    public static final MapCodec<AMMobSpawnBiomeModifier> CODEC = MapCodec.unit(AMMobSpawnBiomeModifier::new);
 
-    public static void register() {
-        BiomeModifications.create(ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, "am_mob_spawns"))
-                .add(ModificationPhase.ADDITIONS, ctx -> true, (selectionContext, modificationContext) -> {
-                    AMWorldRegistry.addBiomeSpawns(selectionContext.getBiomeRegistryEntry(), modificationContext.getSpawnSettings());
-                });
+    public AMMobSpawnBiomeModifier() {
+    }
+
+    public void apply(Holder<Biome> biome, BiomeModificationContext.MobSpawnSettingsContext builder) {
+        AMWorldRegistry.addBiomeSpawns(biome, builder);
+    }
+
+    public MapCodec<AMMobSpawnBiomeModifier> codec() {
+        return CODEC;
+    }
+
+    public static MapCodec<AMMobSpawnBiomeModifier> makeCodec() {
+        return CODEC;
     }
 }

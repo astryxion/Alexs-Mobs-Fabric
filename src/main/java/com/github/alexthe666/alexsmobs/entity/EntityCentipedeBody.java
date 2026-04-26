@@ -1,10 +1,13 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.github.alexthe666.alexsmobs.message.MessageHurtMultipart;
+import com.github.alexthe666.alexsmobs.network.MessageHurtMultipart;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -16,8 +19,8 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.vehicle.AbstractMinecart;
-import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.entity.vehicle.minecart.AbstractMinecart;
+import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.phys.AABB;
@@ -35,8 +38,8 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
 
     private static final EntityDataAccessor<Integer> BODYINDEX = SynchedEntityData.defineId(EntityCentipedeBody.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> BODY_XROT = SynchedEntityData.defineId(EntityCentipedeBody.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Optional<UUID>> PARENT_UUID = SynchedEntityData.defineId(EntityCentipedeBody.class, EntityDataSerializers.OPTIONAL_UUID);
-    private static final EntityDataAccessor<Optional<UUID>> CHILD_UUID = SynchedEntityData.defineId(EntityCentipedeBody.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> PARENT_UUID = SynchedEntityData.defineId(EntityCentipedeBody.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
+    private static final EntityDataAccessor<Optional<UUID>> CHILD_UUID = SynchedEntityData.defineId(EntityCentipedeBody.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
     public EntityDimensions multipartSize;
     protected float radius;
     protected float angleYaw;
@@ -53,8 +56,8 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
 
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return  source.is(DamageTypes.IN_WALL)  || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.IN_WALL) || super.isInvulnerableTo(level, source);
     }
 
     public boolean isNoGravity() {
@@ -64,14 +67,15 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
     @Override
     public void tick() {
         super.tick();
+        // isInsidePortal removed in 1.21
         this.setDeltaMovement(Vec3.ZERO);
         if (this.tickCount > 1) {
             final Entity parent = getParent();
             refreshDimensions();
-            if (parent != null && !this.level().isClientSide) {
+            if (parent != null && !this.level().isClientSide()) {
                 if (parent instanceof final LivingEntity parentEntity) {
                     if ((parentEntity.hurtTime > 0 || parentEntity.deathTime > 0)) {
-                        AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), 0));
+                        AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), 0.0F, ""));
                         this.hurtTime = parentEntity.hurtTime;
                         this.deathTime = parentEntity.deathTime;
                     }
@@ -79,7 +83,7 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
                 if (parent.isRemoved()) {
                     this.remove(RemovalReason.DISCARDED);
                 }
-            } else if (!this.level().isClientSide && tickCount > 20) {
+            } else if (!this.level().isClientSide() && tickCount > 20) {
                 remove(RemovalReason.DISCARDED);
             }
         }
@@ -90,43 +94,39 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
         this.setParent(parent);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         if (this.getParentId() != null) {
-            compound.putUUID("ParentUUID", this.getParentId());
+            compound.store("ParentUUID", UUIDUtil.CODEC, this.getParentId());
         }
         if (this.getChildId() != null) {
-            compound.putUUID("ChildUUID", this.getChildId());
+            compound.store("ChildUUID", UUIDUtil.CODEC, this.getChildId());
         }
         compound.putInt("BodyIndex", getBodyIndex());
         compound.putFloat("PartAngle", angleYaw);
         compound.putFloat("PartRadius", radius);
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        if (compound.hasUUID("ParentUUID")) {
-            this.setParentId(compound.getUUID("ParentUUID"));
-        }
-        if (compound.hasUUID("ChildUUID")) {
-            this.setChildId(compound.getUUID("ChildUUID"));
-        }
-        this.setBodyIndex(compound.getInt("BodyIndex"));
-        this.angleYaw = compound.getFloat("PartAngle");
-        this.radius = compound.getFloat("PartRadius");
+        compound.read("ParentUUID", UUIDUtil.CODEC).ifPresent(this::setParentId);
+        compound.read("ChildUUID", UUIDUtil.CODEC).ifPresent(this::setChildId);
+        this.setBodyIndex(compound.getIntOr("BodyIndex", 0));
+        this.angleYaw = compound.getFloatOr("PartAngle", 0.0F);
+        this.radius = compound.getFloatOr("PartRadius", 0.0F);
     }
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
-        builder.define(PARENT_UUID, Optional.<UUID>empty());
-        builder.define(CHILD_UUID, Optional.<UUID>empty());
+        builder.define(PARENT_UUID, Optional.empty());
+        builder.define(CHILD_UUID, Optional.empty());
         builder.define(BODYINDEX, 0);
         builder.define(BODY_XROT, 0F);
     }
 
     public Entity getParent() {
         final UUID id = getParentId();
-        if (id != null && !this.level().isClientSide) {
+        if (id != null && !this.level().isClientSide()) {
             return ((ServerLevel) level()).getEntity(id);
         }
         return null;
@@ -138,7 +138,7 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
 
     public Entity getChild() {
         final UUID id = getChildId();
-        if (id != null && !this.level().isClientSide) {
+        if (id != null && !this.level().isClientSide()) {
             return ((ServerLevel) level()).getEntity(id);
         }
         return null;
@@ -159,11 +159,19 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
     }
 
     @Override
-    public boolean hurt(DamageSource source, float damage) {
+    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
         final Entity parent = getParent();
-        final boolean prev = parent != null && parent.hurt(source, damage * this.damageMultiplier);
-        if (prev && !this.level().isClientSide) {
-            AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), damage * this.damageMultiplier));
+        final float scaled = damage * this.damageMultiplier;
+        boolean prev = false;
+        if (parent != null) {
+            if (parent instanceof LivingEntity living) {
+                prev = living.hurtServer(level, source, scaled);
+            } else {
+                prev = parent.hurtOrSimulate(source, scaled);
+            }
+            if (prev) {
+                AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), scaled, ""));
+            }
         }
         return prev;
     }
@@ -181,9 +189,10 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
         }
     }
 
-    public boolean startRiding(Entity entityIn) {
-        if(!(entityIn instanceof AbstractMinecart || entityIn instanceof Boat)){
-            return super.startRiding(entityIn);
+    @Override
+    public boolean startRiding(Entity entityToRide, boolean force, boolean sendEventAndTriggers) {
+        if (!(entityToRide instanceof AbstractMinecart || entityToRide instanceof Boat)) {
+            return super.startRiding(entityToRide, force, sendEventAndTriggers);
         }
         return false;
     }
@@ -233,7 +242,7 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
         this.entityData.set(BODY_XROT, f2);
         this.setYRot(f);
         this.yHeadRot = f;
-        this.moveTo(avg.x, avg.y, avg.z, f, f2);
+        this.snapTo(avg.x, avg.y, avg.z, f, f2);
         return avg;
     }
 
@@ -287,6 +296,10 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
                 return p_185969_.isSuffocating(this.level(), blockpos) && Shapes.joinIsNotEmpty(p_185969_.getCollisionShape(this.level(), blockpos).move(vec3.x, vec3.y, vec3.z), Shapes.create(axisalignedbb), BooleanOp.AND);
             });
         }
+    }
+
+    public boolean canBreatheUnderwaterAM() {
+        return true;
     }
 
     public float getBackOffset() {

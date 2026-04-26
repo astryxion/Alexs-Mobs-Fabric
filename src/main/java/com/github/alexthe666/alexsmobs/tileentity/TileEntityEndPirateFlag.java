@@ -5,8 +5,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
-
 public class TileEntityEndPirateFlag  extends BlockEntity {
 
     public int ticksExisted;
@@ -19,7 +17,7 @@ public class TileEntityEndPirateFlag  extends BlockEntity {
         entity.tick();
     }
     public AABB getRenderBoundingBox() {
-        return new AABB(Vec3.atLowerCornerOf(worldPosition.offset(-2, -2, -2)), Vec3.atLowerCornerOf(worldPosition.offset(2, 2, 2)));
+        return new AABB(worldPosition.offset(-2, -2, -2).getCenter().add(-0.5, -0.5, -0.5), worldPosition.offset(2, 2, 2).getCenter().add(0.5, 0.5, 0.5));
     }
 
     public void tick() {

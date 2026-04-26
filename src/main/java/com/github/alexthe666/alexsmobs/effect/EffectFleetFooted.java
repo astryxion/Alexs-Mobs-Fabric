@@ -1,8 +1,5 @@
 package com.github.alexthe666.alexsmobs.effect;
 
-import com.github.alexthe666.alexsmobs.AlexsMobs;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
@@ -13,46 +10,45 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 public class EffectFleetFooted extends MobEffect {
 
-    private static final ResourceLocation FLEET_FOOTED_SPEED_ID = ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, "fleet_footed_speed");
-    private static final AttributeModifier SPRINT_JUMP_SPEED_BONUS = new AttributeModifier(FLEET_FOOTED_SPEED_ID, 0.2, AttributeModifier.Operation.ADD_VALUE);
-    private int lastDuration = -1;
+    private static final AttributeModifier SPRINT_JUMP_SPEED_BONUS = new AttributeModifier(net.minecraft.resources.Identifier.fromNamespaceAndPath("alexsmobs", "fleetfooted_speed_bonus"), 0.2F, AttributeModifier.Operation.ADD_VALUE);
     private int removeEffectAfter = 0;
 
     public EffectFleetFooted() {
         super(MobEffectCategory.BENEFICIAL, 0X685441);
     }
 
-    public boolean tick(ServerLevel level, LivingEntity entity, int amplifier) {
+    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
+        // Get the effect instance to check duration
+        var effectInstance = entity.getEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.FLEET_FOOTED));
+        int currentDuration = effectInstance != null ? effectInstance.getDuration() : 0;
+        
         AttributeInstance modifiableattributeinstance = entity.getAttribute(Attributes.MOVEMENT_SPEED);
-        boolean applyEffect = entity.isSprinting() && !entity.onGround() && lastDuration > 2;
+        boolean applyEffect = entity.isSprinting() && !entity.onGround() && currentDuration > 2;
         if(removeEffectAfter > 0){
             removeEffectAfter--;
         }
         if (applyEffect) {
-            if(modifiableattributeinstance != null && !modifiableattributeinstance.hasModifier(FLEET_FOOTED_SPEED_ID)){
+            if(!modifiableattributeinstance.hasModifier(net.minecraft.resources.Identifier.fromNamespaceAndPath("alexsmobs", "fleetfooted_speed_bonus"))){
                 modifiableattributeinstance.addPermanentModifier(SPRINT_JUMP_SPEED_BONUS);
             }
             removeEffectAfter = 5;
         }
-        if (removeEffectAfter <= 0 || lastDuration < 2) {
-            if(modifiableattributeinstance != null) {
-                modifiableattributeinstance.removeModifier(FLEET_FOOTED_SPEED_ID);
-            }
+        if (removeEffectAfter <= 0 || currentDuration < 2) {
+            modifiableattributeinstance.removeModifier(SPRINT_JUMP_SPEED_BONUS);
         }
         return true;
     }
 
-    @Override
-    public void removeAttributeModifiers(AttributeMap attributeMap) {
-        AttributeInstance modifiableattributeinstance = attributeMap.getInstance(Attributes.MOVEMENT_SPEED);
-        if(modifiableattributeinstance != null && modifiableattributeinstance.hasModifier(FLEET_FOOTED_SPEED_ID)){
-            modifiableattributeinstance.removeModifier(FLEET_FOOTED_SPEED_ID);
+    public void removeAttributeModifiers(LivingEntity livingEntity, AttributeMap attributeMap, int level) {
+        AttributeInstance modifiableattributeinstance = livingEntity.getAttribute(Attributes.MOVEMENT_SPEED);
+        if(modifiableattributeinstance != null && modifiableattributeinstance.hasModifier(net.minecraft.resources.Identifier.fromNamespaceAndPath("alexsmobs", "fleetfooted_speed_bonus"))){
+            modifiableattributeinstance.removeModifier(SPRINT_JUMP_SPEED_BONUS);
         }
     }
 
-    public boolean isDurationEffectTick(int duration, int amplifier) {
-        lastDuration = duration;
-        return duration > 0;
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
+        return true;
     }
 
     public String getDescriptionId() {

@@ -1,6 +1,9 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
 import com.github.alexthe666.alexsmobs.entity.EntityMoose;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntitySelector;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.level.Level;
@@ -116,7 +119,7 @@ public class MooseAIJostle extends Goal {
                 this.moose.jostleTimer++;
                 this.targetMoose.jostleTimer++;
                 if(this.moose.jostleTimer > 1000 || f1 > 2.0F){
-                    moose.hasImpulse = true;
+                    moose.needsSync = true;
                     if(moose.onGround()){
                         moose.pushBackJostling(targetMoose, 0.9F);
                     }
@@ -143,7 +146,13 @@ public class MooseAIJostle extends Goal {
 
     @Nullable
     private EntityMoose getNearbyMoose() {
-        List<EntityMoose> listOfMeese = this.world.getNearbyEntities(EntityMoose.class, JOSTLE_PREDICATE, this.moose, this.moose.getBoundingBox().inflate(16.0D));
+        if (!(this.world instanceof ServerLevel serverLevel)) {
+            return null;
+        }
+        List<EntityMoose> listOfMeese = this.world.getEntitiesOfClass(
+                EntityMoose.class,
+                this.moose.getBoundingBox().inflate(16.0D),
+                EntitySelector.NO_SPECTATORS.and(m -> JOSTLE_PREDICATE.test(serverLevel, this.moose, (LivingEntity) m)));
         double lvt_2_1_ = 1.7976931348623157E308D;
         EntityMoose lvt_4_1_ = null;
         Iterator var5 = listOfMeese.iterator();

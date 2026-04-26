@@ -8,6 +8,7 @@ import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.FluidTags;
@@ -20,11 +21,12 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
-import net.minecraft.world.entity.animal.AbstractSchoolingFish;
-import net.minecraft.world.entity.animal.Squid;
-import net.minecraft.world.entity.animal.WaterAnimal;
+import net.minecraft.world.entity.animal.fish.AbstractSchoolingFish;
+import net.minecraft.world.entity.animal.squid.Squid;
+import net.minecraft.world.entity.animal.fish.WaterAnimal;
 import net.minecraft.world.entity.monster.Guardian;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -46,7 +48,7 @@ public class EntityHammerheadShark extends WaterAnimal {
         this.moveControl = new AquaticMoveController(this, 1F);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.hammerheadSharkSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -81,7 +83,7 @@ public class EntityHammerheadShark extends WaterAnimal {
         this.goalSelector.addGoal(1, new CirclePreyGoal(this, 1F));
         this.goalSelector.addGoal(4, new RandomSwimmingGoal(this, 0.6F, 7));
         this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
-        this.goalSelector.addGoal(8, new FollowBoatGoal(this));
+        this.goalSelector.addGoal(8, new FollowPlayerRiddenEntityGoal(this, Boat.class));
         this.goalSelector.addGoal(9, new AvoidEntityGoal<>(this, Guardian.class, 8.0F, 1.0D, 1.0D));
         this.targetSelector.addGoal(1, (new HurtByTargetGoal(this)));
         this.targetSelector.addGoal(2, new EntityAINearestTarget3D(this, LivingEntity.class, 50, false, true, INJURED_PREDICATE));
@@ -100,7 +102,7 @@ public class EntityHammerheadShark extends WaterAnimal {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 30D).add(Attributes.ARMOR, 0.0D).add(Attributes.ATTACK_DAMAGE, 5.0D).add(Attributes.MOVEMENT_SPEED, 0.5F);
     }
 
-    public static <T extends Mob> boolean canHammerheadSharkSpawn(EntityType<EntityHammerheadShark> p_223364_0_, LevelAccessor p_223364_1_, MobSpawnType reason, BlockPos p_223364_3_, RandomSource p_223364_4_) {
+    public static <T extends Mob> boolean canHammerheadSharkSpawn(EntityType<EntityHammerheadShark> p_223364_0_, LevelAccessor p_223364_1_, EntitySpawnReason reason, BlockPos p_223364_3_, RandomSource p_223364_4_) {
         if (p_223364_3_.getY() > 45 && p_223364_3_.getY() < p_223364_1_.getSeaLevel()) {
             return p_223364_1_.getFluidState(p_223364_3_).is(FluidTags.WATER);
         } else {
@@ -153,10 +155,10 @@ public class EntityHammerheadShark extends WaterAnimal {
                 if(circlingTime >= maxCirclingTime){
                     shark.lookAt(prey, 30.0F, 30.0F);
                     shark.getNavigation().moveTo(prey, 1.5D);
-                    if(dist < 2D){
-                        shark.doHurtTarget(prey);
-                        if(shark.random.nextFloat() < 0.3F){
-                            shark.spawnAtLocation(new ItemStack(AMItemRegistry.SHARK_TOOTH));
+                    if (dist < 2D && shark.level() instanceof ServerLevel serverLevel) {
+                        shark.doHurtTarget(serverLevel, prey);
+                        if (shark.random.nextFloat() < 0.3F) {
+                            shark.spawnAtLocation(serverLevel, new ItemStack(AMItemRegistry.SHARK_TOOTH));
                         }
                         stop();
                     }

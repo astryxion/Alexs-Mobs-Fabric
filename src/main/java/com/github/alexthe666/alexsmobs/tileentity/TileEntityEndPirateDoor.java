@@ -4,13 +4,11 @@ import com.github.alexthe666.alexsmobs.block.BlockEndPirateDoor;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
-
 public class TileEntityEndPirateDoor extends BlockEntity {
 
     private float openProgress;
@@ -27,10 +25,8 @@ public class TileEntityEndPirateDoor extends BlockEntity {
             prevOpenProgress = 1F;
         }
     }
-
-
     public net.minecraft.world.phys.AABB getRenderBoundingBox() {
-        return new net.minecraft.world.phys.AABB(Vec3.atLowerCornerOf(worldPosition), Vec3.atLowerCornerOf(worldPosition.offset(1, 3, 1)));
+        return new net.minecraft.world.phys.AABB(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), worldPosition.getX() + 1, worldPosition.getY() + 3, worldPosition.getZ() + 1);
     }
 
     public static void commonTick(Level level, BlockPos pos, BlockState state, TileEntityEndPirateDoor entity) {

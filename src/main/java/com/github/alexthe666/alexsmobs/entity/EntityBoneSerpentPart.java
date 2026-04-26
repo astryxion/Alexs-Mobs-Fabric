@@ -1,16 +1,11 @@
 package com.github.alexthe666.alexsmobs.entity;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.github.alexthe666.alexsmobs.message.MessageHurtMultipart;
-import com.google.common.collect.ImmutableList;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import com.github.alexthe666.alexsmobs.network.MessageHurtMultipart;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -21,10 +16,14 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.vehicle.AbstractMinecart;
-import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.entity.vehicle.minecart.AbstractMinecart;
+import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.Vec3;
+// NetworkHooks removed in NeoForge 1.21
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -35,7 +34,7 @@ public class EntityBoneSerpentPart extends LivingEntity implements IHurtableMult
 
     private static final EntityDataAccessor<Boolean> TAIL = SynchedEntityData.defineId(EntityBoneSerpentPart.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> BODYINDEX = SynchedEntityData.defineId(EntityBoneSerpentPart.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Optional<UUID>> PARENT_UUID = SynchedEntityData.defineId(EntityBoneSerpentPart.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> PARENT_UUID = SynchedEntityData.defineId(EntityBoneSerpentPart.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
     public EntityDimensions multipartSize;
     protected float radius;
     protected float angleYaw;
@@ -55,11 +54,12 @@ public class EntityBoneSerpentPart extends LivingEntity implements IHurtableMult
         this.offsetY = offsetY;
     }
 
-    public boolean startRiding(Entity entityIn) {
-        if(!(entityIn instanceof AbstractMinecart || entityIn instanceof Boat)){
-            return super.startRiding(entityIn);
+    @Override
+    protected boolean canRide(Entity entityIn) {
+        if (entityIn instanceof AbstractMinecart || entityIn instanceof Boat) {
+            return false;
         }
-        return false;
+        return super.canRide(entityIn);
     }
 
     @Nullable
@@ -72,32 +72,29 @@ public class EntityBoneSerpentPart extends LivingEntity implements IHurtableMult
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 10.0D).add(Attributes.MOVEMENT_SPEED, 0.15F);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
-        super.addAdditionalSaveData(compound);
-        if (this.getParentId() != null) {
-            compound.putUUID("ParentUUID", this.getParentId());
-        }
-        compound.putBoolean("TailPart", isTail());
-        compound.putInt("BodyIndex", getBodyIndex());
-        compound.putFloat("PartAngle", angleYaw);
-        compound.putFloat("PartRadius", radius);
-    }
-
-    public void readAdditionalSaveData(CompoundTag compound) {
-        super.readAdditionalSaveData(compound);
-        if (compound.hasUUID("ParentUUID")) {
-            this.setParentId(compound.getUUID("ParentUUID"));
-        }
-        this.setTail(compound.getBoolean("TailPart"));
-        this.setBodyIndex(compound.getInt("BodyIndex"));
-        this.angleYaw = compound.getFloat("PartAngle");
-        this.radius = compound.getFloat("PartRadius");
+    @Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.storeNullable("ParentUUID", UUIDUtil.CODEC, this.getParentId());
+        output.putBoolean("TailPart", isTail());
+        output.putInt("BodyIndex", getBodyIndex());
+        output.putFloat("PartAngle", angleYaw);
+        output.putFloat("PartRadius", radius);
     }
 
     @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        this.setParentId(input.read("ParentUUID", UUIDUtil.CODEC).orElse(null));
+        this.setTail(input.getBooleanOr("TailPart", false));
+        this.setBodyIndex(input.getIntOr("BodyIndex", 0));
+        this.angleYaw = input.getFloatOr("PartAngle", 0F);
+        this.radius = input.getFloatOr("PartRadius", 0F);
+    }
+
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
-        builder.define(PARENT_UUID, Optional.<UUID>empty());
+        builder.define(PARENT_UUID, Optional.empty());
         builder.define(TAIL, false);
         builder.define(BODYINDEX, 0);
     }
@@ -117,10 +114,11 @@ public class EntityBoneSerpentPart extends LivingEntity implements IHurtableMult
 
     @Override
     public void tick() {
+        // isInsidePortal removed in 1.21 - portal handling is automatic
         if (this.tickCount > 10) {
             Entity parent = getParent();
             refreshDimensions();
-            if (parent != null && !this.level().isClientSide) {
+            if (parent != null && !this.level().isClientSide()) {
                 this.setNoGravity(true);
                 this.setPos(parent.xo + this.radius * Math.cos(parent.yRotO * Mth.DEG_TO_RAD + this.angleYaw), parent.yo + this.offsetY, parent.zo + this.radius * Math.sin(parent.yRotO * Mth.DEG_TO_RAD + this.angleYaw));
                 final double d0 = parent.getX() - this.getX();
@@ -133,17 +131,17 @@ public class EntityBoneSerpentPart extends LivingEntity implements IHurtableMult
                 this.yHeadRot = this.getYRot();
                 this.yBodyRot = this.yRotO;
                 if (parent instanceof LivingEntity) {
-                    if(!this.level().isClientSide && (((LivingEntity) parent).hurtTime > 0 || ((LivingEntity) parent).deathTime > 0)){
-                        AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), 0));
+                    if(!this.level().isClientSide() && (((LivingEntity) parent).hurtTime > 0 || ((LivingEntity) parent).deathTime > 0)){
+                        AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), 0, ""));
                         this.hurtTime = ((LivingEntity) parent).hurtTime;
                         this.deathTime = ((LivingEntity) parent).deathTime;
                     }
                 }
                 this.pushEntities();
-                if (parent.isRemoved() && !this.level().isClientSide) {
+                if (parent.isRemoved() && !this.level().isClientSide()) {
                     this.remove(RemovalReason.DISCARDED);
                 }
-            } else if (tickCount > 20 && !this.level().isClientSide) {
+            } else if (tickCount > 20 && !this.level().isClientSide()) {
                 remove(RemovalReason.DISCARDED);
             }
         }
@@ -152,7 +150,7 @@ public class EntityBoneSerpentPart extends LivingEntity implements IHurtableMult
 
     public Entity getParent() {
         UUID id = getParentId();
-        if (id != null && !this.level().isClientSide) {
+        if (id != null && !this.level().isClientSide()) {
             return ((ServerLevel) level()).getEntity(id);
         }
         return null;
@@ -177,11 +175,6 @@ public class EntityBoneSerpentPart extends LivingEntity implements IHurtableMult
         return null;
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
-    }
-
     public void pushEntities() {
         List<net.minecraft.world.entity.Entity> entities = this.level().getEntities(this, this.getBoundingBox().expandTowards(0.2D, 0.0D, 0.2D));
         Entity parent = this.getParent();
@@ -190,35 +183,33 @@ public class EntityBoneSerpentPart extends LivingEntity implements IHurtableMult
         }
     }
 
-    public InteractionResult interact(Player player, InteractionHand hand) {
+    @Override
+    public InteractionResult interact(Player player, InteractionHand hand, Vec3 location) {
         Entity parent = getParent();
-
-        return parent != null ? parent.interact(player, hand) : InteractionResult.PASS;
+        return parent != null ? parent.interact(player, hand, location) : super.interact(player, hand, location);
     }
 
     @Override
-    public boolean hurt(DamageSource source, float damage) {
+    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
         final Entity parent = getParent();
-        final boolean prev = parent != null && parent.hurt(source, damage * this.damageMultiplier);
-        if (prev && !this.level().isClientSide) {
-            AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), damage * this.damageMultiplier));
+        final float scaled = damage * this.damageMultiplier;
+        boolean prev = false;
+        if (parent != null) {
+            if (parent instanceof LivingEntity living) {
+                prev = living.hurtServer(level, source, scaled);
+            } else {
+                prev = parent.hurtOrSimulate(source, scaled);
+            }
+            if (prev) {
+                AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), scaled, ""));
+            }
         }
         return prev;
     }
 
     @Override
-    public Iterable<ItemStack> getArmorSlots() {
-        return ImmutableList.of();
-    }
-
-    @Override
     public ItemStack getItemBySlot(EquipmentSlot slotIn) {
         return ItemStack.EMPTY;
-    }
-
-    @Override
-    public void setItemSlot(EquipmentSlot slotIn, ItemStack stack) {
-
     }
 
     public boolean isTail() {
@@ -253,6 +244,12 @@ public class EntityBoneSerpentPart extends LivingEntity implements IHurtableMult
     }
 
     public boolean shouldContinuePersisting() {
-        return level() != null || this.isRemoved();
+        return this.isAlive() || this.isRemoved();
     }
+
+    @Override
+    public void setItemSlot(EquipmentSlot slot, ItemStack stack) {
+        // Multipart entities don't hold equipment
+    }
+
 }

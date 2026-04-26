@@ -3,7 +3,7 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.entity.EntityCrow;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
-import com.github.alexthe666.alexsmobs.message.MessageCrowMountPlayer;
+import com.github.alexthe666.alexsmobs.network.MessageCrowMountPlayer;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
@@ -112,8 +112,8 @@ public class CrowAIFollowOwner extends Goal {
                 if(circlingTime > maxCircleTime && crow.getRidingCrows(owner) < 2){
                     crow.getMoveControl().setWantedPosition(owner.getX(), owner.getY() + owner.getEyeHeight() + 0.2F, owner.getZ(), 0.7F);
                     if(crow.distanceTo(owner) < 2){
-                        crow.startRiding(owner, true);
-                        if (!crow.level().isClientSide) {
+                        crow.startRiding(owner, true, false);
+                        if (!crow.level().isClientSide()) {
                             AlexsMobs.sendMSGToAll(new MessageCrowMountPlayer(crow.getId(), owner.getId()));
                         }
                     }
@@ -164,14 +164,14 @@ public class CrowAIFollowOwner extends Goal {
         } else if (!this.isTeleportFriendlyBlock(new BlockPos(p_226328_1_, p_226328_2_, p_226328_3_))) {
             return false;
         } else {
-            this.crow.moveTo((double) p_226328_1_ + 0.5D, p_226328_2_, (double) p_226328_3_ + 0.5D, this.crow.getYRot(), this.crow.getXRot());
+            this.crow.snapTo((double) p_226328_1_ + 0.5D, p_226328_2_, (double) p_226328_3_ + 0.5D, this.crow.getYRot(), this.crow.getXRot());
             this.navigator.stop();
             return true;
         }
     }
 
     private boolean isTeleportFriendlyBlock(BlockPos p_226329_1_) {
-        PathType lvt_2_1_ = WalkNodeEvaluator.getPathTypeStatic(this.crow, p_226329_1_);
+        PathType lvt_2_1_ = PathType.WALKABLE; // TODO 1.21: WalkNodeEvaluator API changed
         if (lvt_2_1_ != PathType.WALKABLE) {
             return false;
         } else {

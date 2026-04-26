@@ -1,9 +1,10 @@
 package com.github.alexthe666.alexsmobs.entity.util;
 
+import com.github.alexthe666.alexsmobs.AlexsMobs;
+import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
-import com.github.alexthe666.citadel.Citadel;
+import com.github.alexthe666.alexsmobs.network.MessageSyncEntityData;
 import com.github.alexthe666.citadel.server.entity.CitadelEntityData;
-import com.github.alexthe666.citadel.server.message.PropertiesMessage;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
@@ -24,19 +25,14 @@ public class FlyingFishBootsUtil {
         lassoedTag.putInt(BOOST_TICKS, ticks);
 
         CitadelEntityData.setCitadelTag(entity, lassoedTag);
-        if (!entity.level().isClientSide) {
-            Citadel.sendMSGToAll(new PropertiesMessage("CitadelPatreonConfig", lassoedTag, entity.getId()));
-        }else{
-            Citadel.sendMSGToServer(new PropertiesMessage("CitadelPatreonConfig", lassoedTag, entity.getId()));
+        if (!entity.level().isClientSide()) {
+            AlexsMobs.sendMSGToAll(new MessageSyncEntityData(entity.getId(), lassoedTag));
         }
     }
 
     public static int getBoostTicks(LivingEntity entity) {
         CompoundTag lassoedTag = CitadelEntityData.getOrCreateCitadelTag(entity);
-        if (lassoedTag.contains(BOOST_TICKS)) {
-            return lassoedTag.getInt(BOOST_TICKS);
-        }
-        return 0;
+        return lassoedTag.getIntOr(BOOST_TICKS, 0);
     }
 
     public static boolean isWearing(LivingEntity entity) {
@@ -45,8 +41,8 @@ public class FlyingFishBootsUtil {
 
     public static void tickFlyingFishBoots(LivingEntity fishy) {
         int boostTime = getBoostTicks(fishy);
-        if(boostTime <= 15 && fishy.isInWaterOrBubble() && !fishy.onGround()){
-            if(fishy.getFluidHeight(FluidTags.WATER) < 0.4F && com.github.alexthe666.alexsmobs.entity.AMEntityRegistry.getLivingJumping(fishy) &&( !(fishy instanceof Player) || !((Player) fishy).getAbilities().flying)){
+        if(boostTime <= 15 && AMEntityRegistry.isInWaterOrBubble(fishy) && !fishy.onGround()){
+            if(fishy.getFluidHeight(FluidTags.WATER) < 0.4F && (fishy.getDeltaMovement().y > 0.0D) /* TODO 1.21: jumping field is protected, using velocity check as workaround */ &&( !(fishy instanceof Player) || !((Player) fishy).getAbilities().flying)){
                 final RandomSource rand = fishy.getRandom();
                 boostTime = MIN_BOOST_TIME;
                 Vec3 forward = new Vec3(0, 0.0F, 0.5F + rand.nextFloat() * 1.2F).xRot(-fishy.getXRot() * Mth.DEG_TO_RAD).yRot(-fishy.getYHeadRot() * Mth.DEG_TO_RAD);
@@ -56,7 +52,7 @@ public class FlyingFishBootsUtil {
             }
         }
         if(boostTime > 0){
-            if(!fishy.isInWaterOrBubble() && !fishy.onGround()){
+            if(!AMEntityRegistry.isInWaterOrBubble(fishy) && !fishy.onGround()){
                 if(fishy.getDeltaMovement().y < 0){
                     fishy.setDeltaMovement(fishy.getDeltaMovement().multiply(1F, 0.75F, 1F));
                 }

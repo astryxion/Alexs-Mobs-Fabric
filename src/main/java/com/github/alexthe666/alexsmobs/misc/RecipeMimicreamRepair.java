@@ -2,61 +2,68 @@ package com.github.alexthe666.alexsmobs.misc;
 
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.NonNullList;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.Level;
-import net.minecraft.core.registries.Registries;
-
-import java.util.List;
 
 public class RecipeMimicreamRepair extends CustomRecipe {
+    public static final MapCodec<RecipeMimicreamRepair> MAP_CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
+            CraftingBookCategory.CODEC.optionalFieldOf("category", CraftingBookCategory.MISC).forGetter(RecipeMimicreamRepair::category)
+    ).apply(inst, RecipeMimicreamRepair::new));
+    public static final net.minecraft.network.codec.StreamCodec<RegistryFriendlyByteBuf, RecipeMimicreamRepair> STREAM_CODEC = ByteBufCodecs.fromCodecWithRegistries(MAP_CODEC.codec());
+
+    private final CraftingBookCategory category;
+
     public RecipeMimicreamRepair(CraftingBookCategory category) {
-        super(category);
+        super();
+        this.category = category;
     }
 
-    private static List<ItemStack> items(CraftingInput inv) {
-        return inv.items();
+    @Override
+    public CraftingBookCategory category() {
+        return this.category;
     }
 
     /**
      * Used to check if a recipe matches current crafting inventory
      */
-    @Override
-    public boolean matches(CraftingInput craftInput, Level worldIn) {
+    public boolean matches(CraftingInput inv, Level worldIn) {
         if (!AMConfig.mimicreamRepair) {
             return false;
         }
         ItemStack damageableStack = ItemStack.EMPTY;
         int mimicreamCount = 0;
-        List<ItemStack> items = items(craftInput);
-        for (int j = 0; j < items.size(); ++j) {
-            ItemStack itemstack1 = items.get(j);
+
+        for (int j = 0; j < inv.size(); ++j) {
+            ItemStack itemstack1 = inv.getItem(j);
             if (!itemstack1.isEmpty()) {
-                if (itemstack1.isDamageableItem() && !isBlacklisted(itemstack1, worldIn.registryAccess())) {
+                if (itemstack1.isDamageableItem() && !isBlacklisted(itemstack1)) {
                     damageableStack = itemstack1;
                 } else {
-                    if (itemstack1.is(AMItemRegistry.MIMICREAM)) {
+                    if (itemstack1.getItem() == AMItemRegistry.MIMICREAM) {
                         mimicreamCount++;
                     }
                 }
             }
         }
+
         return !damageableStack.isEmpty() && mimicreamCount >= 8;
     }
 
-    public boolean isBlacklisted(ItemStack stack, HolderLookup.Provider provider) {
-        ResourceLocation name = BuiltInRegistries.ITEM.getResourceKey(stack.getItem()).map(ResourceKey::location).orElse(null);
+    public boolean isBlacklisted(ItemStack stack) {
+        Identifier name = BuiltInRegistries.ITEM.getKey(stack.getItem());
         return name != null && AMConfig.mimicreamBlacklist.contains(name.toString());
     }
 
@@ -64,17 +71,17 @@ public class RecipeMimicreamRepair extends CustomRecipe {
      * Returns an Item that is the result of this recipe
      */
     @Override
-    public ItemStack assemble(CraftingInput craftInput, HolderLookup.Provider provider) {
+    public ItemStack assemble(CraftingInput inv) {
         ItemStack damageableStack = ItemStack.EMPTY;
         int mimicreamCount = 0;
-        List<ItemStack> items = items(craftInput);
-        for (int j = 0; j < items.size(); ++j) {
-            ItemStack itemstack1 = items.get(j);
+
+        for (int j = 0; j < inv.size(); ++j) {
+            ItemStack itemstack1 = inv.getItem(j);
             if (!itemstack1.isEmpty()) {
-                if (itemstack1.isDamageableItem() && !isBlacklisted(itemstack1, provider)) {
+                if (itemstack1.isDamageableItem() && !isBlacklisted(itemstack1)) {
                     damageableStack = itemstack1;
                 } else {
-                    if (itemstack1.is(AMItemRegistry.MIMICREAM)) {
+                    if (itemstack1.getItem() == AMItemRegistry.MIMICREAM) {
                         mimicreamCount++;
                     }
                 }
@@ -83,28 +90,22 @@ public class RecipeMimicreamRepair extends CustomRecipe {
 
         if (!damageableStack.isEmpty() && mimicreamCount >= 8) {
             ItemStack itemstack2 = damageableStack.copy();
-            CompoundTag compoundnbt = damageableStack.get(DataComponents.CUSTOM_DATA) != null
-                    ? damageableStack.get(DataComponents.CUSTOM_DATA).copyTag()
-                    : new CompoundTag();
 
-            if (damageableStack.is(AMItemRegistry.GHOSTLY_PICKAXE) && compoundnbt.contains("Items")) {
-                compoundnbt.remove("Items");
+            if (damageableStack.is(AMItemRegistry.GHOSTLY_PICKAXE)) {
+                itemstack2.remove(DataComponents.CONTAINER);
             }
-            ResourceLocation mendingName = Enchantments.MENDING.location();
-            if (mendingName != null && compoundnbt.contains("Enchantments", 9)) {
-                net.minecraft.nbt.ListTag oldNBTList = compoundnbt.getList("Enchantments", 10);
-                net.minecraft.nbt.ListTag newNBTList = new net.minecraft.nbt.ListTag();
-                for (int i = 0; i < oldNBTList.size(); ++i) {
-                    CompoundTag compoundnbt2 = oldNBTList.getCompound(i);
-                    ResourceLocation resourcelocation1 = ResourceLocation.tryParse(compoundnbt2.getString("id"));
-                    if (resourcelocation1 == null || !resourcelocation1.equals(mendingName)) {
-                        newNBTList.add(compoundnbt2);
-                    }
+
+            ItemEnchantments existing = itemstack2.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+            ItemEnchantments.Mutable withoutMending = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+            for (var e : existing.entrySet()) {
+                boolean isMending = e.getKey().unwrapKey().map(k -> k.equals(Enchantments.MENDING)).orElse(false);
+                if (!isMending) {
+                    withoutMending.set(e.getKey(), e.getIntValue());
                 }
-                compoundnbt.put("Enchantments", newNBTList);
             }
-            itemstack2.set(DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(compoundnbt));
-            itemstack2.setDamageValue(0);
+            itemstack2.set(DataComponents.ENCHANTMENTS, withoutMending.toImmutable());
+
+            itemstack2.setDamageValue(itemstack2.getMaxDamage());
             return itemstack2;
         } else {
             return ItemStack.EMPTY;
@@ -112,30 +113,13 @@ public class RecipeMimicreamRepair extends CustomRecipe {
     }
 
     @Override
-    public NonNullList<ItemStack> getRemainingItems(CraftingInput craftInput) {
-        List<ItemStack> items = items(craftInput);
-        NonNullList<ItemStack> nonnulllist = NonNullList.withSize(items.size(), ItemStack.EMPTY);
-        for (int i = 0; i < nonnulllist.size(); ++i) {
-            ItemStack itemstack = items.get(i);
-            net.minecraft.world.item.Item remItem = itemstack.getItem().getCraftingRemainingItem();
-            if (remItem != null && remItem != net.minecraft.world.item.Items.AIR) {
-                nonnulllist.set(i, new ItemStack(remItem, 1));
-            } else if (itemstack.isDamageableItem()) {
-                ItemStack itemstack1 = itemstack.copy();
-                itemstack1.setCount(1);
-                nonnulllist.set(i, itemstack1);
-                break;
-            }
-        }
-        return nonnulllist;
-    }
-
-    @Override
-    public RecipeSerializer<?> getSerializer() {
+    public RecipeSerializer<RecipeMimicreamRepair> getSerializer() {
         return AMRecipeRegistry.MIMICREAM_RECIPE;
     }
 
-    @Override
+    /**
+     * Used to determine if a recipe can fit in a grid of the given width/height
+     */
     public boolean canCraftInDimensions(int width, int height) {
         return width >= 3 && height >= 3;
     }

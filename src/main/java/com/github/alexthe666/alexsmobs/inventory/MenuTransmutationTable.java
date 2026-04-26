@@ -3,9 +3,9 @@ package com.github.alexthe666.alexsmobs.inventory;
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
-import com.github.alexthe666.alexsmobs.message.MessageTransmuteFromMenu;
+import com.github.alexthe666.alexsmobs.network.MessageTransmuteFromMenu;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityTransmutationTable;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,6 +15,7 @@ import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 
 public class MenuTransmutationTable extends AbstractContainerMenu {
     private final ContainerLevelAccess access;
@@ -41,7 +42,7 @@ public class MenuTransmutationTable extends AbstractContainerMenu {
         this.access = access;
         this.addSlot(transmuteSlot = new Slot(this.container, 0, 83, 83) {
             public boolean mayPlace(ItemStack stack) {
-                ResourceLocation name = BuiltInRegistries.ITEM.getKey(stack.getItem());
+                Identifier name = BuiltInRegistries.ITEM.getKey(stack.getItem());
                 return stack.getMaxStackSize() > 1 && (name == null || !AMConfig.transmutationBlacklist.contains(name.toString()));
             }
         });
@@ -104,7 +105,7 @@ public class MenuTransmutationTable extends AbstractContainerMenu {
     }
 
     public boolean clickMenuButton(Player player, int buttonId) {
-        if(player.level().isClientSide){
+        if(player.level().isClientSide()){
             AlexsMobs.sendMSGToServer(new MessageTransmuteFromMenu(player.getId(), buttonId));
         }
         return true;
@@ -116,7 +117,7 @@ public class MenuTransmutationTable extends AbstractContainerMenu {
         int cost = AMConfig.transmutingExperienceCost;
         ItemStack setTo = table.getPossibility(buttonId).copy();
         double divisible = from.getMaxStackSize() / (double)setTo.getMaxStackSize();
-        if(!player.level().isClientSide && table != null && divisible > 0 && table.hasPossibilities() && !from.isEmpty() && (player.experienceLevel >= cost || player.getAbilities().instabuild)){
+        if(!player.level().isClientSide() && table != null && divisible > 0 && table.hasPossibilities() && !from.isEmpty() && (player.experienceLevel >= cost || player.getAbilities().instabuild)){
             int newStackSize = (int)Math.floor(from.getCount() / divisible);
             setTo.setCount(Math.max(newStackSize, 1));
             transmuteSlot.set(setTo);

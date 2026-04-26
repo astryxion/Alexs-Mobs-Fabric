@@ -1,6 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
 import com.github.alexthe666.alexsmobs.entity.EntityBoneSerpent;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.FluidTags;
@@ -78,8 +79,8 @@ public class BoneSerpentAIMeleeJump extends JumpGoal {
         }
         LivingEntity target = this.dolphin.getTarget();
         if(target != null){
-            if(this.dolphin.distanceTo(target) < 3F && attackCooldown <= 0){
-                this.dolphin.doHurtTarget(target);
+            if (this.dolphin.distanceTo(target) < 3F && attackCooldown <= 0 && this.dolphin.level() instanceof ServerLevel serverLevel) {
+                this.dolphin.doHurtTarget(serverLevel, target);
                 attackCooldown = 20;
             }
         }

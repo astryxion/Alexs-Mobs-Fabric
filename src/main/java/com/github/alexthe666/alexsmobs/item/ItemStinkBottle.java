@@ -10,8 +10,8 @@ import net.minecraft.world.level.block.Block;
 
 public class ItemStinkBottle extends AMBlockItem {
 
-    public ItemStinkBottle(Block block, Item.Properties props) {
-        super(block, props);
+    public ItemStinkBottle(Block blockSupplier, Item.Properties props) {
+        super(blockSupplier, props);
     }
 
     public InteractionResult place(BlockPlaceContext context) {
@@ -25,8 +25,5 @@ public class ItemStinkBottle extends AMBlockItem {
             }
         }
         return result;
-    }
-    public String getDescriptionId() {
-        return this.getOrCreateDescriptionId();
     }
 }

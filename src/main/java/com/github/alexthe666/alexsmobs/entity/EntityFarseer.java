@@ -1,11 +1,14 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.EntityAINearestTarget3D;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
-import com.github.alexthe666.alexsmobs.message.MessageSendVisualFlagFromServer;
+import com.github.alexthe666.alexsmobs.network.MessageSendVisualFlagFromServer;
 import com.github.alexthe666.alexsmobs.misc.AMDamageTypes;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.citadel.animation.Animation;
@@ -24,7 +27,6 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
-import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
@@ -39,11 +41,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-
 import javax.annotation.Nullable;
 import java.util.EnumSet;
 
@@ -87,7 +89,7 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 70D).add(Attributes.ARMOR, 6.0D).add(Attributes.FLYING_SPEED, 0.5F).add(Attributes.ATTACK_DAMAGE, 4.5D).add(Attributes.MOVEMENT_SPEED, 0.35F);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.farseerSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -95,16 +97,17 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
         return true;
     }
 
-    public boolean causeFallDamage(float distance, float damageMultiplier) {
+    public boolean causeFallDamage(float distance, float damageMultiplier, net.minecraft.world.damagesource.DamageSource source) {
         return false;
     }
 
+    // checkFallDamage signature changed in 1.21
     protected void checkFallDamage(double y, boolean onGroundIn, BlockState state, BlockPos pos) {
     }
 
-    @Override
-    protected EntityDimensions getDefaultDimensions(Pose pose) {
-        return super.getDefaultDimensions(pose).withEyeHeight(super.getDefaultDimensions(pose).height() * 0.7F);
+    // @Override - getStandingEyeHeight signature changed in 1.21
+    protected float getStandingEyeHeight(Pose pose, EntityDimensions dimensions) {
+        return dimensions.height() * 0.7F;
     }
 
     @Override
@@ -112,7 +115,6 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
         FlyingPathNavigation flyingpathnavigation = new FlyingPathNavigation(this, level());
         flyingpathnavigation.setCanOpenDoors(false);
         flyingpathnavigation.setCanFloat(true);
-        flyingpathnavigation.setCanPassDoors(true);
         return flyingpathnavigation;
     }
 
@@ -127,14 +129,14 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
         this.targetSelector.addGoal(2, new EntityAINearestTarget3D(this, Player.class, 3, false, true, null));
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("Emerged", this.hasEmerged());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setHasEmerged(compound.getBoolean("Emerged"));
+        this.setHasEmerged(compound.getBooleanOr("Emerged", false));
     }
 
 
@@ -150,7 +152,7 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
         return AMSoundRegistry.FARSEER_HURT;
     }
 
-    public static boolean checkFarseerSpawnRules(EntityType<? extends Monster> animal, ServerLevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean checkFarseerSpawnRules(EntityType<? extends Monster> animal, ServerLevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         return worldIn.getDifficulty() != Difficulty.PEACEFUL && isDarkEnoughToSpawn(worldIn, pos, random) && isFarseerArea(worldIn, pos);
     }
 
@@ -158,7 +160,6 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
         return !AMConfig.restrictFarseerSpawns || iServerWorld.getWorldBorder().getDistanceToBorder(pos.getX(), pos.getZ()) < AMConfig.farseerBorderSpawnDistance;
     }
 
-    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(HAS_EMERGED, false);
@@ -200,7 +201,7 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
     public LivingEntity getLaserTarget() {
         if (!this.hasLaser()) {
             return null;
-        } else if (this.level().isClientSide) {
+        } else if (this.level().isClientSide()) {
             if (this.laserTargetEntity != null) {
                 return this.laserTargetEntity;
             } else {
@@ -290,7 +291,7 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
                 this.setInvisible(this.hasEffect(MobEffects.INVISIBILITY));
             }
             if (this.getAnimation() == ANIMATION_EMERGE) {
-                if(this.level().isClientSide){
+                if(this.level().isClientSide()){
                     this.level().addParticle(AMParticleRegistry.STATIC_SPARK, this.getRandomX(0.75F), this.getRandomY(), this.getRandomZ(0.75F), (this.getRandom().nextFloat() - 0.5F) * 0.2F, this.getRandom().nextFloat() * 0.2F, (this.getRandom().nextFloat() - 0.5F) * 0.2F);
                 }
                 if(this.getAnimationTick() == 1){
@@ -488,7 +489,7 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
     }
 
     public void travel(Vec3 vec3) {
-        if (this.isEffectiveAi() || this.isControlledByLocalInstance()) {
+        if (this.isEffectiveAi() || this.isLocalInstanceAuthoritative()) {
             if (this.isInWater()) {
                 this.moveRelative(0.02F, vec3);
                 this.move(MoverType.SELF, this.getDeltaMovement());
@@ -507,8 +508,9 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
         this.calculateEntityAnimation(false);
     }
 
-    public boolean isInvulnerableTo(DamageSource dmg) {
-        return super.isInvulnerableTo(dmg) || this.getAnimation() == ANIMATION_EMERGE;
+    @Override
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource dmg) {
+        return super.isInvulnerableTo(level, dmg) || this.getAnimation() == ANIMATION_EMERGE;
     }
 
     private static class RandomFlyGoal extends Goal {
@@ -634,7 +636,9 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
                         laserUseTime = 0;
                         if (canLaserHit) {
                             float healthTenth = target.getMaxHealth() * 0.1F;
-                            if(target.hurt(AMDamageTypes.causeFarseerDamage(EntityFarseer.this), random.nextInt(2) + Math.max(6, healthTenth)) && !target.isAlive()){
+                            if (EntityFarseer.this.level() instanceof ServerLevel serverLevel
+                                    && target.hurtServer(serverLevel, AMDamageTypes.causeFarseerDamage(EntityFarseer.this), random.nextInt(2) + Math.max(6, healthTenth))
+                                    && !target.isAlive()) {
                                 AlexsMobs.sendMSGToAll(new MessageSendVisualFlagFromServer(target.getId(), 87));
                             }
                             timeSinceLastSuccessfulAttack = 0;

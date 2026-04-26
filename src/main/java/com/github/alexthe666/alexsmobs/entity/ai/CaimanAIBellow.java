@@ -1,9 +1,10 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
+import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityCaiman;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
-import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.EnumSet;
@@ -20,7 +21,7 @@ public class CaimanAIBellow extends Goal {
 
     @Override
     public boolean canUse() {
-        return caiman.getTarget() == null && caiman.bellowCooldown <= 0 && caiman.isInWaterOrBubble() && !caiman.shouldFollow();
+        return caiman.getTarget() == null && caiman.bellowCooldown <= 0 && AMEntityRegistry.isInWaterOrBubble(caiman) && !caiman.shouldFollow();
     }
 
     @Override
@@ -35,7 +36,7 @@ public class CaimanAIBellow extends Goal {
     }
 
     public void tick(){
-        if(caiman.isInWaterOrBubble()){
+        if(AMEntityRegistry.isInWaterOrBubble(caiman)){
             final double d1 = caiman.getFluidHeight(FluidTags.WATER);
             caiman.getNavigation().stop();
             if(d1 > 0.3F){

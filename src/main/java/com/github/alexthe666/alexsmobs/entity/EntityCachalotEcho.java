@@ -1,24 +1,24 @@
 package com.github.alexthe666.alexsmobs.entity;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+// NetworkHooks removed in NeoForge 1.21
 
 import javax.annotation.Nullable;
 import java.util.UUID;
@@ -55,7 +55,6 @@ public class EntityCachalotEcho extends Entity {
         this.setPos(x, y, z);
         this.setDeltaMovement(p_i47274_8_, p_i47274_10_, p_i47274_12_);
     }
-
     protected static float lerpRotation(float p_234614_0_, float p_234614_1_) {
         while (p_234614_1_ - p_234614_0_ < -180.0F) {
             p_234614_0_ -= 360.0F;
@@ -84,9 +83,12 @@ public class EntityCachalotEcho extends Entity {
         this.entityData.set(FASTER_ANIM, anim);
     }
 
+    // getAddEntityPacket is no longer needed in 1.21
+    // public Packet<ClientGamePacketListener> getAddEntityPacket() {
+
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        return false;
     }
 
     public void tick() {
@@ -108,7 +110,7 @@ public class EntityCachalotEcho extends Entity {
                 whale.recieveEcho();
             }
         }
-        if (!playerLaunched && !this.level().isClientSide && !this.isInWaterOrBubble()) {
+        if (!playerLaunched && !this.level().isClientSide() && !AMEntityRegistry.isInWaterOrBubble(this)) {
             remove(RemovalReason.DISCARDED);
         }
         if (this.tickCount > 100) {
@@ -153,7 +155,7 @@ public class EntityCachalotEcho extends Entity {
                 this.remove(RemovalReason.DISCARDED);
                 echo.setReturning(true);
                 echo.shoot(d0, d1, d2, 1, 0);
-                if (!this.level().isClientSide) {
+                if (!this.level().isClientSide()) {
                     level().addFreshEntity(echo);
                 }
             }
@@ -161,7 +163,7 @@ public class EntityCachalotEcho extends Entity {
     }
 
     protected void onHitBlock(BlockHitResult p_230299_1_) {
-        if (!this.level().isClientSide && !playerLaunched) {
+        if (!this.level().isClientSide() && !playerLaunched) {
             this.remove(RemovalReason.DISCARDED);
         }
     }
@@ -190,26 +192,23 @@ public class EntityCachalotEcho extends Entity {
         }
     }
 
-    protected void addAdditionalSaveData(CompoundTag compound) {
-        if (this.ownerUUID != null) {
-            compound.putUUID("Owner", this.ownerUUID);
-        }
-
+    @Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        output.storeNullable("Owner", UUIDUtil.CODEC, this.ownerUUID);
         if (this.leftOwner) {
-            compound.putBoolean("LeftOwner", true);
+            output.putBoolean("LeftOwner", true);
         }
-        compound.putBoolean("Green", isGreen());
+        output.putBoolean("Green", isGreen());
     }
 
     /**
      * (abstract) Protected helper method to read subclass entity data from NBT.
      */
-    protected void readAdditionalSaveData(CompoundTag compound) {
-        if (compound.hasUUID("Owner")) {
-            this.ownerUUID = compound.getUUID("Owner");
-        }
-        this.setGreen(compound.getBoolean("Green"));
-        this.leftOwner = compound.getBoolean("LeftOwner");
+    @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        this.ownerUUID = input.read("Owner", UUIDUtil.CODEC).orElse(null);
+        this.setGreen(input.getBooleanOr("Green", false));
+        this.leftOwner = input.getBooleanOr("LeftOwner", false);
     }
 
     private boolean checkLeftOwner() {
@@ -275,7 +274,7 @@ public class EntityCachalotEcho extends Entity {
             this.setYRot((float) (Mth.atan2(x, z) * Mth.RAD_TO_DEG));
             this.xRotO = this.getXRot();
             this.yRotO = this.getYRot();
-            this.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+            this.snapTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
         }
 
     }

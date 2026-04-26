@@ -1,8 +1,9 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
+
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntitySculkBoomer;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -22,31 +23,41 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.gameevent.GameEventListener;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.redstone.Orientation;
 import org.jetbrains.annotations.Nullable;
 
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
+
 public class BlockSculkBoomer extends BaseEntityBlock {
-    public static final MapCodec<BlockSculkBoomer> CODEC = BlockBehaviour.simpleCodec(BlockSculkBoomer::new);
+
+    @Override
+    public MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
+    }
+
+    public static final MapCodec<BlockSculkBoomer> CODEC = simpleCodec(BlockSculkBoomer::new);
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final BooleanProperty OPEN = BooleanProperty.create("open");
 
-    public BlockSculkBoomer(BlockBehaviour.Properties properties) {
-        super(properties);
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLUE).strength(3.0F, 12.0F).sound(SoundType.SCULK_CATALYST);
+    }
+
+    protected BlockSculkBoomer(BlockBehaviour.Properties props) {
+        super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(OPEN, false).setValue(POWERED, false));
     }
 
     @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
-    }
-
-    public void neighborChanged(BlockState state, Level worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
-        if(!worldIn.isClientSide){
+    public void neighborChanged(BlockState state, Level worldIn, BlockPos pos, Block blockIn, @Nullable Orientation orientation, boolean isMoving) {
+        if (!worldIn.isClientSide()) {
             this.updateState(state, worldIn, pos, blockIn);
         }
+        super.neighborChanged(state, worldIn, pos, blockIn, orientation, isMoving);
     }
 
     public void randomTick(BlockState state, ServerLevel worldIn, BlockPos pos, RandomSource random) {
-        if(!worldIn.isClientSide){
+        if (!worldIn.isClientSide()) {
             this.updateState(state, worldIn, pos, state.getBlock());
         }
     }
@@ -57,7 +68,7 @@ public class BlockSculkBoomer extends BaseEntityBlock {
 
         if (flag1 != flag) {
             worldIn.setBlock(pos, state.setValue(POWERED, Boolean.valueOf(flag1)), 3);
-            worldIn.updateNeighborsAt(pos.below(), this);
+            worldIn.updateNeighborsAt(pos.below(), this, (Orientation) null);
         }
     }
 

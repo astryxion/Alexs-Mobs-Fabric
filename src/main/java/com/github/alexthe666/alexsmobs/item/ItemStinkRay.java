@@ -1,20 +1,23 @@
 package com.github.alexthe666.alexsmobs.item;
 
+import net.minecraft.world.entity.EquipmentSlot;
+
 import com.github.alexthe666.alexsmobs.entity.EntityFart;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.UseAnim;
+import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
+
 import java.util.function.Predicate;
 
 public class ItemStinkRay extends Item {
@@ -27,12 +30,12 @@ public class ItemStinkRay extends Item {
         super(properties);
     }
 
-    public int getUseDuration(ItemStack stack) {
+    public int getUseDuration(ItemStack stack, LivingEntity entity) {
         return isUsable(stack) ? 72000 : 0;
     }
 
-    public UseAnim getUseAnimation(ItemStack stack) {
-        return UseAnim.BOW;
+    public ItemUseAnimation getUseAnimation(ItemStack stack) {
+        return ItemUseAnimation.CROSSBOW;
     }
 
     public static boolean isUsable(ItemStack stack) {
@@ -54,9 +57,9 @@ public class ItemStinkRay extends Item {
         return f;
     }
 
-    public void releaseUsing(ItemStack itemStack, Level level, LivingEntity entity, int time) {
+    public boolean releaseUsing(ItemStack itemStack, Level level, LivingEntity entity, int time) {
         if (entity instanceof Player player && isUsable(itemStack)) {
-            int i = this.getUseDuration(itemStack) - time;
+            int i = this.getUseDuration(itemStack, entity) - time;
             if (i >= 10) {
                 boolean left = false;
                 if (entity.getUsedItemHand() == InteractionHand.OFF_HAND && entity.getMainArm() == HumanoidArm.RIGHT || entity.getUsedItemHand() == InteractionHand.MAIN_HAND && entity.getMainArm() == HumanoidArm.LEFT) {
@@ -68,19 +71,21 @@ public class ItemStinkRay extends Item {
                 entity.gameEvent(GameEvent.ITEM_INTERACT_START);
                 entity.playSound(AMSoundRegistry.STINK_RAY, 1.0F, 0.9F + (rand.nextFloat() - rand.nextFloat()) * 0.2F);
                 blood.shoot((double) vector3d.x(), (double) vector3d.y(), (double) vector3d.z(), 0.2F + getPowerForTime(i) * 0.4F, 10);
-                if (!level.isClientSide) {
+                if (!level.isClientSide()) {
                     level.addFreshEntity(blood);
                 }
-                itemStack.hurtAndBreak(1, entity, entity.getUsedItemHand() == net.minecraft.world.InteractionHand.MAIN_HAND ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND);
+                EquipmentSlot breakSlot = entity.getUsedItemHand() == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND;
+                itemStack.hurtAndBreak(1, entity, breakSlot);
 
             }
 
         }
+        return true;
     }
 
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
+    public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
         ItemStack itemstack = playerIn.getItemInHand(handIn);
         playerIn.startUsingItem(handIn);
         if (!isUsable(itemstack)) {
@@ -98,7 +103,7 @@ public class ItemStinkRay extends Item {
                 itemstack.setDamageValue(0);
             }
         }
-        return InteractionResultHolder.consume(itemstack);
+        return InteractionResult.CONSUME;
     }
 
     public ItemStack findAmmo(Player entity) {

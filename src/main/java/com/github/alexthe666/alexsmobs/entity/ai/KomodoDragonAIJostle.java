@@ -1,6 +1,9 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
 import com.github.alexthe666.alexsmobs.entity.EntityKomodoDragon;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntitySelector;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.level.Level;
@@ -115,7 +118,7 @@ public class KomodoDragonAIJostle  extends Goal {
                 this.komodo.jostleTimer++;
                 this.targetKomodoDragon.jostleTimer++;
                 if(this.komodo.jostleTimer > 500 || y > 2.0F){
-                    komodo.hasImpulse = true;
+                    komodo.needsSync = true;
                     if(komodo.onGround()){
                         komodo.pushBackJostling(targetKomodoDragon, 0.4F);
                     }
@@ -142,7 +145,13 @@ public class KomodoDragonAIJostle  extends Goal {
 
     @Nullable
     private EntityKomodoDragon getNearbyKomodoDragon() {
-        List<EntityKomodoDragon> komodoDragons = this.world.getNearbyEntities(EntityKomodoDragon.class, JOSTLE_PREDICATE, this.komodo, this.komodo.getBoundingBox().inflate(16.0D));
+        if (!(this.world instanceof ServerLevel serverLevel)) {
+            return null;
+        }
+        List<EntityKomodoDragon> komodoDragons = this.world.getEntitiesOfClass(
+                EntityKomodoDragon.class,
+                this.komodo.getBoundingBox().inflate(16.0D),
+                EntitySelector.NO_SPECTATORS.and(m -> JOSTLE_PREDICATE.test(serverLevel, this.komodo, (LivingEntity) m)));
         double lvt_2_1_ = 1.7976931348623157E308D;
         EntityKomodoDragon lvt_4_1_ = null;
         Iterator var5 = komodoDragons.iterator();

@@ -4,23 +4,22 @@ import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.block.BlockCapsid;
 import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityEnderiophage;
-import com.github.alexthe666.alexsmobs.message.MessageUpdateCapsid;
+import com.github.alexthe666.alexsmobs.network.MessageUpdateCapsid;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.CapsidRecipe;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.phys.Vec3;
-import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.Containers;
 import net.minecraft.world.WorldlyContainer;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -33,6 +32,8 @@ import net.minecraft.world.level.block.EndRodBlock;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import javax.annotation.Nullable;
 import java.util.Random;
@@ -56,13 +57,13 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
     }
 
     @Override
-    public void setItems(NonNullList<ItemStack> items) {
-        this.stacks = items;
-    }
-
-    @Override
-    public NonNullList<ItemStack> getItems() {
-        return this.stacks;
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        Level blockLevel = this.getLevel();
+        if (blockLevel != null) {
+            Containers.dropContents(blockLevel, this.worldPosition, this);
+            blockLevel.updateNeighbourForOutputSignal(this.worldPosition, state.getBlock());
+        }
+        super.preRemoveSideEffects(pos, state);
     }
 
     public static void commonTick(Level level, BlockPos pos, BlockState state, TileEntityCapsid entity) {
@@ -70,18 +71,37 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
     }
 
     public void tick() {
+        Level level = this.getLevel();
+        if (level == null) {
+            return;
+        }
         prevFloatUpProgress = floatUpProgress;
         prevYawSwitchProgress = yawSwitchProgress;
         ticksExisted++;
         vibratingThisTick = false;
         if (!this.getItem(0).isEmpty()) {
             BlockEntity up = level.getBlockEntity(this.worldPosition.above());
-            if (up instanceof Container container) {
+            if (up instanceof Container) {
                 if (floatUpProgress >= 1) {
+                    // Try to insert item into container above
+                    Container containerAbove = (Container) up;
                     ItemStack toInsert = this.getItem(0).copy();
-                    ItemStack remainder = insertItemIntoContainer(container, toInsert);
-                    if (remainder.getCount() < this.getItem(0).getCount()) {
-                        this.setItem(0, remainder.isEmpty() ? ItemStack.EMPTY : remainder);
+                    boolean inserted = false;
+                    for (int i = 0; i < containerAbove.getContainerSize() && !toInsert.isEmpty(); i++) {
+                        ItemStack slotStack = containerAbove.getItem(i);
+                        if (slotStack.isEmpty()) {
+                            containerAbove.setItem(i, toInsert.copy());
+                            toInsert = ItemStack.EMPTY;
+                            inserted = true;
+                        } else if (ItemStack.isSameItemSameComponents(slotStack, toInsert) && slotStack.getCount() < slotStack.getMaxStackSize()) {
+                            int canAdd = Math.min(toInsert.getCount(), slotStack.getMaxStackSize() - slotStack.getCount());
+                            slotStack.grow(canAdd);
+                            toInsert.shrink(canAdd);
+                            inserted = true;
+                        }
+                    }
+                    if (inserted && toInsert.isEmpty()) {
+                        this.setItem(0, ItemStack.EMPTY);
                     }
                     yawTarget = 0F;
                     floatUpProgress = 0F;
@@ -106,12 +126,12 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
                 vibratingThisTick = true;
                 if(transformTime > 20){
                     this.setItem(0, ItemStack.EMPTY);
-                    this.level.destroyBlock(this.getBlockPos(), false);
-                    this.level.destroyBlock(this.getBlockPos().below(), false);
-                    EntityEnderiophage phage = AMEntityRegistry.ENDERIOPHAGE.create(level);
+                    level.destroyBlock(this.getBlockPos(), false);
+                    level.destroyBlock(this.getBlockPos().below(), false);
+                    EntityEnderiophage phage = AMEntityRegistry.ENDERIOPHAGE.create(level, EntitySpawnReason.TRIGGERED);
                     phage.setPos(this.getBlockPos().getX() + 0.5F, this.getBlockPos().getY() - 1.0F, this.getBlockPos().getZ() + 0.5F);
                     phage.setVariant(0);
-                    if(!level.isClientSide){
+                    if(!level.isClientSide()){
                         level.addFreshEntity(phage);
                     }
                 }
@@ -128,8 +148,8 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
                         current.shrink(1);
                         fnaf = false;
                         if(!current.isEmpty()){
-                            ItemEntity itemEntity = new ItemEntity(this.level, this.getBlockPos().getX() + 0.5F, this.getBlockPos().getY() + 0.5F, this.getBlockPos().getZ() + 0.5F, current);
-                            if(!level.isClientSide){
+                            ItemEntity itemEntity = new ItemEntity(level, this.getBlockPos().getX() + 0.5F, this.getBlockPos().getY() + 0.5F, this.getBlockPos().getZ() + 0.5F, current);
+                            if(!level.isClientSide()){
                                 level.addFreshEntity(itemEntity);
                             }
                         }
@@ -145,12 +165,22 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
         }
     }
     public net.minecraft.world.phys.AABB getRenderBoundingBox() {
-        return new net.minecraft.world.phys.AABB(Vec3.atLowerCornerOf(worldPosition), Vec3.atLowerCornerOf(worldPosition.offset(1, 2, 1)));
+        return new net.minecraft.world.phys.AABB(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), worldPosition.getX() + 1, 2, 1);
     }
 
     @Override
     public int getContainerSize() {
         return this.stacks.size();
+    }
+
+    @Override
+    protected NonNullList<ItemStack> getItems() {
+        return this.stacks;
+    }
+
+    @Override
+    protected void setItems(NonNullList<ItemStack> items) {
+        this.stacks = items;
     }
 
     @Override
@@ -193,37 +223,29 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
 
     @Override
     public void setItem(int index, ItemStack stack) {
-        boolean flag = !stack.isEmpty() && ItemStack.isSameItemSameComponents(stack, this.stacks.get(index));
+        boolean flag = !stack.isEmpty() && ItemStack.matches(stack, this.stacks.get(index));
         this.stacks.set(index, stack);
         if (!stack.isEmpty() && stack.getCount() > this.getMaxStackSize()) {
             stack.setCount(this.getMaxStackSize());
         }
         lastRecipe = AlexsMobs.PROXY.getCapsidRecipeManager().getRecipeFor(stack);
-        this.setChanged();
-        if (!level.isClientSide) {
+        Level blockLevel = this.getLevel();
+        if (blockLevel != null && !blockLevel.isClientSide()) {
             AlexsMobs.sendMSGToAll(new MessageUpdateCapsid(this.getBlockPos().asLong(), stacks.get(0)));
         }
     }
 
     @Override
-    protected void loadAdditional(CompoundTag compound, HolderLookup.Provider registries) {
-        super.loadAdditional(compound, registries);
+    protected void loadAdditional(ValueInput compound) {
+        super.loadAdditional(compound);
         this.stacks = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY);
-        ContainerHelper.loadAllItems(compound, this.stacks, registries);
+        ContainerHelper.loadAllItems(compound, this.stacks);
     }
 
     @Override
-    protected void saveAdditional(CompoundTag compound, HolderLookup.Provider registries) {
-        super.saveAdditional(compound, registries);
-        ContainerHelper.saveAllItems(compound, this.stacks, registries);
-    }
-
-    @Override
-    public void startOpen(Player player) {
-    }
-
-    @Override
-    public void stopOpen(Player player) {
+    protected void saveAdditional(ValueOutput compound) {
+        super.saveAdditional(compound);
+        ContainerHelper.saveAllItems(compound, this.stacks);
     }
 
     @Override
@@ -271,16 +293,14 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
-        if (packet != null && packet.getTag() != null && level != null) {
-            this.stacks = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY);
-            ContainerHelper.loadAllItems(packet.getTag(), this.stacks, level.registryAccess());
-        }
+    public void onDataPacket(net.minecraft.network.Connection net, ValueInput valueInput) {
+        this.stacks = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(valueInput, this.stacks);
     }
 
     @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        return saveWithoutMetadata(registries);
+    public CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
+        return this.saveWithoutMetadata(registries);
     }
 
     @Override
@@ -327,24 +347,4 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
         return 0.0F;
     }
 
-    /** Fabric: 1:1 replacement for IItemHandler insert; inserts into vanilla Container and returns remainder. */
-    private static ItemStack insertItemIntoContainer(Container container, ItemStack stack) {
-        ItemStack remainder = stack.copy();
-        for (int i = 0; i < container.getContainerSize() && !remainder.isEmpty(); i++) {
-            if (!container.canPlaceItem(i, remainder)) continue;
-            ItemStack inSlot = container.getItem(i);
-            if (inSlot.isEmpty()) {
-                int toAdd = Math.min(remainder.getCount(), container.getMaxStackSize());
-                container.setItem(i, remainder.split(toAdd));
-            } else if (ItemStack.isSameItemSameComponents(inSlot, remainder)) {
-                int toAdd = Math.min(remainder.getCount(), container.getMaxStackSize() - inSlot.getCount());
-                if (toAdd > 0) {
-                    inSlot.grow(toAdd);
-                    remainder.shrink(toAdd);
-                    container.setItem(i, inSlot);
-                }
-            }
-        }
-        return remainder;
-    }
 }

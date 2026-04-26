@@ -1,45 +1,41 @@
 package com.github.alexthe666.alexsmobs.misc;
 
+import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.advancements.critereon.*;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.advancements.Criterion;
+import net.minecraft.advancements.criterion.ContextAwarePredicate;
+import net.minecraft.advancements.criterion.EntityPredicate;
+import net.minecraft.advancements.criterion.SimpleCriterionTrigger;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Optional;
 
-public class AMAdvancementTrigger extends SimpleCriterionTrigger<AMAdvancementTrigger.Instance> {
-    public final ResourceLocation resourceLocation;
-
-    public AMAdvancementTrigger(ResourceLocation resourceLocation) {
-        this.resourceLocation = resourceLocation;
-    }
+/**
+ * Simple advancement trigger for Alex's Mobs
+ * Updated for 1.21.1 advancement API
+ */
+public class AMAdvancementTrigger extends SimpleCriterionTrigger<AMAdvancementTrigger.TriggerInstance> {
 
     @Override
-    public Codec<Instance> codec() {
-        return RecordCodecBuilder.create(inst -> inst.group(
-                ContextAwarePredicate.CODEC.optionalFieldOf("player").forGetter(Instance::player)
-        ).apply(inst, Instance::new));
+    public Codec<TriggerInstance> codec() {
+        return TriggerInstance.CODEC;
     }
 
     public void trigger(ServerPlayer player) {
-        this.trigger(player, instance -> true);
+        AlexsMobs.LOGGER.info("AMAdvancementTrigger.trigger() called for player: {}", player.getName().getString());
+        this.trigger(player, (instance) -> true);
     }
 
-    public static class Instance implements SimpleCriterionTrigger.SimpleInstance {
-        private final Optional<ContextAwarePredicate> player;
+    public record TriggerInstance(Optional<ContextAwarePredicate> player) implements SimpleInstance {
+        public static final Codec<TriggerInstance> CODEC = RecordCodecBuilder.create(
+            instance -> instance.group(
+                EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(TriggerInstance::player)
+            ).apply(instance, TriggerInstance::new)
+        );
 
-        public Instance(Optional<ContextAwarePredicate> player) {
-            this.player = player;
-        }
-
-        public Instance(ContextAwarePredicate player) {
-            this(Optional.of(player));
-        }
-
-        @Override
-        public Optional<ContextAwarePredicate> player() {
-            return player;
+        public static Criterion<TriggerInstance> instance() {
+            return new AMAdvancementTrigger().createCriterion(new TriggerInstance(Optional.empty()));
         }
     }
 }

@@ -1,8 +1,0 @@
-{
-  "__comment": "Will eat when on the ground",
-  "replace": false,
-  "values": [
-    "minecraft:chorus_fruit",
-    "minecraft:chorus_flower"
-  ]
-}

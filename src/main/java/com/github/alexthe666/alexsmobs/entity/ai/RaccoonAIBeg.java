@@ -1,6 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
 import com.github.alexthe666.alexsmobs.entity.EntityRaccoon;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
@@ -26,10 +27,13 @@ public class RaccoonAIBeg extends Goal {
             --this.delayTemptCounter;
             return false;
         } else {
-            if(!this.raccoon.getMainHandItem().isEmpty()){
+            if (!this.raccoon.getMainHandItem().isEmpty()) {
                 return false;
             }
-            this.closestPlayer = this.raccoon.level().getNearestPlayer(ENTITY_PREDICATE, this.raccoon);
+            if (!(this.raccoon.level() instanceof ServerLevel serverLevel)) {
+                return false;
+            }
+            this.closestPlayer = serverLevel.getNearestPlayer(ENTITY_PREDICATE, this.raccoon);
             if (this.closestPlayer == null) {
                 return false;
             } else {

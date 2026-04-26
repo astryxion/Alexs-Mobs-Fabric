@@ -22,7 +22,7 @@ import net.minecraft.world.entity.ai.goal.TryFindWaterGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.util.DefaultRandomPos;
-import net.minecraft.world.entity.animal.WaterAnimal;
+import net.minecraft.world.entity.animal.fish.WaterAnimal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -39,6 +39,8 @@ public class EntitySeaBear extends WaterAnimal implements IAnimatedEntity {
     public static final Animation ANIMATION_POINT = Animation.create(25);
     public float prevOnLandProgress;
     public float onLandProgress;
+    /** Used with {@link #ANIMATION_POINT} for body/head alignment (field removed from vanilla entity hierarchy in 26.x). */
+    public float rotOffs;
     public int circleCooldown = 0;
     private int animationTick;
     private Animation currentAnimation;
@@ -99,7 +101,7 @@ public class EntitySeaBear extends WaterAnimal implements IAnimatedEntity {
                 return super.canContinueToUse() && EntitySeaBear.this.getAnimation() == NO_ANIMATION;
             }
         });
-        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal(this, LivingEntity.class, false, SOMBRERO));
+        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal(this, LivingEntity.class, false, AMEntityRegistry.toSelector(SOMBRERO)));
     }
 
     public void tick() {
@@ -118,7 +120,7 @@ public class EntitySeaBear extends WaterAnimal implements IAnimatedEntity {
             this.setDeltaMovement(this.getDeltaMovement().add((this.random.nextFloat() * 2.0F - 1.0F) * 0.2F, 0.5D, (this.random.nextFloat() * 2.0F - 1.0F) * 0.2F));
             this.setYRot(this.random.nextFloat() * 360.0F);
             this.setOnGround(false);
-            this.hasImpulse = true;
+            this.needsSync = true;
         }
         if (circleCooldown > 0) {
             circleCooldown--;
@@ -211,7 +213,7 @@ public class EntitySeaBear extends WaterAnimal implements IAnimatedEntity {
 
         @Override
         public boolean canUse() {
-            return EntitySeaBear.this.getTarget() != null && EntitySeaBear.this.getTarget().isInWaterOrBubble() && EntitySeaBear.this.getTarget().isAlive() && (EntitySeaBear.this.circleCooldown == 0 || EntitySeaBear.this.getAnimation() == ANIMATION_POINT);
+            return EntitySeaBear.this.getTarget() != null && AMEntityRegistry.isInWaterOrBubble(EntitySeaBear.this.getTarget()) && EntitySeaBear.this.getTarget().isAlive() && (EntitySeaBear.this.circleCooldown == 0 || EntitySeaBear.this.getAnimation() == ANIMATION_POINT);
         }
 
         public void tick() {

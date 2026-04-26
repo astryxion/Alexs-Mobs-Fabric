@@ -11,9 +11,7 @@ import com.github.alexthe666.alexsmobs.tileentity.TileEntityLeafcutterAnthill;
 import com.github.alexthe666.citadel.animation.IAnimatedEntity;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.ai.goal.MoveToBlockGoal;
@@ -34,7 +32,7 @@ import java.util.List;
 
 public class AnteaterAIRaidNest extends MoveToBlockGoal {
 
-    public static final ResourceKey<net.minecraft.world.level.storage.loot.LootTable> ANTEATER_REWARD = ResourceKey.create(Registries.LOOT_TABLE, ResourceLocation.fromNamespaceAndPath("alexsmobs", "gameplay/anteater_reward"));
+    public static final Identifier ANTEATER_REWARD = Identifier.fromNamespaceAndPath("alexsmobs", "gameplay/anteater_reward");
     private final EntityAnteater anteater;
     private int idleAtHiveTime = 0;
     private boolean isAboveDestinationAnteater;
@@ -47,16 +45,16 @@ public class AnteaterAIRaidNest extends MoveToBlockGoal {
     }
 
     private static List<ItemStack> getItemStacks(EntityAnteater anteater) {
-        LootTable loottable = anteater.level().getServer().reloadableRegistries().getLootTable(ANTEATER_REWARD);
-        return loottable.getRandomItems((new LootParams.Builder((ServerLevel) anteater.level())).withParameter(LootContextParams.THIS_ENTITY, anteater).create(LootContextParamSets.PIGLIN_BARTER), anteater.getRandom());
+        LootTable loottable = anteater.level().getServer().reloadableRegistries().getLootTable(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, ANTEATER_REWARD));
+        return loottable.getRandomItems((new LootParams.Builder((ServerLevel) anteater.level())).withParameter(LootContextParams.THIS_ENTITY, anteater).create(LootContextParamSets.PIGLIN_BARTER));
     }
 
     private void dropDigItems(){
         List<ItemStack> lootList = getItemStacks(anteater);
         if (lootList.size() > 0) {
             for (ItemStack stack : lootList) {
-                ItemEntity e = this.anteater.spawnAtLocation(stack.copy());
-                e.hasImpulse = true;
+                ItemEntity e = this.anteater.spawnAtLocation((ServerLevel) this.anteater.level(), stack.copy());
+                e.needsSync = true;
                 e.setDeltaMovement(e.getDeltaMovement().multiply(0.2, 0.2, 0.2));
             }
         }
@@ -134,7 +132,7 @@ public class AnteaterAIRaidNest extends MoveToBlockGoal {
     }
 
     private void breakHiveEffect(){
-        if (anteater.level().getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING)) {
+        if (this.anteater.level() instanceof ServerLevel serverLevel && serverLevel.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
             BlockState blockstate = anteater.level().getBlockState(this.blockPos);
             if (blockstate.is(AMBlockRegistry.LEAFCUTTER_ANTHILL)) {
                 if (anteater.level().getBlockEntity(this.blockPos) instanceof TileEntityLeafcutterAnthill) {
@@ -154,7 +152,7 @@ public class AnteaterAIRaidNest extends MoveToBlockGoal {
     }
 
     private void eatHive() {
-        if (anteater.level().getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING)) {
+        if (this.anteater.level() instanceof ServerLevel griefLevel && griefLevel.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
             BlockState blockstate = anteater.level().getBlockState(this.blockPos);
             if (blockstate.is(AMBlockRegistry.LEAFCUTTER_ANTHILL)) {
                 if (anteater.level().getBlockEntity(this.blockPos) instanceof TileEntityLeafcutterAnthill) {

@@ -4,7 +4,7 @@ import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -21,12 +21,12 @@ public class ItemMaraca extends Item {
         super(property);
     }
 
-    public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
+    public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
         ItemStack itemstack = playerIn.getItemInHand(handIn);
         playerIn.gameEvent(GameEvent.ITEM_INTERACT_START);
         worldIn.playSound(null, playerIn.getX(), playerIn.getY(), playerIn.getZ(), AMSoundRegistry.MARACA, SoundSource.PLAYERS, 0.5F, (random.nextFloat() * 0.4F + 0.8F));
-        playerIn.getCooldowns().addCooldown(this, 3);
+        playerIn.getCooldowns().addCooldown(itemstack, 3);
         playerIn.awardStat(Stats.ITEM_USED.get(this));
-        return InteractionResultHolder.success(itemstack);
+        return InteractionResult.SUCCESS;
     }
 }

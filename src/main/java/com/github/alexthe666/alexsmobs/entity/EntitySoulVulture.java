@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.DirectPathNavigator;
 import com.github.alexthe666.alexsmobs.entity.ai.EntityAINearestTarget3D;
@@ -13,18 +16,16 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.MobSpawnType;
-import com.github.alexthe666.alexsmobs.entity.MobType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
@@ -35,13 +36,14 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.animal.FlyingAnimal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
-import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -50,10 +52,11 @@ import javax.annotation.Nullable;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Random;
-
 public class EntitySoulVulture extends Monster implements FlyingAnimal {
 
-    public static final ResourceKey<LootTable> SOUL_LOOT = ResourceKey.create(Registries.LOOT_TABLE, ResourceLocation.fromNamespaceAndPath("alexsmobs", "entities/soul_vulture_heart"));
+    public static final ResourceKey<LootTable> SOUL_LOOT =
+        ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE,
+            Identifier.fromNamespaceAndPath("alexsmobs", "entities/soul_vulture_heart"));
     private static final EntityDataAccessor<Boolean> FLYING = SynchedEntityData.defineId(EntitySoulVulture.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> TACKLING = SynchedEntityData.defineId(EntitySoulVulture.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Optional<BlockPos>> PERCH_POS = SynchedEntityData.defineId(EntitySoulVulture.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
@@ -73,18 +76,22 @@ public class EntitySoulVulture extends Monster implements FlyingAnimal {
     }
 
     @Override
-    protected ResourceKey<LootTable> getDefaultLootTable() {
-        return hasSoulHeart() ? SOUL_LOOT : super.getDefaultLootTable();
+    protected void dropFromLootTable(ServerLevel level, DamageSource source, boolean playerKilled) {
+        if (this.hasSoulHeart()) {
+            this.dropFromLootTable(level, source, playerKilled, SOUL_LOOT);
+        } else {
+            super.dropFromLootTable(level, source, playerKilled);
+        }
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.soulVultureSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static boolean canVultureSpawn(EntityType<? extends Mob> typeIn, ServerLevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource randomIn) {
+    public static boolean canVultureSpawn(EntityType<? extends Mob> typeIn, ServerLevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource randomIn) {
         BlockPos blockpos = pos.below();
         boolean spawnBlock = worldIn.getBlockState(blockpos).is(AMTagRegistry.SOUL_VULTURE_SPAWNS);
-        return reason == MobSpawnType.SPAWNER || spawnBlock && checkMobSpawnRules(AMEntityRegistry.SOUL_VULTURE, worldIn, reason, pos, randomIn);
+        return reason == EntitySpawnReason.SPAWNER || spawnBlock && checkMobSpawnRules(AMEntityRegistry.SOUL_VULTURE, worldIn, reason, pos, randomIn);
     }
 
     protected SoundEvent getAmbientSound() {
@@ -104,7 +111,7 @@ public class EntitySoulVulture extends Monster implements FlyingAnimal {
     }
 
     public boolean isPerchBlock(BlockPos pos, BlockState state) {
-        return level().isEmptyBlock(pos.above()) && level().isEmptyBlock(pos.above(2)) && state.is(AMTagRegistry.SOUL_VULTURE_PERCHES);
+        return level().getBlockState(pos.above()).isAir() && level().getBlockState(pos.above(2)).isAir() && state.is(AMTagRegistry.SOUL_VULTURE_PERCHES);
     }
 
     protected void registerGoals() {
@@ -144,11 +151,11 @@ public class EntitySoulVulture extends Monster implements FlyingAnimal {
         super.defineSynchedData(builder);
         builder.define(FLYING, false);
         builder.define(TACKLING, false);
-        builder.define(PERCH_POS, Optional.<BlockPos>empty());
+        builder.define(PERCH_POS, Optional.empty());
         builder.define(SOUL_LEVEL, 0);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("Flying", this.isFlying());
         if(this.getPerchPos() != null){
@@ -160,13 +167,13 @@ public class EntitySoulVulture extends Monster implements FlyingAnimal {
         compound.putInt("LandingCooldown", landingCooldown);
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setFlying(compound.getBoolean("Flying"));
-        this.setSoulLevel(compound.getInt("SoulLevel"));
-        this.landingCooldown = compound.getInt("LandingCooldown");
-        if(compound.contains("PerchX") && compound.contains("PerchY") && compound.contains("PerchZ")){
-            this.setPerchPos(new BlockPos(compound.getInt("PerchX"), compound.getInt("PerchY"), compound.getInt("PerchZ")));
+        this.setFlying(compound.getBooleanOr("Flying", false));
+        this.setSoulLevel(compound.getIntOr("SoulLevel", 0));
+        this.landingCooldown = compound.getIntOr("LandingCooldown", 0);
+        if (compound.getInt("PerchX").isPresent() && compound.getInt("PerchY").isPresent() && compound.getInt("PerchZ").isPresent()) {
+            this.setPerchPos(new BlockPos(compound.getIntOr("PerchX", 0), compound.getIntOr("PerchY", 0), compound.getIntOr("PerchZ", 0)));
         }
     }
 
@@ -206,7 +213,7 @@ public class EntitySoulVulture extends Monster implements FlyingAnimal {
         super.tick();
         this.prevTackleProgress = tackleProgress;
         this.prevFlyProgress = flyProgress;
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if(perchSearchCooldown > 0){
                 perchSearchCooldown--;
             }
@@ -266,7 +273,7 @@ public class EntitySoulVulture extends Monster implements FlyingAnimal {
         } else {
             this.setNoGravity(false);
         }
-        if (this.level().isClientSide  && hasSoulHeart()) {
+        if (this.level().isClientSide()  && hasSoulHeart()) {
             final float radius = 0.25F + random.nextFloat() * 1F;
             final float fly = this.flyProgress * 0.2F;
             final float wingSpread = 15F + 65 * fly + random.nextInt(5);
@@ -562,7 +569,7 @@ public class EntitySoulVulture extends Monster implements FlyingAnimal {
                 if (vulture.getBoundingBox().inflate(0.3F, 0.3F, 0.3F).intersects(vulture.getTarget().getBoundingBox()) && vulture.tackleCooldown == 0) {
                     tackleCooldown = 100 + random.nextInt(200);
                     float dmg = (float) vulture.getAttribute(Attributes.ATTACK_DAMAGE).getValue();
-                    if(vulture.getTarget().hurt(vulture.damageSources().mobAttack(vulture), dmg)){
+                    if (vulture.level() instanceof ServerLevel serverLevel && vulture.getTarget().hurtServer(serverLevel, vulture.damageSources().mobAttack(vulture), dmg)) {
                         if(vulture.getHealth() < vulture.getMaxHealth() - dmg && vulture.getSoulLevel() < 5){
                             this.vulture.setSoulLevel(vulture.getSoulLevel() + 1);
                             this.vulture.heal(dmg);

@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.entity.ai.EntityAINearestTarget3D;
@@ -28,7 +31,6 @@ import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.*;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
@@ -37,10 +39,11 @@ import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
-import net.minecraft.world.entity.monster.Drowned;
+import net.minecraft.world.entity.monster.zombie.Drowned;
 import net.minecraft.world.entity.monster.Guardian;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -84,7 +87,7 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
         return !this.isTame();
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.orcaSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -153,7 +156,7 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
         this.goalSelector.addGoal(5, new OrcaAIJump(this, 10));
         this.goalSelector.addGoal(6, new OrcaAIMeleeJump(this));
         this.goalSelector.addGoal(6, new OrcaAIMelee(this, 1.2F, true));
-        this.goalSelector.addGoal(8, new FollowBoatGoal(this));
+        this.goalSelector.addGoal(8, new FollowPlayerRiddenEntityGoal(this, Boat.class));
         this.targetSelector.addGoal(1, (new HurtByTargetGoal(this)).setAlertOthers());
         this.targetSelector.addGoal(2, new EntityAINearestTarget3D(this, EntityCachalotWhale.class, 25, false, false, TARGET_BABY));
         this.targetSelector.addGoal(3, new EntityAINearestTarget3D(this, LivingEntity.class, 200, false, true, AMEntityRegistry.buildPredicateFromTag(AMTagRegistry.ORCA_TARGETS)));
@@ -188,8 +191,9 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
 
     }
 
-    public void customServerAiStep() {
-        super.customServerAiStep();
+    @Override
+    public void customServerAiStep(ServerLevel serverLevel) {
+        super.customServerAiStep(serverLevel);
         breakBlock();
     }
 
@@ -199,7 +203,7 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
             return;
         }
         boolean flag = false;
-        if (!this.level().isClientSide && this.blockBreakCounter == 0) {
+        if (!this.level().isClientSide() && this.blockBreakCounter == 0) {
             for (int a = (int) Math.round(this.getBoundingBox().minX); a <= (int) Math.round(this.getBoundingBox().maxX); a++) {
                 for (int b = (int) Math.round(this.getBoundingBox().minY) - 1; (b <= (int) Math.round(this.getBoundingBox().maxY) + 1) && (b <= 127); b++) {
                     for (int c = (int) Math.round(this.getBoundingBox().minZ); c <= (int) Math.round(this.getBoundingBox().maxZ); c++) {
@@ -239,28 +243,28 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
             this.setAirSupply(this.getMaxAirSupply());
         } else {
 
-            if (this.isInWaterRainOrBubble()) {
+            if (this.isInWaterOrRain() || this.level().getBlockState(this.blockPosition()).is(Blocks.BUBBLE_COLUMN)) {
                 this.setMoistness(2400);
             } else {
                 this.setMoistness(this.getMoistness() - 1);
-                if (this.getMoistness() <= 0) {
-                    this.hurt(damageSources().dryOut(), 1.0F);
+                if (this.getMoistness() <= 0 && this.level() instanceof ServerLevel serverLevel) {
+                    this.hurtServer(serverLevel, damageSources().dryOut(), 1.0F);
                 }
 
                 if (this.onGround()) {
-                    this.setDeltaMovement(this.getDeltaMovement().add((this.random.nextFloat() * 2.0F - 1.0F) * 0.2F, 0.5D, (this.random.nextFloat() * 2.0F - 1.0F) * 0.2F));
-                    this.setYRot( this.random.nextFloat() * 360.0F);
+                    this.setDeltaMovement(this.getDeltaMovement().add((this.getRandom().nextFloat() * 2.0F - 1.0F) * 0.2F, 0.5D, (this.getRandom().nextFloat() * 2.0F - 1.0F) * 0.2F));
+                    this.setYRot(this.getRandom().nextFloat() * 360.0F);
                     this.setOnGround(false);
-                    this.hasImpulse = true;
+                    this.needsSync = true;
                 }
             }
 
-            if (this.level().isClientSide && this.isInWater() && this.getDeltaMovement().lengthSqr() > 0.03D) {
+            if (this.level().isClientSide() && this.isInWater() && this.getDeltaMovement().lengthSqr() > 0.03D) {
                 Vec3 vector3d = this.getViewVector(0.0F);
                 final float yRotRad = this.getYRot() * Mth.DEG_TO_RAD;
                 final float f = Mth.cos(yRotRad) * 0.9F;
                 final float f1 = Mth.sin(yRotRad) * 0.9F;
-                final float f2 = 1.2F - this.random.nextFloat() * 0.7F;
+                final float f2 = 1.2F - this.getRandom().nextFloat() * 0.7F;
 
                 for (int i = 0; i < 2; ++i) {
                     this.level().addParticle(ParticleTypes.DOLPHIN, this.getX() - vector3d.x * (double) f2 + (double) f, this.getY() - vector3d.y, this.getZ() - vector3d.z * (double) f2 + (double) f1, 0.0D, 0.0D, 0.0D);
@@ -270,17 +274,14 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
 
         }
         LivingEntity attackTarget = this.getTarget();
-        if (attackTarget != null && distanceTo(attackTarget) < attackTarget.getBbWidth() + this.getBbWidth() + 2) {
+        if (this.level() instanceof ServerLevel serverLevel && attackTarget != null && distanceTo(attackTarget) < attackTarget.getBbWidth() + this.getBbWidth() + 2) {
             if (this.getAnimation() == ANIMATION_BITE && this.getAnimationTick() == 4) {
                 float damage =(float) ((int) this.getAttributeValue(Attributes.ATTACK_DAMAGE));
                 if(attackTarget instanceof Drowned || attackTarget instanceof Guardian){
                     damage *= 2F;
                 }
-                boolean flag = attackTarget.hurt(this.damageSources().mobAttack(this), damage);
+                boolean flag = attackTarget.hurtServer(serverLevel, this.damageSources().mobAttack(this), damage);
                 if (flag) {
-                    if (this.level() instanceof net.minecraft.server.level.ServerLevel sl) {
-                        EnchantmentHelper.doPostAttackEffects(sl, attackTarget, this.damageSources().mobAttack(this));
-                    }
                     this.playSound(SoundEvents.DOLPHIN_ATTACK, 1.0F, 1.0F);
                 }
             }
@@ -289,11 +290,8 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
                 if(attackTarget instanceof Drowned || attackTarget instanceof Guardian){
                     damage *= 2F;
                 }
-                boolean flag = attackTarget.hurt(this.damageSources().mobAttack(this), damage);
+                boolean flag = attackTarget.hurtServer(serverLevel, this.damageSources().mobAttack(this), damage);
                 if (flag) {
-                    if (this.level() instanceof net.minecraft.server.level.ServerLevel sl) {
-                        EnchantmentHelper.doPostAttackEffects(sl, attackTarget, this.damageSources().mobAttack(this));
-                    }
                     this.playSound(SoundEvents.DOLPHIN_ATTACK, 1.0F, 1.0F);
                 }
                 final float yRotRad = this.getYRot() * Mth.DEG_TO_RAD;
@@ -303,8 +301,8 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
 
             }
         }
-        if (attackTarget != null && attackTarget instanceof Player && attackTarget.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ORCAS_MIGHT))) {
-            attackTarget.removeEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ORCAS_MIGHT));
+        if (attackTarget != null && attackTarget instanceof Player && attackTarget.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.ORCAS_MIGHT))) {
+            attackTarget.removeEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.ORCAS_MIGHT));
         }
         AnimationHandler.INSTANCE.updateAnimations(this);
     }
@@ -319,8 +317,9 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
         animationTick = tick;
     }
 
-    public boolean doHurtTarget(Entity entityIn) {
-        if(this.isInWaterOrBubble() && random.nextBoolean()){
+    @Override
+    public boolean doHurtTarget(ServerLevel level, Entity entityIn) {
+        if(AMEntityRegistry.isInWaterOrBubble(this) && this.getRandom().nextBoolean()){
             this.setAnimation(ANIMATION_TAILSWING);
         }else{
             this.setAnimation(ANIMATION_BITE);
@@ -355,7 +354,7 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverWorld, AgeableMob p_241840_2_) {
-        return AMEntityRegistry.ORCA.create(serverWorld);
+        return AMEntityRegistry.ORCA.create(serverWorld, EntitySpawnReason.BREEDING);
     }
 
     public boolean shouldUseJumpAttack(LivingEntity attackTarget) {
@@ -368,8 +367,8 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType
-            reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason
+            reason, @Nullable SpawnGroupData spawnDataIn) {
         this.setAirSupply(this.getMaxAirSupply());
         this.setVariant(determineVariant(this.blockPosition()));
         this.setXRot(0.0F);
@@ -377,7 +376,9 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
     }
 
-    /** canBreatheUnderwater() is final in 1.21.1; Orca returns false (default). */
+    public boolean canBreatheUnderwaterAM() {
+        return false;
+    }
 
     public void baseTick() {
         int i = this.getAirSupply();
@@ -396,29 +397,29 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
     protected void updateAir(int p_209207_1_) {
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putInt("Moistness", this.getMoistness());
         compound.putInt("Variant", this.getVariant());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setMoistness(compound.getInt("Moistness"));
-        this.setVariant(compound.getInt("Variant"));
+        this.setMoistness(compound.getIntOr("Moistness", 0));
+        this.setVariant(compound.getIntOr("Variant", 0));
     }
 
     public void onJumpHit(LivingEntity entityIn) {
-        boolean flag = entityIn.hurt(this.damageSources().mobAttack(this), (float) ((int) this.getAttributeValue(Attributes.ATTACK_DAMAGE)));
-        if (flag) {
-            if (this.level() instanceof net.minecraft.server.level.ServerLevel sl) {
-            EnchantmentHelper.doPostAttackEffects(sl, entityIn, this.damageSources().mobAttack(this));
+        if (!(this.level() instanceof ServerLevel serverLevel)) {
+            return;
         }
+        boolean flag = entityIn.hurtServer(serverLevel, this.damageSources().mobAttack(this), (float) ((int) this.getAttributeValue(Attributes.ATTACK_DAMAGE)));
+        if (flag) {
             this.playSound(SoundEvents.DOLPHIN_ATTACK, 1.0F, 1.0F);
         }
     }
 
-    public static boolean canOrcaSpawn(EntityType<EntityOrca> p_223364_0_, LevelAccessor p_223364_1_, MobSpawnType reason, BlockPos p_223364_3_, RandomSource p_223364_4_) {
+    public static boolean canOrcaSpawn(EntityType<EntityOrca> p_223364_0_, LevelAccessor p_223364_1_, EntitySpawnReason reason, BlockPos p_223364_3_, RandomSource p_223364_4_) {
         if (p_223364_3_.getY() > 45 && p_223364_3_.getY() < p_223364_1_.getSeaLevel()) {
             return p_223364_1_.getFluidState(p_223364_3_).is(FluidTags.WATER);
         } else {
@@ -438,7 +439,10 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
         }
 
         public boolean canUse() {
-            this.targetPlayer = this.dolphin.level().getNearestPlayer(EntityOrca.PLAYER_PREDICATE, this.dolphin);
+            if (!(this.dolphin.level() instanceof ServerLevel serverLevel)) {
+                return false;
+            }
+            this.targetPlayer = serverLevel.getNearestPlayer(EntityOrca.PLAYER_PREDICATE.range(24.0D), this.dolphin);
             if (this.targetPlayer == null) {
                 return false;
             } else {
@@ -466,8 +470,8 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
                 this.dolphin.getNavigation().moveTo(this.targetPlayer, this.speed);
             }
 
-            if (this.targetPlayer.isSwimming() && this.targetPlayer.level().random.nextInt(6) == 0) {
-                this.targetPlayer.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ORCAS_MIGHT), 1000));
+            if (this.targetPlayer.isSwimming() && this.targetPlayer.getRandom().nextInt(6) == 0) {
+                this.targetPlayer.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.ORCAS_MIGHT), 1000));
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
@@ -36,8 +37,10 @@ public class AnimalAIMeleeNearby extends Goal {
     }
 
     public void tick(){
-        if(entity.distanceTo(entity.getTarget()) < 3F + entity.getBbWidth() + entity.getTarget().getBbWidth()){
-            entity.doHurtTarget(entity.getTarget());
+        if (entity.getTarget() != null && entity.distanceTo(entity.getTarget()) < 3F + entity.getBbWidth() + entity.getTarget().getBbWidth()) {
+            if (entity.level() instanceof ServerLevel serverLevel) {
+                entity.doHurtTarget(serverLevel, entity.getTarget());
+            }
             entity.lookAt(entity.getTarget(), 180F, 180F);
         }else{
             if(fightStartPos != null){

@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
+
 import com.github.alexthe666.alexsmobs.entity.EntityLeafcutterAnt;
 import com.github.alexthe666.alexsmobs.entity.EntityManedWolf;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
@@ -7,6 +9,7 @@ import com.github.alexthe666.alexsmobs.misc.AMAdvancementTriggerRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityLeafcutterAnthill;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,11 +19,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TypedEntityData;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -29,27 +32,29 @@ import net.minecraft.world.level.block.entity.BeehiveBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 
 import javax.annotation.Nullable;
 import java.util.List;
 
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
+
 public class BlockLeafcutterAnthill extends BaseEntityBlock {
+    public static final MapCodec<BlockLeafcutterAnthill> CODEC = simpleCodec(BlockLeafcutterAnthill::new);
 
-    public static final MapCodec<BlockLeafcutterAnthill> CODEC = BlockBehaviour.simpleCodec(BlockLeafcutterAnthill::new);
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().sound(SoundType.GRAVEL).strength(0.75F);
+    }
 
-    public BlockLeafcutterAnthill(BlockBehaviour.Properties properties) {
-        super(properties);
+    public BlockLeafcutterAnthill(BlockBehaviour.Properties props) {
+        super(props);
     }
 
     @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
+    public MapCodec<? extends BaseEntityBlock> codec() {
         return CODEC;
     }
 
@@ -73,31 +78,36 @@ public class BlockLeafcutterAnthill extends BaseEntityBlock {
         return RenderShape.MODEL;
     }
 
-    @Override
     public BlockState playerWillDestroy(Level worldIn, BlockPos pos, BlockState state, Player player) {
-        if (!worldIn.isClientSide && player.isCreative() && worldIn.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)) {
+        if (!worldIn.isClientSide() && player.isCreative() && worldIn.getServer().getGameRules().get(GameRules.BLOCK_DROPS)) {
             BlockEntity tileentity = worldIn.getBlockEntity(pos);
             if (tileentity instanceof TileEntityLeafcutterAnthill) {
                 TileEntityLeafcutterAnthill anthivetileentity = (TileEntityLeafcutterAnthill) tileentity;
                 ItemStack itemstack = new ItemStack(this);
                 boolean flag = !anthivetileentity.hasNoAnts();
+                if (!flag) {
+                    return super.playerWillDestroy(worldIn, pos, state, player);
+                }
                 if (flag) {
                     CompoundTag compoundnbt = new CompoundTag();
                     compoundnbt.put("Ants", anthivetileentity.getAnts());
-                    net.minecraft.world.item.BlockItem.setBlockEntityData(itemstack, AMTileEntityRegistry.LEAFCUTTER_ANTHILL, compoundnbt);
+                    itemstack.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.of(AMTileEntityRegistry.LEAFCUTTER_ANTHILL, compoundnbt));
                 }
+                CompoundTag compoundnbt1 = new CompoundTag();
+                itemstack.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.of(AMTileEntityRegistry.LEAFCUTTER_ANTHILL, compoundnbt1));
                 ItemEntity itementity = new ItemEntity(worldIn, pos.getX(), pos.getY(), pos.getZ(), itemstack);
                 itementity.setDefaultPickUpDelay();
                 worldIn.addFreshEntity(itementity);
             }
         }
+
         return super.playerWillDestroy(worldIn, pos, state, player);
     }
 
     public void fallOn(Level worldIn, BlockState state, BlockPos pos, Entity entityIn, float fallDistance) {
         if (entityIn instanceof LivingEntity && !(entityIn instanceof EntityManedWolf)) {
             this.angerNearbyAnts(worldIn, (LivingEntity) entityIn, pos);
-            if (!worldIn.isClientSide && worldIn.getBlockEntity(pos) instanceof TileEntityLeafcutterAnthill) {
+            if (!worldIn.isClientSide() && worldIn.getBlockEntity(pos) instanceof TileEntityLeafcutterAnthill) {
                 TileEntityLeafcutterAnthill beehivetileentity = (TileEntityLeafcutterAnthill) worldIn.getBlockEntity(pos);
                 beehivetileentity.angerAnts((LivingEntity) entityIn, worldIn.getBlockState(pos), BeehiveBlockEntity.BeeReleaseStatus.EMERGENCY);
                 if(entityIn instanceof ServerPlayer){
@@ -110,38 +120,14 @@ public class BlockLeafcutterAnthill extends BaseEntityBlock {
 
     public void playerDestroy(Level worldIn, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity te, ItemStack stack) {
         super.playerDestroy(worldIn, player, pos, state, te, stack);
-        if (!worldIn.isClientSide && te instanceof TileEntityLeafcutterAnthill) {
+        if (!worldIn.isClientSide() && te instanceof TileEntityLeafcutterAnthill) {
             TileEntityLeafcutterAnthill beehivetileentity = (TileEntityLeafcutterAnthill) te;
-            if (EnchantmentHelper.getItemEnchantmentLevel(worldIn.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.SILK_TOUCH), stack) == 0) {
+            if (EnchantmentHelper.getItemEnchantmentLevel(worldIn.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getOrThrow(Enchantments.SILK_TOUCH), stack) == 0) {
                 beehivetileentity.angerAnts(player, state, BeehiveBlockEntity.BeeReleaseStatus.EMERGENCY);
                 worldIn.updateNeighbourForOutputSignal(pos, this);
                 this.angerNearbyAnts(worldIn, pos);
             }
         }
-    }
-
-    @Override
-    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
-        ItemStack tool = builder.getOptionalParameter(LootContextParams.TOOL);
-        BlockEntity blockEntity = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
-        boolean silkTouch = false;
-        if (tool != null) {
-            Level level = builder.getLevel();
-            silkTouch = EnchantmentHelper.getItemEnchantmentLevel(
-                level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.SILK_TOUCH),
-                tool
-            ) > 0;
-        }
-        if (silkTouch && blockEntity instanceof TileEntityLeafcutterAnthill anthill) {
-            ItemStack stack = new ItemStack(this);
-            if (!anthill.hasNoAnts()) {
-                CompoundTag tag = new CompoundTag();
-                tag.put("Ants", anthill.getAnts());
-                BlockItem.setBlockEntityData(stack, AMTileEntityRegistry.LEAFCUTTER_ANTHILL, tag);
-            }
-            return List.of(stack);
-        }
-        return List.of();
     }
 
     private void angerNearbyAnts(Level world, BlockPos pos) {
@@ -152,7 +138,7 @@ public class BlockLeafcutterAnthill extends BaseEntityBlock {
             int i = list1.size();
             for (EntityLeafcutterAnt beeentity : list) {
                 if (beeentity.getTarget() == null) {
-                    beeentity.setTarget(list1.get(world.random.nextInt(i)));
+                    beeentity.setTarget(list1.get(world.getRandom().nextInt(i)));
                 }
             }
         }
@@ -180,6 +166,6 @@ public class BlockLeafcutterAnthill extends BaseEntityBlock {
 
     @Nullable
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level p_152180_, BlockState p_152181_, BlockEntityType<T> p_152182_) {
-        return p_152180_.isClientSide ? null : createTickerHelper(p_152182_, AMTileEntityRegistry.LEAFCUTTER_ANTHILL, TileEntityLeafcutterAnthill::serverTick);
+        return p_152180_.isClientSide() ? null : createTickerHelper(p_152182_, AMTileEntityRegistry.LEAFCUTTER_ANTHILL, TileEntityLeafcutterAnthill::serverTick);
     }
 }

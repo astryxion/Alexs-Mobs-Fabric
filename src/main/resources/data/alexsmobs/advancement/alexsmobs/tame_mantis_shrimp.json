@@ -3,7 +3,9 @@
     "icon": {
       "id": "alexsmobs:tab_icon",
       "components": {
-        "minecraft:custom_data": "{DisplayEntityType:\"alexsmobs:mantis_shrimp\"}"
+        "alexsmobs:tab_icon_display": {
+          "display_entity_type": "alexsmobs:mantis_shrimp"
+        }
       }
     },
     "title": {

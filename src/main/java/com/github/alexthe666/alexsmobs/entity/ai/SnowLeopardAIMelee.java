@@ -4,6 +4,7 @@ import com.github.alexthe666.alexsmobs.entity.EntitySnowLeopard;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import com.github.alexthe666.citadel.animation.IAnimatedEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -152,8 +153,8 @@ public class SnowLeopardAIMelee extends Goal {
             if (this.leopard.distanceTo(target) < 3F) {
                 if(leopard.getAnimation() == IAnimatedEntity.NO_ANIMATION){
                     leopard.setAnimation(leopard.getRandom().nextBoolean() ? EntitySnowLeopard.ANIMATION_ATTACK_R : EntitySnowLeopard.ANIMATION_ATTACK_L);
-                }else if(this.leopard.getAnimationTick() == 5){
-                    leopard.doHurtTarget(target);
+                } else if (this.leopard.getAnimationTick() == 5 && this.leopard.level() instanceof ServerLevel serverLevel) {
+                    leopard.doHurtTarget(serverLevel, target);
                 }
             }
         }
@@ -174,8 +175,8 @@ public class SnowLeopardAIMelee extends Goal {
         PathNavigation lvt_13_1_ = leopard.getNavigation();
         RandomSource lvt_14_1_ = creature.getRandom();
         boolean lvt_15_2_;
-        if (leopard.hasRestriction()) {
-            lvt_15_2_ = leopard.getRestrictCenter().closerToCenterThan(creature.position(), (double) (leopard.getRestrictRadius() + (float) xz) + 1.0D);
+        if (leopard.hasHome()) {
+            lvt_15_2_ = leopard.getHomePosition().closerToCenterThan(creature.position(), (double) (leopard.getHomeRadius() + (float) xz) + 1.0D);
         } else {
             lvt_15_2_ = false;
         }
@@ -191,8 +192,8 @@ public class SnowLeopardAIMelee extends Goal {
                 int lvt_23_1_ = lvt_21_1_.getY();
                 int lvt_24_1_ = lvt_21_1_.getZ();
                 BlockPos lvt_25_2_;
-                if (leopard.hasRestriction() && xz > 1) {
-                    lvt_25_2_ = leopard.getRestrictCenter();
+                if (leopard.hasHome() && xz > 1) {
+                    lvt_25_2_ = leopard.getHomePosition();
                     if (creature.getX() > (double) lvt_25_2_.getX()) {
                         lvt_22_1_ -= lvt_14_1_.nextInt(xz / 2);
                     } else {
@@ -207,15 +208,15 @@ public class SnowLeopardAIMelee extends Goal {
                 }
 
                 lvt_25_2_ = AMBlockPos.fromCoords((double) lvt_22_1_ + creature.getX(), (double) lvt_23_1_ + creature.getY(), (double) lvt_24_1_ + creature.getZ());
-                if (lvt_25_2_.getY() >= 0 && lvt_25_2_.getY() <= creature.level().getMaxBuildHeight() && (!lvt_15_2_ || leopard.isWithinRestriction(lvt_25_2_)) && (!p_226339_12_ || lvt_13_1_.isStableDestination(lvt_25_2_))) {
+                if (lvt_25_2_.getY() >= 0 && lvt_25_2_.getY() <= creature.level().getMaxY() && (!lvt_15_2_ || leopard.isWithinHome(lvt_25_2_)) && (!p_226339_12_ || lvt_13_1_.isStableDestination(lvt_25_2_))) {
                     if (p_226339_9_) {
-                        lvt_25_2_ = moveUpToAboveSolid(lvt_25_2_, lvt_14_1_.nextInt(p_226339_10_ + 1) + p_226339_11_, creature.level().getMaxBuildHeight(), (p_226341_1_) -> {
+                        lvt_25_2_ = moveUpToAboveSolid(lvt_25_2_, lvt_14_1_.nextInt(p_226339_10_ + 1) + p_226339_11_, creature.level().getMaxY(), (p_226341_1_) -> {
                             return creature.level().getBlockState(p_226341_1_).isSolid();
                         });
                     }
 
                     if (p_226339_5_ || !creature.level().getFluidState(lvt_25_2_).is(FluidTags.WATER)) {
-                        PathType lvt_26_1_ = WalkNodeEvaluator.getPathTypeStatic((net.minecraft.world.entity.Mob) creature, lvt_25_2_);
+                        PathType lvt_26_1_ = PathType.WALKABLE; // TODO 1.21: WalkNodeEvaluator API changed
                         if (leopard.getPathfindingMalus(lvt_26_1_) == 0.0F) {
                             double lvt_27_1_ = p_226339_8_.applyAsDouble(lvt_25_2_);
                             if (lvt_27_1_ > lvt_17_1_) {

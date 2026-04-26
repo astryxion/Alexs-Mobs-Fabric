@@ -1,20 +1,14 @@
 package com.github.alexthe666.alexsmobs.misc;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.Structure;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class AMTagRegistry {
     public static final TagKey<Item> INSECT_ITEMS = registerItemTag("insect_items");
@@ -239,32 +233,22 @@ public class AMTagRegistry {
     public static final TagKey<Structure> SPAWNS_UNDERMINERS = registerStructureTag("spawns_underminers");
 
     private static TagKey<EntityType<?>> registerEntityTag(String name) {
-        return TagKey.create(Registries.ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, name));
+        return TagKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(AlexsMobs.MODID, name));
     }
 
     private static TagKey<Item> registerItemTag(String name) {
-        return TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, name));
+        return TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(AlexsMobs.MODID, name));
     }
 
     private static TagKey<Block> registerBlockTag(String name) {
-        return TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, name));
+        return TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(AlexsMobs.MODID, name));
     }
 
     private static TagKey<Biome> registerBiomeTag(String name) {
-        return TagKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, name));
+        return TagKey.create(Registries.BIOME, Identifier.fromNamespaceAndPath(AlexsMobs.MODID, name));
     }
 
     private static TagKey<Structure> registerStructureTag(String name) {
-        return TagKey.create(Registries.STRUCTURE, ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, name));
-    }
-
-    /** Fabric: build Ingredient from item tags (replaces Ingredient.TagValue which is package-private in 1.20.1). */
-    @SafeVarargs
-    public static Ingredient ingredientFromTags(TagKey<Item>... tags) {
-        List<ItemStack> stacks = new ArrayList<>();
-        for (TagKey<Item> tag : tags) {
-            BuiltInRegistries.ITEM.getTag(tag).ifPresent(holders -> holders.stream().forEach(h -> stacks.add(new ItemStack(h.value()))));
-        }
-        return Ingredient.of(stacks.toArray(new ItemStack[0]));
+        return TagKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath(AlexsMobs.MODID, name));
     }
 }

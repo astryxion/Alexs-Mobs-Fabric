@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
@@ -13,11 +16,11 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.tags.BiomeTags;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
@@ -53,7 +56,6 @@ import java.util.stream.Stream;
 
 public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemiAquatic {
 
-    public static final ResourceLocation SPIKED_LOOT = ResourceLocation.fromNamespaceAndPath("alexsmobs", "entities/froststalker_spikes");
     public static final Animation ANIMATION_BITE = Animation.create(13);
     public static final Animation ANIMATION_SPEAK = Animation.create(11);
     public static final Animation ANIMATION_SLASH_L = Animation.create(12);
@@ -88,8 +90,7 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
     protected EntityFroststalker(EntityType<? extends Animal> type, Level level) {
         super(type, level);
         this.setPathfindingMalus(PathType.LAVA, -1.0F);
-        this.setPathfindingMalus(PathType.DANGER_FIRE, -1.0F);
-        this.setPathfindingMalus(PathType.DAMAGE_FIRE, -1.0F);
+        this.setPathfindingMalus(PathType.DAMAGE_CAUTIOUS, -1.0F);
     }
 
     protected SoundEvent getAmbientSound() {
@@ -104,15 +105,13 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
         return AMSoundRegistry.FROSTSTALKER_HURT;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.froststalkerSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static boolean canFroststalkerSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean canFroststalkerSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         return worldIn.getRawBrightness(pos, 0) > 8 && (worldIn.getBlockState(pos.below()).is(AMTagRegistry.FROSTSTALKER_SPAWNS) || worldIn.getBlockState(pos.below()).isSolid());
     }
-
-    /** Loot table is overridden via EntityFroststalkerLootMixin because Mob.getLootTable() is final in 1.21.1. */
 
     public static AttributeSupplier.Builder bakeAttributes() {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 24D).add(Attributes.ARMOR, 2.0D).add(Attributes.ATTACK_DAMAGE, 4.5D).add(Attributes.MOVEMENT_SPEED, 0.3F);
@@ -122,20 +121,31 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
         return false;
     }
 
+    @Override
+    public boolean canFreeze() {
+        return false;
+    }
+
     protected void checkFallDamage(double y, boolean onGroundIn, BlockState state, BlockPos pos) {
     }
 
-    public boolean hurt(DamageSource source, float amount) {
+    @Override
+    public boolean hurtServer(ServerLevel serverLevel, DamageSource source, float amount) {
         if(source.is(DamageTypeTags.IS_FIRE)){
             amount *= 2F;
         }
-        boolean prev = super.hurt(source, amount);
+        boolean prev = super.hurtServer(serverLevel, source, amount);
         if (prev && this.hasSpikes() && !this.isSpikeShaking() && source.getEntity() != null && source.getEntity().distanceTo(this) < 10) {
             this.setSpikeShaking(true);
-            shakeTime = 20 + random.nextInt(60);
+            shakeTime = 20 + this.getRandom().nextInt(60);
             standFor(shakeTime + 10);
         }
         return prev;
+    }
+
+    /** Matches pre-26.1 {@code LivingEntity#isInWaterRainOrBubble()}: water, rain, or bubble column. */
+    public boolean isInWaterRainOrBubble() {
+        return this.isInWaterOrRain() || this.level().getBlockState(this.blockPosition()).is(Blocks.BUBBLE_COLUMN);
     }
 
     protected void registerGoals() {
@@ -162,8 +172,8 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
         this.goalSelector.addGoal(9, new LookAtPlayerGoal(this, LivingEntity.class, 15.0F));
         this.goalSelector.addGoal(9, new RandomLookAroundGoal(this));
         this.targetSelector.addGoal(1, (new HurtByTargetGoal(this, EntityFroststalker.class)).setAlertOthers());
-        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 40, false, true, AMEntityRegistry.buildPredicateFromTag(AMTagRegistry.FROSTSTALKER_TARGETS)));
-        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Player.class, 80, false, true, (livingEntity -> {
+        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 40, false, true, AMEntityRegistry.buildSelectorFromTag(AMTagRegistry.FROSTSTALKER_TARGETS)));
+        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Player.class, 80, false, true, AMEntityRegistry.toSelector((livingEntity) -> {
             return !livingEntity.getItemBySlot(EquipmentSlot.HEAD).is(AMItemRegistry.FROSTSTALKER_HELMET);
         })));
     }
@@ -197,7 +207,7 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
         builder.define(TACKLING, false);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("Spiked", this.hasSpikes());
         compound.putBoolean("Bipedal", this.isBipedal());
@@ -205,19 +215,21 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
         compound.putInt("StandingTime", standingTime);
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setSpiked(compound.getBoolean("Spiked"));
-        this.setBipedal(compound.getBoolean("Bipedal"));
-        this.setSpikeShaking(compound.getBoolean("SpikeShaking"));
-        this.standingTime = compound.getInt("StandingTime");
+        this.setSpiked(compound.getBooleanOr("Spiked", false));
+        this.setBipedal(compound.getBooleanOr("Bipedal", false));
+        this.setSpikeShaking(compound.getBooleanOr("SpikeShaking", false));
+        this.standingTime = compound.getIntOr("StandingTime", 0);
     }
 
-    public BlockPos getRestrictCenter() {
-        return this.leader == null ? super.getRestrictCenter() : this.leader.getOnPos();
+    @Override
+    public BlockPos getHomePosition() {
+        return this.leader == null ? super.getHomePosition() : this.leader.getOnPos();
     }
 
-    public boolean hasRestriction() {
+    @Override
+    public boolean hasHome() {
         return this.isFollower();
     }
 
@@ -285,14 +297,14 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
             }
         }
 
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (this.tickCount % 200 == 0) {
                 if (isInWaterRainOrBubble() && !this.hasSpikes()) {
                     this.setSpiked(true);
                 }
                 if (this.isHotBiome() && !isInWaterRainOrBubble()) {
                     this.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 400));
-                    if (random.nextInt(2) == 0 && !this.isInWaterRainOrBubble()) {
+                    if (this.getRandom().nextInt(2) == 0 && !this.isInWaterRainOrBubble()) {
                         this.setSpiked(false);
                     }
                 }
@@ -371,14 +383,17 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
                     this.getAnimation() == ANIMATION_SLASH_L && this.getAnimationTick() == 7 ||
                     this.getAnimation() == ANIMATION_SLASH_R && this.getAnimationTick() == 7;
             if (this.getTarget() != null && attackAnim) {
-                getTarget().knockback(0.2F, getTarget().getX() - this.getX(), getTarget().getZ() - this.getZ());
-                this.getTarget().hurt(this.damageSources().mobAttack(this), (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE));
+                LivingEntity target = this.getTarget();
+                target.knockback(0.2F, target.getX() - this.getX(), target.getZ() - this.getZ());
+                if (this.level() instanceof ServerLevel sl) {
+                    target.hurtServer(sl, this.damageSources().mobAttack(this), (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE));
+                }
             }
         }
         if (fleeFireFlag > 0) {
             fleeFireFlag--;
         }
-        if(!this.level().isClientSide){
+        if(!this.level().isClientSide()){
             if(resetLeaderCooldown > 0){
                 resetLeaderCooldown--;
             }else{
@@ -419,7 +434,7 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
         } else {
             int i = Mth.floor(this.getX());
             int k = Mth.floor(this.getZ());
-            return this.level().getBiome(new BlockPos(i, 0, k)).is(BiomeTags.SNOW_GOLEM_MELTS);
+            return this.level().environmentAttributes().getValue(EnvironmentAttributes.SNOW_GOLEM_MELTS, new BlockPos(i, 0, k));
         }
     }
 
@@ -433,18 +448,18 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
         return 0.52F * this.getBlockJumpFactor();
     }
 
-    /** Custom jump with horizontal impulse; call from frostJump() since jumpFromGround is final in 1.21.1. */
-    private void frostJumpFromGround() {
+    // @Override removed - jumpFromGround is now final in 1.21
+    protected void customJumpFromGround() {
         double d0 = (double) this.getJumpPower() + this.getJumpBoostPower();
         Vec3 vec3 = this.getDeltaMovement();
         this.setDeltaMovement(vec3.x, d0, vec3.z);
         float f = this.getYRot() * Mth.DEG_TO_RAD;
         this.setDeltaMovement(this.getDeltaMovement().add(-Mth.sin(f) * 0.2F, 0, Mth.cos(f) * 0.2F));
-        this.hasImpulse = true;
+        this.needsSync = true;
     }
 
     public void frostJump() {
-        frostJumpFromGround();
+        jumpFromGround();
     }
 
     @Override
@@ -607,40 +622,30 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
             }
         }
     }
-
-    /** Replicates vanilla FrostWalkerEnchantment.onEntityMoved for 1.21.1 (frost walker logic moved). */
-    private static void applyFrostWalker(LivingEntity entity, Level level, BlockPos pos, int frostLevel) {
-        if (!level.isClientSide && level instanceof net.minecraft.server.level.ServerLevel) {
-            int r = frostLevel < 0 ? 2 : 2 + frostLevel;
-            BlockPos.MutableBlockPos mutable = pos.mutable();
-            for (int x = -r; x <= r; x++) {
-                for (int z = -r; z <= r; z++) {
-                    mutable.set(pos.getX() + x, pos.getY(), pos.getZ() + z);
-                    if (level.getBlockState(mutable).is(net.minecraft.tags.BlockTags.ICE)) {
-                        continue;
-                    }
-                    if (level.getBlockState(mutable).getBlock() == Blocks.WATER || level.getFluidState(mutable).is(net.minecraft.tags.FluidTags.WATER)) {
-                        level.setBlockAndUpdate(mutable, Blocks.FROSTED_ICE.defaultBlockState());
-                        level.scheduleTick(mutable, Blocks.FROSTED_ICE, Mth.nextInt(entity.getRandom(), 60, 120));
+    protected void onChangedBlock(BlockPos pos) {
+        if (this.hasSpikes() && this.onGround()) {
+            int radius = 2;
+            BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
+            for (int x = -radius; x <= radius; x++) {
+                for (int z = -radius; z <= radius; z++) {
+                    if (x * x + z * z <= radius * radius) {
+                        mutablePos.set(pos.getX() + x, pos.getY() - 1, pos.getZ() + z);
+                        BlockState state = this.level().getBlockState(mutablePos);
+                        if (state.is(Blocks.WATER) && state.getFluidState().isSource()) {
+                            BlockState iceState = Blocks.FROSTED_ICE.defaultBlockState();
+                            this.level().setBlockAndUpdate(mutablePos, iceState);
+                            this.level().scheduleTick(mutablePos.immutable(), Blocks.FROSTED_ICE, Mth.nextInt(this.getRandom(), 60, 120));
+                        }
                     }
                 }
             }
         }
     }
 
-    @Override
-    protected void onChangedBlock(ServerLevel level, BlockPos pos) {
-        int i = EnchantmentHelper.getEnchantmentLevel(level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.FROST_WALKER), this);
-        if (i > 0 || this.hasSpikes()) {
-            applyFrostWalker(this, level, pos, i == 0 ? -1 : i);
-        }
-        super.onChangedBlock(level, pos);
-    }
-
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor p_27528_, DifficultyInstance p_27529_, MobSpawnType p_27530_, @Nullable SpawnGroupData p_27531_, @Nullable CompoundTag p_27532_) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor p_27528_, DifficultyInstance p_27529_, EntitySpawnReason p_27530_, @Nullable SpawnGroupData p_27531_) {
         //do not call super here
-        this.getAttribute(Attributes.FOLLOW_RANGE).addPermanentModifier(new AttributeModifier(ResourceLocation.fromNamespaceAndPath("alexsmobs", "random_spawn_bonus"), this.random.nextGaussian() * 0.05D, AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
+        this.getAttribute(Attributes.FOLLOW_RANGE).addPermanentModifier(new AttributeModifier(net.minecraft.resources.Identifier.fromNamespaceAndPath("alexsmobs", "random_spawn_bonus"), this.random.nextGaussian() * 0.05D, AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
         if (p_27531_ == null) {
             p_27531_ = new SchoolSpawnGroupData(this);
         } else {
@@ -653,7 +658,7 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel p_146743_, AgeableMob p_146744_) {
-        return AMEntityRegistry.FROSTSTALKER.create(p_146743_);
+        return AMEntityRegistry.FROSTSTALKER.create(p_146743_, EntitySpawnReason.BREEDING);
     }
 
     @Override

@@ -12,10 +12,10 @@ import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -41,6 +41,7 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -49,7 +50,8 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -58,6 +60,8 @@ import java.util.List;
 import java.util.Optional;
 
 public class EntityUnderminer extends PathfinderMob {
+
+    private static final net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> COMMON_ORES = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK, net.minecraft.resources.Identifier.parse("c:ores"));
 
     protected static final EntityDataAccessor<Optional<BlockPos>> TARGETED_BLOCK_POS = SynchedEntityData.defineId(EntityUnderminer.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
     private static final EntityDataAccessor<Boolean> DWARF = SynchedEntityData.defineId(EntityUnderminer.class, EntityDataSerializers.BOOLEAN);
@@ -88,8 +92,8 @@ public class EntityUnderminer extends PathfinderMob {
         return new PathNavigator(this, level());
     }
 
-    public static <T extends Mob> boolean checkUnderminerSpawnRules(EntityType<EntityUnderminer> entityType, ServerLevelAccessor iServerWorld, MobSpawnType reason, BlockPos pos, RandomSource random) {
-        if (reason == MobSpawnType.SPAWNER) {
+    public static <T extends Mob> boolean checkUnderminerSpawnRules(EntityType<EntityUnderminer> entityType, ServerLevelAccessor iServerWorld, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
+        if (reason == EntitySpawnReason.SPAWNER) {
             return true;
         }else{
             int j = 3;
@@ -114,7 +118,7 @@ public class EntityUnderminer extends PathfinderMob {
         return super.requiresCustomPersistence() || this.hasCustomName() || lastGivenStack != null;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.underminerSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -124,33 +128,35 @@ public class EntityUnderminer extends PathfinderMob {
         builder.define(DWARF, true);
         builder.define(HIDING, false);
         builder.define(VISUALLY_MINING, false);
-        builder.define(TARGETED_BLOCK_POS, Optional.<BlockPos>empty());
+        builder.define(TARGETED_BLOCK_POS, Optional.empty());
         builder.define(MINING_PROGRESS, 0.0F);
         builder.define(VARIANT, 0);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
-        super.addAdditionalSaveData(compound);
-        compound.putBoolean("Dwarf", this.isDwarf());
-        compound.putBoolean("Hiding", this.isHiding());
-        compound.putInt("Variant", this.getVariant());
-        compound.putInt("ResetItemTime", resetStackTime);
-        compound.putInt("MineCooldown", mineCooldown);
-        if(lastGivenStack != null){
-            compound.put("MineStack", lastGivenStack.save(this.level().registryAccess()));
+    @Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.putBoolean("Dwarf", this.isDwarf());
+        output.putBoolean("Hiding", this.isHiding());
+        output.putInt("Variant", this.getVariant());
+        output.putInt("ResetItemTime", resetStackTime);
+        output.putInt("MineCooldown", mineCooldown);
+        if (lastGivenStack != null) {
+            output.storeNullable("MineStack", ItemStack.OPTIONAL_CODEC, lastGivenStack);
         }
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
-        super.readAdditionalSaveData(compound);
-        this.setDwarf(compound.getBoolean("Dwarf"));
-        this.setHiding(compound.getBoolean("Hiding"));
-        this.setVariant(compound.getInt("Variant"));
-        this.resetStackTime = compound.getInt("ResetItemTime");
-        this.mineCooldown = compound.getInt("MineCooldown");
-        if(compound.contains("MineStack")){
-            this.lastGivenStack = ItemStack.parseOptional(this.level().registryAccess(), compound.getCompound("MineStack"));
-        }
+    @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        this.setDwarf(input.getBooleanOr("Dwarf", true));
+        this.setHiding(input.getBooleanOr("Hiding", false));
+        this.setVariant(input.getIntOr("Variant", 0));
+        this.resetStackTime = input.getIntOr("ResetItemTime", 0);
+        this.mineCooldown = input.getIntOr("MineCooldown", 100);
+        this.lastGivenStack = input.read("MineStack", ItemStack.OPTIONAL_CODEC)
+                .filter(stack -> !stack.isEmpty())
+                .orElse(null);
     }
 
     protected SoundEvent getAmbientSound() {
@@ -213,13 +219,14 @@ public class EntityUnderminer extends PathfinderMob {
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return !source.is(DamageTypes.MAGIC) && source.is(DamageTypes.FELL_OUT_OF_WORLD) && !source.isCreativePlayer() || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return !source.is(DamageTypes.MAGIC) && source.is(DamageTypes.FELL_OUT_OF_WORLD) && !source.isCreativePlayer() || super.isInvulnerableTo(level, source);
     }
 
     private float calculateDistanceToFloor() {
         BlockPos floor = AMBlockPos.fromCoords(this.getX(), this.getBoundingBox().maxY, this.getZ());
-        while (!level().getBlockState(floor).isFaceSturdy(level(), floor, Direction.UP) && floor.getY() > level().getMinBuildHeight()) {
+        int minY = level().dimensionType().minY();
+        while (!Block.canSupportRigidBlock(level(), floor) && floor.getY() > minY) {
             floor = floor.below();
         }
         return (float) (this.getBoundingBox().minY - (floor.getY() + 1));
@@ -242,18 +249,12 @@ public class EntityUnderminer extends PathfinderMob {
         this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(AMItemRegistry.GHOSTLY_PICKAXE));
     }
 
-    protected float getEquipmentDropChance(EquipmentSlot slot) {
-        if(slot == EquipmentSlot.MAINHAND){
-            return 0.5F;
-        }
-        return super.getEquipmentDropChance(slot);
-    }
-
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficultyInstance, MobSpawnType mobSpawnType, @Nullable SpawnGroupData spawnData, @Nullable CompoundTag tag) {
-        spawnData = super.finalizeSpawn(level, difficultyInstance, mobSpawnType, spawnData);
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficultyInstance, EntitySpawnReason EntitySpawnReason, @Nullable SpawnGroupData spawnData) {
+        spawnData = super.finalizeSpawn(level, difficultyInstance, EntitySpawnReason, spawnData);
         RandomSource randomsource = level.getRandom();
         this.populateDefaultEquipmentSlots(randomsource, difficultyInstance);
+        this.setDropChance(EquipmentSlot.MAINHAND, 0.5F);
         if(random.nextFloat() < 0.3F){
             this.setVariant(random.nextInt(2));
             this.setDwarf(false);
@@ -279,7 +280,7 @@ public class EntityUnderminer extends PathfinderMob {
         if(!this.isHiding() && hidingProgress > 0F){
             hidingProgress--;
         }
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             final double xzSpeed = this.getDeltaMovement().horizontalDistance();
             final double distToFloor = Mth.clamp(calculateDistanceToFloor(), -1F, 1F);
             if (Math.abs(distToFloor) > 0.01 && xzSpeed < 0.05 && !this.isActuallyInAWall()) {
@@ -328,11 +329,13 @@ public class EntityUnderminer extends PathfinderMob {
         return true;
     }
 
-    public boolean wantsToPickUp(ItemStack stack) {
+    @Override
+    public boolean wantsToPickUp(ServerLevel level, ItemStack stack) {
         return stack.is(AMTagRegistry.UNDERMINER_ORES);
     }
 
-    protected void pickUpItem(ItemEntity itemEntity) {
+    @Override
+    protected void pickUpItem(ServerLevel serverLevel, ItemEntity itemEntity) {
         ItemStack itemstack = itemEntity.getItem();
         if (itemstack.is(AMTagRegistry.UNDERMINER_ORES)) {
             this.onItemPickup(itemEntity);
@@ -342,9 +345,12 @@ public class EntityUnderminer extends PathfinderMob {
             this.lastGivenStack = itemEntity.getItem();
             this.resetStackTime = 2000 + random.nextInt(1200);
             this.mineCooldown = 0;
-        }else{
-            super.pickUpItem(itemEntity);
+        } else {
+            super.pickUpItem(serverLevel, itemEntity);
         }
+    }
+
+    public void jumpFromGround() {
 
     }
 
@@ -414,7 +420,7 @@ public class EntityUnderminer extends PathfinderMob {
         if(lastGivenStack != null){
             return lastGivenStack.getItem() == state.getBlock().asItem();
         }
-        return state.is(BlockTags.COAL_ORES) || state.is(BlockTags.IRON_ORES) || state.is(BlockTags.GOLD_ORES) || state.is(BlockTags.COPPER_ORES) || state.is(BlockTags.REDSTONE_ORES) || state.is(BlockTags.EMERALD_ORES) || state.is(BlockTags.LAPIS_ORES) || state.is(BlockTags.DIAMOND_ORES);
+        return state.is(COMMON_ORES);
     }
 
     public void aiStep() {

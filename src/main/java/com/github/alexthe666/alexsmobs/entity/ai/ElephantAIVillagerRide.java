@@ -2,7 +2,7 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 
 import com.github.alexthe666.alexsmobs.entity.EntityElephant;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 
 public class ElephantAIVillagerRide  extends Goal {
 

@@ -1,53 +1,59 @@
 plugins {
-	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
 	id 'maven-publish'
 }
 
 version = project.mod_version
 group = project.maven_group
-
 base {
-	archivesName = project.archives_base_name
+	archivesName = "alexsmobsfabric"
 }
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
-	maven { url = "https://maven.blamejared.com/" }
+	mavenLocal()
 }
 
 loom {
-	splitEnvironmentSourceSets()
-
 	mods {
 		"alexsmobs" {
 			sourceSet sourceSets.main
-			sourceSet sourceSets.client
 		}
 	}
+}
 
+sourceSets {
+	main {
+		java {
+			// JEI integration is optional and requires JEI API on classpath.
+			// Keep sources in tree, but exclude from Fabric core compile until a Fabric JEI integration path is wired.
+			exclude "com/github/alexthe666/alexsmobs/compat/jei/**"
+		}
+	}
 }
 
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings loom.officialMojangMappings()
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	implementation project(':citadel')
+	runtimeOnly project(':citadel')
+}
 
-	// JSR305 for javax.annotation.Nullable/Nonnull (not on JDK classpath in Java 21)
-	compileOnly "com.google.code.findbugs:jsr305:3.0.2"
+tasks.register('copyCitadelJarToLibs', Copy) {
+	dependsOn ':citadel:jar'
+	from(project(':citadel').tasks.named('jar'))
+	into layout.projectDirectory.dir('libs')
+	doFirst {
+		delete fileTree(dir: 'libs', include: 'citadel*.jar')
+	}
+}
 
-	// Citadel Fabric port: jar in project root (update filename if you replace the file)
-	modImplementation files("citadel-1.21.1-1.0.0.jar")
-
-	// JEI: optional compile-only for client compat (optional at runtime)
-	modCompileOnly "mezz.jei:jei-1.21.1-fabric-api:19.21.0.246"
+tasks.named('build') {
+	dependsOn 'copyCitadelJarToLibs'
 }
 
 processResources {
@@ -56,10 +62,17 @@ processResources {
 	filesMatching("fabric.mod.json") {
 		expand "version": inputs.properties.version
 	}
+
+	// Bundle only Citadel asset files into Alex's Mobs resources for dev/runtime.
+	// Avoid copying Citadel META-INF/resource root files that conflict in this project.
+	from("src Citadel Fabric 26.1/main/resources/assets/citadel") {
+		into "assets/citadel"
+	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	it.options.release = 25
+	it.options.compilerArgs += ['-Xmaxerrs', '100000']
 }
 
 java {
@@ -68,15 +81,15 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 jar {
-	inputs.property "archivesName", project.base.archivesName
+	inputs.property "projectName", project.name
 
 	from("LICENSE") {
-		rename { "${it}_${inputs.properties.archivesName}"}
+		rename { "${it}_${project.name}"}
 	}
 }
 
@@ -84,7 +97,6 @@ jar {
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
-			artifactId = project.archives_base_name
 			from components.java
 		}
 	}

@@ -1,7 +1,6 @@
 {
-  "parent": "minecraft:block/cube_all",
-  "render_type": "translucent",
   "textures": {
-    "all": "alexsmobs:entity/farseer/transmutation_table"
-  }
+    "particle": "minecraft:block/obsidian"
+  },
+  "elements": []
 }

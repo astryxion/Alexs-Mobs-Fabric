@@ -1,13 +1,14 @@
 package com.github.alexthe666.alexsmobs.entity;
 
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.misc.AMAdvancementTriggerRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.Direction;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -58,10 +59,9 @@ public class EntitySkunk extends Animal {
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 8.0D).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.25F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 8.0D).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.25F);
     }
 
-    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(SPRAY_YAW, 0F);
@@ -78,7 +78,7 @@ public class EntitySkunk extends Animal {
                 EntitySkunk.this.harassedTime += 10;
             }
         });
-        this.goalSelector.addGoal(3, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.SKUNK_BREEDABLES), false));
+        this.goalSelector.addGoal(3, new TemptGoal(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.SKUNK_BREEDABLES)), false));
         this.goalSelector.addGoal(2, new BreedGoal(this, 1.0D));
         this.goalSelector.addGoal(4, new RandomStrollGoal(this, 1D, 60));
         this.goalSelector.addGoal(5, new FollowParentGoal(this, 1D));
@@ -102,7 +102,7 @@ public class EntitySkunk extends Animal {
         });
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.skunkSpawnRolls, this.getRandom(), spawnReasonIn) && super.checkSpawnRules(worldIn, spawnReasonIn);
     }
 
@@ -159,7 +159,7 @@ public class EntitySkunk extends Animal {
         if(this.getSprayTime() <= 0 && this.sprayProgress > 0F){
             this.sprayProgress--;
         }
-        if(!this.level().isClientSide){
+        if(!this.level().isClientSide()){
             if(harassedTime > 200 && sprayCooldown == 0 && !this.isBaby()){
                 harassedTime = 0;
                 sprayCooldown = 200 + random.nextInt(200);
@@ -234,7 +234,7 @@ public class EntitySkunk extends Animal {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel level, AgeableMob mob) {
-        return AMEntityRegistry.SKUNK.create(level());
+        return AMEntityRegistry.SKUNK.create(level, EntitySpawnReason.BREEDING);
     }
 
     private class SprayGoal extends Goal {
@@ -291,7 +291,7 @@ public class EntitySkunk extends Animal {
                         Collection<MobEffectInstance> collection = EntitySkunk.this.getActiveEffects();
                         for (LivingEntity entity : EntitySkunk.this.level().getEntitiesOfClass(LivingEntity.class, poisonBox)) {
                             if (!(entity instanceof EntitySkunk)) {
-                                entity.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 300));
+                                entity.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 300));
                                 if(entity instanceof ServerPlayer serverPlayer){
                                     AMAdvancementTriggerRegistry.SKUNK_SPRAY.trigger(serverPlayer);
                                 }

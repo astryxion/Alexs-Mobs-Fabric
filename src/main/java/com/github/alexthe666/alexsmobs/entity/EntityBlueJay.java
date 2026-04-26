@@ -1,7 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
@@ -9,8 +9,8 @@ import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import com.google.common.base.Predicate;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -44,6 +44,8 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.PathType;
@@ -60,9 +62,9 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
     private static final EntityDataAccessor<Integer> ATTACK_TICK = SynchedEntityData.defineId(EntityBlueJay.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> CREST_TARGET = SynchedEntityData.defineId(EntityBlueJay.class, EntityDataSerializers.FLOAT);
 
-    private static final EntityDataAccessor<Optional<UUID>> LAST_FEEDER_UUID = SynchedEntityData.defineId(EntityBlueJay.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> LAST_FEEDER_UUID = SynchedEntityData.defineId(EntityBlueJay.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
 
-    private static final EntityDataAccessor<Optional<UUID>> RACCOON_UUID = SynchedEntityData.defineId(EntityBlueJay.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> RACCOON_UUID = SynchedEntityData.defineId(EntityBlueJay.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
 
     private static final EntityDataAccessor<Integer> FEED_TIME = SynchedEntityData.defineId(EntityBlueJay.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> SING_TIME = SynchedEntityData.defineId(EntityBlueJay.class, EntityDataSerializers.INT);
@@ -91,7 +93,7 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
 
     protected EntityBlueJay(EntityType<? extends Animal> animal, Level level) {
         super(animal, level);
-        this.setPathfindingMalus(PathType.DANGER_FIRE, -1.0F);
+        this.setPathfindingMalus(PathType.FIRE, -1.0F);
         this.setPathfindingMalus(PathType.WATER, -1.0F);
         this.setPathfindingMalus(PathType.WATER_BORDER, 16.0F);
         this.setPathfindingMalus(PathType.COCOA, -1.0F);
@@ -105,7 +107,7 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
         this.goalSelector.addGoal(1, new BreedGoal(this, 1.0D));
         this.goalSelector.addGoal(2, new BlueJayAIMelee(this));
         this.goalSelector.addGoal(3, new FollowParentGoal(this, 1D));
-        this.goalSelector.addGoal(4, new FlyingAITempt(this, 1.0D, Ingredient.of(AMTagRegistry.BLUE_JAY_FOODSTUFFS), false));
+        this.goalSelector.addGoal(4, new FlyingAITempt(this, 1.0D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.BLUE_JAY_FOODSTUFFS)), false));
         this.goalSelector.addGoal(5, new AIFollowFeederOrRaccoon());
         this.goalSelector.addGoal(6, new AIFlyIdle());
         this.goalSelector.addGoal(7, new AIScatter());
@@ -117,13 +119,8 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
     }
 
 
-    public static boolean checkBlueJaySpawnRules(EntityType type, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource randomIn) {
+    public static boolean checkBlueJaySpawnRules(EntityType type, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource randomIn) {
         return isBrightEnoughToSpawn(worldIn, pos);
-    }
-
-    /** Vanilla 1.20.1 SpawnPlacements.SpawnPredicate signature (LevelReader, BlockPos, EntityType). */
-    public static boolean checkBlueJaySpawnRules(LevelReader level, BlockPos pos, EntityType<?> type) {
-        return level instanceof LevelAccessor la && isBrightEnoughToSpawn(la, pos);
     }
 
     public boolean checkSpawnObstruction(LevelReader reader) {
@@ -135,7 +132,7 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
         return false;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.blueJaySpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -219,7 +216,7 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
         }else{
             this.crestAmount = Mth.approach(this.crestAmount, this.getTargetCrest(), 0.3F);
         }
-        if(!this.level().isClientSide){
+        if(!this.level().isClientSide()){
             if (isFlying()) {
                 if (this.isLandNavigator)
                     switchNavigator(false);
@@ -274,15 +271,15 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
             if(this.prevSingTime % 15 == 0){
                this.playSound(AMSoundRegistry.BLUE_JAY_SONG, this.getSoundVolume(), this.getVoicePitch());
             }
-            if(this.level().isClientSide){
-                if(this.getSingTime() % 5 == 0 && this.level().isClientSide){
+            if(this.level().isClientSide()){
+                if(this.getSingTime() % 5 == 0 && this.level().isClientSide()){
                     Vec3 modelFront = new Vec3(0, 0.2F, 0.3F).scale(this.getScale()).xRot(-this.getXRot() * Mth.DEG_TO_RAD).yRot(-this.getYRot() * Mth.DEG_TO_RAD);
                     Vec3 particleFrom = this.position().add(modelFront);
                     this.level().addParticle(AMParticleRegistry.BIRD_SONG, particleFrom.x, particleFrom.y, particleFrom.z, modelFront.x, modelFront.y, modelFront.z);
                 }
             }
         }
-        if(prevSingTime < getSingTime() && !this.level().isClientSide){
+        if(prevSingTime < getSingTime() && !this.level().isClientSide()){
             blueTime = 1200;
             this.entityData.set(BLUE_VISUAL_FLAG, true);
             highlightMonsters();
@@ -322,7 +319,7 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
 
     @Override
     public void remove(Entity.RemovalReason removalReason) {
-        if(this.getSingTime() > 0 && !this.level().isClientSide){
+        if(this.getSingTime() > 0 && !this.level().isClientSide()){
             this.entityData.set(BLUE_VISUAL_FLAG, false);
             this.level().broadcastEntityEvent(this, (byte) 68);
         }
@@ -330,8 +327,8 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return source.is(DamageTypes.IN_WALL)  || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.IN_WALL) || super.isInvulnerableTo(level, source);
     }
 
     public void travel(Vec3 vec3d) {
@@ -350,20 +347,6 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
             position = position.below();
         }
         return position;
-    }
-
-    public boolean isAlliedTo(Entity entityIn) {
-        if(this.getRaccoonUUID() != null){
-            if(entityIn instanceof EntityRaccoon && this.getRaccoonUUID().equals(entityIn.getUUID())) {
-                return true;
-            }else{
-                Entity raccoon = getRaccoon();
-                if(raccoon != null && (raccoon.isAlliedTo(entityIn) || entityIn.isAlliedTo(raccoon))){
-                    return true;
-                }
-            }
-        }
-        return super.isAlliedTo(entityIn);
     }
 
     public Vec3 getBlockGrounding(Vec3 fleePos) {
@@ -430,7 +413,7 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 10.0D).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.25F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 10.0D).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.25F);
     }
 
     public boolean isFlying() {
@@ -444,28 +427,22 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
         this.entityData.set(FLYING, flying);
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
-        super.readAdditionalSaveData(compound);
-        this.setFlying(compound.getBoolean("Flying"));
-        this.blueTime = compound.getInt("BlueTime");
-        if (compound.hasUUID("FeederUUID")) {
-            this.setLastFeederUUID(compound.getUUID("FeederUUID"));
-        }
-        if (compound.hasUUID("RaccoonUUID")) {
-            this.setRaccoonUUID(compound.getUUID("RaccoonUUID"));
-        }
+    @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        this.setFlying(input.getBooleanOr("Flying", false));
+        this.blueTime = input.getIntOr("BlueTime", this.blueTime);
+        this.setLastFeederUUID(input.read("FeederUUID", UUIDUtil.CODEC).orElse(null));
+        this.setRaccoonUUID(input.read("RaccoonUUID", UUIDUtil.CODEC).orElse(null));
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
-        super.addAdditionalSaveData(compound);
-        compound.putBoolean("Flying", this.isFlying());
-        compound.putInt("BlueTime", this.blueTime);
-        if (this.getLastFeederUUID() != null) {
-            compound.putUUID("FeederUUID", this.getLastFeederUUID());
-        }
-        if (this.getRaccoonUUID() != null) {
-            compound.putUUID("RaccoonUUID", this.getRaccoonUUID());
-        }
+    @Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.putBoolean("Flying", this.isFlying());
+        output.putInt("BlueTime", this.blueTime);
+        output.storeNullable("FeederUUID", UUIDUtil.CODEC, this.getLastFeederUUID());
+        output.storeNullable("RaccoonUUID", UUIDUtil.CODEC, this.getRaccoonUUID());
     }
 
     public int getFeedTime() {
@@ -504,7 +481,7 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
     @javax.annotation.Nullable
     public Entity getLastFeeder() {
         UUID id = getLastFeederUUID();
-        if (id != null && !this.level().isClientSide) {
+        if (id != null && !this.level().isClientSide()) {
             return ((ServerLevel) level()).getEntity(id);
         }
         return null;
@@ -530,7 +507,7 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
     @javax.annotation.Nullable
     public Entity getRaccoon() {
         UUID id = getRaccoonUUID();
-        if (id != null && !this.level().isClientSide) {
+        if (id != null && !this.level().isClientSide()) {
             return ((ServerLevel) level()).getEntity(id);
         }
         return null;
@@ -556,13 +533,13 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel level, AgeableMob mob) {
-        return AMEntityRegistry.BLUE_JAY.create(level());
+        return AMEntityRegistry.BLUE_JAY.create(level, EntitySpawnReason.BREEDING);
     }
 
 
     @Override
     public boolean canTargetItem(ItemStack stack) {
-        return stack.get(DataComponents.FOOD) != null || stack.is(AMTagRegistry.BLUE_JAY_FOODSTUFFS);
+        return stack.has(net.minecraft.core.component.DataComponents.FOOD) || stack.is(AMTagRegistry.BLUE_JAY_FOODSTUFFS);
     }
 
     public double getMaxDistToItem() {
@@ -571,8 +548,8 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
 
     @Override
     public void onGetItem(ItemEntity e) {
-        if (!this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !this.level().isClientSide) {
-            this.spawnAtLocation(this.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
+        if (!this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !this.level().isClientSide()) {
+            this.spawnAtLocation((ServerLevel) this.level(), this.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
         }
         this.heal(3);
         Entity itemThrower = e.getOwner();
@@ -729,7 +706,7 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
             this.targetEntitySelector = new Predicate<Entity>() {
                 @Override
                 public boolean apply(@javax.annotation.Nullable Entity e) {
-                    return e.isAlive() && e.getType().is(AMTagRegistry.SCATTERS_CROWS) || e instanceof Player && !((Player) e).isCreative();
+                    return e.isAlive() && e.getType().builtInRegistryHolder().is(AMTagRegistry.SCATTERS_CROWS) || e instanceof Player && !((Player) e).isCreative();
                 }
             };
         }
@@ -931,7 +908,7 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
                     EntityBlueJay.this.getMoveControl().setWantedPosition(this.following.getX(), this.following.getY(), this.following.getZ(), 1);
                 }
                 if(dist < 1F && raccoon.getPassengers().isEmpty()){
-                    EntityBlueJay.this.startRiding(raccoon, false);
+                    EntityBlueJay.this.startRiding(raccoon, true, false);
                 }
             }
         }

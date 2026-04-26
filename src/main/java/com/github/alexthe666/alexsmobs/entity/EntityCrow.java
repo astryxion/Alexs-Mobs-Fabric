@@ -1,10 +1,13 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
-import com.github.alexthe666.alexsmobs.message.MessageCrowDismount;
+import com.github.alexthe666.alexsmobs.network.MessageCrowDismount;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
@@ -42,9 +45,10 @@ import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.item.Item;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -56,6 +60,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.Container;
+import net.minecraft.world.WorldlyContainer;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -84,9 +89,54 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
     private int checkPerchCooldown = 0;
     private final boolean gatheringClockwise = false;
 
+    private static ItemStack insertIntoContainer(Container container, Direction side, ItemStack stack, boolean simulate) {
+        ItemStack remaining = stack.copy();
+        int size = container.getContainerSize();
+        for (int slot = 0; slot < size && !remaining.isEmpty(); slot++) {
+            if (!canInsertToSlot(container, slot, remaining, side)) {
+                continue;
+            }
+            ItemStack existing = container.getItem(slot);
+            if (!existing.isEmpty() && !ItemStack.isSameItemSameComponents(existing, remaining)) {
+                continue;
+            }
+            int maxStack = Math.min(container.getMaxStackSize(), remaining.getMaxStackSize());
+            int room = existing.isEmpty() ? maxStack : maxStack - existing.getCount();
+            if (room <= 0) {
+                continue;
+            }
+            int move = Math.min(room, remaining.getCount());
+            if (!simulate) {
+                if (existing.isEmpty()) {
+                    ItemStack placed = remaining.copy();
+                    placed.setCount(move);
+                    container.setItem(slot, placed);
+                } else {
+                    existing.grow(move);
+                    container.setItem(slot, existing);
+                }
+            }
+            remaining.shrink(move);
+        }
+        if (!simulate) {
+            container.setChanged();
+        }
+        return remaining;
+    }
+
+    private static boolean canInsertToSlot(Container container, int slot, ItemStack stack, Direction side) {
+        if (!container.canPlaceItem(slot, stack)) {
+            return false;
+        }
+        if (container instanceof WorldlyContainer worldly) {
+            return worldly.canPlaceItemThroughFace(slot, stack, side);
+        }
+        return true;
+    }
+
     protected EntityCrow(EntityType type, Level worldIn) {
         super(type, worldIn);
-        this.setPathfindingMalus(PathType.DANGER_FIRE, -1.0F);
+        this.setPathfindingMalus(PathType.FIRE, -1.0F);
         this.setPathfindingMalus(PathType.WATER, -1.0F);
         this.setPathfindingMalus(PathType.WATER_BORDER, 16.0F);
         this.setPathfindingMalus(PathType.COCOA, -1.0F);
@@ -121,15 +171,16 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
     }
 
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.crowSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static <T extends Mob> boolean canCrowSpawn(EntityType<EntityCrow> crow, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static <T extends Mob> boolean canCrowSpawn(EntityType<EntityCrow> crow, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         return isBrightEnoughToSpawn(worldIn, pos);
     }
 
-    public boolean isAlliedTo(Entity entityIn) {
+    @Override
+    protected boolean considersEntityAsAlly(Entity entityIn) {
         if (this.isTame()) {
             LivingEntity livingentity = this.getOwner();
             if (entityIn == livingentity) {
@@ -143,7 +194,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
             }
         }
 
-        return super.isAlliedTo(entityIn);
+        return super.considersEntityAsAlly(entityIn);
     }
 
     private void switchNavigator(boolean onLand) {
@@ -169,23 +220,25 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
     protected void checkFallDamage(double y, boolean onGroundIn, BlockState state, BlockPos pos) {
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        if (this.isInvulnerableTo(source)) {
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        if (this.isInvulnerableTo(level, source)) {
             return false;
         } else {
             final Entity entity = source.getEntity();
             this.setOrderedToSit(false);
+            float amt = amount;
             if (entity != null && this.isTame() && !(entity instanceof Player) && !(entity instanceof AbstractArrow)) {
-                amount = (amount + 1.0F) / 4.0F;
+                amt = (amount + 1.0F) / 4.0F;
             }
 
-            if(this.isPassenger()){
+            if (this.isPassenger()) {
                 this.stopRiding();
             }
-            final boolean prev = super.hurt(source, amount);
+            final boolean prev = super.hurtServer(level, source, amt);
             if (prev) {
                 if (!this.getMainHandItem().isEmpty()) {
-                    this.spawnAtLocation(this.getMainHandItem().copy());
+                    this.spawnAtLocation(level, this.getMainHandItem().copy());
                     this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
                 }
             }
@@ -213,7 +266,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
                 this.setPos(riding.getX() + extraX, riding.getY() + extraY, riding.getZ() + extraZ);
                 if (!riding.isAlive() || boardingCooldown == 0 && riding.isShiftKeyDown() || ((Player) riding).isFallFlying() || this.getTarget() != null && this.getTarget().isAlive()) {
                     this.removeVehicle();
-                    if (!this.level().isClientSide) {
+                    if (!this.level().isClientSide()) {
                         AlexsMobs.sendMSGToAll(new MessageCrowDismount(this.getId(), riding.getId()));
                     }
                 }
@@ -242,7 +295,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
         final ItemStack itemstack = player.getItemInHand(hand);
         final InteractionResult type = super.mobInteract(player, hand);
         if (!this.getMainHandItem().isEmpty() && type != InteractionResult.SUCCESS) {
-            this.spawnAtLocation(this.getMainHandItem().copy());
+            this.spawnAtLocation((ServerLevel) this.level(), this.getMainHandItem().copy());
             this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
             return InteractionResult.SUCCESS;
         } else {
@@ -258,10 +311,10 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
                 if (this.getCommand() == 4) {
                     this.setCommand(0);
                 }
-                if(this.getCommand() == 3){
-                    player.displayClientMessage(Component.translatable("entity.alexsmobs.crow.command_3", this.getName()), true);
-                }else{
-                    player.displayClientMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()), true);
+                if (this.getCommand() == 3) {
+                    player.sendOverlayMessage(Component.translatable("entity.alexsmobs.crow.command_3", this.getName()));
+                } else {
+                    player.sendOverlayMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()));
                 }
                 final boolean sit = this.getCommand() == 2;
                 this.setOrderedToSit(sit);
@@ -299,7 +352,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
             fleePumpkinFlag--;
         }
 
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             final boolean isFlying = isFlying();
             if (isFlying && this.isLandNavigator) {
                 switchNavigator(false);
@@ -329,19 +382,24 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
                     if (getRandom().nextFloat() < 0.3F) {
                         this.setTame(true, true);
                         this.setCommand(1);
-                        this.setOwnerUUID(this.seedThrowerID);
-                        final Player player = level().getPlayerByUUID(seedThrowerID);
-                        if (player instanceof final ServerPlayer serverPlayer) {
-                            CriteriaTriggers.TAME_ANIMAL.trigger(serverPlayer, this);
+                        this.setOwnerReference(EntityReference.of(this.seedThrowerID));
+                        if (this.level() instanceof ServerLevel serverLevel) {
+                            final Player player = serverLevel.getPlayerInAnyDimension(this.seedThrowerID);
+                            if (player instanceof final ServerPlayer serverPlayer) {
+                                CriteriaTriggers.TAME_ANIMAL.trigger(serverPlayer, this);
+                            }
                         }
                         this.level().broadcastEntityEvent(this, (byte) 7);
                     } else {
                         this.level().broadcastEntityEvent(this, (byte) 6);
                     }
                 }
-                Item rem = this.getMainHandItem().getItem().getCraftingRemainingItem();
-                if (rem != null && rem != net.minecraft.world.item.Items.AIR) {
-                    this.spawnAtLocation(new ItemStack(rem, 1));
+                ItemStackTemplate remainderTemplate = this.getMainHandItem().getItem().getCraftingRemainder();
+                if (remainderTemplate != null) {
+                    ItemStack remainder = remainderTemplate.create();
+                    if (!remainder.isEmpty()) {
+                        this.spawnAtLocation((ServerLevel) this.level(), remainder);
+                    }
                 }
                 this.getMainHandItem().shrink(1);
             }
@@ -408,7 +466,8 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
         }
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("Flying", this.isFlying());
         compound.putBoolean("MonkeySitting", this.isSitting());
@@ -433,13 +492,14 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
         super.travel(vec3d);
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setFlying(compound.getBoolean("Flying"));
-        this.setOrderedToSit(compound.getBoolean("MonkeySitting"));
-        this.setCommand(compound.getInt("Command"));
-        if (compound.contains("PerchX") && compound.contains("PerchY") && compound.contains("PerchZ")) {
-            this.setPerchPos(new BlockPos(compound.getInt("PerchX"), compound.getInt("PerchY"), compound.getInt("PerchZ")));
+        this.setFlying(compound.getBooleanOr("Flying", false));
+        this.setOrderedToSit(compound.getBooleanOr("MonkeySitting", false));
+        this.setCommand(compound.getIntOr("Command", 0));
+        if (compound.getInt("PerchX").isPresent() && compound.getInt("PerchY").isPresent() && compound.getInt("PerchZ").isPresent()) {
+            this.setPerchPos(new BlockPos(compound.getIntOr("PerchX", 0), compound.getIntOr("PerchY", 0), compound.getIntOr("PerchZ", 0)));
         }
     }
 
@@ -477,18 +537,18 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
         builder.define(ATTACK_TICK, 0);
         builder.define(COMMAND, 0);
         builder.define(SITTING, false);
-        builder.define(PERCH_POS, Optional.<BlockPos>empty());
+        builder.define(PERCH_POS, Optional.empty());
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return source.is(DamageTypes.IN_WALL)  || source.is(DamageTypes.FALL) || source.is(DamageTypes.CACTUS) || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.IN_WALL) || source.is(DamageTypes.FALL) || source.is(DamageTypes.CACTUS) || super.isInvulnerableTo(level, source);
     }
 
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverWorld, AgeableMob ageableEntity) {
-        return AMEntityRegistry.CROW.create(serverWorld);
+        return AMEntityRegistry.CROW.create(serverWorld, EntitySpawnReason.BREEDING);
     }
 
     public boolean isTargetBlocked(Vec3 target) {
@@ -589,7 +649,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
     }
 
     private boolean isCrowEdible(ItemStack stack) {
-        return stack.get(net.minecraft.core.component.DataComponents.FOOD) != null || stack.is(AMTagRegistry.CROW_FOODSTUFFS);
+        return stack.has(net.minecraft.core.component.DataComponents.FOOD) || stack.is(AMTagRegistry.CROW_FOODSTUFFS);
     }
 
     public double getMaxDistToItem() {
@@ -600,8 +660,8 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
     public void onGetItem(ItemEntity e) {
         final ItemStack duplicate = e.getItem().copy();
         duplicate.setCount(1);
-        if (!this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !this.level().isClientSide) {
-            this.spawnAtLocation(this.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
+        if (!this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !this.level().isClientSide()) {
+            this.spawnAtLocation((ServerLevel) this.level(), this.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
         }
         this.setItemInHand(InteractionHand.MAIN_HAND, duplicate);
         Entity itemThrower = e.getOwner();
@@ -755,7 +815,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
             this.targetEntitySelector = new Predicate<Entity>() {
                 @Override
                 public boolean apply(@Nullable Entity e) {
-                    return e.isAlive() && e.getType().is(AMTagRegistry.SCATTERS_CROWS) || e instanceof Player && !((Player) e).isCreative();
+                    return e.isAlive() && e.getType().builtInRegistryHolder().is(AMTagRegistry.SCATTERS_CROWS) || e instanceof Player && !((Player) e).isCreative();
                 }
             };
         }
@@ -1010,8 +1070,8 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
                 public boolean apply(@Nullable ItemFrame e) {
                     BlockPos hangingPosition = e.getPos().relative(e.getDirection().getOpposite());
                     BlockEntity entity = e.level().getBlockEntity(hangingPosition);
-                    if (entity instanceof net.minecraft.world.Container) {
-                        return ItemStack.isSameItem(e.getItem(), EntityCrow.this.getMainHandItem());
+                    if(entity instanceof Container){
+                            return ItemStack.isSameItem(e.getItem(), EntityCrow.this.getMainHandItem());
                     }
                     return false;
                 }
@@ -1077,24 +1137,26 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
             if (targetEntity != null) {
                 flightTarget = targetEntity.position();
                 if (EntityCrow.this.distanceTo(targetEntity) < 2.0F) {
-                    try {
+                    try{
                         final BlockPos hangingPosition = targetEntity.getPos().relative(targetEntity.getDirection().getOpposite());
                         final BlockEntity entity = targetEntity.level().getBlockEntity(hangingPosition);
-                        if (entity instanceof Container container && cooldown == 0) {
+                        final Direction deposit = targetEntity.getDirection();
+                        if(entity instanceof Container container && cooldown == 0) {
                             ItemStack duplicate = EntityCrow.this.getItemInHand(InteractionHand.MAIN_HAND).copy();
-                            ItemStack remainder = insertItemIntoContainer(container, duplicate);
-                            if (remainder.getCount() < duplicate.getCount()) {
-                                if (remainder.isEmpty()) {
+                            ItemStack insertSimulate = insertIntoContainer(container, deposit, duplicate, true);
+                            if (!insertSimulate.equals(duplicate)) {
+                                ItemStack shrunkenStack = insertIntoContainer(container, deposit, duplicate, false);
+                                if(shrunkenStack.isEmpty()){
                                     EntityCrow.this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-                                } else {
-                                    EntityCrow.this.setItemInHand(InteractionHand.MAIN_HAND, remainder);
+                                }else{
+                                    EntityCrow.this.setItemInHand(InteractionHand.MAIN_HAND, shrunkenStack);
                                 }
                                 EntityCrow.this.peck();
-                            } else {
+                            }else{
                                 cooldown = 20;
                             }
                         }
-                    } catch (Exception e) {
+                    }catch (Exception e){
                     }
                     this.stop();
                 }
@@ -1119,26 +1181,5 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
                 return Double.compare(d0, d1);
             }
         }
-    }
-
-    /** Fabric: 1:1 replacement for ItemHandlerHelper.insertItem into IItemHandler. Returns remainder. */
-    private static ItemStack insertItemIntoContainer(Container container, ItemStack stack) {
-        ItemStack remainder = stack.copy();
-        for (int i = 0; i < container.getContainerSize() && !remainder.isEmpty(); i++) {
-            if (!container.canPlaceItem(i, remainder)) continue;
-            ItemStack inSlot = container.getItem(i);
-            if (inSlot.isEmpty()) {
-                int toAdd = Math.min(remainder.getCount(), container.getMaxStackSize());
-                container.setItem(i, remainder.split(toAdd));
-            } else if (ItemStack.isSameItemSameComponents(inSlot, remainder)) {
-                int toAdd = Math.min(remainder.getCount(), container.getMaxStackSize() - inSlot.getCount());
-                if (toAdd > 0) {
-                    inSlot.grow(toAdd);
-                    remainder.shrink(toAdd);
-                    container.setItem(i, inSlot);
-                }
-            }
-        }
-        return remainder;
     }
 }

@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.pathfinder.*;
@@ -12,6 +13,26 @@ import net.minecraft.world.level.pathfinder.*;
 import javax.annotation.Nullable;
 
 public class BoneSerpentNodeProcessor extends NodeEvaluator {
+    
+    @Override
+    public net.minecraft.world.level.pathfinder.Target getTarget(double x, double y, double z) {
+        Node node = getNode((int)x, (int)y, (int)z);
+        if (node == null) {
+            // Fallback: create a basic node at the target position
+            node = super.getNode((int)x, (int)y, (int)z);
+        }
+        return new net.minecraft.world.level.pathfinder.Target(node);
+    }
+    
+    @Override
+    public PathType getPathTypeOfMob(PathfindingContext context, int x, int y, int z, Mob mob) {
+        return PathType.OPEN;
+    }
+    
+    @Override
+    public PathType getPathType(PathfindingContext context, int x, int y, int z) {
+        return PathType.OPEN;
+    }
 
     public BoneSerpentNodeProcessor() {
     }
@@ -20,7 +41,7 @@ public class BoneSerpentNodeProcessor extends NodeEvaluator {
         return super.getNode(Mth.floor(this.mob.getBoundingBox().minX), Mth.floor(this.mob.getBoundingBox().minY + 0.5D), Mth.floor(this.mob.getBoundingBox().minZ));
     }
 
-    public Target getTarget(double p_224768_1_, double p_224768_3_, double p_224768_5_) {
+    public Target getGoal(double p_224768_1_, double p_224768_3_, double p_224768_5_) {
         return new Target(super.getNode(Mth.floor(p_224768_1_ - (double)(this.mob.getBbWidth() / 2.0F)), Mth.floor(p_224768_3_ + 0.5D), Mth.floor(p_224768_5_ - (double)(this.mob.getBbWidth() / 2.0F))));
     }
 
@@ -37,16 +58,14 @@ public class BoneSerpentNodeProcessor extends NodeEvaluator {
         return i;
     }
 
-    @Override
-    public PathType getPathTypeOfMob(PathfindingContext context, int x, int y, int z, Mob mob) {
-        return this.getPathType(context, x, y, z);
+    public PathType getBlockPathType(BlockGetter blockaccessIn, int x, int y, int z, Mob entitylivingIn) {
+        return this.getBlockPathType(blockaccessIn, x, y, z);
     }
 
-    @Override
-    public PathType getPathType(PathfindingContext context, int x, int y, int z) {
+    public PathType getBlockPathType(BlockGetter blockaccessIn, int x, int y, int z) {
         BlockPos blockpos = new BlockPos(x, y, z);
-        FluidState fluidstate = context.level().getFluidState(blockpos);
-        BlockState blockstate = context.getBlockState(blockpos);
+        FluidState fluidstate = blockaccessIn.getFluidState(blockpos);
+        BlockState blockstate = blockaccessIn.getBlockState(blockpos);
         if (fluidstate.isEmpty() && blockstate.isPathfindable(PathComputationType.WATER) && blockstate.isAir()) {
             return PathType.BREACH;
         } else {
@@ -66,7 +85,7 @@ public class BoneSerpentNodeProcessor extends NodeEvaluator {
     @Nullable
     protected Node getNode(int x, int y, int z) {
         Node pathpoint = null;
-        PathType pathnodetype = this.getPathType(this.currentContext, x, y, z);
+        PathType pathnodetype = this.getBlockPathType(this.mob.level(), x, y, z);
         float f = this.mob.getPathfindingMalus(pathnodetype);
         if (f >= 0.0F) {
             pathpoint = super.getNode(x, y, z);

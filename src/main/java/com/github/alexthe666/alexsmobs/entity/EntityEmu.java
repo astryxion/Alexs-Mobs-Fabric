@@ -1,6 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
-import com.github.alexthe666.alexsmobs.AlexsMobs;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIHerdPanic;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIWanderRanged;
@@ -10,6 +12,7 @@ import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import com.github.alexthe666.citadel.animation.Animation;
 import com.github.alexthe666.citadel.animation.AnimationHandler;
 import com.github.alexthe666.citadel.animation.IAnimatedEntity;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -28,9 +31,9 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.monster.AbstractSkeleton;
+import net.minecraft.world.entity.monster.skeleton.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.Pillager;
+import net.minecraft.world.entity.monster.illager.Pillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -61,19 +64,16 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 20.0D).add(Attributes.MOVEMENT_SPEED, 0.35F).add(Attributes.ATTACK_DAMAGE, 3F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 20.0D).add(Attributes.MOVEMENT_SPEED, 0.35F).add(Attributes.ATTACK_DAMAGE, 3F);
     }
 
 
-    public static <T extends Mob> boolean canEmuSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
-        if (AMConfig.debugSpawningDiagnostic) {
-            AlexsMobs.LOGGER.debug("[SpawnDiag] canEmuSpawn called pos={} dim={}", pos, worldIn instanceof net.minecraft.world.level.Level l ? l.dimension().location() : "?");
-        }
+    public static <T extends Mob> boolean canEmuSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         boolean spawnBlock = worldIn.getBlockState(pos.below()).is(AMTagRegistry.EMU_SPAWNS);
         return spawnBlock && worldIn.getRawBrightness(pos, 0) > 8;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.emuSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -107,10 +107,8 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.3D, true){
-            @Override
-            protected boolean canPerformAttack(LivingEntity target) {
-                double reach = (this.mob.getBbWidth() + target.getBbWidth() + 2.5) * (this.mob.getBbWidth() + target.getBbWidth() + 2.5);
-                return this.mob.distanceToSqr(target) <= reach;
+            protected double getAttackReachSqr(LivingEntity attackTarget) {
+                return (EntityEmu.this.getBbWidth() * 2.0F * EntityEmu.this.getBbWidth() * 2.0F + attackTarget.getBbWidth()) + 2.5D;
             }
 
             @Override
@@ -126,7 +124,7 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
         this.goalSelector.addGoal(2, new AnimalAIHerdPanic(this, 1.5D));
         this.goalSelector.addGoal(3, new BreedGoal(this, 1.0D));
         this.goalSelector.addGoal(4, new FollowParentGoal(this, 1.1D));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.EMU_BREEDABLES), false));
+        this.goalSelector.addGoal(4, new TemptGoal(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.EMU_BREEDABLES)), false));
         this.goalSelector.addGoal(5, new AnimalAIWanderRanged(this, 110, 1.0D, 10, 7));
         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 15.0F));
         this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
@@ -145,8 +143,9 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
         return !this.isBaby() && super.canAttack(target);
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        boolean prev = super.hurt(source, amount);
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        boolean prev = super.hurtServer(level, source, amount);
         if (prev) {
             double range = 15;
             int fleeTime = 100 + getRandom().nextInt(5);
@@ -154,7 +153,7 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
             List<? extends EntityEmu> list = this.level().getEntitiesOfClass(this.getClass(), this.getBoundingBox().inflate(range, range / 2, range));
             for (EntityEmu emu : list) {
                 emu.revengeCooldown = fleeTime;
-                if(emu.isBaby() && random.nextInt(2) == 0){
+                if (emu.isBaby() && this.getRandom().nextInt(2) == 0) {
                     emu.emuAttackedDirectly = this.getLastHurtByMob() != null;
                     emu.revengeCooldown = emu.emuAttackedDirectly ? 10 + getRandom().nextInt(30) : fleeTime;
                 }
@@ -172,7 +171,7 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
 
     public void tick() {
         super.tick();
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (this.getLastHurtByMob() == null && this.getTarget() == null) {
                 if (this.getDeltaMovement().lengthSqr() < 0.03D && this.getRandom().nextInt(190) == 0 && this.getAnimation() == NO_ANIMATION) {
                     if (getRandom().nextInt(3) == 0) {
@@ -194,13 +193,15 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
                 float f1 = this.getYRot() * Mth.DEG_TO_RAD;
                 this.setDeltaMovement(this.getDeltaMovement().add(-Mth.sin(f1) * 0.02F, 0.0D, Mth.cos(f1) * 0.02F));
                 target.knockback(0.4F, target.getX() - this.getX(), target.getZ() - this.getZ());
-                target.hurt(this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue());
+                if (this.level() instanceof ServerLevel serverLevel) {
+                    target.hurtServer(serverLevel, this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue());
+                }
             }
         }
-        if (!this.level().isClientSide && this.isAlive() && !this.isBaby() && --this.timeUntilNextEgg <= 0) {
+        if (!this.level().isClientSide() && this.isAlive() && !this.isBaby() && --this.timeUntilNextEgg <= 0) {
             this.playSound(SoundEvents.CHICKEN_EGG, 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
-            this.spawnAtLocation(AMItemRegistry.EMU_EGG);
-            this.timeUntilNextEgg = this.random.nextInt(6000) + 6000;
+            this.spawnAtLocation((ServerLevel) this.level(), AMItemRegistry.EMU_EGG);
+            this.timeUntilNextEgg = this.getRandom().nextInt(6000) + 6000;
         }
         AnimationHandler.INSTANCE.updateAnimations(this);
     }
@@ -234,7 +235,7 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverWorld, AgeableMob ageableEntity) {
-        EntityEmu emu = AMEntityRegistry.EMU.create(serverWorld);
+        EntityEmu emu = AMEntityRegistry.EMU.create(serverWorld, EntitySpawnReason.BREEDING);
         emu.setVariant(this.getVariant());
         return emu;
     }
@@ -246,25 +247,27 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
         return true;
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setVariant(compound.getInt("Variant"));
-        if (compound.contains("EggLayTime")) {
-            this.timeUntilNextEgg = compound.getInt("EggLayTime");
+        this.setVariant(compound.getIntOr("Variant", 0));
+        if (compound.getInt("EggLayTime").isPresent()) {
+            this.timeUntilNextEgg = compound.getIntOr("EggLayTime", 0);
         }
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putInt("Variant", this.getVariant());
         compound.putInt("EggLayTime", this.timeUntilNextEgg);
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
-        if(this.random.nextInt(200) == 0){
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
+        if (this.getRandom().nextInt(200) == 0) {
             this.setVariant(2);
-        }else if(random.nextInt(3) == 0){
+        } else if (this.getRandom().nextInt(3) == 0) {
             this.setVariant(1);
         }
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);

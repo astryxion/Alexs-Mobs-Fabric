@@ -2,6 +2,7 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 
 import com.github.alexthe666.alexsmobs.entity.EntityMungus;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
@@ -35,7 +36,10 @@ public class MungusAITemptMushroom extends Goal {
             --this.calmDown;
             return false;
         } else {
-            this.player = this.mob.level().getNearestPlayer(this.targetingConditions, this.mob);
+            if (!(this.mob.level() instanceof ServerLevel serverLevel)) {
+                return false;
+            }
+            this.player = serverLevel.getNearestPlayer(this.targetingConditions.range(10.0D), this.mob);
             if(this.player != null){
                 return shouldFollow(this.player.getMainHandItem()) || shouldFollow(this.player.getOffhandItem());
             }

@@ -2,8 +2,11 @@
   "display": {
     "icon": {
       "id": "alexsmobs:tab_icon",
+      "nbt": "{DisplayEntityType:\"alexsmobs:elephant\", DisplayMobFlags:99}",
       "components": {
-        "minecraft:custom_data": "{DisplayEntityType:\"alexsmobs:elephant\", DisplayMobFlags:99}"
+        "alexsmobs:tab_icon_display": {
+          "display_entity_type": "alexsmobs:elephant"
+        }
       }
     },
     "title": {
@@ -20,8 +23,7 @@
       "trigger": "minecraft:tame_animal",
       "conditions": {
         "entity": {
-          "type": "alexsmobs:elephant",
-          "nbt": "{Tusked:true}"
+          "type": "alexsmobs:elephant"
         }
       }
     }

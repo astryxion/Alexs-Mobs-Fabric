@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIRandomSwimming;
 import com.github.alexthe666.alexsmobs.entity.ai.AquaticMoveController;
@@ -14,10 +17,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -38,7 +38,7 @@ import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WaterBoundPathNavigation;
 import net.minecraft.world.entity.animal.Bucketable;
 import net.minecraft.world.entity.animal.FlyingAnimal;
-import net.minecraft.world.entity.animal.WaterAnimal;
+import net.minecraft.world.entity.animal.fish.WaterAnimal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
@@ -65,7 +65,7 @@ import java.util.function.Predicate;
 
 public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal, Bucketable {
 
-    public static final ResourceKey<LootTable> PUPFISH_REWARD = ResourceKey.create(Registries.LOOT_TABLE, ResourceLocation.fromNamespaceAndPath("alexsmobs", "gameplay/pupfish_reward"));
+    public static final Identifier PUPFISH_REWARD = Identifier.fromNamespaceAndPath("alexsmobs", "gameplay/pupfish_reward");
     private static final EntityDataAccessor<Boolean> FROM_BUCKET = SynchedEntityData.defineId(EntityDevilsHolePupfish.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Float> PUPFISH_SCALE = SynchedEntityData.defineId(EntityDevilsHolePupfish.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> FEEDING_TIME = SynchedEntityData.defineId(EntityDevilsHolePupfish.class, EntityDataSerializers.INT);
@@ -117,8 +117,8 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
         return super.requiresCustomPersistence() || this.hasCustomName() || this.fromBucket();
     }
 
-    public static boolean canPupfishSpawn(EntityType<EntityDevilsHolePupfish> entityType, ServerLevelAccessor iServerWorld, MobSpawnType reason, BlockPos pos, RandomSource random) {
-        return reason == MobSpawnType.SPAWNER || isPupfishChunk(iServerWorld, pos) && iServerWorld.getFluidState(pos).is(FluidTags.WATER) && isInCave(iServerWorld, pos);
+    public static boolean canPupfishSpawn(EntityType<EntityDevilsHolePupfish> entityType, ServerLevelAccessor iServerWorld, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
+        return reason == EntitySpawnReason.SPAWNER || isPupfishChunk(iServerWorld, pos) && iServerWorld.getFluidState(pos).is(FluidTags.WATER) && isInCave(iServerWorld, pos);
     }
 
     private static boolean isPupfishChunk(ServerLevelAccessor iServerWorld, BlockPos pos) {
@@ -133,7 +133,7 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
         return !iServerWorld.canSeeSky(pos) && pos.getY() < iServerWorld.getSeaLevel();
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.devilsHolePupfishSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -145,14 +145,13 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
         return false;
     }
 
-    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(FROM_BUCKET, false);
         builder.define(PUPFISH_SCALE, 1.0F);
         builder.define(FEEDING_TIME, 0);
         builder.define(BABY_AGE, 0);
-        builder.define(FEEDING_POS, Optional.<BlockPos>empty());
+        builder.define(FEEDING_POS, Optional.empty());
     }
 
     public void tick() {
@@ -162,7 +161,7 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
         if(chaseCooldown > 0){
             chaseCooldown--;
         }
-        final boolean inWaterOrBubble = this.isInWaterOrBubble();
+        final boolean inWaterOrBubble = AMEntityRegistry.isInWaterOrBubble(this);
         if (!inWaterOrBubble && onLandProgress < 5F) {
             onLandProgress++;
         }
@@ -201,7 +200,7 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
                 }
             }
         }
-        if(!isInWaterOrBubble() && this.isAlive()){
+        if(!AMEntityRegistry.isInWaterOrBubble(this) && this.isAlive()){
             if (this.onGround() && random.nextFloat() < 0.5F) {
                 this.setDeltaMovement(this.getDeltaMovement().add((this.random.nextFloat() * 2.0F - 1.0F) * 0.2F, 0.5D, (this.random.nextFloat() * 2.0F - 1.0F) * 0.2F));
                 this.setYRot(this.random.nextFloat() * 360.0F);
@@ -211,10 +210,7 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
     }
 
 
-    @Override
-    protected EntityDimensions getDefaultDimensions(Pose poseIn) {
-        return super.getDefaultDimensions(poseIn).scale(this.getPupfishScale());
-    }
+    // getDimensions is now final in 1.21, removed override
 
     public boolean fromBucket() {
         return this.entityData.get(FROM_BUCKET);
@@ -230,21 +226,19 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
             bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, this.getCustomName());
         }
         Bucketable.saveDefaultDataToBucketTag(this, bucket);
-        net.minecraft.world.item.component.CustomData existing = bucket.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
-        CompoundTag compound = existing != null ? existing.copyTag() : new CompoundTag();
+        CompoundTag compound = bucket.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
         compound.putFloat("BucketScale", this.getPupfishScale());
         compound.putFloat("BabyAge", this.getBabyAge());
-        bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(compound));
     }
 
     @Override
     public void loadFromBucketTag(@Nonnull CompoundTag compound) {
         Bucketable.loadDefaultDataFromBucketTag(this, compound);
         if (compound.contains("BucketScale")){
-            this.setPupfishScale(compound.getFloat("BucketScale"));
+            this.setPupfishScale(compound.getFloatOr("BucketScale", 0.0F));
         }
         if (compound.contains("BabyAge")){
-            this.setBabyAge(compound.getInt("BabyAge"));
+            this.setBabyAge(compound.getIntOr("BabyAge", 0));
         }
     }
 
@@ -291,7 +285,7 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
         return getBabyAge() < 0;
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("FromBucket", this.fromBucket());
         compound.putBoolean("BreedNextChase", this.breedNextChase);
@@ -299,22 +293,22 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
         compound.putInt("BabyAge", this.getBabyAge());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setFromBucket(compound.getBoolean("FromBucket"));
-        this.breedNextChase = compound.getBoolean("BreedNextChase");
-        this.setPupfishScale(compound.getFloat("PupfishScale"));
-        this.setBabyAge(compound.getInt("BabyAge"));
+        this.setFromBucket(compound.getBooleanOr("FromBucket", false));
+        this.breedNextChase = compound.getBooleanOr("BreedNextChase", false);
+        this.setPupfishScale(compound.getFloatOr("PupfishScale", 0.0F));
+        this.setBabyAge(compound.getIntOr("BabyAge", 0));
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
         this.setPupfishScale(0.65F + random.nextFloat() * 0.35F);
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
     }
 
     protected void handleAirSupply(int i) {
-        if (this.isAlive() && !this.isInWaterOrBubble()) {
+        if (this.isAlive() && !AMEntityRegistry.isInWaterOrBubble(this)) {
             this.setAirSupply(i - 1);
             if (this.getAirSupply() == -20) {
                 this.setAirSupply(0);
@@ -370,7 +364,7 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
     }
 
     private static List<ItemStack> getFoodLoot(EntityDevilsHolePupfish pupfish) {
-        LootTable loottable = pupfish.level().getServer().reloadableRegistries().getLootTable(PUPFISH_REWARD);
+        LootTable loottable = pupfish.level().getServer().reloadableRegistries().getLootTable(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, PUPFISH_REWARD));
         return loottable.getRandomItems((new LootParams.Builder((ServerLevel) pupfish.level())).withParameter(LootContextParams.THIS_ENTITY, pupfish).create(LootContextParamSets.PIGLIN_BARTER));
     }
 
@@ -391,7 +385,7 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
 
         @Override
         public boolean canUse() {
-            if(!pupfish.isInWaterOrBubble() || pupfish.chaseTime > pupfish.maxChaseTime || pupfish.chaseCooldown > 0){
+            if(!AMEntityRegistry.isInWaterOrBubble(pupfish) || pupfish.chaseTime > pupfish.maxChaseTime || pupfish.chaseCooldown > 0){
                 return false;
             }
             if(pupfish.chasePartner != null && pupfish.chasePartner.isAlive()){
@@ -466,7 +460,7 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
     }
 
     private void spawnBabiesWith(EntityDevilsHolePupfish chasePartner) {
-        EntityDevilsHolePupfish baby = AMEntityRegistry.DEVILS_HOLE_PUPFISH.create(level());
+        EntityDevilsHolePupfish baby = AMEntityRegistry.DEVILS_HOLE_PUPFISH.create(level(), EntitySpawnReason.BREEDING);
         baby.copyPosition(this);
         baby.setPupfishScale(0.65F + random.nextFloat() * 0.35F);
         baby.setBabyAge(-24000);
@@ -498,7 +492,7 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
 
         @Override
         public boolean canUse() {
-            if (!pupfish.isInWaterOrBubble()) {
+            if (!AMEntityRegistry.isInWaterOrBubble(pupfish)) {
                 return false;
             }
             if (this.runDelay > 0) {
@@ -529,8 +523,11 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
                             List<ItemStack> lootList = getFoodLoot(pupfish);
                             if (!lootList.isEmpty()) {
                                 for (ItemStack stack : lootList) {
-                                    ItemEntity e = pupfish.spawnAtLocation(stack.copy());
-                                    e.hasImpulse = true;
+                                    if (!(pupfish.level() instanceof ServerLevel serverLevel)) {
+                                        continue;
+                                    }
+                                    ItemEntity e = pupfish.spawnAtLocation(serverLevel, stack.copy());
+                                    e.needsSync = true;
                                     e.setDeltaMovement(e.getDeltaMovement().multiply(0.2, 0.2, 0.2));
                                 }
                             }

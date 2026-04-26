@@ -1,17 +1,24 @@
 package com.github.alexthe666.alexsmobs.world;
 
-import com.github.alexthe666.alexsmobs.AlexsMobs;
-import net.minecraft.resources.ResourceLocation;
+import com.mojang.serialization.MapCodec;
+import net.fabricmc.fabric.api.biome.v1.BiomeModificationContext;
+import net.fabricmc.fabric.api.biome.v1.BiomeSelectionContext;
 
-/**
- * Fabric: 1:1 replacement for Forge StructureModifier.
- * Structure spawn overrides (mimicube in end city, soul vulture in fossil, skelewag in shipwreck, underminer)
- * are implemented in {@link AMWorldRegistry#modifyStructure}; on Fabric they are applied via
- * datapack (structure JSON spawn_overrides) or a mixin that implements {@link AMWorldRegistry.StructureSpawnTarget}.
- */
 public class AMMobSpawnStructureModifier {
+    public static final MapCodec<AMMobSpawnStructureModifier> CODEC = MapCodec.unit(AMMobSpawnStructureModifier::new);
 
-    public static void register() {
-        // Structure spawn overrides applied via datapack or mixin; see AMWorldRegistry.modifyStructure.
+    public AMMobSpawnStructureModifier() {
+    }
+
+    public void apply(BiomeSelectionContext selectionContext, BiomeModificationContext.MobSpawnSettingsContext builder) {
+        // Structure-related spawn additions are applied in AMWorldRegistry.init() via BiomeSelectionContext#validForStructure.
+    }
+
+    public MapCodec<AMMobSpawnStructureModifier> codec() {
+        return CODEC;
+    }
+
+    public static MapCodec<AMMobSpawnStructureModifier> makeCodec() {
+        return CODEC;
     }
 }

@@ -14,6 +14,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -30,17 +31,18 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.*;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Fallable;
 import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraft.world.level.pathfinder.PathfindingContext;
 import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.level.pathfinder.PathFinder;
+import net.minecraft.world.level.pathfinder.PathfindingContext;
 import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -69,12 +71,12 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
         this.moveControl = new MovementControllerCustomCollisions(this);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.rockyRollerSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
 
-    public static boolean checkRockyRollerSpawnRules(EntityType<? extends Monster> animal, ServerLevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean checkRockyRollerSpawnRules(EntityType<? extends Monster> animal, ServerLevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         return worldIn.getDifficulty() != Difficulty.PEACEFUL && isDarkEnoughToSpawn(worldIn, pos, random) && (worldIn.getBlockState(pos.below()).is(AMTagRegistry.ROCKY_ROLLER_SPAWNS) || worldIn.getBlockState(pos.below()).isSolid());
     }
 
@@ -99,7 +101,6 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
         this.targetSelector.addGoal(3, new HurtByTargetGoal(this));
     }
 
-    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(ANGRY, false);
@@ -130,7 +131,7 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
                 rollProgress--;
         }
 
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.setAngry(this.getTarget() != null && this.getTarget().isAlive() && this.distanceToSqr(this.getTarget()) < 20 * 20);
         }
         if (this.isRolling() && rollCooldown <= 0) {
@@ -149,9 +150,9 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
             if (this.rollCounter > 2 && !this.isMoving() || !this.isAlive()) {
                 this.setRolling(false);
             }
-            this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.0);
+            // setMaxUpStep removed in 1.21
         } else {
-            this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(0.66);
+            // setMaxUpStep removed in 1.21
             this.rollCounter = 0;
         }
         if (rollCooldown > 0) {
@@ -171,13 +172,13 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
         List<LivingEntity> list = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(6, 8, 6));
         for (LivingEntity e : list) {
             if (!(e instanceof EntityRockyRoller) && e.isAlive()) {
-                e.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.EARTHQUAKE), 20, 0, false, false, true));
+                e.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.EARTHQUAKE), 20, 0, false, false, true));
                 flag = true;
             }
         }
-        if (!this.level().canSeeSky(this.blockPosition()) && this.level().getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING)) {
+        if (!this.level().canSeeSky(this.blockPosition()) && this.level().getServer().getGameRules().get(GameRules.MOB_GRIEFING)) {
             BlockPos ceil = this.blockPosition().offset(0, 2, 0);
-            while ((!level().getBlockState(ceil).isSolid() || level().getBlockState(ceil).getBlock() == Blocks.POINTED_DRIPSTONE) && ceil.getY() < level().getMaxBuildHeight()) {
+            while ((!level().getBlockState(ceil).isSolid() || level().getBlockState(ceil).getBlock() == Blocks.POINTED_DRIPSTONE) && ceil.getY() < level().dimensionType().minY() + level().dimensionType().height()) {
                 ceil = ceil.above();
             }
             final int i = 2 + random.nextInt(2);
@@ -189,7 +190,7 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
             for (BlockPos blockpos1 : BlockPos.betweenClosed(ceil.offset(-i, -j, -k), ceil.offset(i, j, k))) {
                 if (blockpos1.distSqr(ceil) <= fTimesF && level().getBlockState(blockpos1).getBlock() instanceof Fallable) {
                     if (isHangingDripstone(blockpos1)) {
-                        while (isHangingDripstone(blockpos1.above()) && blockpos1.getY() < level().getMaxBuildHeight()) {
+                        while (isHangingDripstone(blockpos1.above()) && blockpos1.getY() < level().dimensionType().minY() + level().dimensionType().height()) {
                             blockpos1 = blockpos1.above();
                         }
                         if (isHangingDripstone(blockpos1)) {
@@ -237,7 +238,7 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
 
     private void handleRoll() {
         ++this.rollCounter;
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (this.horizontalCollision && earthquakeCooldown == 0 & this.isAngry()) {
                 earthquakeCooldown = maxRollTime;
                 this.earthquake();
@@ -284,8 +285,8 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return source.equals("fallingStalactite") || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel serverLevel, DamageSource source) {
+        return source.is(DamageTypes.FALLING_STALACTITE) || super.isInvulnerableTo(serverLevel, source);
     }
 
     public int getMaxFallDistance() {
@@ -320,20 +321,23 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
         return ICustomCollisions.getAllowedMovementForEntity(this, vec3);
     }
 
-    public boolean hurt(DamageSource dmg, float amount) {
+    @Override
+    public boolean hurtServer(net.minecraft.server.level.ServerLevel level, DamageSource dmg, float amount) {
         if (!this.isMoving() && !dmg.is(DamageTypes.MAGIC) && dmg.getDirectEntity() instanceof LivingEntity livingentity && !(livingentity instanceof EntityRockyRoller)) {
             if (!dmg.is(DamageTypes.EXPLOSION) && !livingentity.hurtMarked) {
                 livingentity.hurt(damageSources().thorns(this), 2.0F);
             }
         }
-        return super.hurt(dmg, amount);
+        return super.hurtServer(level, dmg, amount);
     }
 
     static class RockyRollerNodeEvaluator extends WalkNodeEvaluator {
         @Override
-        public PathType getPathType(PathfindingContext context, int x, int y, int z) {
-            PathType type = super.getPathType(context, x, y, z);
-            return context.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof PointedDripstoneBlock ? PathType.OPEN : type;
+        public PathType getPathTypeOfMob(PathfindingContext context, int x, int y, int z, Mob mob) {
+            if (context.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof PointedDripstoneBlock) {
+                return PathType.OPEN;
+            }
+            return super.getPathTypeOfMob(context, x, y, z, mob);
         }
     }
 
@@ -442,7 +446,7 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
             double extraX = radius * Mth.sin(Mth.PI + angle);
             double extraZ = radius * Mth.cos(angle);
             BlockPos circlePos = new BlockPos((int) (target.getX() + extraX), (int) target.getEyeY(), (int) (target.getZ() + extraZ));
-            while (!EntityRockyRoller.this.level().getBlockState(circlePos).isAir() && circlePos.getY() < EntityRockyRoller.this.level().getMaxBuildHeight()) {
+            while (!EntityRockyRoller.this.level().getBlockState(circlePos).isAir() && circlePos.getY() < EntityRockyRoller.this.level().dimensionType().minY() + EntityRockyRoller.this.level().dimensionType().height()) {
                 circlePos = circlePos.above();
             }
             while (!EntityRockyRoller.this.level().getBlockState(circlePos.below()).entityCanStandOn(EntityRockyRoller.this.level(), circlePos.below(), EntityRockyRoller.this) && circlePos.getY() > 1) {

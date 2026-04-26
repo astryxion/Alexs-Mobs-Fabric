@@ -1,23 +1,17 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    " P ",
-    "PRP",
-    " S "
-  ],
-  "key": {
-    "P": {
-      "tag": "minecraft:planks"
-    },
-    "R": {
-      "item": "alexsmobs:rattlesnake_rattle"
-    },
-    "S": {
-      "item": "minecraft:stick"
-    }
-  },
-  "result": {
-    "id": "alexsmobs:maraca",
-    "count": 1
-  }
+    "type":  "minecraft:crafting_shaped",
+    "pattern":  [
+                    " P ",
+                    "PRP",
+                    " S "
+                ],
+    "key":  {
+                "P":  "#minecraft:planks",
+                "R":  "alexsmobs:rattlesnake_rattle",
+                "S":  "#c:rods/wooden"
+            },
+    "result":  {
+                   "id":  "alexsmobs:maraca",
+                   "count":  1
+               }
 }

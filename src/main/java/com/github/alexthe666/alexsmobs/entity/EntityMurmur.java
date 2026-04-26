@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAILeaveWater;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIWanderRanged;
@@ -14,6 +17,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -33,7 +37,7 @@ import java.util.UUID;
 
 public class EntityMurmur extends Monster implements ISemiAquatic {
 
-    private static final EntityDataAccessor<Optional<UUID>> HEAD_UUID = SynchedEntityData.defineId(EntityMurmur.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> HEAD_UUID = SynchedEntityData.defineId(EntityMurmur.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
     private static final EntityDataAccessor<Integer> HEAD_ID = SynchedEntityData.defineId(EntityMurmur.class, EntityDataSerializers.INT);
     private boolean renderFakeHead = true;
 
@@ -66,21 +70,25 @@ public class EntityMurmur extends Monster implements ISemiAquatic {
     protected void playStepSound(BlockPos pos, BlockState blockIn) {
     }
 
-    public static <T extends Mob> boolean checkMurmurSpawnRules(EntityType<EntityMurmur> entityType, ServerLevelAccessor iServerWorld, MobSpawnType reason, BlockPos pos, RandomSource random) {
-        return reason == MobSpawnType.SPAWNER || !iServerWorld.canSeeSky(pos) && (pos.getY() <= AMConfig.murmurSpawnHeight || iServerWorld.getBiome(pos).is(AMTagRegistry.SPAWNS_MURMURS_IGNORE_HEIGHT)) && checkMonsterSpawnRules(entityType, iServerWorld, reason, pos, random);
+    public static <T extends Mob> boolean checkMurmurSpawnRules(EntityType<EntityMurmur> entityType, ServerLevelAccessor iServerWorld, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
+        return reason == EntitySpawnReason.SPAWNER || !iServerWorld.canSeeSky(pos) && (pos.getY() <= AMConfig.murmurSpawnHeight || iServerWorld.getBiome(pos).is(AMTagRegistry.SPAWNS_MURMURS_IGNORE_HEIGHT)) && checkMonsterSpawnRules(entityType, iServerWorld, reason, pos, random);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.murmurSpawnRolls, this.getRandom(), spawnReasonIn) && super.checkSpawnRules(worldIn, spawnReasonIn);
     }
 
-    public boolean isAlliedTo(Entity entity) {
-        return this.getHeadUUID() != null && entity.getUUID().equals(this.getHeadUUID()) || super.isAlliedTo(entity);
+    @Override
+    protected boolean considersEntityAsAlly(Entity entity) {
+        if (this.getHeadUUID() != null && entity.getUUID().equals(this.getHeadUUID())) {
+            return true;
+        }
+        return super.considersEntityAsAlly(entity);
     }
 
-    @Override
-    protected EntityDimensions getDefaultDimensions(Pose pose) {
-        return super.getDefaultDimensions(pose).withEyeHeight(super.getDefaultDimensions(pose).height() * 1.2F);
+    // @Override - getStandingEyeHeight signature changed in 1.21
+    protected float getStandingEyeHeight(Pose pose, EntityDimensions dimensions) {
+        return dimensions.height() * 1.2F;
     }
 
     protected float getWaterSlowDown() {
@@ -90,7 +98,7 @@ public class EntityMurmur extends Monster implements ISemiAquatic {
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
-        builder.define(HEAD_UUID, Optional.<UUID>empty());
+        builder.define(HEAD_UUID, Optional.empty());
         builder.define(HEAD_ID, -1);
     }
 
@@ -104,7 +112,7 @@ public class EntityMurmur extends Monster implements ISemiAquatic {
     }
 
     public Entity getHead() {
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             UUID id = getHeadUUID();
             return id == null ? null : ((ServerLevel) level()).getEntity(id);
         }else{
@@ -122,7 +130,7 @@ public class EntityMurmur extends Monster implements ISemiAquatic {
         if (this.renderFakeHead) this.renderFakeHead = false;
         this.yBodyRot = this.getYRot();
         this.yHeadRot = Mth.clamp(this.yHeadRot, this.yBodyRot - 70, this.yBodyRot + 70);
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             Entity head = getHead();
             if(head == null){
                 LivingEntity created = createHead();
@@ -176,19 +184,15 @@ public class EntityMurmur extends Monster implements ISemiAquatic {
         return 5;
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        if (compound.hasUUID("HeadUUID")) {
-            this.setHeadUUID(compound.getUUID("HeadUUID"));
-        }
+        compound.read("HeadUUID", UUIDUtil.CODEC).ifPresent(this::setHeadUUID);
     }
 
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
-        if (this.getHeadUUID() != null) {
-            compound.putUUID("HeadUUID", this.getHeadUUID());
-        }
+        compound.storeNullable("HeadUUID", UUIDUtil.CODEC, this.getHeadUUID());
     }
 
     private LivingEntity createHead() {

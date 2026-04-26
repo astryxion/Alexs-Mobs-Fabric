@@ -1,6 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
 import com.github.alexthe666.alexsmobs.entity.EntityBunfungus;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
@@ -28,7 +29,10 @@ public class BunfungusAIBeg extends Goal {
             --this.delayTemptCounter;
             return false;
         } else {
-            this.closestPlayer = this.jerboa.level().getNearestPlayer(ENTITY_PREDICATE, this.jerboa);
+            if (!(this.jerboa.level() instanceof ServerLevel serverLevel)) {
+                return false;
+            }
+            this.closestPlayer = serverLevel.getNearestPlayer(ENTITY_PREDICATE, this.jerboa);
             if (this.closestPlayer == null) {
                 return false;
             } else {

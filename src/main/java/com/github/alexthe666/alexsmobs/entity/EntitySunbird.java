@@ -1,6 +1,9 @@
 package com.github.alexthe666.alexsmobs.entity;
 
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
@@ -33,7 +36,6 @@ import net.minecraft.world.entity.animal.FlyingAnimal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.Phantom;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -58,7 +60,7 @@ public class EntitySunbird extends Animal implements FlyingAnimal {
     public static final Predicate<? super Entity> SCORCH_PRED = new com.google.common.base.Predicate<Entity>() {
         @Override
         public boolean apply(@Nullable Entity e) {
-            return e.isAlive() && e.getType().is(AMTagRegistry.SUNBIRD_SCORCH_TARGETS);
+            return e.isAlive() && e.getType().builtInRegistryHolder().is(AMTagRegistry.SUNBIRD_SCORCH_TARGETS);
         }
     };
     private static final EntityDataAccessor<Boolean> SCORCHING = SynchedEntityData.defineId(EntitySunbird.class, EntityDataSerializers.BOOLEAN);
@@ -85,19 +87,19 @@ public class EntitySunbird extends Animal implements FlyingAnimal {
     }
 
     @Override
-    public boolean isFood(ItemStack stack) {
-        return stack.get(net.minecraft.core.component.DataComponents.FOOD) != null;
+    public boolean isFood(net.minecraft.world.item.ItemStack stack) {
+        return false;
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 20.0D).add(Attributes.FOLLOW_RANGE, 64.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.MOVEMENT_SPEED, 1F);
     }
 
-    public static boolean canSunbirdSpawn(EntityType<? extends Mob> typeIn, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource randomIn) {
+    public static boolean canSunbirdSpawn(EntityType<? extends Mob> typeIn, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource randomIn) {
         return true;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.sunbirdSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -134,19 +136,14 @@ public class EntitySunbird extends Animal implements FlyingAnimal {
     protected void checkFallDamage(double y, boolean onGroundIn, BlockState state, BlockPos pos) {
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        boolean prev = super.hurt(source, amount);
-        if (prev) {
-            if (source.getEntity() != null) {
-                if (source.getEntity() instanceof LivingEntity) {
-                    LivingEntity hurter = (LivingEntity) source.getEntity();
-                    if (hurter.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.SUNBIRD_BLESSING))) {
-                        hurter.removeEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.SUNBIRD_BLESSING));
-                    }
-                    hurter.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.SUNBIRD_CURSE), 600, 0));
-                }
+    @Override
+    public boolean hurtServer(net.minecraft.server.level.ServerLevel level, DamageSource source, float amount) {
+        boolean prev = super.hurtServer(level, source, amount);
+        if (prev && source.getEntity() instanceof LivingEntity hurter) {
+            if (hurter.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.SUNBIRD_BLESSING))) {
+                hurter.removeEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.SUNBIRD_BLESSING));
             }
-            return prev;
+            hurter.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.SUNBIRD_CURSE), 600, 0));
         }
         return prev;
     }
@@ -188,7 +185,7 @@ public class EntitySunbird extends Animal implements FlyingAnimal {
         prevScorchProgress = this.scorchProgress;
         float f2 = (float) -((float) this.getDeltaMovement().y * (double) Mth.RAD_TO_DEG);
         this.birdPitch = f2;
-        if (this.level().isClientSide) {
+        if (this.level().isClientSide()) {
             final float radius = 0.35F + random.nextFloat() * 3.5F;
             final float angle = (Maths.STARTING_ANGLE * ((random.nextBoolean() ? -85F : 85F) + this.yBodyRot));
             final float angleMotion = (Maths.STARTING_ANGLE * this.yBodyRot);
@@ -205,8 +202,8 @@ public class EntitySunbird extends Animal implements FlyingAnimal {
                 }
                 List<Player> playerList = this.level().getEntitiesOfClass(Player.class, this.getScorchArea(), Predicates.alwaysTrue());
                 for (Player e : playerList) {
-                    if (!e.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.SUNBIRD_BLESSING)) && !e.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.SUNBIRD_CURSE))) {
-                        e.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.SUNBIRD_BLESSING), 600, 0));
+                    if (!e.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.SUNBIRD_BLESSING)) && !e.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.SUNBIRD_CURSE))) {
+                        e.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.SUNBIRD_BLESSING), 600, 0));
                     }
                 }
             }
@@ -247,14 +244,14 @@ public class EntitySunbird extends Animal implements FlyingAnimal {
                 scorchProgress--;
         }
 
-        if (scorching && scorchProgress == 20F && !this.level().isClientSide) {
+        if (scorching && scorchProgress == 20F && !this.level().isClientSide()) {
             if(fullScorchTime > 30){
                 this.setScorching(false);
             }else if(fullScorchTime % 5 == 0){
                 for (Entity e : getScorchingMobs()) {
-                    e.setRemainingFireTicks(4 * 20);
+                    e.igniteForSeconds(4);
                     if (e instanceof Phantom) {
-                        ((Phantom) e).addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.SUNBIRD_CURSE), 200, 0));
+                        ((Phantom) e).addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.SUNBIRD_CURSE), 200, 0));
                     }
                 }
             }
@@ -277,19 +274,19 @@ public class EntitySunbird extends Animal implements FlyingAnimal {
     }
 
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        if (compound.contains("BeaconPosX")) {
-            int i = compound.getInt("BeaconPosX");
-            int j = compound.getInt("BeaconPosY");
-            int k = compound.getInt("BeaconPosZ");
+        if (compound.getInt("BeaconPosX").isPresent()) {
+            int i = compound.getIntOr("BeaconPosX", 0);
+            int j = compound.getIntOr("BeaconPosY", 0);
+            int k = compound.getIntOr("BeaconPosZ", 0);
             this.beaconPos = new BlockPos(i, j, k);
         } else {
             this.beaconPos = null;
         }
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         BlockPos blockpos = this.beaconPos;
         if (blockpos != null) {
@@ -318,7 +315,7 @@ public class EntitySunbird extends Animal implements FlyingAnimal {
 
     private List<BlockPos> getNearbyBeacons(BlockPos blockpos, ServerLevel world, int range) {
         PoiManager pointofinterestmanager = world.getPoiManager();
-        Stream<BlockPos> stream = pointofinterestmanager.findAll((poiTypeHolder -> poiTypeHolder.is(AMPointOfInterestRegistry.getKey(AMPointOfInterestRegistry.BEACON))), Predicates.alwaysTrue(), blockpos, range, PoiManager.Occupancy.ANY);
+        Stream<BlockPos> stream = pointofinterestmanager.findAll((poiTypeHolder -> poiTypeHolder.is(AMPointOfInterestRegistry.BEACON)), Predicates.alwaysTrue(), blockpos, range, PoiManager.Occupancy.ANY);
         return stream.collect(Collectors.toList());
     }
 

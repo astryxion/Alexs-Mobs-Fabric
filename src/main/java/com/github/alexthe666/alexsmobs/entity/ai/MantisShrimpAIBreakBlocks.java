@@ -140,7 +140,7 @@ public class MantisShrimpAIBreakBlocks extends Goal {
     private void breakBlock() {
         if (shouldMoveTo(mantisShrimp.level(), destinationBlock)) {
             BlockState state = mantisShrimp.level().getBlockState(destinationBlock);
-            if (!mantisShrimp.level().isEmptyBlock(destinationBlock) && mantisShrimp.level().getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING) && state.getDestroySpeed(mantisShrimp.level(), destinationBlock) >= 0) {
+            if (mantisShrimp.level() instanceof net.minecraft.server.level.ServerLevel serverLevel && !mantisShrimp.level().isEmptyBlock(destinationBlock) && serverLevel.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING) && state.getDestroySpeed(mantisShrimp.level(), destinationBlock) >= 0) {
                 mantisShrimp.level().destroyBlock(destinationBlock, true);
             }
         }

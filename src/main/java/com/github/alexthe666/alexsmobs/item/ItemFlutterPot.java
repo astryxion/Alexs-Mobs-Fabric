@@ -3,22 +3,24 @@ package com.github.alexthe666.alexsmobs.item;
 import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityFlutter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DispensibleContainerItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.phys.BlockHitResult;
 
 import javax.annotation.Nullable;
@@ -33,11 +35,11 @@ public class ItemFlutterPot extends Item implements DispensibleContainerItem {
     public InteractionResult useOn(UseOnContext context) {
         Level world = context.getLevel();
         BlockPos blockpos = context.getClickedPos();
-        if(!world.isClientSide){
+        if(!world.isClientSide()){
             if(this.placeFish((ServerLevel)world, context.getItemInHand(), blockpos) && (context.getPlayer() == null || !context.getPlayer().isCreative())){
                 context.getItemInHand().shrink(1);
             }
-            return InteractionResult.sidedSuccess(world.isClientSide);
+            return world.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
         }else{
             return InteractionResult.PASS;
         }
@@ -49,12 +51,12 @@ public class ItemFlutterPot extends Item implements DispensibleContainerItem {
     }
 
     private boolean placeFish(ServerLevel worldIn, ItemStack stack, BlockPos pos) {
-        Entity entity = AMEntityRegistry.FLUTTER.spawn(worldIn, stack, (Player)null, pos, MobSpawnType.BUCKET, true, false);
+        Entity entity = AMEntityRegistry.FLUTTER.spawn(worldIn, stack, (Player)null, pos, EntitySpawnReason.BUCKET, true, false);
         if (entity != null && entity instanceof EntityFlutter) {
-            net.minecraft.world.item.component.CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-            CompoundTag compoundnbt = data != null ? data.copyTag() : new CompoundTag();
-            if(compoundnbt.contains("FlutterData")){
-                ((EntityFlutter)entity).readAdditionalSaveData(compoundnbt.getCompound("FlutterData"));
+            CompoundTag compoundnbt = stack.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
+            if (compoundnbt.contains("FlutterData")) {
+                ValueInput input = TagValueInput.create(ProblemReporter.DISCARDING, worldIn.registryAccess(), compoundnbt.getCompoundOrEmpty("FlutterData"));
+                ((EntityFlutter) entity).readFlutterDataFromItem(input);
             }
             return true;
         }
@@ -62,7 +64,7 @@ public class ItemFlutterPot extends Item implements DispensibleContainerItem {
     }
 
     @Override
-    public boolean emptyContents(@org.jetbrains.annotations.Nullable Player p_150821_, Level p_150822_, BlockPos p_150823_, @org.jetbrains.annotations.Nullable BlockHitResult p_150824_) {
+    public boolean emptyContents(@Nullable LivingEntity holder, Level level, BlockPos pos, @Nullable BlockHitResult hitResult) {
         return false;
     }
 }

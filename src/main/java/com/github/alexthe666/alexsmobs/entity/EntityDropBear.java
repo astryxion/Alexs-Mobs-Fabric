@@ -18,6 +18,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
@@ -31,7 +32,7 @@ import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -42,7 +43,6 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-
 import javax.annotation.Nullable;
 import java.util.EnumSet;
 import java.util.Random;
@@ -80,7 +80,7 @@ public class EntityDropBear extends Monster implements IAnimatedEntity {
         return pos;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.dropbearSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -125,8 +125,9 @@ public class EntityDropBear extends Monster implements IAnimatedEntity {
         });
     }
 
-    public boolean isInvulnerableTo(DamageSource source) {
-        return super.isInvulnerableTo(source) || source.is(DamageTypeTags.IS_FALL) || source.is(DamageTypes.IN_WALL);
+    @Override
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return super.isInvulnerableTo(level, source) || source.is(DamageTypeTags.IS_FALL) || source.is(DamageTypes.IN_WALL);
     }
 
     protected void checkFallDamage(double y, boolean onGroundIn, BlockState state, BlockPos pos) {
@@ -160,7 +161,7 @@ public class EntityDropBear extends Monster implements IAnimatedEntity {
         if (!this.isUpsideDown() && upsideDownProgress > 0F) {
             upsideDownProgress--;
         }
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             BlockPos abovePos = this.getPositionAbove();
             BlockState aboveState = level().getBlockState(abovePos);
             BlockState belowState = level().getBlockState(this.getBlockPosBelowThatAffectsMyMovement());
@@ -173,19 +174,25 @@ public class EntityDropBear extends Monster implements IAnimatedEntity {
                     if (this.getAnimation() == ANIMATION_BITE) {
                         final float yRotRad = this.getYRot() * Mth.DEG_TO_RAD;
                         attackTarget.knockback(0.5F, Mth.sin(yRotRad), -Mth.cos(yRotRad));
-                        this.getTarget().hurt(this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue());
+                        if (this.level() instanceof ServerLevel serverLevel) {
+                            this.getTarget().hurtServer(serverLevel, this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue());
+                        }
                     }
                 } else if (this.getAnimationTick() == 9) {
                     if (this.getAnimation() == ANIMATION_SWIPE_L) {
                         final float rot = getYRot() + 90;
                         final float rotRad = rot * Mth.DEG_TO_RAD;
                         attackTarget.knockback(0.5F, Mth.sin(rotRad), -Mth.cos(rotRad));
-                        this.getTarget().hurt(this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue());
+                        if (this.level() instanceof ServerLevel serverLevel) {
+                            this.getTarget().hurtServer(serverLevel, this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue());
+                        }
                     } else if (this.getAnimation() == ANIMATION_SWIPE_R) {
                         final float rot = getYRot() - 90;
                         final float rotRad = rot * Mth.DEG_TO_RAD;
                         attackTarget.knockback(0.5F, Mth.sin(rotRad), -Mth.cos(rotRad));
-                        this.getTarget().hurt(this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue());
+                        if (this.level() instanceof ServerLevel serverLevel) {
+                            this.getTarget().hurtServer(serverLevel, this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue());
+                        }
                     }
                 }
             }
@@ -223,7 +230,7 @@ public class EntityDropBear extends Monster implements IAnimatedEntity {
                     upwardsFallingTicks = 0;
                     this.setDeltaMovement(this.getDeltaMovement().add(0, -0.3F, 0));
                 }
-                if (this.isInWall() && level().isEmptyBlock(this.getBlockPosBelowThatAffectsMyMovement())) {
+                if (this.isInWall() && this.level().getBlockState(this.getBlockPosBelowThatAffectsMyMovement()).isAir()) {
                     this.setPos(this.getX(), this.getY() - 1, this.getZ());
                 }
             } else {
@@ -243,7 +250,6 @@ public class EntityDropBear extends Monster implements IAnimatedEntity {
         }
     }
 
-    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(UPSIDE_DOWN, false);
@@ -300,19 +306,21 @@ public class EntityDropBear extends Monster implements IAnimatedEntity {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
-        if (reason == MobSpawnType.NATURAL) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
+        if (reason == EntitySpawnReason.NATURAL) {
             doInitialPosing(worldIn);
         }
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
     }
 
     private void onLand() {
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             level().broadcastEntityEvent(this, (byte) 39);
             for (Entity entity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(2.5D))) {
                 if (!isAlliedTo(entity) && !(entity instanceof EntityDropBear) && entity != this) {
-                    entity.hurt(this.damageSources().mobAttack(this), 2.0F + random.nextFloat() * 5F);
+                    if (this.level() instanceof ServerLevel serverLevel) {
+                        entity.hurtServer(serverLevel, this.damageSources().mobAttack(this), 2.0F + this.getRandom().nextFloat() * 5F);
+                    }
                     launch(entity, true);
                 }
             }
@@ -339,7 +347,7 @@ public class EntityDropBear extends Monster implements IAnimatedEntity {
 
     public void spawnGroundEffects() {
         float radius = 2.3F;
-        if (this.level().isClientSide) {
+        if (this.level().isClientSide()) {
             for (int i1 = 0; i1 < 20 + random.nextInt(12); i1++) {
                 double motionX = getRandom().nextGaussian() * 0.07D;
                 double motionY = getRandom().nextGaussian() * 0.07D;
@@ -351,7 +359,7 @@ public class EntityDropBear extends Monster implements IAnimatedEntity {
                 BlockPos ground = getGroundPosition(new BlockPos(Mth.floor(this.getX() + extraX), (int) this.getY(), Mth.floor(this.getZ() + extraZ)));
                 BlockState state = this.level().getBlockState(ground);
                 if (!state.isAir()) {
-                    level().addParticle(new BlockParticleOption(ParticleTypes.BLOCK, state), true, this.getX() + extraX, ground.getY() + extraY, this.getZ() + extraZ, motionX, motionY, motionZ);
+                    level().addParticle(new BlockParticleOption(ParticleTypes.BLOCK, state), true, false, this.getX() + extraX, ground.getY() + extraY, this.getZ() + extraZ, motionX, motionY, motionZ);
                 }
             }
         }
@@ -359,7 +367,7 @@ public class EntityDropBear extends Monster implements IAnimatedEntity {
 
     private BlockPos getGroundPosition(BlockPos in) {
         BlockPos position = new BlockPos(in.getX(), (int) this.getY(), in.getZ());
-        while (position.getY() > 2 && level().isEmptyBlock(position) && level().getFluidState(position).isEmpty()) {
+        while (position.getY() > 2 && this.level().getBlockState(position).isAir() && level().getFluidState(position).isEmpty()) {
             position = position.below();
         }
         return position;

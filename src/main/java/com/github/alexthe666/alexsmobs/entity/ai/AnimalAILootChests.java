@@ -4,6 +4,7 @@ import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.EntityRaccoon;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
@@ -68,7 +69,7 @@ public class AnimalAILootChests extends MoveToBlockGoal {
             return false;
         }
         if (this.nextStartTick <= 0) {
-            if (!this.entity.level().getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING)) {
+            if (!(this.entity.level() instanceof ServerLevel serverLevel) || !serverLevel.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
                 return false;
             }
         }
@@ -121,14 +122,14 @@ public class AnimalAILootChests extends MoveToBlockGoal {
                 if (hasLineOfSightChest()) {
                     if (this.isReachedTarget() && distance <= 3) {
                         toggleChest(feeder, false);
-                        ItemStack stack = getFoodFromInventory(feeder, this.entity.level().random);
+                        ItemStack stack = getFoodFromInventory(feeder, this.entity.getRandom());
                         if (stack == ItemStack.EMPTY) {
                             this.stop();
                         } else {
                             ItemStack duplicate = stack.copy();
                             duplicate.setCount(1);
-                            if (!this.entity.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !this.entity.level().isClientSide) {
-                                this.entity.spawnAtLocation(this.entity.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
+                            if (!this.entity.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !this.entity.level().isClientSide() && this.entity.level() instanceof ServerLevel serverLevel) {
+                                this.entity.spawnAtLocation(serverLevel, this.entity.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
                             }
                             this.entity.setItemInHand(InteractionHand.MAIN_HAND, duplicate);
                             if (entity instanceof EntityRaccoon) {

@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.block.BlockHummingbirdFeeder;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.FlightMoveController;
@@ -11,6 +14,7 @@ import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import com.google.common.base.Predicates;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -68,7 +72,7 @@ public class EntityHummingbird extends Animal {
     protected EntityHummingbird(EntityType type, Level worldIn) {
         super(type, worldIn);
         this.moveControl = new FlightMoveController(this, 1.5F);
-        this.setPathfindingMalus(PathType.DANGER_FIRE, -1.0F);
+        this.setPathfindingMalus(PathType.DAMAGE_CAUTIOUS, -1.0F);
         this.setPathfindingMalus(PathType.WATER, -1.0F);
         this.setPathfindingMalus(PathType.WATER_BORDER, 16.0F);
         this.setPathfindingMalus(PathType.COCOA, -1.0F);
@@ -76,7 +80,7 @@ public class EntityHummingbird extends Animal {
         this.setPathfindingMalus(PathType.LEAVES, 0.0F);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.hummingbirdSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -98,7 +102,7 @@ public class EntityHummingbird extends Animal {
 
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 4.0D).add(Attributes.FLYING_SPEED, 7F).add(Attributes.ATTACK_DAMAGE, 0.0D).add(Attributes.MOVEMENT_SPEED, 0.45F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 4.0D).add(Attributes.FLYING_SPEED, 7F).add(Attributes.ATTACK_DAMAGE, 0.0D).add(Attributes.MOVEMENT_SPEED, 0.45F);
     }
 
     public boolean isFood(ItemStack stack) {
@@ -116,7 +120,7 @@ public class EntityHummingbird extends Animal {
 
     protected void registerGoals() {
         this.goalSelector.addGoal(1, new BreedGoal(this, 1));
-        this.goalSelector.addGoal(2, new TemptGoal(this, 1, Ingredient.of(AMTagRegistry.HUMMINGBIRD_BREEDABLES), false));
+        this.goalSelector.addGoal(2, new TemptGoal(this, 1, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.HUMMINGBIRD_BREEDABLES)), false));
         this.goalSelector.addGoal(3, new FollowParentGoal(this, 1));
         this.goalSelector.addGoal(4, new AIUseFeeder(this));
         this.goalSelector.addGoal(4, new HummingbirdAIPollinate(this));
@@ -134,7 +138,6 @@ public class EntityHummingbird extends Animal {
         };
         flyingpathnavigator.setCanOpenDoors(false);
         flyingpathnavigator.setCanFloat(false);
-        flyingpathnavigator.setCanPassDoors(true);
         return flyingpathnavigator;
     }
 
@@ -149,7 +152,7 @@ public class EntityHummingbird extends Animal {
         return true;
     }
 
-    protected float getEyeHeight(Pose poseIn, EntityDimensions sizeIn) {
+    protected float getStandingEyeHeight(Pose poseIn, EntityDimensions sizeIn) {
         return this.isBaby() ? sizeIn.height() * 0.5F : sizeIn.height() * 0.5F;
     }
 
@@ -158,7 +161,7 @@ public class EntityHummingbird extends Animal {
         return worldIn.getBlockState(pos).isAir() ? 10.0F : 0.0F;
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putInt("Variant", this.getVariant());
         compound.putInt("CropsPollinated", this.getCropsPollinated());
@@ -172,15 +175,15 @@ public class EntityHummingbird extends Animal {
 
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setVariant(compound.getInt("Variant"));
-        this.setCropsPollinated(compound.getInt("CropsPollinated"));
-        this.pollinateCooldown = compound.getInt("PollinateCooldown");
-        if (compound.contains("HLPX")) {
-            int i = compound.getInt("HLPX");
-            int j = compound.getInt("HLPY");
-            int k = compound.getInt("HLPZ");
+        this.setVariant(compound.getIntOr("Variant", 0));
+        this.setCropsPollinated(compound.getIntOr("CropsPollinated", 0));
+        this.pollinateCooldown = compound.getIntOr("PollinateCooldown", 0);
+        if (compound.getInt("HLPX").isPresent()) {
+            int i = compound.getIntOr("HLPX", 0);
+            int j = compound.getIntOr("HLPY", 0);
+            int k = compound.getIntOr("HLPZ", 0);
             this.entityData.set(FEEDER_POS, Optional.of(new BlockPos(i, j, k)));
         } else {
             this.entityData.set(FEEDER_POS, Optional.empty());
@@ -201,18 +204,18 @@ public class EntityHummingbird extends Animal {
         builder.define(FLYING, false);
         builder.define(VARIANT, 0);
         builder.define(CROPS_POLLINATED, 0);
-        builder.define(FEEDER_POS, Optional.<BlockPos>empty());
+        builder.define(FEEDER_POS, Optional.empty());
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
         this.setVariant(this.getRandom().nextInt(3));
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
     }
 
     private List<BlockPos> getNearbyFeeders(BlockPos blockpos, ServerLevel world, int range) {
         PoiManager pointofinterestmanager = world.getPoiManager();
-        Stream<BlockPos> stream = pointofinterestmanager.findAll(poiTypeHolder -> poiTypeHolder.is(AMPointOfInterestRegistry.getKey(AMPointOfInterestRegistry.HUMMINGBIRD_FEEDER)), Predicates.alwaysTrue(), blockpos, range, PoiManager.Occupancy.ANY);
+        Stream<BlockPos> stream = pointofinterestmanager.findAll(poiTypeHolder -> poiTypeHolder.is(AMPointOfInterestRegistry.HUMMINGBIRD_FEEDER), Predicates.alwaysTrue(), blockpos, range, PoiManager.Occupancy.ANY);
         return stream.collect(Collectors.toList());
     }
 
@@ -312,10 +315,10 @@ public class EntityHummingbird extends Animal {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverWorld, AgeableMob ageableEntity) {
-        return AMEntityRegistry.HUMMINGBIRD.create(serverWorld);
+        return AMEntityRegistry.HUMMINGBIRD.create(serverWorld, EntitySpawnReason.BREEDING);
     }
 
-    public static <T extends Mob> boolean canHummingbirdSpawn(EntityType<EntityHummingbird> hummingbird, LevelAccessor worldIn, MobSpawnType reason, BlockPos p_223317_3_, RandomSource random) {
+    public static <T extends Mob> boolean canHummingbirdSpawn(EntityType<EntityHummingbird> hummingbird, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos p_223317_3_, RandomSource random) {
         BlockState blockstate = worldIn.getBlockState(p_223317_3_.below());
         return (blockstate.is(AMTagRegistry.HUMMINGBIRD_SPAWNS) || blockstate.is(Blocks.AIR)) && worldIn.getRawBrightness(p_223317_3_, 0) > 8;
     }

@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIWanderRanged;
@@ -8,6 +11,7 @@ import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -22,8 +26,9 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
@@ -51,7 +56,7 @@ public class EntityRoadrunner extends Animal {
     public float prevAttackProgress;
     public float attackProgress;
     private static final EntityDataAccessor<Integer> ATTACK_TICK = SynchedEntityData.defineId(EntityRoadrunner.class, EntityDataSerializers.INT);
-    public int timeUntilNextFeather = this.random.nextInt(24000) + 24000;
+    public int timeUntilNextFeather = this.getRandom().nextInt(24000) + 24000;
     private boolean hasMeepSpeed = false;
 
     protected EntityRoadrunner(EntityType type, Level worldIn) {
@@ -64,32 +69,32 @@ public class EntityRoadrunner extends Animal {
         this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.0D, false));
         this.goalSelector.addGoal(2, new BreedGoal(this, 1.0D));
         this.goalSelector.addGoal(4, new FollowParentGoal(this, 1.1D));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.ROADRUNNER_BREEDABLES), false));
+        this.goalSelector.addGoal(4, new TemptGoal(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.ROADRUNNER_BREEDABLES)), false));
         this.goalSelector.addGoal(5, new AnimalAIWanderRanged(this, 50, 1.0D, 25, 7));
         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 6.0F));
         this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, EntityRattlesnake.class, 55, true, true, null));
         this.targetSelector.addGoal(2, (new HurtByTargetGoal(this, EntityRattlesnake.class, Player.class)).setAlertOthers());
     }
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        if (compound.contains("FeatherTime")) {
-            this.timeUntilNextFeather = compound.getInt("FeatherTime");
+        if (compound.getInt("FeatherTime").isPresent()) {
+            this.timeUntilNextFeather = compound.getIntOr("FeatherTime", 0);
         }
 
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.roadrunnerSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putInt("FeatherTime", this.timeUntilNextFeather);
     }
 
     protected SoundEvent getAmbientSound() {
-        return isMeep() || random.nextInt(2000) == 0 ? AMSoundRegistry.ROADRUNNER_MEEP : AMSoundRegistry.ROADRUNNER_IDLE;
+        return isMeep() || this.getRandom().nextInt(2000) == 0 ? AMSoundRegistry.ROADRUNNER_MEEP : AMSoundRegistry.ROADRUNNER_IDLE;
     }
 
     protected SoundEvent getHurtSound(DamageSource damageSourceIn) {
@@ -105,20 +110,21 @@ public class EntityRoadrunner extends Animal {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(ATTACK_TICK, 0);
+
     }
 
-    public boolean doHurtTarget(Entity entityIn) {
+    public boolean doHurtTarget(ServerLevel level, Entity entityIn) {
         this.entityData.set(ATTACK_TICK, 5);
         return true;
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return source.is(DamageTypes.CACTUS) || source.getMsgId().equals("anvil") || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.CACTUS) || source.getMsgId().equals("anvil") || super.isInvulnerableTo(level, source);
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 8.0D).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.45F).add(Attributes.FOLLOW_RANGE, 10D);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 8.0D).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.45F).add(Attributes.FOLLOW_RANGE, 10D);
     }
 
     public void aiStep() {
@@ -131,9 +137,9 @@ public class EntityRoadrunner extends Animal {
         if (!this.onGround() && this.wingRotDelta < 1.0F) {
             this.wingRotDelta = 1.0F;
         }
-        if (!this.level().isClientSide && this.isAlive() && !this.isBaby() && --this.timeUntilNextFeather <= 0) {
-            this.spawnAtLocation(AMItemRegistry.ROADRUNNER_FEATHER);
-            this.timeUntilNextFeather = this.random.nextInt(24000) + 24000;
+        if (!this.level().isClientSide() && this.isAlive() && !this.isBaby() && --this.timeUntilNextFeather <= 0 && this.level() instanceof ServerLevel serverLevel) {
+            this.spawnAtLocation(serverLevel, AMItemRegistry.ROADRUNNER_FEATHER);
+            this.timeUntilNextFeather = this.getRandom().nextInt(24000) + 24000;
         }
         this.wingRotDelta = (float) ((double) this.wingRotDelta * 0.9D);
         Vec3 vector3d = this.getDeltaMovement();
@@ -144,7 +150,9 @@ public class EntityRoadrunner extends Animal {
 
         if(this.entityData.get(ATTACK_TICK) > 0){
             if(this.entityData.get(ATTACK_TICK) == 2 && this.getTarget() != null && this.distanceTo(this.getTarget()) < 1.3D){
-                this.getTarget().hurt(this.damageSources().mobAttack(this), 2);
+                if (this.getTarget() instanceof LivingEntity livingTarget && this.level() instanceof ServerLevel serverLevel) {
+                    livingTarget.hurtServer(serverLevel, this.damageSources().mobAttack(this), 2);
+                }
             }
             this.entityData.set(ATTACK_TICK, this.entityData.get(ATTACK_TICK) - 1);
             if(attackProgress < 5F){
@@ -172,15 +180,15 @@ public class EntityRoadrunner extends Animal {
             }
         }
 
-        if (this.level().isClientSide && this.isMeep() && this.onGround() && !this.isInWaterOrBubble() && this.getDeltaMovement().lengthSqr() > 0.03D) {
+        if (this.level().isClientSide() && this.isMeep() && this.onGround() && !AMEntityRegistry.isInWaterOrBubble(this) && this.getDeltaMovement().lengthSqr() > 0.03D) {
             Vec3 vector3d = this.getViewVector(0.0F);
             final float yRotRad = this.getYRot() * Mth.DEG_TO_RAD;
             float f = Mth.cos(yRotRad) * 0.2F;
             float f1 = Mth.sin(yRotRad) * 0.2F;
-            float f2 = 1.2F - this.random.nextFloat() * 0.7F;
+            float f2 = 1.2F - this.getRandom().nextFloat() * 0.7F;
             for (int i = 0; i < 2; ++i) {
-                this.level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, this.getX() - vector3d.x * (double) f2 + (double) f, this.getY() + random.nextFloat() * 0.2F, this.getZ() - vector3d.z * (double) f2 + (double) f1, 0.0D, 0.0D, 0.0D);
-                this.level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, this.getX() - vector3d.x * (double) f2 - (double) f, this.getY() + random.nextFloat() * 0.2F, this.getZ() - vector3d.z * (double) f2 - (double) f1, 0.0D, 0.0D, 0.0D);
+                this.level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, this.getX() - vector3d.x * (double) f2 + (double) f, this.getY() + this.getRandom().nextFloat() * 0.2F, this.getZ() - vector3d.z * (double) f2 + (double) f1, 0.0D, 0.0D, 0.0D);
+                this.level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, this.getX() - vector3d.x * (double) f2 - (double) f, this.getY() + this.getRandom().nextFloat() * 0.2F, this.getZ() - vector3d.z * (double) f2 - (double) f1, 0.0D, 0.0D, 0.0D);
             }
         }
     }
@@ -194,7 +202,7 @@ public class EntityRoadrunner extends Animal {
 
     protected void playStepSound(BlockPos pos, BlockState blockIn) {
         if(!this.isMeep()){
-            this.playSound(SoundEvents.CHICKEN_STEP, 0.15F, 1.0F);
+            this.playSound(SoundEvents.CHICKEN_STEP.value(), 0.15F, 1.0F);
         }
     }
 
@@ -205,10 +213,10 @@ public class EntityRoadrunner extends Animal {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel p_241840_1_, AgeableMob p_241840_2_) {
-        return AMEntityRegistry.ROADRUNNER.create(p_241840_1_);
+        return AMEntityRegistry.ROADRUNNER.create(p_241840_1_, EntitySpawnReason.BREEDING);
     }
 
-    public static boolean canRoadrunnerSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean canRoadrunnerSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         boolean spawnBlock = worldIn.getBlockState(pos.below()).is(AMTagRegistry.ROADRUNNER_SPAWNS);
         return spawnBlock && worldIn.getRawBrightness(pos, 0) > 8;
     }

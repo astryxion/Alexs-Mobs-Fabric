@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
+
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.google.common.collect.Lists;
 import net.minecraft.core.BlockPos;
@@ -7,6 +9,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
@@ -16,21 +19,36 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
+
 import java.util.Queue;
 
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
+
 public class BlockBananaSlugSlime extends HalfTransparentBlock {
+    public static final MapCodec<BlockBananaSlugSlime> CODEC = simpleCodec(BlockBananaSlugSlime::new);
 
     protected static final VoxelShape SHAPE = Block.box(1.0D, 1.0D, 1.0D, 15.0D, 15.0D, 15.0D);
     private static final int MAXIMUM_BLOCKS_DRAINED = 64;
     public static final int MAX_FLUID_SPREAD = 6;
 
-    public BlockBananaSlugSlime() {
-        super(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_YELLOW).speedFactor(0.4F).jumpFactor(0.5F).friction(0.8F).sound(SoundType.SLIME_BLOCK).noOcclusion());
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_YELLOW).speedFactor(0.4F).jumpFactor(0.5F).friction(0.8F).sound(SoundType.SLIME_BLOCK).noOcclusion();
+    }
+
+    public BlockBananaSlugSlime(BlockBehaviour.Properties props) {
+        super(props);
+    }
+
+    @Override
+    public MapCodec<? extends HalfTransparentBlock> codec() {
+        return CODEC;
     }
 
     public VoxelShape getVisualShape(BlockState p_48735_, BlockGetter p_48736_, BlockPos p_48737_, CollisionContext p_48738_) {
@@ -42,12 +60,12 @@ public class BlockBananaSlugSlime extends HalfTransparentBlock {
         return SHAPE;
     }
 
-    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+    @Override
+    protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity, InsideBlockEffectApplier insideBlockEffectApplier, boolean bl) {
         entity.setDeltaMovement(entity.getDeltaMovement().scale(0.8));
-        super.entityInside(state, level, pos, entity);
+        super.entityInside(state, level, pos, entity, insideBlockEffectApplier, bl);
     }
 
-    /** Fabric: vanilla Block has no isSlimeBlock/isStickyBlock; keep 1:1 slime/sticky behavior for pistons. */
     public boolean isSlimeBlock(BlockState state) {
         return true;
     }
@@ -60,13 +78,12 @@ public class BlockBananaSlugSlime extends HalfTransparentBlock {
         return true;
     }
 
-    /** Fabric: canStickTo 1:1 – stick only to non-sticky or self (vanilla has no BlockState.isStickyBlock). */
     public boolean canStickTo(BlockState state, @NotNull BlockState other) {
-        return !isStickyBlockType(other.getBlock()) || other.getBlock() == this;
+        return !isKnownStickyBlock(other) || other.getBlock() == this;
     }
 
-    private static boolean isStickyBlockType(Block block) {
-        return block == Blocks.SLIME_BLOCK || block == Blocks.HONEY_BLOCK || block == AMBlockRegistry.BANANA_SLUG_SLIME_BLOCK;
+    private static boolean isKnownStickyBlock(BlockState state) {
+        return state.is(Blocks.SLIME_BLOCK) || state.is(Blocks.HONEY_BLOCK);
     }
 
     public void onPlace(BlockState p_56811_, Level p_56812_, BlockPos p_56813_, BlockState p_56814_, boolean p_56815_) {
@@ -75,9 +92,10 @@ public class BlockBananaSlugSlime extends HalfTransparentBlock {
         }
     }
 
-    public void neighborChanged(BlockState p_56801_, Level p_56802_, BlockPos p_56803_, Block p_56804_, BlockPos p_56805_, boolean p_56806_) {
+    @Override
+    public void neighborChanged(BlockState p_56801_, Level p_56802_, BlockPos p_56803_, Block p_56804_, @Nullable Orientation orientation, boolean p_56806_) {
         this.tryAbsorbWater(p_56802_, p_56803_);
-        super.neighborChanged(p_56801_, p_56802_, p_56803_, p_56804_, p_56805_, p_56806_);
+        super.neighborChanged(p_56801_, p_56802_, p_56803_, p_56804_, orientation, p_56806_);
     }
 
 

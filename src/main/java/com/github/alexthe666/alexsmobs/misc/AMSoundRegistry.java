@@ -1,455 +1,448 @@
 package com.github.alexthe666.alexsmobs.misc;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
+import net.minecraft.resources.Identifier;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvent;
 
 public class AMSoundRegistry {
 
-    private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, path);
+        public static final SoundEvent GRIZZLY_BEAR_IDLE = createSoundEvent("grizzly_bear_idle");
+
+    public static final SoundEvent GRIZZLY_BEAR_HURT = createSoundEvent("grizzly_bear_hurt");
+
+    public static final SoundEvent GRIZZLY_BEAR_DIE = createSoundEvent("grizzly_bear_die");
+
+    public static final SoundEvent BEAR_DUST = createSoundEvent("bear_dust");
+
+    public static final SoundEvent ROADRUNNER_IDLE = createSoundEvent("roadrunner_idle");
+
+    public static final SoundEvent ROADRUNNER_HURT = createSoundEvent("roadrunner_hurt");
+
+    public static final SoundEvent ROADRUNNER_MEEP = createSoundEvent("roadrunner_meep");
+
+    public static final SoundEvent GAZELLE_HURT = createSoundEvent("gazelle_hurt");
+
+    public static final SoundEvent CROCODILE_IDLE = createSoundEvent("crocodile_idle");
+
+    public static final SoundEvent CROCODILE_HURT = createSoundEvent("crocodile_hurt");
+
+    public static final SoundEvent CROCODILE_BITE = createSoundEvent("crocodile_bite");
+
+    public static final SoundEvent CROCODILE_BABY = createSoundEvent("crocodile_baby");
+
+    public static final SoundEvent FLY_IDLE = createSoundEvent("fly_idle");
+
+    public static final SoundEvent FLY_HURT = createSoundEvent("fly_hurt");
+
+    public static final SoundEvent HUMMINGBIRD_IDLE = createSoundEvent("hummingbird_idle");
+
+    public static final SoundEvent HUMMINGBIRD_HURT = createSoundEvent("hummingbird_hurt");
+
+    public static final SoundEvent HUMMINGBIRD_LOOP = createSoundEvent("hummingbird_loop");
+
+    public static final SoundEvent ORCA_IDLE = createSoundEvent("orca_idle");
+
+    public static final SoundEvent ORCA_HURT = createSoundEvent("orca_hurt");
+
+    public static final SoundEvent ORCA_DIE = createSoundEvent("orca_die");
+
+    public static final SoundEvent GORILLA_IDLE = createSoundEvent("gorilla_idle");
+
+    public static final SoundEvent GORILLA_HURT = createSoundEvent("gorilla_hurt");
+
+    public static final SoundEvent MOSQUITO_LOOP = createSoundEvent("mosquito_loop");
+
+    public static final SoundEvent MOSQUITO_HURT = createSoundEvent("mosquito_hurt");
+
+    public static final SoundEvent MOSQUITO_DIE = createSoundEvent("mosquito_die");
+
+    public static final SoundEvent RATTLESNAKE_LOOP = createSoundEvent("rattlesnake_loop");
+
+    public static final SoundEvent RATTLESNAKE_HURT = createSoundEvent("rattlesnake_hurt");
+
+    public static final SoundEvent RATTLESNAKE_ATTACK = createSoundEvent("rattlesnake_attack");
+
+    public static final SoundEvent ENDERGRADE_IDLE = createSoundEvent("endergrade_idle");
+
+    public static final SoundEvent ENDERGRADE_HURT = createSoundEvent("endergrade_hurt");
+
+    public static final SoundEvent LOBSTER_HURT = createSoundEvent("lobster_hurt");
+
+    public static final SoundEvent LOBSTER_ATTACK = createSoundEvent("lobster_attack");
+
+    public static final SoundEvent KOMODO_DRAGON_IDLE = createSoundEvent("komodo_dragon_idle");
+
+    public static final SoundEvent KOMODO_DRAGON_HURT = createSoundEvent("komodo_dragon_hurt");
+
+    public static final SoundEvent SUNBIRD_IDLE = createSoundEvent("sunbird_idle");
+
+    public static final SoundEvent SUNBIRD_HURT = createSoundEvent("sunbird_hurt");
+
+    public static final SoundEvent CAPUCHIN_MONKEY_IDLE = createSoundEvent("capuchin_monkey_idle");
+
+    public static final SoundEvent CAPUCHIN_MONKEY_HURT = createSoundEvent("capuchin_monkey_hurt");
+
+    public static final SoundEvent BONE_SERPENT_IDLE = createSoundEvent("bone_serpent_idle");
+
+    public static final SoundEvent BONE_SERPENT_HURT = createSoundEvent("bone_serpent_hurt");
+
+    public static final SoundEvent CENTIPEDE_WALK = createSoundEvent("centipede_walk");
+
+    public static final SoundEvent CENTIPEDE_HURT = createSoundEvent("centipede_hurt");
+
+    public static final SoundEvent CENTIPEDE_ATTACK = createSoundEvent("centipede_attack");
+
+    public static final SoundEvent WARPED_TOAD_IDLE = createSoundEvent("warped_toad_idle");
+
+    public static final SoundEvent WARPED_TOAD_HURT = createSoundEvent("warped_toad_hurt");
+
+    public static final SoundEvent MOOSE_IDLE = createSoundEvent("moose_idle");
+
+    public static final SoundEvent MOOSE_HURT = createSoundEvent("moose_hurt");
+
+    public static final SoundEvent MOOSE_JOSTLE = createSoundEvent("moose_jostle");
+
+    public static final SoundEvent MIMICUBE_JUMP = createSoundEvent("mimicube_jump");
+
+    public static final SoundEvent MIMICUBE_HURT = createSoundEvent("mimicube_hurt");
+
+    public static final SoundEvent RACCOON_IDLE = createSoundEvent("raccoon_idle");
+
+    public static final SoundEvent RACCOON_HURT = createSoundEvent("raccoon_hurt");
+
+    public static final SoundEvent MARACA = createSoundEvent("maraca");
+
+    public static final SoundEvent LA_CUCARACHA = createSoundEvent("la_cucaracha");
+
+    public static final SoundEvent SEAL_IDLE = createSoundEvent("seal_idle");
+
+    public static final SoundEvent SEAL_HURT = createSoundEvent("seal_hurt");
+
+    public static final SoundEvent COCKROACH_HURT = createSoundEvent("cockroach_hurt");
+
+    public static final SoundEvent SHOEBILL_HURT = createSoundEvent("shoebill_hurt");
+
+    public static final SoundEvent ELEPHANT_IDLE = createSoundEvent("elephant_idle");
+
+    public static final SoundEvent ELEPHANT_HURT = createSoundEvent("elephant_hurt");
+
+    public static final SoundEvent ELEPHANT_DIE = createSoundEvent("elephant_die");
+
+    public static final SoundEvent ELEPHANT_TRUMPET = createSoundEvent("elephant_trumpet");
+
+    public static final SoundEvent ELEPHANT_WALK = createSoundEvent("elephant_walk");
+
+    public static final SoundEvent SOUL_VULTURE_IDLE = createSoundEvent("soul_vulture_idle");
+
+    public static final SoundEvent SOUL_VULTURE_HURT = createSoundEvent("soul_vulture_hurt");
+
+    public static final SoundEvent SNOW_LEOPARD_IDLE = createSoundEvent("snow_leopard_idle");
+
+    public static final SoundEvent SNOW_LEOPARD_HURT = createSoundEvent("snow_leopard_hurt");
+
+    public static final SoundEvent SPECTRE_IDLE = createSoundEvent("spectre_idle");
+
+    public static final SoundEvent SPECTRE_HURT = createSoundEvent("spectre_hurt");
+
+    public static final SoundEvent CROW_IDLE = createSoundEvent("crow_idle");
+
+    public static final SoundEvent CROW_HURT = createSoundEvent("crow_hurt");
+
+    public static final SoundEvent ALLIGATOR_SNAPPING_TURTLE_IDLE = createSoundEvent("alligator_snapping_turtle_idle");
+
+    public static final SoundEvent ALLIGATOR_SNAPPING_TURTLE_HURT = createSoundEvent("alligator_snapping_turtle_hurt");
+
+    public static final SoundEvent MUNGUS_IDLE = createSoundEvent("mungus_idle");
+
+    public static final SoundEvent MUNGUS_HURT = createSoundEvent("mungus_hurt");
+
+    public static final SoundEvent MUNGUS_LASER_END = createSoundEvent("mungus_laser_end");
+
+    public static final SoundEvent MUNGUS_LASER_LOOP = createSoundEvent("mungus_laser_loop");
+
+    public static final SoundEvent MUNGUS_LASER_GROW = createSoundEvent("mungus_laser_grow");
+
+    public static final SoundEvent MANTIS_SHRIMP_SNAP = createSoundEvent("mantis_shrimp_snap");
+
+    public static final SoundEvent MANTIS_SHRIMP_HURT = createSoundEvent("mantis_shrimp_hurt");
+
+    public static final SoundEvent GUSTER_IDLE = createSoundEvent("guster_idle");
+
+    public static final SoundEvent GUSTER_HURT = createSoundEvent("guster_hurt");
+    
+    public static final SoundEvent WARPED_MOSCO_IDLE = createSoundEvent("warped_mosco_idle");
+
+    public static final SoundEvent WARPED_MOSCO_HURT = createSoundEvent("warped_mosco_hurt");
+
+    public static final SoundEvent STRADDLER_IDLE = createSoundEvent("straddler_idle");
+
+    public static final SoundEvent STRADDLER_HURT = createSoundEvent("straddler_hurt");
+
+    public static final SoundEvent EMU_IDLE = createSoundEvent("emu_idle");
+
+    public static final SoundEvent EMU_HURT = createSoundEvent("emu_hurt");
+
+    public static final SoundEvent PLATYPUS_IDLE = createSoundEvent("platypus_idle");
+
+    public static final SoundEvent PLATYPUS_HURT = createSoundEvent("platypus_hurt");
+
+    public static final SoundEvent DROPBEAR_IDLE = createSoundEvent("dropbear_idle");
+
+    public static final SoundEvent DROPBEAR_HURT = createSoundEvent("dropbear_hurt");
+
+    public static final SoundEvent TASMANIAN_DEVIL_IDLE = createSoundEvent("tasmanian_devil_idle");
+
+    public static final SoundEvent TASMANIAN_DEVIL_HURT = createSoundEvent("tasmanian_devil_hurt");
+
+    public static final SoundEvent TASMANIAN_DEVIL_ROAR = createSoundEvent("tasmanian_devil_roar");
+
+    public static final SoundEvent KANGAROO_IDLE = createSoundEvent("kangaroo_idle");
+
+    public static final SoundEvent KANGAROO_HURT = createSoundEvent("kangaroo_hurt");
+
+    public static final SoundEvent CACHALOT_WHALE_IDLE = createSoundEvent("cachalot_whale_idle");
+
+    public static final SoundEvent CACHALOT_WHALE_HURT = createSoundEvent("cachalot_whale_hurt");
+
+    public static final SoundEvent CACHALOT_WHALE_CLICK = createSoundEvent("cachalot_whale_click");
+
+    public static final SoundEvent LEAFCUTTER_ANT_HURT = createSoundEvent("leafcutter_ant_hurt");
+
+    public static final SoundEvent LEAFCUTTER_ANT_QUEEN_HURT = createSoundEvent("leafcutter_ant_queen_hurt");
+
+    public static final SoundEvent ENDERIOPHAGE_HURT = createSoundEvent("enderiophage_hurt");
+
+    public static final SoundEvent ENDERIOPHAGE_SQUISH = createSoundEvent("enderiophage_squish");
+
+    public static final SoundEvent ENDERIOPHAGE_WALK = createSoundEvent("enderiophage_walk");
+
+    public static final SoundEvent MUSIC_DISC_THIME = createSoundEvent("music_disc_thime");
+
+    public static final SoundEvent BALD_EAGLE_IDLE = createSoundEvent("bald_eagle_idle");
+
+    public static final SoundEvent BALD_EAGLE_HURT = createSoundEvent("bald_eagle_hurt");
+
+    public static final SoundEvent TIGER_IDLE = createSoundEvent("tiger_idle");
+
+    public static final SoundEvent TIGER_HURT = createSoundEvent("tiger_hurt");
+
+    public static final SoundEvent TIGER_ANGRY = createSoundEvent("tiger_angry");
+
+    public static final SoundEvent TARANTULA_HAWK_WING = createSoundEvent("tarantula_hawk_wing");
+
+    public static final SoundEvent TARANTULA_HAWK_HURT = createSoundEvent("tarantula_hawk_hurt");
+
+    public static final SoundEvent MUSIC_WORMBOSS = createSoundEvent("music_wormboss");
+
+    public static final SoundEvent VOID_WORM_IDLE = createSoundEvent("void_worm_idle");
+
+    public static final SoundEvent VOID_WORM_HURT = createSoundEvent("void_worm_hurt");
+
+    public static final SoundEvent VOID_PORTAL_CLOSE = createSoundEvent("void_portal_close");
+
+    public static final SoundEvent VOID_PORTAL_OPEN = createSoundEvent("void_portal_open");
+
+    public static final SoundEvent MIMIC_OCTOPUS_IDLE = createSoundEvent("mimic_octopus_idle");
+
+    public static final SoundEvent MIMIC_OCTOPUS_HURT = createSoundEvent("mimic_octopus_hurt");
+
+    public static final SoundEvent MUSIC_DISC_DAZE = createSoundEvent("music_disc_daze");
+
+    public static final SoundEvent SEAGULL_IDLE = createSoundEvent("seagull_idle");
+
+    public static final SoundEvent SEAGULL_HURT = createSoundEvent("seagull_hurt");
+
+    public static final SoundEvent FROSTSTALKER_IDLE = createSoundEvent("froststalker_idle");
+
+    public static final SoundEvent FROSTSTALKER_HURT = createSoundEvent("froststalker_hurt");
+   
+    public static final SoundEvent TUSKLIN_IDLE = createSoundEvent("tusklin_idle");
+
+    public static final SoundEvent TUSKLIN_HURT = createSoundEvent("tusklin_hurt");
+
+    public static final SoundEvent LAVIATHAN_IDLE = createSoundEvent("laviathan_idle");
+
+    public static final SoundEvent LAVIATHAN_HURT = createSoundEvent("laviathan_hurt");
+
+    public static final SoundEvent COSMAW_IDLE = createSoundEvent("cosmaw_idle");
+
+    public static final SoundEvent COSMAW_HURT = createSoundEvent("cosmaw_hurt");
+
+    public static final SoundEvent TOUCAN_IDLE = createSoundEvent("toucan_idle");
+
+    public static final SoundEvent TOUCAN_HURT = createSoundEvent("toucan_hurt");
+
+    public static final SoundEvent MANED_WOLF_IDLE = createSoundEvent("maned_wolf_idle");
+
+    public static final SoundEvent MANED_WOLF_HURT = createSoundEvent("maned_wolf_hurt");
+
+    public static final SoundEvent ANACONDA_SLITHER = createSoundEvent("anaconda_slither");
+
+    public static final SoundEvent ANACONDA_HURT = createSoundEvent("anaconda_hurt");
+
+    public static final SoundEvent ANACONDA_ATTACK = createSoundEvent("anaconda_attack");
+
+    public static final SoundEvent VINE_LASSO = createSoundEvent("vine_lasso");
+
+    public static final SoundEvent ANTEATER_HURT = createSoundEvent("anteater_hurt");
+
+    public static final SoundEvent ROCKY_ROLLER_IDLE = createSoundEvent("rocky_roller_idle");
+
+    public static final SoundEvent ROCKY_ROLLER_HURT = createSoundEvent("rocky_roller_hurt");
+
+    public static final SoundEvent ROCKY_ROLLER_EARTHQUAKE = createSoundEvent("rocky_roller_earthquake");
+
+    public static final SoundEvent GELADA_MONKEY_IDLE = createSoundEvent("gelada_monkey_idle");
+
+    public static final SoundEvent GELADA_MONKEY_HURT = createSoundEvent("gelada_monkey_hurt");
+
+    public static final SoundEvent FLUTTER_IDLE = createSoundEvent("flutter_idle");
+
+    public static final SoundEvent FLUTTER_HURT = createSoundEvent("flutter_hurt");
+
+    public static final SoundEvent FLUTTER_FLAP = createSoundEvent("flutter_flap");
+
+    public static final SoundEvent FLUTTER_NO = createSoundEvent("flutter_no");
+
+    public static final SoundEvent FLUTTER_YES = createSoundEvent("flutter_yes");
+
+    public static final SoundEvent JERBOA_IDLE = createSoundEvent("jerboa_idle");
+
+    public static final SoundEvent JERBOA_HURT = createSoundEvent("jerboa_hurt");
+
+    public static final SoundEvent TERRAPIN_HURT = createSoundEvent("terrapin_hurt");
+
+    public static final SoundEvent COMB_JELLY_HURT = createSoundEvent("comb_jelly_hurt");
+
+    public static final SoundEvent COSMIC_COD_HURT = createSoundEvent("cosmic_cod_hurt");
+
+    public static final SoundEvent MOSQUITO_CAPSID_CONVERT = createSoundEvent("mosquito_capsid_convert");
+
+    public static final SoundEvent GIANT_SQUID_GAMES = createSoundEvent("giant_squid_games");
+
+    public static final SoundEvent APRIL_FOOLS_SCREAM = createSoundEvent("april_fools_scream");
+
+    public static final SoundEvent APRIL_FOOLS_POWER_OUTAGE = createSoundEvent("april_fools_power_outage");
+
+    public static final SoundEvent APRIL_FOOLS_MUSIC_BOX = createSoundEvent("april_fools_music_box");
+
+    public static final SoundEvent BUNFUNGUS_IDLE = createSoundEvent("bunfungus_idle");
+
+    public static final SoundEvent BUNFUNGUS_HURT = createSoundEvent("bunfungus_hurt");
+
+    public static final SoundEvent BUNFUNGUS_ATTACK = createSoundEvent("bunfungus_attack");
+
+    public static final SoundEvent BUNFUNGUS_JUMP = createSoundEvent("bunfungus_jump");
+
+    public static final SoundEvent BISON_IDLE = createSoundEvent("bison_idle");
+
+    public static final SoundEvent BISON_HURT = createSoundEvent("bison_hurt");
+
+    public static final SoundEvent GIANT_SQUID_HURT = createSoundEvent("giant_squid_hurt");
+
+    public static final SoundEvent GIANT_SQUID_TENTACLE = createSoundEvent("giant_squid_tentacle");
+
+    public static final SoundEvent DEVILS_HOLE_PUPFISH_HURT = createSoundEvent("devils_hole_pupfish_hurt");
+
+    public static final SoundEvent SKELEWAG_HURT = createSoundEvent("skelewag_hurt");
+
+    public static final SoundEvent SKELEWAG_IDLE = createSoundEvent("skelewag_idle");
+
+    public static final SoundEvent RAIN_FROG_HURT = createSoundEvent("rain_frog_hurt");
+
+    public static final SoundEvent RAIN_FROG_IDLE = createSoundEvent("rain_frog_idle");
+
+    public static final SoundEvent POTOO_HURT = createSoundEvent("potoo_hurt");
+
+    public static final SoundEvent POTOO_CALL = createSoundEvent("potoo_call");
+
+    public static final SoundEvent MUDSKIPPER_HURT = createSoundEvent("mudskipper_hurt");
+
+    public static final SoundEvent MUDSKIPPER_WALK = createSoundEvent("mudskipper_walk");
+
+    public static final SoundEvent MUDSKIPPER_SPIT = createSoundEvent("mudskipper_spit");
+
+    public static final SoundEvent RHINOCEROS_IDLE = createSoundEvent("rhinoceros_idle");
+
+    public static final SoundEvent RHINOCEROS_HURT = createSoundEvent("rhinoceros_hurt");
+
+    public static final SoundEvent SUGAR_GLIDER_IDLE = createSoundEvent("sugar_glider_idle");
+
+    public static final SoundEvent SUGAR_GLIDER_HURT = createSoundEvent("sugar_glider_hurt");
+
+    public static final SoundEvent FARSEER_HURT = createSoundEvent("farseer_hurt");
+
+    public static final SoundEvent FARSEER_IDLE = createSoundEvent("farseer_idle");
+
+    public static final SoundEvent FARSEER_EMERGE = createSoundEvent("farseer_emerge");
+
+    public static final SoundEvent FARSEER_BEAM = createSoundEvent("farseer_beam");
+
+    public static final SoundEvent TRANSMUTE_ITEM = createSoundEvent("transmute_item");
+
+    public static final SoundEvent SKREECHER_HURT = createSoundEvent("skreecher_hurt");
+
+    public static final SoundEvent SKREECHER_CALL = createSoundEvent("skreecher_call");
+
+    public static final SoundEvent SKREECHER_DETECT = createSoundEvent("skreecher_detect");
+
+    public static final SoundEvent SKREECHER_CLAP = createSoundEvent("skreecher_clap");
+
+    public static final SoundEvent SCULK_BOOMER = createSoundEvent("sculk_boomer");
+
+    public static final SoundEvent SCULK_BOOMER_FART = createSoundEvent("sculk_boomer_fart");
+
+    public static final SoundEvent UNDERMINER_IDLE = createSoundEvent("underminer_idle");
+
+    public static final SoundEvent UNDERMINER_HURT = createSoundEvent("underminer_hurt");
+
+    public static final SoundEvent UNDERMINER_STEP = createSoundEvent("underminer_step");
+
+    public static final SoundEvent MURMUR_HURT = createSoundEvent("murmur_hurt");
+
+    public static final SoundEvent MURMUR_IDLE = createSoundEvent("murmur_idle");
+
+    public static final SoundEvent MURMUR_NECK = createSoundEvent("murmur_neck");
+
+    public static final SoundEvent MURMUR_ATTACK = createSoundEvent("murmur_attack");
+
+    public static final SoundEvent MURMUR_ANGER = createSoundEvent("murmur_anger");
+
+    public static final SoundEvent TENDON_WHIP = createSoundEvent("tendon_whip");
+
+    public static final SoundEvent SKUNK_HURT = createSoundEvent("skunk_hurt");
+
+    public static final SoundEvent SKUNK_IDLE = createSoundEvent("skunk_idle");
+
+    public static final SoundEvent SKUNK_SPRAY = createSoundEvent("skunk_spray");
+
+    public static final SoundEvent STINK_RAY = createSoundEvent("stink_ray");
+
+    public static final SoundEvent BANANA_SLUG_HURT = createSoundEvent("banana_slug_hurt");
+
+    public static final SoundEvent BANANA_SLUG_SLIME_EXPAND = createSoundEvent("banana_slug_slime_expand");
+
+    public static final SoundEvent BLUE_JAY_IDLE = createSoundEvent("blue_jay_idle");
+
+    public static final SoundEvent BLUE_JAY_HURT = createSoundEvent("blue_jay_hurt");
+
+    public static final SoundEvent BLUE_JAY_SONG = createSoundEvent("blue_jay_song");
+
+    public static final SoundEvent CAIMAN_IDLE = createSoundEvent("caiman_idle");
+
+    public static final SoundEvent CAIMAN_HURT = createSoundEvent("caiman_hurt");
+
+    public static final SoundEvent CAIMAN_SPLASH = createSoundEvent("caiman_splash");
+    public static final SoundEvent TRIOPS_HURT = createSoundEvent("triops_hurt");
+    public static final SoundEvent END_PIRATE_DOOR = createSoundEvent("end_pirate_door");
+    
+    private static SoundEvent createSoundEvent(final String soundName) {
+        Identifier id = Identifier.fromNamespaceAndPath(AlexsMobs.MODID, soundName);
+        return Registry.register(BuiltInRegistries.SOUND_EVENT, id, SoundEvent.createVariableRangeEvent(id));
     }
-
-    private static SoundEvent register(String name) {
-        return Registry.register(BuiltInRegistries.SOUND_EVENT, id(name), SoundEvent.createVariableRangeEvent(id(name)));
-    }
-
-    public static SoundEvent GRIZZLY_BEAR_IDLE;
-    public static SoundEvent GRIZZLY_BEAR_HURT;
-    public static SoundEvent GRIZZLY_BEAR_DIE;
-    public static SoundEvent BEAR_DUST;
-
-    public static SoundEvent ROADRUNNER_IDLE;
-    public static SoundEvent ROADRUNNER_HURT;
-    public static SoundEvent ROADRUNNER_MEEP;
-    public static SoundEvent GAZELLE_HURT;
-    public static SoundEvent CROCODILE_IDLE;
-    public static SoundEvent CROCODILE_HURT;
-    public static SoundEvent CROCODILE_BITE;
-    public static SoundEvent CROCODILE_BABY;
-    public static SoundEvent FLY_IDLE;
-    public static SoundEvent FLY_HURT;
-    public static SoundEvent HUMMINGBIRD_IDLE;
-    public static SoundEvent HUMMINGBIRD_HURT;
-    public static SoundEvent HUMMINGBIRD_LOOP;
-    public static SoundEvent ORCA_IDLE;
-    public static SoundEvent ORCA_HURT;
-    public static SoundEvent ORCA_DIE;
-    public static SoundEvent GORILLA_IDLE;
-    public static SoundEvent GORILLA_HURT;
-    public static SoundEvent MOSQUITO_LOOP;
-    public static SoundEvent MOSQUITO_HURT;
-    public static SoundEvent MOSQUITO_DIE;
-    public static SoundEvent RATTLESNAKE_LOOP;
-    public static SoundEvent RATTLESNAKE_HURT;
-    public static SoundEvent RATTLESNAKE_ATTACK;
-    public static SoundEvent ENDERGRADE_IDLE;
-    public static SoundEvent ENDERGRADE_HURT;
-    public static SoundEvent LOBSTER_HURT;
-    public static SoundEvent LOBSTER_ATTACK;
-    public static SoundEvent KOMODO_DRAGON_IDLE;
-    public static SoundEvent KOMODO_DRAGON_HURT;
-    public static SoundEvent SUNBIRD_IDLE;
-    public static SoundEvent SUNBIRD_HURT;
-    public static SoundEvent CAPUCHIN_MONKEY_IDLE;
-    public static SoundEvent CAPUCHIN_MONKEY_HURT;
-    public static SoundEvent BONE_SERPENT_IDLE;
-    public static SoundEvent BONE_SERPENT_HURT;
-    public static SoundEvent CENTIPEDE_WALK;
-    public static SoundEvent CENTIPEDE_HURT;
-    public static SoundEvent CENTIPEDE_ATTACK;
-    public static SoundEvent WARPED_TOAD_IDLE;
-    public static SoundEvent WARPED_TOAD_HURT;
-    public static SoundEvent MOOSE_IDLE;
-    public static SoundEvent MOOSE_HURT;
-    public static SoundEvent MOOSE_JOSTLE;
-    public static SoundEvent MIMICUBE_JUMP;
-    public static SoundEvent MIMICUBE_HURT;
-    public static SoundEvent RACCOON_IDLE;
-    public static SoundEvent RACCOON_HURT;
-    public static SoundEvent MARACA;
-    public static SoundEvent LA_CUCARACHA;
-    public static SoundEvent SEAL_IDLE;
-    public static SoundEvent SEAL_HURT;
-    public static SoundEvent COCKROACH_HURT;
-    public static SoundEvent SHOEBILL_HURT;
-    public static SoundEvent ELEPHANT_IDLE;
-    public static SoundEvent ELEPHANT_HURT;
-    public static SoundEvent ELEPHANT_DIE;
-    public static SoundEvent ELEPHANT_TRUMPET;
-    public static SoundEvent ELEPHANT_WALK;
-    public static SoundEvent SOUL_VULTURE_IDLE;
-    public static SoundEvent SOUL_VULTURE_HURT;
-    public static SoundEvent SNOW_LEOPARD_IDLE;
-    public static SoundEvent SNOW_LEOPARD_HURT;
-    public static SoundEvent SPECTRE_IDLE;
-    public static SoundEvent SPECTRE_HURT;
-    public static SoundEvent CROW_IDLE;
-    public static SoundEvent CROW_HURT;
-    public static SoundEvent ALLIGATOR_SNAPPING_TURTLE_IDLE;
-    public static SoundEvent ALLIGATOR_SNAPPING_TURTLE_HURT;
-    public static SoundEvent MUNGUS_IDLE;
-    public static SoundEvent MUNGUS_HURT;
-    public static SoundEvent MUNGUS_LASER_END;
-    public static SoundEvent MUNGUS_LASER_LOOP;
-    public static SoundEvent MUNGUS_LASER_GROW;
-    public static SoundEvent MANTIS_SHRIMP_SNAP;
-    public static SoundEvent MANTIS_SHRIMP_HURT;
-    public static SoundEvent GUSTER_IDLE;
-    public static SoundEvent GUSTER_HURT;
-    public static SoundEvent WARPED_MOSCO_IDLE;
-    public static SoundEvent WARPED_MOSCO_HURT;
-    public static SoundEvent STRADDLER_IDLE;
-    public static SoundEvent STRADDLER_HURT;
-    public static SoundEvent EMU_IDLE;
-    public static SoundEvent EMU_HURT;
-    public static SoundEvent PLATYPUS_IDLE;
-    public static SoundEvent PLATYPUS_HURT;
-    public static SoundEvent DROPBEAR_IDLE;
-    public static SoundEvent DROPBEAR_HURT;
-    public static SoundEvent TASMANIAN_DEVIL_IDLE;
-    public static SoundEvent TASMANIAN_DEVIL_HURT;
-    public static SoundEvent TASMANIAN_DEVIL_ROAR;
-    public static SoundEvent KANGAROO_IDLE;
-    public static SoundEvent KANGAROO_HURT;
-    public static SoundEvent CACHALOT_WHALE_IDLE;
-    public static SoundEvent CACHALOT_WHALE_HURT;
-    public static SoundEvent CACHALOT_WHALE_CLICK;
-    public static SoundEvent LEAFCUTTER_ANT_HURT;
-    public static SoundEvent LEAFCUTTER_ANT_QUEEN_HURT;
-    public static SoundEvent ENDERIOPHAGE_HURT;
-    public static SoundEvent ENDERIOPHAGE_SQUISH;
-    public static SoundEvent ENDERIOPHAGE_WALK;
-    public static SoundEvent MUSIC_DISC_THIME;
-    public static SoundEvent BALD_EAGLE_IDLE;
-    public static SoundEvent BALD_EAGLE_HURT;
-    public static SoundEvent TIGER_IDLE;
-    public static SoundEvent TIGER_HURT;
-    public static SoundEvent TIGER_ANGRY;
-    public static SoundEvent TARANTULA_HAWK_WING;
-    public static SoundEvent TARANTULA_HAWK_HURT;
-    public static SoundEvent MUSIC_WORMBOSS;
-    public static SoundEvent VOID_WORM_IDLE;
-    public static SoundEvent VOID_WORM_HURT;
-    public static SoundEvent VOID_PORTAL_CLOSE;
-    public static SoundEvent VOID_PORTAL_OPEN;
-    public static SoundEvent MIMIC_OCTOPUS_IDLE;
-    public static SoundEvent MIMIC_OCTOPUS_HURT;
-    public static SoundEvent MUSIC_DISC_DAZE;
-    public static SoundEvent SEAGULL_IDLE;
-    public static SoundEvent SEAGULL_HURT;
-    public static SoundEvent FROSTSTALKER_IDLE;
-    public static SoundEvent FROSTSTALKER_HURT;
-    public static SoundEvent TUSKLIN_IDLE;
-    public static SoundEvent TUSKLIN_HURT;
-    public static SoundEvent LAVIATHAN_IDLE;
-    public static SoundEvent LAVIATHAN_HURT;
-    public static SoundEvent COSMAW_IDLE;
-    public static SoundEvent COSMAW_HURT;
-    public static SoundEvent TOUCAN_IDLE;
-    public static SoundEvent TOUCAN_HURT;
-    public static SoundEvent MANED_WOLF_IDLE;
-    public static SoundEvent MANED_WOLF_HURT;
-    public static SoundEvent ANACONDA_SLITHER;
-    public static SoundEvent ANACONDA_HURT;
-    public static SoundEvent ANACONDA_ATTACK;
-    public static SoundEvent VINE_LASSO;
-    public static SoundEvent ANTEATER_HURT;
-    public static SoundEvent ROCKY_ROLLER_IDLE;
-    public static SoundEvent ROCKY_ROLLER_HURT;
-    public static SoundEvent ROCKY_ROLLER_EARTHQUAKE;
-    public static SoundEvent GELADA_MONKEY_IDLE;
-    public static SoundEvent GELADA_MONKEY_HURT;
-    public static SoundEvent FLUTTER_IDLE;
-    public static SoundEvent FLUTTER_HURT;
-    public static SoundEvent FLUTTER_FLAP;
-    public static SoundEvent FLUTTER_NO;
-    public static SoundEvent FLUTTER_YES;
-    public static SoundEvent JERBOA_IDLE;
-    public static SoundEvent JERBOA_HURT;
-    public static SoundEvent TERRAPIN_HURT;
-    public static SoundEvent COMB_JELLY_HURT;
-    public static SoundEvent COSMIC_COD_HURT;
-    public static SoundEvent MOSQUITO_CAPSID_CONVERT;
-    public static SoundEvent GIANT_SQUID_GAMES;
-    public static SoundEvent APRIL_FOOLS_SCREAM;
-    public static SoundEvent APRIL_FOOLS_POWER_OUTAGE;
-    public static SoundEvent APRIL_FOOLS_MUSIC_BOX;
-    public static SoundEvent BUNFUNGUS_IDLE;
-    public static SoundEvent BUNFUNGUS_HURT;
-    public static SoundEvent BUNFUNGUS_ATTACK;
-    public static SoundEvent BUNFUNGUS_JUMP;
-    public static SoundEvent BISON_IDLE;
-    public static SoundEvent BISON_HURT;
-    public static SoundEvent GIANT_SQUID_HURT;
-    public static SoundEvent GIANT_SQUID_TENTACLE;
-    public static SoundEvent DEVILS_HOLE_PUPFISH_HURT;
-    public static SoundEvent SKELEWAG_HURT;
-    public static SoundEvent SKELEWAG_IDLE;
-    public static SoundEvent RAIN_FROG_HURT;
-    public static SoundEvent RAIN_FROG_IDLE;
-    public static SoundEvent POTOO_HURT;
-    public static SoundEvent POTOO_CALL;
-    public static SoundEvent MUDSKIPPER_HURT;
-    public static SoundEvent MUDSKIPPER_WALK;
-    public static SoundEvent MUDSKIPPER_SPIT;
-    public static SoundEvent RHINOCEROS_IDLE;
-    public static SoundEvent RHINOCEROS_HURT;
-    public static SoundEvent SUGAR_GLIDER_IDLE;
-    public static SoundEvent SUGAR_GLIDER_HURT;
-    public static SoundEvent FARSEER_HURT;
-    public static SoundEvent FARSEER_IDLE;
-    public static SoundEvent FARSEER_EMERGE;
-    public static SoundEvent FARSEER_BEAM;
-    public static SoundEvent TRANSMUTE_ITEM;
-    public static SoundEvent SKREECHER_HURT;
-    public static SoundEvent SKREECHER_CALL;
-    public static SoundEvent SKREECHER_DETECT;
-    public static SoundEvent SKREECHER_CLAP;
-    public static SoundEvent SCULK_BOOMER;
-    public static SoundEvent SCULK_BOOMER_FART;
-    public static SoundEvent UNDERMINER_IDLE;
-    public static SoundEvent UNDERMINER_HURT;
-    public static SoundEvent UNDERMINER_STEP;
-    public static SoundEvent MURMUR_HURT;
-    public static SoundEvent MURMUR_IDLE;
-    public static SoundEvent MURMUR_NECK;
-    public static SoundEvent MURMUR_ATTACK;
-    public static SoundEvent MURMUR_ANGER;
-    public static SoundEvent TENDON_WHIP;
-    public static SoundEvent SKUNK_HURT;
-    public static SoundEvent SKUNK_IDLE;
-    public static SoundEvent SKUNK_SPRAY;
-    public static SoundEvent STINK_RAY;
-    public static SoundEvent BANANA_SLUG_HURT;
-    public static SoundEvent BANANA_SLUG_SLIME_EXPAND;
-    public static SoundEvent BLUE_JAY_IDLE;
-    public static SoundEvent BLUE_JAY_HURT;
-    public static SoundEvent BLUE_JAY_SONG;
-    public static SoundEvent CAIMAN_IDLE;
-    public static SoundEvent CAIMAN_HURT;
-    public static SoundEvent CAIMAN_SPLASH;
-    public static SoundEvent TRIOPS_HURT;
-    public static SoundEvent END_PIRATE_DOOR;
 
     public static void init() {
-        GRIZZLY_BEAR_IDLE = register("grizzly_bear_idle");
-        GRIZZLY_BEAR_HURT = register("grizzly_bear_hurt");
-        GRIZZLY_BEAR_DIE = register("grizzly_bear_die");
-        BEAR_DUST = register("bear_dust");
-        ROADRUNNER_IDLE = register("roadrunner_idle");
-        ROADRUNNER_HURT = register("roadrunner_hurt");
-        ROADRUNNER_MEEP = register("roadrunner_meep");
-        GAZELLE_HURT = register("gazelle_hurt");
-        CROCODILE_IDLE = register("crocodile_idle");
-        CROCODILE_HURT = register("crocodile_hurt");
-        CROCODILE_BITE = register("crocodile_bite");
-        CROCODILE_BABY = register("crocodile_baby");
-        FLY_IDLE = register("fly_idle");
-        FLY_HURT = register("fly_hurt");
-        HUMMINGBIRD_IDLE = register("hummingbird_idle");
-        HUMMINGBIRD_HURT = register("hummingbird_hurt");
-        HUMMINGBIRD_LOOP = register("hummingbird_loop");
-        ORCA_IDLE = register("orca_idle");
-        ORCA_HURT = register("orca_hurt");
-        ORCA_DIE = register("orca_die");
-        GORILLA_IDLE = register("gorilla_idle");
-        GORILLA_HURT = register("gorilla_hurt");
-        MOSQUITO_LOOP = register("mosquito_loop");
-        MOSQUITO_HURT = register("mosquito_hurt");
-        MOSQUITO_DIE = register("mosquito_die");
-        RATTLESNAKE_LOOP = register("rattlesnake_loop");
-        RATTLESNAKE_HURT = register("rattlesnake_hurt");
-        RATTLESNAKE_ATTACK = register("rattlesnake_attack");
-        ENDERGRADE_IDLE = register("endergrade_idle");
-        ENDERGRADE_HURT = register("endergrade_hurt");
-        LOBSTER_HURT = register("lobster_hurt");
-        LOBSTER_ATTACK = register("lobster_attack");
-        KOMODO_DRAGON_IDLE = register("komodo_dragon_idle");
-        KOMODO_DRAGON_HURT = register("komodo_dragon_hurt");
-        SUNBIRD_IDLE = register("sunbird_idle");
-        SUNBIRD_HURT = register("sunbird_hurt");
-        CAPUCHIN_MONKEY_IDLE = register("capuchin_monkey_idle");
-        CAPUCHIN_MONKEY_HURT = register("capuchin_monkey_hurt");
-        BONE_SERPENT_IDLE = register("bone_serpent_idle");
-        BONE_SERPENT_HURT = register("bone_serpent_hurt");
-        CENTIPEDE_WALK = register("centipede_walk");
-        CENTIPEDE_HURT = register("centipede_hurt");
-        CENTIPEDE_ATTACK = register("centipede_attack");
-        WARPED_TOAD_IDLE = register("warped_toad_idle");
-        WARPED_TOAD_HURT = register("warped_toad_hurt");
-        MOOSE_IDLE = register("moose_idle");
-        MOOSE_HURT = register("moose_hurt");
-        MOOSE_JOSTLE = register("moose_jostle");
-        MIMICUBE_JUMP = register("mimicube_jump");
-        MIMICUBE_HURT = register("mimicube_hurt");
-        RACCOON_IDLE = register("raccoon_idle");
-        RACCOON_HURT = register("raccoon_hurt");
-        MARACA = register("maraca");
-        LA_CUCARACHA = register("la_cucaracha");
-        SEAL_IDLE = register("seal_idle");
-        SEAL_HURT = register("seal_hurt");
-        COCKROACH_HURT = register("cockroach_hurt");
-        SHOEBILL_HURT = register("shoebill_hurt");
-        ELEPHANT_IDLE = register("elephant_idle");
-        ELEPHANT_HURT = register("elephant_hurt");
-        ELEPHANT_DIE = register("elephant_die");
-        ELEPHANT_TRUMPET = register("elephant_trumpet");
-        ELEPHANT_WALK = register("elephant_walk");
-        SOUL_VULTURE_IDLE = register("soul_vulture_idle");
-        SOUL_VULTURE_HURT = register("soul_vulture_hurt");
-        SNOW_LEOPARD_IDLE = register("snow_leopard_idle");
-        SNOW_LEOPARD_HURT = register("snow_leopard_hurt");
-        SPECTRE_IDLE = register("spectre_idle");
-        SPECTRE_HURT = register("spectre_hurt");
-        CROW_IDLE = register("crow_idle");
-        CROW_HURT = register("crow_hurt");
-        ALLIGATOR_SNAPPING_TURTLE_IDLE = register("alligator_snapping_turtle_idle");
-        ALLIGATOR_SNAPPING_TURTLE_HURT = register("alligator_snapping_turtle_hurt");
-        MUNGUS_IDLE = register("mungus_idle");
-        MUNGUS_HURT = register("mungus_hurt");
-        MUNGUS_LASER_END = register("mungus_laser_end");
-        MUNGUS_LASER_LOOP = register("mungus_laser_loop");
-        MUNGUS_LASER_GROW = register("mungus_laser_grow");
-        MANTIS_SHRIMP_SNAP = register("mantis_shrimp_snap");
-        MANTIS_SHRIMP_HURT = register("mantis_shrimp_hurt");
-        GUSTER_IDLE = register("guster_idle");
-        GUSTER_HURT = register("guster_hurt");
-        WARPED_MOSCO_IDLE = register("warped_mosco_idle");
-        WARPED_MOSCO_HURT = register("warped_mosco_hurt");
-        STRADDLER_IDLE = register("straddler_idle");
-        STRADDLER_HURT = register("straddler_hurt");
-        EMU_IDLE = register("emu_idle");
-        EMU_HURT = register("emu_hurt");
-        PLATYPUS_IDLE = register("platypus_idle");
-        PLATYPUS_HURT = register("platypus_hurt");
-        DROPBEAR_IDLE = register("dropbear_idle");
-        DROPBEAR_HURT = register("dropbear_hurt");
-        TASMANIAN_DEVIL_IDLE = register("tasmanian_devil_idle");
-        TASMANIAN_DEVIL_HURT = register("tasmanian_devil_hurt");
-        TASMANIAN_DEVIL_ROAR = register("tasmanian_devil_roar");
-        KANGAROO_IDLE = register("kangaroo_idle");
-        KANGAROO_HURT = register("kangaroo_hurt");
-        CACHALOT_WHALE_IDLE = register("cachalot_whale_idle");
-        CACHALOT_WHALE_HURT = register("cachalot_whale_hurt");
-        CACHALOT_WHALE_CLICK = register("cachalot_whale_click");
-        LEAFCUTTER_ANT_HURT = register("leafcutter_ant_hurt");
-        LEAFCUTTER_ANT_QUEEN_HURT = register("leafcutter_ant_queen_hurt");
-        ENDERIOPHAGE_HURT = register("enderiophage_hurt");
-        ENDERIOPHAGE_SQUISH = register("enderiophage_squish");
-        ENDERIOPHAGE_WALK = register("enderiophage_walk");
-        MUSIC_DISC_THIME = register("music_disc_thime");
-        BALD_EAGLE_IDLE = register("bald_eagle_idle");
-        BALD_EAGLE_HURT = register("bald_eagle_hurt");
-        TIGER_IDLE = register("tiger_idle");
-        TIGER_HURT = register("tiger_hurt");
-        TIGER_ANGRY = register("tiger_angry");
-        TARANTULA_HAWK_WING = register("tarantula_hawk_wing");
-        TARANTULA_HAWK_HURT = register("tarantula_hawk_hurt");
-        MUSIC_WORMBOSS = register("music_wormboss");
-        VOID_WORM_IDLE = register("void_worm_idle");
-        VOID_WORM_HURT = register("void_worm_hurt");
-        VOID_PORTAL_CLOSE = register("void_portal_close");
-        VOID_PORTAL_OPEN = register("void_portal_open");
-        MIMIC_OCTOPUS_IDLE = register("mimic_octopus_idle");
-        MIMIC_OCTOPUS_HURT = register("mimic_octopus_hurt");
-        MUSIC_DISC_DAZE = register("music_disc_daze");
-        SEAGULL_IDLE = register("seagull_idle");
-        SEAGULL_HURT = register("seagull_hurt");
-        FROSTSTALKER_IDLE = register("froststalker_idle");
-        FROSTSTALKER_HURT = register("froststalker_hurt");
-        TUSKLIN_IDLE = register("tusklin_idle");
-        TUSKLIN_HURT = register("tusklin_hurt");
-        LAVIATHAN_IDLE = register("laviathan_idle");
-        LAVIATHAN_HURT = register("laviathan_hurt");
-        COSMAW_IDLE = register("cosmaw_idle");
-        COSMAW_HURT = register("cosmaw_hurt");
-        TOUCAN_IDLE = register("toucan_idle");
-        TOUCAN_HURT = register("toucan_hurt");
-        MANED_WOLF_IDLE = register("maned_wolf_idle");
-        MANED_WOLF_HURT = register("maned_wolf_hurt");
-        ANACONDA_SLITHER = register("anaconda_slither");
-        ANACONDA_HURT = register("anaconda_hurt");
-        ANACONDA_ATTACK = register("anaconda_attack");
-        VINE_LASSO = register("vine_lasso");
-        ANTEATER_HURT = register("anteater_hurt");
-        ROCKY_ROLLER_IDLE = register("rocky_roller_idle");
-        ROCKY_ROLLER_HURT = register("rocky_roller_hurt");
-        ROCKY_ROLLER_EARTHQUAKE = register("rocky_roller_earthquake");
-        GELADA_MONKEY_IDLE = register("gelada_monkey_idle");
-        GELADA_MONKEY_HURT = register("gelada_monkey_hurt");
-        FLUTTER_IDLE = register("flutter_idle");
-        FLUTTER_HURT = register("flutter_hurt");
-        FLUTTER_FLAP = register("flutter_flap");
-        FLUTTER_NO = register("flutter_no");
-        FLUTTER_YES = register("flutter_yes");
-        JERBOA_IDLE = register("jerboa_idle");
-        JERBOA_HURT = register("jerboa_hurt");
-        TERRAPIN_HURT = register("terrapin_hurt");
-        COMB_JELLY_HURT = register("comb_jelly_hurt");
-        COSMIC_COD_HURT = register("cosmic_cod_hurt");
-        MOSQUITO_CAPSID_CONVERT = register("mosquito_capsid_convert");
-        GIANT_SQUID_GAMES = register("giant_squid_games");
-        APRIL_FOOLS_SCREAM = register("april_fools_scream");
-        APRIL_FOOLS_POWER_OUTAGE = register("april_fools_power_outage");
-        APRIL_FOOLS_MUSIC_BOX = register("april_fools_music_box");
-        BUNFUNGUS_IDLE = register("bunfungus_idle");
-        BUNFUNGUS_HURT = register("bunfungus_hurt");
-        BUNFUNGUS_ATTACK = register("bunfungus_attack");
-        BUNFUNGUS_JUMP = register("bunfungus_jump");
-        BISON_IDLE = register("bison_idle");
-        BISON_HURT = register("bison_hurt");
-        GIANT_SQUID_HURT = register("giant_squid_hurt");
-        GIANT_SQUID_TENTACLE = register("giant_squid_tentacle");
-        DEVILS_HOLE_PUPFISH_HURT = register("devils_hole_pupfish_hurt");
-        SKELEWAG_HURT = register("skelewag_hurt");
-        SKELEWAG_IDLE = register("skelewag_idle");
-        RAIN_FROG_HURT = register("rain_frog_hurt");
-        RAIN_FROG_IDLE = register("rain_frog_idle");
-        POTOO_HURT = register("potoo_hurt");
-        POTOO_CALL = register("potoo_call");
-        MUDSKIPPER_HURT = register("mudskipper_hurt");
-        MUDSKIPPER_WALK = register("mudskipper_walk");
-        MUDSKIPPER_SPIT = register("mudskipper_spit");
-        RHINOCEROS_IDLE = register("rhinoceros_idle");
-        RHINOCEROS_HURT = register("rhinoceros_hurt");
-        SUGAR_GLIDER_IDLE = register("sugar_glider_idle");
-        SUGAR_GLIDER_HURT = register("sugar_glider_hurt");
-        FARSEER_HURT = register("farseer_hurt");
-        FARSEER_IDLE = register("farseer_idle");
-        FARSEER_EMERGE = register("farseer_emerge");
-        FARSEER_BEAM = register("farseer_beam");
-        TRANSMUTE_ITEM = register("transmute_item");
-        SKREECHER_HURT = register("skreecher_hurt");
-        SKREECHER_CALL = register("skreecher_call");
-        SKREECHER_DETECT = register("skreecher_detect");
-        SKREECHER_CLAP = register("skreecher_clap");
-        SCULK_BOOMER = register("sculk_boomer");
-        SCULK_BOOMER_FART = register("sculk_boomer_fart");
-        UNDERMINER_IDLE = register("underminer_idle");
-        UNDERMINER_HURT = register("underminer_hurt");
-        UNDERMINER_STEP = register("underminer_step");
-        MURMUR_HURT = register("murmur_hurt");
-        MURMUR_IDLE = register("murmur_idle");
-        MURMUR_NECK = register("murmur_neck");
-        MURMUR_ATTACK = register("murmur_attack");
-        MURMUR_ANGER = register("murmur_anger");
-        TENDON_WHIP = register("tendon_whip");
-        SKUNK_HURT = register("skunk_hurt");
-        SKUNK_IDLE = register("skunk_idle");
-        SKUNK_SPRAY = register("skunk_spray");
-        STINK_RAY = register("stink_ray");
-        BANANA_SLUG_HURT = register("banana_slug_hurt");
-        BANANA_SLUG_SLIME_EXPAND = register("banana_slug_slime_expand");
-        BLUE_JAY_IDLE = register("blue_jay_idle");
-        BLUE_JAY_HURT = register("blue_jay_hurt");
-        BLUE_JAY_SONG = register("blue_jay_song");
-        CAIMAN_IDLE = register("caiman_idle");
-        CAIMAN_HURT = register("caiman_hurt");
-        CAIMAN_SPLASH = register("caiman_splash");
-        TRIOPS_HURT = register("triops_hurt");
-        END_PIRATE_DOOR = register("end_pirate_door");
     }
 }

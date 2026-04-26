@@ -2,7 +2,10 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 
 import com.github.alexthe666.alexsmobs.entity.EntityMudskipper;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.level.Level;
@@ -129,7 +132,7 @@ public class MudskipperAIDisplay extends Goal {
                 if(this.mudskipper.displayTimer > 400 || y > 2.0F){
                     this.mudskipper.getNavigation().stop();
                     this.partner.getNavigation().stop();
-                    mudskipper.hasImpulse = true;
+                    mudskipper.needsSync = true;
                     this.mudskipper.displayTimer = 0;
                     this.partner.displayTimer = 0;
                     this.mudskipper.displayCooldown = 200 + this.mudskipper.getRandom().nextInt(200);
@@ -155,7 +158,13 @@ public class MudskipperAIDisplay extends Goal {
 
     @Nullable
     private EntityMudskipper getNearbyMudskipper() {
-        List<EntityMudskipper> skippers = this.world.getNearbyEntities(EntityMudskipper.class, JOSTLE_PREDICATE, this.mudskipper, this.mudskipper.getBoundingBox().inflate(16.0D));
+        if (!(this.world instanceof ServerLevel serverLevel)) {
+            return null;
+        }
+        List<EntityMudskipper> skippers = this.world.getEntitiesOfClass(
+                EntityMudskipper.class,
+                this.mudskipper.getBoundingBox().inflate(16.0D),
+                EntitySelector.NO_SPECTATORS.and(m -> JOSTLE_PREDICATE.test(serverLevel, this.mudskipper, (LivingEntity) m)));
         double lvt_2_1_ = 1.7976931348623157E308D;
         EntityMudskipper lvt_4_1_ = null;
         Iterator var5 = skippers.iterator();

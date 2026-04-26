@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
+
 import com.github.alexthe666.alexsmobs.entity.EntityLeafcutterAnt;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMPointOfInterestRegistry;
@@ -31,15 +33,27 @@ import net.minecraft.world.phys.BlockHitResult;
 
 import javax.annotation.Nullable;
 import java.util.List;
+
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class BlockLeafcutterAntChamber extends Block {
+    public static final MapCodec<BlockLeafcutterAntChamber> CODEC = simpleCodec(BlockLeafcutterAntChamber::new);
     public static final IntegerProperty FUNGUS = IntegerProperty.create("fungus", 0, 5);
 
-    public BlockLeafcutterAntChamber() {
-        super(BlockBehaviour.Properties.of().mapColor(MapColor.DIRT).sound(SoundType.GRAVEL).strength(1.3F).randomTicks());
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.DIRT).sound(SoundType.GRAVEL).strength(1.3F).randomTicks();
+    }
+
+    public BlockLeafcutterAntChamber(BlockBehaviour.Properties props) {
+        super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(FUNGUS, 0));
+    }
+
+    @Override
+    public MapCodec<? extends Block> codec() {
+        return CODEC;
     }
 
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
@@ -55,9 +69,9 @@ public class BlockLeafcutterAntChamber extends Block {
                 this.angerNearbyAnts(worldIn, pos);
             }
             worldIn.setBlockAndUpdate(pos, state.setValue(FUNGUS, 0));
-            if(!worldIn.isClientSide){
-                if(worldIn.random.nextInt(2) == 0){
-                    Direction dir = Direction.getRandom(worldIn.random);
+            if(!worldIn.isClientSide()){
+                if(worldIn.getRandom().nextInt(2) == 0){
+                    Direction dir = Direction.getRandom(worldIn.getRandom());
                     if(worldIn.getBlockState(pos.above()).getBlock() == AMBlockRegistry.LEAFCUTTER_ANTHILL){
                         dir = Direction.DOWN;
                     }
@@ -74,10 +88,8 @@ public class BlockLeafcutterAntChamber extends Block {
     }
 
     public void randomTick(BlockState state, ServerLevel worldIn, BlockPos pos, RandomSource random) {
-            for (int dx = -3; dx <= 3; dx++)
-            for (int dz = -3; dz <= 3; dz++)
-                if (!worldIn.isLoaded(pos.offset(dx * 16, 0, dz * 16)))
-                    return;
+            if (!worldIn.hasChunksAt(pos.offset(-3, -3, -3), pos.offset(3, 3, 3)))
+                return; // prevent loading unloaded chunks when checking neighbors
         if(worldIn.canSeeSky(pos.above())){
             worldIn.setBlockAndUpdate(pos, Blocks.DIRT.defaultBlockState());
         }
@@ -94,7 +106,7 @@ public class BlockLeafcutterAntChamber extends Block {
         List<Player> list1 = world.getEntitiesOfClass(Player.class, (new AABB(pos)).inflate(20D, 6.0D, 20D));
         if (list1.isEmpty()) return; //Forge: Prevent Error when no players are around.
         int i = list1.size();
-        player = list1.get(world.random.nextInt(i));
+        player = list1.get(world.getRandom().nextInt(i));
         if (!list.isEmpty()) {
             for (EntityLeafcutterAnt beeentity : list) {
                 if (beeentity.getTarget() == null) {
@@ -102,9 +114,9 @@ public class BlockLeafcutterAntChamber extends Block {
                 }
             }
         }
-        if(!world.isClientSide){
+        if(!world.isClientSide()){
             PoiManager pointofinterestmanager = ((ServerLevel) world).getPoiManager();
-            Stream<BlockPos> stream = pointofinterestmanager.findAll((poiTypeHolder -> poiTypeHolder.is(AMPointOfInterestRegistry.getKey(AMPointOfInterestRegistry.LEAFCUTTER_ANT_HILL))), Predicates.alwaysTrue(), pos, 50, PoiManager.Occupancy.ANY);
+            Stream<BlockPos> stream = pointofinterestmanager.findAll((poiTypeHolder -> poiTypeHolder.is(AMPointOfInterestRegistry.LEAFCUTTER_ANT_HILL)), Predicates.alwaysTrue(), pos, 50, PoiManager.Occupancy.ANY);
             List<BlockPos> listOfHives = stream.collect(Collectors.toList());
             for (BlockPos pos2 : listOfHives) {
                 if(world.getBlockEntity(pos2) instanceof TileEntityLeafcutterAnthill){

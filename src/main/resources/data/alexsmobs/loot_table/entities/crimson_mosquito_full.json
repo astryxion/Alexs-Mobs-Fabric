@@ -4,17 +4,10 @@
       "name": "crimson_mosquito",
       "conditions": [
         {
-          "condition": "minecraft:random_chance_with_enchanted_bonus",
-          "unenchanted_chance": 0.1,
-          "enchanted_chance": {
-            "type": "minecraft:linear",
-            "base": 0.1,
-            "per_level_above_first": 0.01
-          },
-          "enchantment": "minecraft:looting"
+          "condition": "minecraft:random_chance_with_enchanted_bonus", "enchantment": "minecraft:looting", "unenchanted_chance": 0.1, "enchanted_chance": { "type": "minecraft:linear", "base": 0.1, "per_level_above_first": 0.01 }
         }
       ],
-      "rolls": 1.0,
+      "rolls": 1,
       "entries": [
         {
           "type": "minecraft:item",
@@ -27,17 +20,10 @@
       "name": "crimson_mosquito",
       "conditions": [
         {
-          "condition": "minecraft:random_chance_with_enchanted_bonus",
-          "unenchanted_chance": 0.8,
-          "enchanted_chance": {
-            "type": "minecraft:linear",
-            "base": 0.8,
-            "per_level_above_first": 0.01
-          },
-          "enchantment": "minecraft:looting"
+          "condition": "minecraft:random_chance_with_enchanted_bonus", "enchantment": "minecraft:looting", "unenchanted_chance": 0.8, "enchanted_chance": { "type": "minecraft:linear", "base": 0.8, "per_level_above_first": 0.01 }
         }
       ],
-      "rolls": 1.0,
+      "rolls": 1,
       "entries": [
         {
           "type": "minecraft:item",
@@ -46,6 +32,5 @@
         }
       ]
     }
-  ],
-  "type": "minecraft:entity"
+  ]
 }

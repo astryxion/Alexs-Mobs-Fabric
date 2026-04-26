@@ -2,8 +2,7 @@ package com.github.alexthe666.alexsmobs.item;
 
 import com.github.alexthe666.alexsmobs.entity.EntitySharkToothArrow;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.entity.projectile.Arrow;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ArrowItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -14,14 +13,12 @@ public class ItemModArrow extends ArrowItem {
         super(group);
     }
 
-    public AbstractArrow createArrow(Level worldIn, ItemStack stack, LivingEntity shooter, ItemStack weaponStack) {
-        if(this == AMItemRegistry.SHARK_TOOTH_ARROW){
-            EntitySharkToothArrow arrowentity = new EntitySharkToothArrow(worldIn, shooter);
-            arrowentity.initPotionFromItem(stack);
-            return arrowentity;
-        }else {
-            return super.createArrow(worldIn, stack, shooter, weaponStack);
+    @Override
+    public AbstractArrow createArrow(Level worldIn, ItemStack stack, LivingEntity shooter, ItemStack weapon) {
+        if (this == AMItemRegistry.SHARK_TOOTH_ARROW) {
+            return new EntitySharkToothArrow(worldIn, shooter, stack, weapon);
         }
+        return super.createArrow(worldIn, stack, shooter, weapon);
     }
 
 }

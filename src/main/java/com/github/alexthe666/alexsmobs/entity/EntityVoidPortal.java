@@ -1,7 +1,10 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.event.ServerEvents;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.item.ItemDimensionalCarver;
@@ -9,23 +12,22 @@ import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
+import net.minecraft.world.entity.Relative;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
@@ -43,7 +45,7 @@ public class EntityVoidPortal extends Entity {
     protected static final EntityDataAccessor<Integer> LIFESPAN = SynchedEntityData.defineId(EntityVoidPortal.class, EntityDataSerializers.INT);
     protected static final EntityDataAccessor<Boolean> SHATTERED = SynchedEntityData.defineId(EntityVoidPortal.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Optional<BlockPos>> DESTINATION = SynchedEntityData.defineId(EntityVoidPortal.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
-    private static final EntityDataAccessor<Optional<UUID>> SISTER_UUID = SynchedEntityData.defineId(EntityVoidPortal.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> SISTER_UUID = SynchedEntityData.defineId(EntityVoidPortal.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
     public ResourceKey<Level> exitDimension;
     private boolean madeOpenNoise = false;
     private boolean madeCloseNoise = false;
@@ -51,10 +53,18 @@ public class EntityVoidPortal extends Entity {
     private boolean hasClearedObstructions;
 
 
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(ATTACHED_FACE, Direction.DOWN);
+        builder.define(LIFESPAN, 300);
+        builder.define(SHATTERED, false);
+        builder.define(SISTER_UUID, Optional.empty());
+        builder.define(DESTINATION, Optional.empty());
+    }
+
     public EntityVoidPortal(EntityType<?> entityTypeIn, Level worldIn) {
         super(entityTypeIn, worldIn);
     }
-
     public EntityVoidPortal(Level world, ItemDimensionalCarver item) {
         this(AMEntityRegistry.VOID_PORTAL, world);
         if(item == AMItemRegistry.SHATTERED_DIMENSIONAL_CARVER){
@@ -66,10 +76,8 @@ public class EntityVoidPortal extends Entity {
         }
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
-    }
+    // getAddEntityPacket is no longer needed in 1.21
+    // public Packet<ClientGamePacketListener> getAddEntityPacket() {
 
     public void tick() {
         super.tick();
@@ -112,21 +120,21 @@ public class EntityVoidPortal extends Entity {
         }
         AABB bb = new AABB(this.getX() + minX, this.getY() + minY, this.getZ() + minZ, this.getX() + maxX, this.getY() + maxY, this.getZ() + maxZ);
         this.setBoundingBox(bb);
-        if(this.level().isClientSide && random.nextFloat() < 0.5F && Math.min(tickCount, this.getLifespan()) >= 20){
+        if(this.level().isClientSide() && random.nextFloat() < 0.5F && Math.min(tickCount, this.getLifespan()) >= 20){
             final double particleX = this.getBoundingBox().minX + random.nextFloat() * (this.getBoundingBox().maxX - this.getBoundingBox().minX);
             final double particleY = this.getBoundingBox().minY + random.nextFloat() * (this.getBoundingBox().maxY - this.getBoundingBox().minY);
             final double particleZ = this.getBoundingBox().minZ + random.nextFloat() * (this.getBoundingBox().maxZ - this.getBoundingBox().minZ);
-            level().addParticle(AMParticleRegistry.WORM_PORTAL, particleX, particleY, particleZ, 0.1 * random.nextGaussian(), 0.1 * random.nextGaussian(), 0.1 * random.nextGaussian());
+            this.level().addParticle(AMParticleRegistry.WORM_PORTAL, particleX, particleY, particleZ, 0.1 * random.nextGaussian(), 0.1 * random.nextGaussian(), 0.1 * random.nextGaussian());
         }
         List<Entity> entities = new ArrayList<>();
         entities.addAll(this.level().getEntities(this, bb.deflate(0.2F)));
         entities.addAll(this.level().getEntitiesOfClass(EntityVoidWorm.class, bb.inflate(1.5F)));
-        if (!this.level().isClientSide) {
-            MinecraftServer server = level().getServer();
+        if (!this.level().isClientSide()) {
+            MinecraftServer server = this.level().getServer();
             if (this.getDestination() != null && this.getLifespan() > 20 && tickCount > 20) {
                 BlockPos offsetPos = this.getDestination().relative(this.getAttachmentFacing().getOpposite(), 2);
                 for (Entity e : entities) {
-                    if(e.isOnPortalCooldown() || e.isShiftKeyDown() || e instanceof EntityVoidPortal || e instanceof EnderDragon || e instanceof EntityVoidWormPart || e instanceof EntityBoneSerpentPart || e instanceof EntityGiantSquidPart || e instanceof EntityLaviathanPart || e instanceof EntityCachalotPart || e instanceof EntityVoidWorm || e instanceof EntityGiantSquid || e instanceof EntityLaviathan || e instanceof EntityCachalotWhale || e.getType().is(AMTagRegistry.VOID_PORTAL_IGNORES)){
+                    if(e.isOnPortalCooldown() || e.isShiftKeyDown() || e instanceof EntityVoidPortal || e.getType().builtInRegistryHolder().is(AMTagRegistry.VOID_PORTAL_IGNORES)){
                         continue;
                     }
                     if (e instanceof EntityVoidWormPart) {
@@ -146,8 +154,8 @@ public class EntityVoidPortal extends Entity {
                                 flag = false;
                             }
                         }
-                        if(flag && e.level() instanceof ServerLevel sl){
-                            e.teleportTo(sl, offsetPos.getX() + 0.5f, offsetPos.getY() + 0.5f, offsetPos.getZ() + 0.5f, java.util.Set.of(), e.getYRot(), e.getXRot());
+                        if(flag){
+                            e.teleportTo(offsetPos.getX() + 0.5f, offsetPos.getY() + 0.5f, offsetPos.getZ() + 0.5f);
                             e.setPortalCooldown();
                         }
                     }
@@ -170,30 +178,20 @@ public class EntityVoidPortal extends Entity {
         }
     }
 
-    /** Fabric: Entity.setLevel(Level) is protected in 1.20.1; use reflection to preserve 1:1 behavior. */
-    private static void setEntityLevel(Entity entity, Level level) {
-        try {
-            java.lang.reflect.Method m = Entity.class.getDeclaredMethod("setLevel", Level.class);
-            m.setAccessible(true);
-            m.invoke(entity, level);
-        } catch (Exception e) {
-            // ignore
-        }
-    }
-
     private void teleportEntityFromDimension(Entity entity, ServerLevel endpointWorld, BlockPos endpoint, boolean b) {
         if (entity instanceof ServerPlayer) {
-            ServerEvents.teleportPlayers.add(new ServerEvents.Triple<>((ServerPlayer)entity, endpointWorld, endpoint));
+            // teleportPlayers removed - teleport directly
+            entity.teleportTo(endpointWorld, endpoint.getX() + 0.5, endpoint.getY(), endpoint.getZ() + 0.5, java.util.Set.<Relative>of(), entity.getYRot(), entity.getXRot(), false);
             if(this.getSisterId() == null){
                 createAndSetSister(endpointWorld, Direction.DOWN);
             }
         } else {
             entity.unRide();
-            setEntityLevel(entity, endpointWorld);
-            Entity teleportedEntity = entity.getType().create(endpointWorld);
+            // setLevel is protected - use teleportTo instead
+            Entity teleportedEntity = entity.getType().create(endpointWorld, EntitySpawnReason.MOB_SUMMONED);
             if (teleportedEntity != null) {
                 teleportedEntity.restoreFrom(entity);
-                teleportedEntity.moveTo(endpoint.getX() + 0.5D, endpoint.getY() + 0.5D, endpoint.getZ() + 0.5D, entity.getYRot(), entity.getXRot());
+                teleportedEntity.snapTo(endpoint.getX() + 0.5D, endpoint.getY() + 0.5D, endpoint.getZ() + 0.5D, entity.getYRot(), entity.getXRot());
                 teleportedEntity.setYHeadRot(entity.getYHeadRot());
                 teleportedEntity.setPortalCooldown();
                 endpointWorld.addFreshEntity(teleportedEntity);
@@ -210,7 +208,7 @@ public class EntityVoidPortal extends Entity {
                     for (int j = -1; j <= -1; j++){
                         for (int k = -1; k <= -1; k++){
                             BlockPos toAir = this.getDestination().offset(i, j, k);
-                            level().destroyBlock(toAir, true);
+                            this.level().destroyBlock(toAir, true);
                         }
                     }
                 }
@@ -249,15 +247,20 @@ public class EntityVoidPortal extends Entity {
     public void setDestination(BlockPos destination) {
         this.entityData.set(DESTINATION, Optional.ofNullable(destination));
         if (this.getSisterId() == null && (exitDimension == null || exitDimension == this.level().dimension())) {
-            createAndSetSister(level(), null);
+            createAndSetSister(this.level(), null);
         }
     }
 
     public void createAndSetSister(Level world, Direction dir){
-        EntityVoidPortal portal = AMEntityRegistry.VOID_PORTAL.create(world);
-        portal.setAttachmentFacing(dir != null ? dir : this.getAttachmentFacing().getOpposite());
+        EntityVoidPortal portal = AMEntityRegistry.VOID_PORTAL.create(world, EntitySpawnReason.TRIGGERED);
+        Direction attachmentFacing = dir;
+        if (attachmentFacing == null) {
+            Direction currentFacing = this.getAttachmentFacing();
+            attachmentFacing = currentFacing != null ? currentFacing.getOpposite() : Direction.NORTH;
+        }
+        portal.setAttachmentFacing(attachmentFacing);
         BlockPos safeDestination = this.getDestination();
-        if (world instanceof ServerLevel sl) portal.teleportTo(sl, safeDestination.getX() + 0.5f, safeDestination.getY() + 0.5f, safeDestination.getZ() + 0.5f, java.util.Set.of(), portal.getYRot(), portal.getXRot());
+        portal.teleportTo(safeDestination.getX() + 0.5f, safeDestination.getY() + 0.5f, safeDestination.getZ() + 0.5f);
         portal.link(this);
         portal.exitDimension = this.level().dimension();
         world.addFreshEntity(portal);
@@ -267,7 +270,7 @@ public class EntityVoidPortal extends Entity {
     public void setDestination(BlockPos destination, Direction dir) {
         this.entityData.set(DESTINATION, Optional.ofNullable(destination));
         if (this.getSisterId() == null && (exitDimension == null || exitDimension == this.level().dimension())) {
-            createAndSetSister(level(), dir);
+            createAndSetSister(this.level(), dir);
         }
     }
 
@@ -280,39 +283,26 @@ public class EntityVoidPortal extends Entity {
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        builder.define(ATTACHED_FACE, Direction.DOWN);
-        builder.define(LIFESPAN, 300);
-        builder.define(SHATTERED, false);
-        builder.define(SISTER_UUID, Optional.<UUID>empty());
-        builder.define(DESTINATION, Optional.<BlockPos>empty());
-    }
-
-    @Override
-    protected void readAdditionalSaveData(CompoundTag compound) {
-        this.entityData.set(ATTACHED_FACE, Direction.from3DDataValue(compound.getByte("AttachFace")));
-        this.setLifespan(compound.getInt("Lifespan"));
-        if(compound.contains("Shattered")){
-            this.setShattered(compound.getBoolean("Shattered"));
+    protected void readAdditionalSaveData(ValueInput compound) {
+        this.entityData.set(ATTACHED_FACE, Direction.from3DDataValue(compound.getByteOr("AttachFace", (byte) 0)));
+        this.setLifespan(compound.getIntOr("Lifespan", 0));
+        if (compound.child("Shattered").isPresent()) {
+            this.setShattered(compound.getBooleanOr("Shattered", false));
         }
-        if (compound.contains("DX")) {
-            final int i = compound.getInt("DX");
-            final int j = compound.getInt("DY");
-            final int k = compound.getInt("DZ");
+        if (compound.getInt("DX").isPresent()) {
+            final int i = compound.getIntOr("DX", 0);
+            final int j = compound.getIntOr("DY", 0);
+            final int k = compound.getIntOr("DZ", 0);
             this.entityData.set(DESTINATION, Optional.of(new BlockPos(i, j, k)));
         } else {
             this.entityData.set(DESTINATION, Optional.empty());
         }
-        if (compound.hasUUID("SisterUUID")) {
-            this.setSisterId(compound.getUUID("SisterUUID"));
-        }
-        if (compound.contains("ExitDimension")) {
-            this.exitDimension = Level.RESOURCE_KEY_CODEC.parse(NbtOps.INSTANCE, compound.get("ExitDimension")).resultOrPartial(AlexsMobs.LOGGER::error).orElse(Level.OVERWORLD);
-        }
+        compound.read("SisterUUID", UUIDUtil.CODEC).ifPresent(this::setSisterId);
+        compound.read("ExitDimension", Level.RESOURCE_KEY_CODEC).ifPresent(d -> this.exitDimension = d);
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag compound) {
+    protected void addAdditionalSaveData(ValueOutput compound) {
         compound.putByte("AttachFace", (byte) this.entityData.get(ATTACHED_FACE).get3DDataValue());
         compound.putInt("Lifespan", getLifespan());
         compound.putBoolean("Shattered", isShattered());
@@ -323,20 +313,18 @@ public class EntityVoidPortal extends Entity {
             compound.putInt("DZ", blockpos.getZ());
         }
         if (this.getSisterId() != null) {
-            compound.putUUID("SisterUUID", this.getSisterId());
+            compound.store("SisterUUID", UUIDUtil.CODEC, this.getSisterId());
         }
-        if(this.exitDimension != null){
-            ResourceLocation.CODEC.encodeStart(NbtOps.INSTANCE, this.exitDimension.location()).resultOrPartial(AlexsMobs.LOGGER::error).ifPresent((p_241148_1_) -> {
-                compound.put("ExitDimension", p_241148_1_);
-            });
+        if (this.exitDimension != null) {
+            compound.store("ExitDimension", Level.RESOURCE_KEY_CODEC, this.exitDimension);
         }
 
     }
 
     public Entity getSister() {
         UUID id = getSisterId();
-        if (id != null && !this.level().isClientSide) {
-            return ((ServerLevel) level()).getEntity(id);
+        if (id != null && !this.level().isClientSide()) {
+            return ((ServerLevel) this.level()).getEntity(id);
         }
         return null;
     }
@@ -348,6 +336,11 @@ public class EntityVoidPortal extends Entity {
 
     public void setSisterId(@Nullable UUID uniqueId) {
         this.entityData.set(SISTER_UUID, Optional.ofNullable(uniqueId));
+    }
+
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        return false;
     }
 
 }

@@ -8,23 +8,37 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.BushBlock;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class BlockBananaPeel extends BushBlock {
 
-    public static final MapCodec<BlockBananaPeel> CODEC = BlockBehaviour.simpleCodec(BlockBananaPeel::new);
+    private static final MapCodec<BlockBananaPeel> BANANA_CODEC = simpleCodec(BlockBananaPeel::new);
 
     protected static final VoxelShape SHAPE_COLLISON = Block.box(0, 0, 0, 16.0D, 9.0D, 16.0D);
     protected static final VoxelShape SHAPE = Block.box(2.0D, 0.0D, 2.0D, 14.0D, 4.0D, 14.0D);
 
-    public BlockBananaPeel(BlockBehaviour.Properties properties) {
-        super(properties);
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().dynamicShape().sound(SoundType.WET_GRASS).noCollision().requiresCorrectToolForDrops().strength(0.2F).friction(0.9999999999F);
     }
 
-    public void entityInside(BlockState state, Level worldIn, BlockPos pos, Entity entityIn) {
+    public BlockBananaPeel(BlockBehaviour.Properties props) {
+        super(props);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public MapCodec<BushBlock> codec() {
+        return (MapCodec<BushBlock>) (MapCodec<?>) BANANA_CODEC;
+    }
+
+    @Override
+    protected void entityInside(BlockState state, Level worldIn, BlockPos pos, Entity entityIn, InsideBlockEffectApplier insideBlockEffectApplier, boolean bl) {
     }
 
     protected boolean mayPlaceOn(BlockState state, BlockGetter worldIn, BlockPos pos) {
@@ -52,8 +66,4 @@ public class BlockBananaPeel extends BushBlock {
         return SHAPE;
     }
 
-    @Override
-    protected MapCodec<? extends BushBlock> codec() {
-        return CODEC;
-    }
 }

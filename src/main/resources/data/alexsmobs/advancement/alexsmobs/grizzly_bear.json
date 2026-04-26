@@ -3,7 +3,9 @@
     "icon": {
       "id": "alexsmobs:tab_icon",
       "components": {
-        "minecraft:custom_data": "{DisplayEntityType:\"alexsmobs:grizzly_bear\"}"
+        "alexsmobs:tab_icon_display": {
+          "display_entity_type": "alexsmobs:grizzly_bear"
+        }
       }
     },
     "title": {

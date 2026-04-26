@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIWanderRanged;
@@ -29,8 +32,8 @@ import net.minecraft.world.entity.ai.control.JumpControl;
 import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.animal.Cat;
-import net.minecraft.world.entity.animal.Ocelot;
+import net.minecraft.world.entity.animal.feline.Cat;
+import net.minecraft.world.entity.animal.feline.Ocelot;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -41,7 +44,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
-
 import javax.annotation.Nullable;
 
 public class EntityJerboa extends Animal {
@@ -101,13 +103,13 @@ public class EntityJerboa extends Animal {
         this.goalSelector.addGoal(10, new RandomLookAroundGoal(this));
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setBefriended(compound.getBoolean("Befriended"));
-        this.setSleeping(compound.getBoolean("Sleeping"));
+        this.setBefriended(compound.getBooleanOr("Befriended", false));
+        this.setSleeping(compound.getBooleanOr("Sleeping", false));
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("Befriended", isBefriended());
         compound.putBoolean("Sleeping", isSleeping());
@@ -140,7 +142,7 @@ public class EntityJerboa extends Animal {
         this.prevReboundProgress = reboundProgress;
         this.prevSleepProgress = sleepProgress;
         this.prevBegProgress = begProgress;
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.entityData.set(JUMP_ACTIVE, !this.onGround());
         }
         if (this.entityData.get(JUMP_ACTIVE)) {
@@ -180,8 +182,8 @@ public class EntityJerboa extends Animal {
                 sleepProgress--;
         }
 
-        if (!this.level().isClientSide) {
-            if (this.level().isDay() && this.getLastHurtByMob() == null && !this.isBegging()) {
+        if (!this.level().isClientSide()) {
+            if (AMEntityRegistry.isDay(this.level()) && this.getLastHurtByMob() == null && !this.isBegging()) {
                 if (tickCount % 10 == 0 && this.getRandom().nextInt(750) == 0) {
                     this.setSleeping(true);
                 }
@@ -235,29 +237,24 @@ public class EntityJerboa extends Animal {
                 double d2 = this.random.nextGaussian() * 0.02D;
                 double d0 = this.random.nextGaussian() * 0.02D;
                 double d1 = this.random.nextGaussian() * 0.02D;
-                this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, itemstack), this.getX() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, this.getY() + this.getBbHeight() * 0.5F + (double) (this.random.nextFloat() * this.getBbHeight() * 0.5F), this.getZ() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, d0, d1, d2);
+                this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, itemstack.getItem()), this.getX() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, this.getY() + this.getBbHeight() * 0.5F + (double) (this.random.nextFloat() * this.getBbHeight() * 0.5F), this.getZ() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, d0, d1, d2);
             }
             if (random.nextFloat() <= 0.3F) {
-                player.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getHolderOrThrow(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getResourceKey(AMEffectRegistry.FLEET_FOOTED).orElseThrow()), 12000));
+                player.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.FLEET_FOOTED), 12000));
             }
             return InteractionResult.SUCCESS;
         }
         return type;
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        boolean prev = super.hurt(source, amount);
+    @Override
+    public boolean hurtServer(net.minecraft.server.level.ServerLevel level, DamageSource source, float amount) {
+        boolean prev = super.hurtServer(level, source, amount);
         if (prev) {
             this.setSleeping(false);
-            if (source.getEntity() != null) {
-                if (source.getEntity() instanceof LivingEntity) {
-                    LivingEntity hurter = (LivingEntity) source.getEntity();
-                    if (hurter.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getHolderOrThrow(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getResourceKey(AMEffectRegistry.FLEET_FOOTED).orElseThrow()))) {
-                        hurter.removeEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getHolderOrThrow(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getResourceKey(AMEffectRegistry.FLEET_FOOTED).orElseThrow()));
-                    }
-                }
+            if (source.getEntity() instanceof LivingEntity hurter && hurter.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.FLEET_FOOTED))) {
+                hurter.removeEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.FLEET_FOOTED));
             }
-            return prev;
         }
         return prev;
     }
@@ -292,27 +289,28 @@ public class EntityJerboa extends Animal {
 
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.jerboaSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static boolean canMonsterSpawnInLight(EntityType<? extends EntityJerboa> p_223325_0_, ServerLevelAccessor p_223325_1_, MobSpawnType p_223325_2_, BlockPos p_223325_3_, RandomSource p_223325_4_) {
+    public static boolean canMonsterSpawnInLight(EntityType<? extends EntityJerboa> p_223325_0_, ServerLevelAccessor p_223325_1_, EntitySpawnReason p_223325_2_, BlockPos p_223325_3_, RandomSource p_223325_4_) {
         return isValidLightLevel(p_223325_1_, p_223325_3_, p_223325_4_) && checkMobSpawnRules(p_223325_0_, p_223325_1_, p_223325_2_, p_223325_3_, p_223325_4_);
     }
 
-    public static <T extends Mob> boolean canJerboaSpawn(EntityType<EntityJerboa> entityType, ServerLevelAccessor iServerWorld, MobSpawnType reason, BlockPos pos, RandomSource random) {
-        return reason == MobSpawnType.SPAWNER || iServerWorld.canSeeSky(pos.above()) && canMonsterSpawnInLight(entityType, iServerWorld, reason, pos, random);
+    public static <T extends Mob> boolean canJerboaSpawn(EntityType<EntityJerboa> entityType, ServerLevelAccessor iServerWorld, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
+        return reason == EntitySpawnReason.SPAWNER || iServerWorld.canSeeSky(pos.above()) && canMonsterSpawnInLight(entityType, iServerWorld, reason, pos, random);
     }
 
-    /** Called from tick when we detect a jump (cannot override final jumpFromGround in 1.21.1). */
-    private void onJerboaJump() {
+    public void jumpFromGround() {
+        super.jumpFromGround();
         double d0 = this.moveControl.getSpeedModifier();
         if (d0 > 0.0D) {
             double d1 = this.getDeltaMovement().horizontalDistance();
             if (d1 < 0.01D) {
             }
         }
-        if (!this.level().isClientSide) {
+
+        if (!this.level().isClientSide()) {
             this.level().broadcastEntityEvent(this, (byte) 1);
         }
 
@@ -327,7 +325,6 @@ public class EntityJerboa extends Animal {
         this.setJumping(true);
         this.jumpDuration = 10;
         this.jumpTicks = 0;
-        this.onJerboaJump();
     }
 
     private void checkLandingDelay() {
@@ -360,8 +357,8 @@ public class EntityJerboa extends Animal {
 
     }
 
-    public void customServerAiStep() {
-        super.customServerAiStep();
+    protected void customServerAiStep(ServerLevel level) {
+        super.customServerAiStep(level);
 
         if (this.currentMoveTypeDuration > 0) {
             --this.currentMoveTypeDuration;
@@ -431,7 +428,7 @@ public class EntityJerboa extends Animal {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel p_146743_, AgeableMob p_146744_) {
-        EntityJerboa boa = AMEntityRegistry.JERBOA.create(p_146743_);
+        EntityJerboa boa = AMEntityRegistry.JERBOA.create(p_146743_, EntitySpawnReason.BREEDING);
         boa.setBefriended(true);
         return boa;
     }
@@ -450,7 +447,7 @@ public class EntityJerboa extends Animal {
         }
 
         public void tick() {
-            if (this.jerboa.hasJumper() && this.jerboa.onGround() && !AMEntityRegistry.getLivingJumping(this.jerboa) && !((EntityJerboa.JumpHelperController) this.jerboa.jumpControl).getIsJumping()) {
+            if (this.jerboa.hasJumper() && this.jerboa.onGround() && !this.jerboa.jumping && !((EntityJerboa.JumpHelperController) this.jerboa.jumpControl).getIsJumping()) {
                 this.jerboa.setMovementSpeed(0.0D);
             } else if (this.hasWanted()) {
                 this.jerboa.setMovementSpeed(this.nextJumpSpeed);

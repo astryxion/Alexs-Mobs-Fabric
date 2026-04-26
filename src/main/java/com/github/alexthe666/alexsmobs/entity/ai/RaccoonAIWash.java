@@ -2,15 +2,15 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 
 import com.github.alexthe666.alexsmobs.entity.EntityRaccoon;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
 
@@ -85,9 +85,12 @@ public class RaccoonAIWash extends Goal {
                         raccoon.onEatItem();
                     }
                     this.raccoon.postWashItem(raccoon.getMainHandItem());
-                    net.minecraft.world.item.Item remItem = this.raccoon.getMainHandItem().getItem().getCraftingRemainingItem();
-                    if (remItem != null && remItem != net.minecraft.world.item.Items.AIR) {
-                        this.raccoon.spawnAtLocation(new ItemStack(remItem, 1));
+                    ItemStackTemplate remainderTemplate = this.raccoon.getMainHandItem().getCraftingRemainder();
+                    if (remainderTemplate != null && this.raccoon.level() instanceof ServerLevel serverLevel) {
+                        ItemStack remainder = remainderTemplate.create();
+                        if (!remainder.isEmpty()) {
+                            this.raccoon.spawnAtLocation(serverLevel, remainder);
+                        }
                     }
                     this.raccoon.getMainHandItem().shrink(1);
                 }
@@ -111,7 +114,7 @@ public class RaccoonAIWash extends Goal {
         int range = 32;
         for (int i = 0; i < 15; i++) {
             BlockPos blockpos1 = this.raccoon.blockPosition().offset(random.nextInt(range) - range / 2, 3, random.nextInt(range) - range / 2);
-            while (this.raccoon.level().isEmptyBlock(blockpos1) && blockpos1.getY() > raccoon.level().getMinBuildHeight()) {
+            while (this.raccoon.level().isEmptyBlock(blockpos1) && blockpos1.getY() > raccoon.level().dimensionType().minY()) {
                 blockpos1 = blockpos1.below();
             }
             if (isConnectedToLand(blockpos1)) {

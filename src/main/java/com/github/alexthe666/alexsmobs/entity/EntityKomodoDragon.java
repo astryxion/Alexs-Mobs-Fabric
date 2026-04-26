@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
@@ -8,6 +11,8 @@ import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -35,7 +40,7 @@ import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -51,19 +56,24 @@ import java.util.function.Predicate;
 
 public class EntityKomodoDragon extends TamableAnimal implements ITargetsDroppedItems, IFollower {
 
-    private static final Ingredient TEMPTATION_ITEMS = Ingredient.of(AMTagRegistry.KOMODO_DRAGON_TAMEABLES);
     public int slaughterCooldown = 0;
     public int timeUntilSpit = this.random.nextInt(12000) + 24000;
     public float nextJostleAngleFromServer;
     private int riderAttackCooldown = 0;
-    public static final Predicate<EntityKomodoDragon> HURT_OR_BABY = (p_213616_0_) -> {
-        return p_213616_0_.isBaby() || p_213616_0_.getHealth() <= 0.7F * p_213616_0_.getMaxHealth();
+    // Predicate for targeting other Komodo Dragons - only target hurt adults, never babies
+    public static final Predicate<EntityKomodoDragon> TARGETABLE_KOMODO = (komodo) -> {
+        // Never target babies - adults should not attack children
+        if (komodo.isBaby()) {
+            return false;
+        }
+        // Only target hurt adults (territorial behavior)
+        return komodo.getHealth() <= 0.7F * komodo.getMaxHealth();
     };
     protected static final EntityDimensions JOSTLING_SIZE = EntityDimensions.scalable(1.35F, 1.85F);
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(EntityKomodoDragon.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> JOSTLING = SynchedEntityData.defineId(EntityKomodoDragon.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Float> JOSTLE_ANGLE = SynchedEntityData.defineId(EntityKomodoDragon.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Optional<UUID>> JOSTLER_UUID = SynchedEntityData.defineId(EntityKomodoDragon.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> JOSTLER_UUID = SynchedEntityData.defineId(EntityKomodoDragon.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
     private static final EntityDataAccessor<Boolean> SADDLED = SynchedEntityData.defineId(EntityKomodoDragon.class, EntityDataSerializers.BOOLEAN);
     public float prevJostleAngle;
     public float prevJostleProgress;
@@ -83,7 +93,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         builder.define(JOSTLING, false);
         builder.define(SADDLED, false);
         builder.define(JOSTLE_ANGLE, 0F);
-        builder.define(JOSTLER_UUID, Optional.<java.util.UUID>empty());
+        builder.define(JOSTLER_UUID, Optional.empty());
     }
 
     public int getCommand() {
@@ -94,12 +104,12 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         this.entityData.set(COMMAND, Integer.valueOf(command));
     }
 
-    public static <T extends Mob> boolean canKomodoDragonSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static <T extends Mob> boolean canKomodoDragonSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         boolean spawnBlock = worldIn.getBlockState(pos.below()).is(AMTagRegistry.KOMODO_DRAGON_SPAWNS);
         return spawnBlock && worldIn.getRawBrightness(pos, 0) > 8;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.komodoDragonSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -110,7 +120,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 2D, false));
         this.goalSelector.addGoal(3, new TameableAIFollowOwner(this, 1.2D, 6.0F, 3.0F, false));
         this.goalSelector.addGoal(4, new KomodoDragonAIJostle(this));
-        this.goalSelector.addGoal(5, new TameableAITempt(this, 1.1D, TEMPTATION_ITEMS, false));
+        this.goalSelector.addGoal(5, new TameableAITempt(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.KOMODO_DRAGON_TAMEABLES)), false));
         this.goalSelector.addGoal(5, new AnimalAIFleeAdult(this, 1.25D, 32));
         this.goalSelector.addGoal(6, new KomodoDragonAIBreed(this, 1.0D));
         this.goalSelector.addGoal(6, new RandomStrollGoal(this, 1D, 50));
@@ -120,7 +130,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         this.targetSelector.addGoal(2, new OwnerHurtTargetGoal(this));
         this.targetSelector.addGoal(3, new HurtByTargetGoal(this));
         this.targetSelector.addGoal(4, new CreatureAITargetItems(this, false));
-        this.targetSelector.addGoal(6, new NearestAttackableTargetGoal(this, EntityKomodoDragon.class, 50, true, false, HURT_OR_BABY));
+        this.targetSelector.addGoal(6, new NearestAttackableTargetGoal(this, EntityKomodoDragon.class, 50, true, false, AMEntityRegistry.toSelector((e) -> e instanceof EntityKomodoDragon k && TARGETABLE_KOMODO.test(k))));
         this.targetSelector.addGoal(7, new NearestAttackableTargetGoal(this, Player.class, 150, true, true, null));
         this.targetSelector.addGoal(8, new EntityAINearestTarget3D(this, LivingEntity.class, 180, false, true, AMEntityRegistry.buildPredicateFromTag(AMTagRegistry.KOMODO_DRAGON_TARGETS)));
     }
@@ -140,7 +150,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         if(player.zza != 0 || player.xxa != 0){
             this.setRot(player.getYRot(), player.getXRot() * 0.25F);
             this.yRotO = this.yBodyRot = this.yHeadRot = this.getYRot();
-            this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.0);
+            // setMaxUpStep removed in 1.21
             this.getNavigation().stop();
             this.setTarget(null);
             this.setSprinting(true);
@@ -151,17 +161,17 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         return (float)(this.getAttributeValue(Attributes.MOVEMENT_SPEED) * 2);
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        if (this.isInvulnerableTo(source)) {
+    @Override
+    public boolean hurtServer(net.minecraft.server.level.ServerLevel level, DamageSource source, float amount) {
+        if (this.isInvulnerableTo(level, source)) {
             return false;
-        } else {
-            Entity entity = source.getEntity();
-            this.setOrderedToSit(false);
-            if (entity != null && this.isTame() && !(entity instanceof Player) && !(entity instanceof AbstractArrow)) {
-                amount = (amount + 1.0F) / 3.0F;
-            }
-            return super.hurt(source, amount);
         }
+        Entity entity = source.getEntity();
+        this.setOrderedToSit(false);
+        if (entity != null && this.isTame() && !(entity instanceof Player) && !(entity instanceof AbstractArrow)) {
+            amount = (amount + 1.0F) / 3.0F;
+        }
+        return super.hurtServer(level, source, amount);
     }
 
     protected SoundEvent getAmbientSound() {
@@ -176,18 +186,18 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         return AMSoundRegistry.KOMODO_DRAGON_HURT;
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        if (compound.contains("SpitTime")) {
-            this.timeUntilSpit = compound.getInt("SpitTime");
+        if (compound.getInt("SpitTime").isPresent()) {
+            this.timeUntilSpit = compound.getIntOr("SpitTime", 0);
         }
-        this.setCommand(compound.getInt("KomodoCommand"));
-        this.jostleCooldown = compound.getInt("JostlingCooldown");
-        this.setSaddled(compound.getBoolean("Saddle"));
+        this.setCommand(compound.getIntOr("KomodoCommand", 0));
+        this.jostleCooldown = compound.getIntOr("JostlingCooldown", 0);
+        this.setSaddled(compound.getBooleanOr("Saddle", false));
 
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putInt("SpitTime", this.timeUntilSpit);
         compound.putInt("KomodoCommand", this.getCommand());
@@ -209,19 +219,21 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         if(slaughterCooldown > 0){
             slaughterCooldown--;
         }
-        if (!this.level().isClientSide && this.isAlive() && !this.isBaby() && --this.timeUntilSpit <= 0) {
-            this.spawnAtLocation(AMItemRegistry.KOMODO_SPIT);
+        if (!this.level().isClientSide() && this.isAlive() && !this.isBaby() && --this.timeUntilSpit <= 0) {
+            if (this.level() instanceof ServerLevel serverLevel) {
+                this.spawnAtLocation(serverLevel, AMItemRegistry.KOMODO_SPIT);
+            }
             this.timeUntilSpit = this.random.nextInt(12000) + 24000;
         }
         if(riderAttackCooldown > 0){
             riderAttackCooldown--;
         }
-        if(this.getControllingPassenger() != null && this.getControllingPassenger() instanceof Player){
+        if(this.level() instanceof ServerLevel serverLevel && this.getControllingPassenger() != null && this.getControllingPassenger() instanceof Player){
             Player rider = (Player)this.getControllingPassenger();
             if(rider.getLastHurtMob() != null && this.distanceTo(rider.getLastHurtMob()) < this.getBbWidth() + 3F && !this.isAlliedTo(rider.getLastHurtMob())){
                 UUID preyUUID = rider.getLastHurtMob().getUUID();
                 if (!this.getUUID().equals(preyUUID) && riderAttackCooldown == 0) {
-                    doHurtTarget(rider.getLastHurtMob());
+                    doHurtTarget(serverLevel, rider.getLastHurtMob());
                     riderAttackCooldown = 20;
                 }
             }
@@ -261,7 +273,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
             jostleCooldown--;
         }
 
-        if(!this.level().isClientSide){
+        if(!this.level().isClientSide()){
             if(this.getJostleAngle() < nextJostleAngleFromServer){
                 this.setJostleAngle(this.getJostleAngle() + 1);
 
@@ -272,12 +284,10 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         }
     }
 
-    @Override
-    protected EntityDimensions getDefaultDimensions(Pose poseIn) {
-        return isJostling() && !isBaby() ? JOSTLING_SIZE.scale(this.getScale()) : super.getDefaultDimensions(poseIn);
-    }
+    // getDimensions is now final in 1.21, removed override
 
-    public boolean isAlliedTo(Entity entityIn) {
+    @Override
+    protected boolean considersEntityAsAlly(Entity entityIn) {
         if (this.isTame()) {
             LivingEntity livingentity = this.getOwner();
             if (entityIn == livingentity) {
@@ -291,11 +301,12 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
             }
         }
 
-        return super.isAlliedTo(entityIn);
+        return super.considersEntityAsAlly(entityIn);
     }
 
-    public boolean doHurtTarget(Entity entityIn) {
-        if (super.doHurtTarget(entityIn)) {
+    @Override
+    public boolean doHurtTarget(ServerLevel level, Entity entityIn) {
+        if (super.doHurtTarget(level, entityIn)) {
             if (entityIn instanceof LivingEntity) {
                 int i = 5;
                 if (this.level().getDifficulty() == Difficulty.NORMAL) {
@@ -336,7 +347,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
             float angle = (Maths.STARTING_ANGLE * this.yBodyRot);
             double extraX = radius * Mth.sin(Mth.PI + angle);
             double extraZ = radius * Mth.cos(angle);
-            passenger.setPos(this.getX() + extraX, this.getY() + this.getPassengersRidingOffset() + this.getPassengerRidingPosition(passenger).y, this.getZ() + extraZ);
+            passenger.setPos(this.getX() + extraX, this.getY() + this.getBbHeight() * 0.75 + 0, this.getZ() + extraZ);
         }
     }
 
@@ -377,9 +388,11 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
                 this.usePlayerItem(player, hand, itemstack);
                 this.setSaddled(true);
                 return InteractionResult.SUCCESS;
-            }else if(itemstack.is(Items.SHEARS) && this.isSaddled()){
+            }else if(itemstack.getItem() instanceof net.minecraft.world.item.ShearsItem && this.isSaddled()){
                 this.setSaddled(false);
-                this.spawnAtLocation(Items.SADDLE);
+                if (this.level() instanceof ServerLevel serverLevel) {
+                    this.spawnAtLocation(serverLevel, Items.SADDLE);
+                }
                 return InteractionResult.SUCCESS;
             }else{
                 if(!player.isShiftKeyDown() && !this.isBaby() && this.isSaddled()){
@@ -391,7 +404,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
                     if (this.getCommand() == 3) {
                         this.setCommand(0);
                     }
-                    player.displayClientMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()), true);
+                    player.sendOverlayMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()));
                     boolean sit = this.getCommand() == 2;
                     if (sit) {
                         this.setOrderedToSit(true);
@@ -420,18 +433,18 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         }
     }
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 30D).add(Attributes.ARMOR, 0.0D).add(Attributes.ATTACK_DAMAGE, 4.0D).add(Attributes.MOVEMENT_SPEED, 0.23F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 30D).add(Attributes.ARMOR, 0.0D).add(Attributes.ATTACK_DAMAGE, 4.0D).add(Attributes.MOVEMENT_SPEED, 0.23F);
     }
 
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel p_241840_1_, AgeableMob p_241840_2_) {
-        return AMEntityRegistry.KOMODO_DRAGON.create(p_241840_1_);
+        return AMEntityRegistry.KOMODO_DRAGON.create(p_241840_1_, EntitySpawnReason.BREEDING);
     }
 
     @Override
     public boolean canTargetItem(ItemStack stack) {
-        return stack.is(AMTagRegistry.KOMODO_DRAGON_TAMEABLES) || (stack.get(net.minecraft.core.component.DataComponents.FOOD) != null && stack.is(net.minecraft.tags.ItemTags.MEAT));
+        return stack.is(AMTagRegistry.KOMODO_DRAGON_TAMEABLES) || (stack.has(DataComponents.FOOD) && stack.get(DataComponents.FOOD) != null);
     }
 
     public boolean isSaddled() {
@@ -470,7 +483,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
     @Nullable
     public Entity getJostlingPartner() {
         UUID id = getJostlingPartnerUUID();
-        if (id != null && !this.level().isClientSide) {
+        if (id != null && !this.level().isClientSide()) {
             return ((ServerLevel) level()).getEntity(id);
         }
         return null;
@@ -490,7 +503,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
 
     private void applyKnockbackFromMoose(float strength, double ratioX, double ratioZ) {
         if (!(strength <= 0.0F)) {
-            this.hasImpulse = true;
+            this.needsSync = true;
             Vec3 vector3d = this.getDeltaMovement();
             Vec3 vector3d1 = (new Vec3(ratioX, 0.0D, ratioZ)).normalize().scale(strength);
             this.setDeltaMovement(vector3d.x / 2.0D - vector3d1.x, 0.3F, vector3d.z / 2.0D - vector3d1.z);
@@ -504,12 +517,11 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
     public void playJostleSound() {
     }
 
-    protected void dropEquipment() {
-        super.dropEquipment();
+    @Override
+    protected void dropEquipment(ServerLevel level) {
+        super.dropEquipment(level);
         if (this.isSaddled()) {
-            if (!this.level().isClientSide) {
-                this.spawnAtLocation(Items.SADDLE);
-            }
+            this.spawnAtLocation(level, Items.SADDLE);
         }
         this.setSaddled(false);
     }

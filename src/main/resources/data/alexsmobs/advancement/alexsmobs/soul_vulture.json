@@ -3,7 +3,9 @@
     "icon": {
       "id": "alexsmobs:tab_icon",
       "components": {
-        "minecraft:custom_data": "{DisplayEntityType:\"alexsmobs:soul_vulture\"}"
+        "alexsmobs:tab_icon_display": {
+          "display_entity_type": "alexsmobs:soul_vulture"
+        }
       }
     },
     "title": {

@@ -4,9 +4,9 @@ import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.citadel.config.biome.SpawnBiomeConfig;
 import com.github.alexthe666.citadel.config.biome.SpawnBiomeData;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.core.registries.BuiltInRegistries;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.reflect.Field;
@@ -115,7 +115,7 @@ public class BiomeConfig {
                if(obj instanceof Pair){
 				   String id = (String)((Pair) obj).getLeft();
 				   SpawnBiomeData data = (SpawnBiomeData)((Pair) obj).getRight();
-				   biomeConfigValues.put(id, SpawnBiomeConfig.create(ResourceLocation.parse(id), data));
+				   biomeConfigValues.put(id, SpawnBiomeConfig.create(Identifier.parse(id), data));
                }
             }
         }catch (Exception e){
@@ -125,7 +125,7 @@ public class BiomeConfig {
 		init = true;
     }
 
-    public static boolean test(Pair<String, SpawnBiomeData> entry, Holder<Biome> biome, ResourceLocation name){
+    public static boolean test(Pair<String, SpawnBiomeData> entry, Holder<Biome> biome, Identifier name){
     	if(!init){
     		return false;
 		}
@@ -133,8 +133,10 @@ public class BiomeConfig {
 	}
 
 	public static boolean test(Pair<String, SpawnBiomeData> spawns, Holder<Biome> biome) {
-		ResourceLocation name = biome.unwrapKey().map(k -> k.location()).orElse(null);
-		if (name == null) return false;
-		return test(spawns, biome, name);
+		Identifier biomeId = biome.unwrapKey().map(ResourceKey::identifier).orElse(null);
+		if (biomeId == null) {
+			return false;
+		}
+		return test(spawns, biome, biomeId);
 	}
 }

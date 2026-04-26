@@ -1,0 +1,81 @@
+package com.github.alexthe666.alexsmobs.client.render;
+
+import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
+import com.github.alexthe666.alexsmobs.client.model.ModelStraddleboard;
+import com.github.alexthe666.alexsmobs.entity.EntityStraddleboard;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
+import org.joml.Quaternionf;
+
+import static net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
+
+public class RenderStraddleboard extends EntityRenderer<EntityStraddleboard, EntityRenderState> {
+
+    private static final Identifier TEXTURE_OVERLAY = Identifier.parse("alexsmobs:textures/entity/straddleboard_overlay.png");
+    private static final Identifier TEXTURE = Identifier.parse("alexsmobs:textures/entity/straddleboard.png");
+    private static final ModelStraddleboard BOARD_MODEL = new ModelStraddleboard();
+
+    public RenderStraddleboard(EntityRendererProvider.Context renderManager) {
+        super(renderManager);
+    }
+
+    @Override
+    public EntityRenderState createRenderState() {
+        return new EntityRenderState();
+    }
+
+    public Identifier getTextureLocation(EntityRenderState state) {
+        return TEXTURE;
+    }
+
+    @Override
+    public void submit(EntityRenderState state, PoseStack matrixStackIn, SubmitNodeCollector collector, CameraRenderState cameraState) {
+        if (!(AlexsMobsClientKeys.getEntity(state) instanceof EntityStraddleboard entityIn)) {
+            super.submit(state, matrixStackIn, collector, cameraState);
+            return;
+        }
+        float partialTicks = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+        int packedLightIn = state.lightCoords;
+
+        matrixStackIn.pushPose();
+        matrixStackIn.mulPose(new Quaternionf().rotateY(180F * Mth.DEG_TO_RAD));
+        matrixStackIn.mulPose(Axis.YN.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) + 180));
+        matrixStackIn.mulPose(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+        matrixStackIn.pushPose();
+        boolean lava = entityIn.isVehicle();
+        float f2 = entityIn.getRockingAngle(partialTicks);
+        if (!Mth.equal(f2, 0.0F)) {
+            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(entityIn.getRockingAngle(partialTicks)));
+        }
+        int k = entityIn.getColor();
+        float r = (float) (k >> 16 & 255) / 255.0F;
+        float g = (float) (k >> 8 & 255) / 255.0F;
+        float b = (float) (k & 255) / 255.0F;
+        float boardRot = entityIn.prevBoardRot + partialTicks * (entityIn.getBoardRot() - entityIn.prevBoardRot);
+        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(boardRot));
+        matrixStackIn.mulPose(Axis.XP.rotationDegrees(180));
+        matrixStackIn.translate(0, -1.5F - Math.abs(boardRot * 0.007F) - (lava ? 0 : 0.25F), 0);
+        BOARD_MODEL.animateBoard(entityIn, entityIn.tickCount + partialTicks);
+        collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(TEXTURE_OVERLAY), (pose, ivertexbuilder2) ->
+            BOARD_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder2, packedLightIn, NO_OVERLAY, -1)
+        );
+        int color = (255 << 24) | ((int) (r * 255) << 16) | ((int) (g * 255) << 8) | (int) (b * 255);
+        collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucentCullItemTarget(TEXTURE), (pose, ivertexbuilder) ->
+            BOARD_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, NO_OVERLAY, color)
+        );
+        matrixStackIn.popPose();
+        matrixStackIn.popPose();
+
+        super.submit(state, matrixStackIn, collector, cameraState);
+    }
+}

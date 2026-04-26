@@ -1,13 +1,17 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -15,8 +19,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
-import com.mojang.serialization.MapCodec;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
@@ -32,27 +36,33 @@ import net.minecraft.world.phys.BlockHitResult;
 import java.util.ArrayList;
 
 public class BlockSkunkSpray extends MultifaceBlock implements SimpleWaterloggedBlock {
+    public static final MapCodec<BlockSkunkSpray> CODEC = RecordCodecBuilder.mapCodec(instance ->
+        instance.group(propertiesCodec()).apply(instance, BlockSkunkSpray::new));
 
-    public static final MapCodec<BlockSkunkSpray> CODEC = BlockBehaviour.simpleCodec(BlockSkunkSpray::new);
+
     public static final IntegerProperty AGE = BlockStateProperties.AGE_3;
-    private static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
-    public BlockSkunkSpray(BlockBehaviour.Properties properties) {
-        super(properties);
-        this.registerDefaultState(this.defaultBlockState().setValue(WATERLOGGED, Boolean.valueOf(false)).setValue(AGE, 0));
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_LIGHT_GREEN).noOcclusion().randomTicks().noCollision().instabreak().sound(SoundType.FROGSPAWN);
+    }
+
+    public BlockSkunkSpray(BlockBehaviour.Properties props) {
+        super(props);
+        this.registerDefaultState(this.defaultBlockState().setValue(BlockStateProperties.WATERLOGGED, Boolean.valueOf(false)).setValue(AGE, 0));
     }
 
     @Override
-    protected MapCodec<? extends MultifaceBlock> codec() {
+    public MapCodec<BlockSkunkSpray> codec() {
         return CODEC;
     }
 
-    public BlockState updateShape(BlockState state, Direction direction, BlockState state2, LevelAccessor levelAccessor, BlockPos pos, BlockPos pos2) {
-        if (state.getValue(WATERLOGGED)) {
-            levelAccessor.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(levelAccessor));
+    @Override
+    protected BlockState updateShape(BlockState state, LevelReader reader, ScheduledTickAccess tickAccess, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, RandomSource random) {
+        if (state.getValue(BlockStateProperties.WATERLOGGED)) {
+            tickAccess.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(reader));
         }
 
-        return super.updateShape(state, direction, state2, levelAccessor, pos, pos2);
+        return super.updateShape(state, reader, tickAccess, pos, direction, neighborPos, neighborState, random);
     }
 
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource randomSource) {
@@ -77,12 +87,12 @@ public class BlockSkunkSpray extends MultifaceBlock implements SimpleWaterlogged
 
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> definition) {
         super.createBlockStateDefinition(definition);
-        definition.add(WATERLOGGED, AGE);
+        definition.add(AGE);
     }
 
-    @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level worldIn, BlockPos pos, Player player, BlockHitResult hit) {
+    public InteractionResult useWithoutItem(BlockState state, Level worldIn, BlockPos pos, Player player, BlockHitResult hit) {
         ItemStack itemStack = player.getMainHandItem();
+        int setContent = -1;
         if(itemStack.is(Items.GLASS_BOTTLE)) {
            Direction dir = hit.getDirection().getOpposite();
            if(hasFace(state, dir)){
@@ -121,12 +131,7 @@ public class BlockSkunkSpray extends MultifaceBlock implements SimpleWaterlogged
     }
 
     public FluidState getFluidState(BlockState state) {
-        return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
-    }
-
-    @Override
-    public MultifaceSpreader getSpreader() {
-        return null;
+        return state.getValue(BlockStateProperties.WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
     }
 
     public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {

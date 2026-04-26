@@ -3,7 +3,7 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityGrizzlyBear;
-import com.github.alexthe666.alexsmobs.message.MessageSendVisualFlagFromServer;
+import com.github.alexthe666.alexsmobs.network.MessageSendVisualFlagFromServer;
 import com.github.alexthe666.alexsmobs.misc.AMDamageTypes;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -34,7 +34,7 @@ public class GrizzlyBearAIAprilFools extends Goal {
         if(!bear.isBaby() && AlexsMobs.isAprilFools() && runDelay-- <= 0 && bear.getRandom().nextInt(30) == 0){
             runDelay = 400 + bear.getRandom().nextInt(350);
             Player nearestPlayer = bear.level().getNearestPlayer(bear.getX(), bear.getY(), bear.getZ(), maxDistance, entity -> {
-                return bear.hasLineOfSight(entity) &&(!(entity instanceof Player) || !((Player) entity).hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getHolderOrThrow(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getResourceKey(AMEffectRegistry.POWER_DOWN).orElseThrow())));
+                return bear.hasLineOfSight(entity) &&(!(entity instanceof Player) || !((Player) entity).hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.POWER_DOWN)));
             });
             if(nearestPlayer != null){
                 target = nearestPlayer;
@@ -78,7 +78,7 @@ public class GrizzlyBearAIAprilFools extends Goal {
                 }
             }else if(bear.getAprilFoolsFlag() < 4) {
                 if(powerOutTimer == 0){
-                    target.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getHolderOrThrow(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getResourceKey(AMEffectRegistry.POWER_DOWN).orElseThrow()), 2 * (maxMusicBoxTime + 100), 0, false, false, true));
+                    target.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.POWER_DOWN), 2 * (maxMusicBoxTime + 100), 0, false, false, true));
                 }
                 powerOutTimer++;
                 if (powerOutTimer >= 60) {

@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
@@ -7,6 +10,7 @@ import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -16,6 +20,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -42,6 +47,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.pathfinder.PathType;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,7 +74,7 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
     public int displayCooldown = 100 + random.nextInt(100);
     private static final EntityDataAccessor<Boolean> DISPLAYING = SynchedEntityData.defineId(EntityMudskipper.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Float> DISPLAY_ANGLE = SynchedEntityData.defineId(EntityMudskipper.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Optional<UUID>> DISPLAYER_UUID = SynchedEntityData.defineId(EntityMudskipper.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> DISPLAYER_UUID = SynchedEntityData.defineId(EntityMudskipper.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
     private static final EntityDataAccessor<Integer> MOUTH_TICKS = SynchedEntityData.defineId(EntityMudskipper.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> FROM_BUCKET = SynchedEntityData.defineId(EntityMudskipper.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> SITTING = SynchedEntityData.defineId(EntityMudskipper.class, EntityDataSerializers.BOOLEAN);
@@ -100,12 +107,12 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
         }
     }
 
-    public static <T extends Mob> boolean canMudskipperSpawn(EntityType type, LevelAccessor worldIn, MobSpawnType reason, BlockPos p_223317_3_, RandomSource random) {
+    public static <T extends Mob> boolean canMudskipperSpawn(EntityType type, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos p_223317_3_, RandomSource random) {
         BlockState blockstate = worldIn.getBlockState(p_223317_3_.below());
         return blockstate.is(Blocks.MUD) || blockstate.is(Blocks.MUDDY_MANGROVE_ROOTS);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.mudskipperSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -114,7 +121,9 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
         return !worldIn.getBlockState(pos).isSuffocating(worldIn, pos);
     }
 
-    /** canBreatheUnderwater() is final in 1.21.1; preserved via mixin. */
+    public boolean canBreatheUnderwaterAM() {
+        return true;
+    }
 
     protected void registerGoals() {
         super.registerGoals();
@@ -123,7 +132,7 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
         this.goalSelector.addGoal(2, new MudskipperAIAttack(this));
         this.goalSelector.addGoal(3, new AnimalAIFindWater(this));
         this.goalSelector.addGoal(3, new AnimalAILeaveWater(this));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.MUDSKIPPER_TAMEABLES), false));
+        this.goalSelector.addGoal(4, new TemptGoal(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.MUDSKIPPER_TAMEABLES)), false));
         this.goalSelector.addGoal(5, new BreedGoal(this, 0.8D));
         this.goalSelector.addGoal(6, new PanicGoal(this, 1D));
         this.goalSelector.addGoal(7, new MudskipperAIDisplay(this));
@@ -159,17 +168,17 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
         builder.define(DISPLAYING, false);
         builder.define(FROM_BUCKET, false);
         builder.define(DISPLAY_ANGLE, 0F);
-        builder.define(DISPLAYER_UUID, Optional.<java.util.UUID>empty());
+        builder.define(DISPLAYER_UUID, Optional.empty());
         builder.define(MOUTH_TICKS, 0);
         builder.define(COMMAND, 0);
         builder.define(SITTING, false);
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 12.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.MOVEMENT_SPEED, 0.2F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 12.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.MOVEMENT_SPEED, 0.2F);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("FromBucket", this.fromBucket());
         compound.putInt("DisplayCooldown", this.displayCooldown);
@@ -177,12 +186,12 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
         compound.putBoolean("MudskipperSitting", this.isOrderedToSit());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setFromBucket(compound.getBoolean("FromBucket"));
-        this.displayCooldown = compound.getInt("DisplayCooldown");
-        this.setCommand(compound.getInt("MudskipperCommand"));
-        this.setOrderedToSit(compound.getBoolean("MudskipperSitting"));
+        this.setFromBucket(compound.getBooleanOr("FromBucket", false));
+        this.displayCooldown = compound.getIntOr("DisplayCooldown", 0);
+        this.setCommand(compound.getIntOr("MudskipperCommand", 0));
+        this.setOrderedToSit(compound.getBooleanOr("MudskipperSitting", false));
     }
 
     public void tick(){
@@ -213,15 +222,15 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
                 mudProgress -= 0.5f;
         }
 
-        boolean swim = !this.onGround() && this.isInWaterOrBubble();
+        boolean swim = !this.onGround() && AMEntityRegistry.isInWaterOrBubble(this);
         if(swimProgress < 5F && swim){
             swimProgress++;
         }
         if(swimProgress > 0 && !swim){
             swimProgress--;
         }
-        if (!this.level().isClientSide) {
-            if (isInWaterOrBubble()) {
+        if (!this.level().isClientSide()) {
+            if (AMEntityRegistry.isInWaterOrBubble(this)) {
                 swimTimer++;
             } else {
                 swimTimer--;
@@ -230,7 +239,7 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
         if (displayCooldown > 0) {
             displayCooldown--;
         }
-        if(!this.level().isClientSide){
+        if(!this.level().isClientSide()){
             if(this.getDisplayAngle() < nextDisplayAngleFromServer){
                 this.setDisplayAngle(this.getDisplayAngle() + 1);
 
@@ -250,8 +259,9 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
         }
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        boolean prev = super.hurt(source, amount);
+    @Override
+    public boolean hurtServer(net.minecraft.server.level.ServerLevel level, DamageSource source, float amount) {
+        boolean prev = super.hurtServer(level, source, amount);
         if (prev && source.getDirectEntity() instanceof LivingEntity) {
             this.openMouth(10);
         }
@@ -294,7 +304,7 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
     @javax.annotation.Nullable
     public Entity getDisplayingPartner() {
         UUID id = getDisplayingPartnerUUID();
-        if (id != null && !this.level().isClientSide) {
+        if (id != null && !this.level().isClientSide()) {
             return ((ServerLevel) level()).getEntity(id);
         }
         return null;
@@ -315,7 +325,7 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverLevel, AgeableMob ageableMob) {
-        return AMEntityRegistry.MUDSKIPPER.create(serverLevel);
+        return AMEntityRegistry.MUDSKIPPER.create(serverLevel, EntitySpawnReason.BREEDING);
     }
 
     public boolean isMouthOpen() {
@@ -330,7 +340,7 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
     public void calculateEntityAnimation(boolean flying) {
         float f1 = (float) Mth.length(this.getX() - this.xo, 0, this.getZ() - this.zo);
         float f2 = Math.min(f1 * 8.0F, 1.0F);
-        this.walkAnimation.update(f2, 0.4F);
+        this.walkAnimation.update(f2, 0.4F, 1.0F);
     }
 
     protected void playStepSound(BlockPos pos, BlockState blockIn) {
@@ -396,7 +406,7 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
     @Nonnull
     public ItemStack getBucketItemStack() {
         ItemStack stack = new ItemStack(AMItemRegistry.MUDSKIPPER_BUCKET);
-        if (this.hasCustomName() && this.getCustomName() != null) {
+        if (this.hasCustomName()) {
             stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, this.getCustomName());
         }
         return stack;
@@ -404,22 +414,25 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
 
     @Override
     public void saveToBucketTag(@Nonnull ItemStack bucket) {
-        if (this.hasCustomName() && this.getCustomName() != null) {
+        if (this.hasCustomName()) {
             bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, this.getCustomName());
         }
-        CompoundTag platTag = new CompoundTag();
-        this.addAdditionalSaveData(platTag);
-        net.minecraft.world.item.component.CustomData customData = bucket.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
-        CompoundTag compound = customData != null ? customData.copyTag() : new CompoundTag();
+        Bucketable.saveDefaultDataToBucketTag(this, bucket);
+        TagValueOutput out = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, this.level().registryAccess());
+        this.addAdditionalSaveData(out);
+        CompoundTag platTag = out.buildResult();
+        CompoundTag compound = bucket.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
         compound.put("MudskipperData", platTag);
         bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(compound));
     }
 
     @Override
     public void loadFromBucketTag(@Nonnull CompoundTag compound) {
-        if (compound.contains("MudskipperData")) {
-            this.readAdditionalSaveData(compound.getCompound("MudskipperData"));
-        }
+        Bucketable.loadDefaultDataFromBucketTag(this, compound);
+        compound.getCompound("MudskipperData").ifPresent(sub -> {
+            ValueInput input = TagValueInput.create(ProblemReporter.DISCARDING, this.level().registryAccess(), sub);
+            this.readAdditionalSaveData(input);
+        });
     }
 
     @Override
@@ -440,28 +453,33 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
         Item item = itemstack.getItem();
-        InteractionResult type = super.mobInteract(player, hand);
+        // Check taming BEFORE calling super to prevent player from eating the item
         if (!isTame() && itemstack.is(AMTagRegistry.MUDSKIPPER_TAMEABLES)) {
-            this.usePlayerItem(player, hand, itemstack);
-            this.openMouth(10);
-            this.gameEvent(GameEvent.EAT);
-            this.playSound(SoundEvents.STRIDER_EAT, this.getSoundVolume(), this.getVoicePitch());
-            if (getRandom().nextInt(2) == 0) {
-                this.tame(player);
-                this.level().broadcastEntityEvent(this, (byte) 7);
-            } else {
-                this.level().broadcastEntityEvent(this, (byte) 6);
-            }
-            return InteractionResult.SUCCESS;
-        }
-        if (isTame() && itemstack.is(AMTagRegistry.MUDSKIPPER_FOODSTUFFS)) {
-            if (this.getHealth() < this.getMaxHealth()) {
+            if (!this.level().isClientSide()) {
                 this.usePlayerItem(player, hand, itemstack);
                 this.openMouth(10);
                 this.gameEvent(GameEvent.EAT);
                 this.playSound(SoundEvents.STRIDER_EAT, this.getSoundVolume(), this.getVoicePitch());
-                this.heal(5);
-                return InteractionResult.SUCCESS;
+                if (getRandom().nextInt(2) == 0) {
+                    this.tame(player);
+                    this.level().broadcastEntityEvent(this, (byte) 7);
+                } else {
+                    this.level().broadcastEntityEvent(this, (byte) 6);
+                }
+            }
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        }
+        InteractionResult type = super.mobInteract(player, hand);
+        if (isTame() && itemstack.is(AMTagRegistry.MUDSKIPPER_FOODSTUFFS)) {
+            if (this.getHealth() < this.getMaxHealth()) {
+                if (!this.level().isClientSide()) {
+                    this.usePlayerItem(player, hand, itemstack);
+                    this.openMouth(10);
+                    this.gameEvent(GameEvent.EAT);
+                    this.playSound(SoundEvents.STRIDER_EAT, this.getSoundVolume(), this.getVoicePitch());
+                    this.heal(5);
+                }
+                return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
             }
             return InteractionResult.PASS;
         }
@@ -471,7 +489,7 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
             if (this.getCommand() == 3) {
                 this.setCommand(0);
             }
-            player.displayClientMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()), true);
+            player.sendOverlayMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()));
             boolean sit = this.getCommand() == 2;
             if (sit) {
                 this.setOrderedToSit(true);
@@ -484,7 +502,8 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
         return Bucketable.bucketMobPickup(player, hand, this).orElse(type);
     }
 
-    public boolean isAlliedTo(Entity entityIn) {
+    @Override
+    protected boolean considersEntityAsAlly(Entity entityIn) {
         if (this.isTame()) {
             LivingEntity livingentity = this.getOwner();
             if (entityIn == livingentity) {
@@ -498,6 +517,6 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
             }
         }
 
-        return super.isAlliedTo(entityIn);
+        return super.considersEntityAsAlly(entityIn);
     }
 }

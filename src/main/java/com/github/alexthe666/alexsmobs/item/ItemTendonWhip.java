@@ -1,41 +1,28 @@
 package com.github.alexthe666.alexsmobs.item;
 
-import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityTendonSegment;
 import com.github.alexthe666.alexsmobs.entity.util.TendonWhipUtil;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlotGroup;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.SwordItem;
-import net.minecraft.world.item.Tiers;
-import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.item.ToolMaterial;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-public class ItemTendonWhip extends SwordItem implements ILeftClick {
-
-    private static final ResourceLocation ATTACK_DAMAGE_MODIFIER_ID = ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, "tendon_whip_attack_damage");
-    private static final ResourceLocation ATTACK_SPEED_MODIFIER_ID = ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, "tendon_whip_attack_speed");
-    private final ItemAttributeModifiers tendonModifiers;
+public class ItemTendonWhip extends Item implements ILeftClick {
 
     public ItemTendonWhip(Item.Properties props) {
-        super(Tiers.IRON, props);
-        this.tendonModifiers = ItemAttributeModifiers.builder()
-                .add(Attributes.ATTACK_DAMAGE, new AttributeModifier(ATTACK_DAMAGE_MODIFIER_ID, 4, AttributeModifier.Operation.ADD_VALUE), EquipmentSlotGroup.MAINHAND)
-                .add(Attributes.ATTACK_SPEED, new AttributeModifier(ATTACK_SPEED_MODIFIER_ID, -3.0, AttributeModifier.Operation.ADD_VALUE), EquipmentSlotGroup.MAINHAND)
-                .build();
+        super(props.durability(450).sword(ToolMaterial.IRON, 4.0F, -3.0F));
     }
 
     public static boolean isActive(ItemStack stack, LivingEntity holder) {
@@ -45,23 +32,17 @@ public class ItemTendonWhip extends SwordItem implements ILeftClick {
         return false;
     }
 
-
-    @Override
-    public ItemAttributeModifiers getDefaultAttributeModifiers() {
-        return this.tendonModifiers;
-    }
-
-    public boolean hurtEnemy(ItemStack stack, LivingEntity entity, LivingEntity player) {
+    public void hurtEnemy(ItemStack stack, LivingEntity entity, LivingEntity player) {
         launchTendonsAt(stack, player, entity);
-        return super.hurtEnemy(stack, entity, player);
+        super.hurtEnemy(stack, entity, player);
     }
 
-    private boolean isCharged(Player player, ItemStack stack){
+    private boolean isCharged(Player player, ItemStack stack) {
         return player.getAttackStrengthScale(0.5F) > 0.9F;
     }
 
-    public boolean onLeftClick(ItemStack stack, LivingEntity playerIn){
-        if(stack.is(AMItemRegistry.TENDON_WHIP) && (!(playerIn instanceof Player) || isCharged((Player)playerIn, stack))){
+    public boolean onLeftClick(ItemStack stack, LivingEntity playerIn) {
+        if (stack.is(AMItemRegistry.TENDON_WHIP) && (!(playerIn instanceof Player) || isCharged((Player) playerIn, stack))) {
             Level worldIn = playerIn.level();
             Entity closestValid = null;
             Vec3 playerEyes = playerIn.getEyePosition(1.0F);
@@ -80,8 +61,8 @@ public class ItemTendonWhip extends SwordItem implements ILeftClick {
                     }
                 }
             }
-            if(closestValid != null){
-                stack.hurtAndBreak(1, playerIn, playerIn.getUsedItemHand() == net.minecraft.world.InteractionHand.MAIN_HAND ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND);
+            if (closestValid != null) {
+                stack.hurtAndBreak(1, playerIn, EquipmentSlot.MAINHAND);
             }
             return launchTendonsAt(stack, playerIn, closestValid);
         }
@@ -92,9 +73,12 @@ public class ItemTendonWhip extends SwordItem implements ILeftClick {
         Level worldIn = playerIn.level();
         if (TendonWhipUtil.canLaunchTendons(worldIn, playerIn)) {
             TendonWhipUtil.retractFarTendons(worldIn, playerIn);
-            if (!worldIn.isClientSide) {
+            if (!worldIn.isClientSide() && worldIn instanceof ServerLevel serverLevel) {
                 if (closestValid != null) {
-                    EntityTendonSegment segment = AMEntityRegistry.TENDON_SEGMENT.create(worldIn);
+                    EntityTendonSegment segment = AMEntityRegistry.TENDON_SEGMENT.create(serverLevel, EntitySpawnReason.TRIGGERED);
+                    if (segment == null) {
+                        return false;
+                    }
                     segment.copyPosition(playerIn);
                     worldIn.addFreshEntity(segment);
                     segment.setCreatorEntityUUID(playerIn.getUUID());
@@ -115,12 +99,7 @@ public class ItemTendonWhip extends SwordItem implements ILeftClick {
         return !ItemStack.isSameItem(oldStack, newStack);
     }
 
-    public int getMaxDamage(ItemStack stack) {
-        return 450;
-    }
-
     public boolean isValidRepairItem(ItemStack pickaxe, ItemStack stack) {
         return stack.is(AMItemRegistry.ELASTIC_TENDON);
     }
-
 }

@@ -4,15 +4,13 @@ import com.github.alexthe666.alexsmobs.entity.EntityStraddleboard;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.DyedItemColor;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -24,46 +22,31 @@ import java.util.function.Predicate;
 
 public class ItemStraddleboard extends Item {
 
-    private static final int DEFAULT_COLOR = 0xADC3D7;
     private static final Predicate<Entity> ENTITY_PREDICATE = EntitySelector.NO_SPECTATORS.and(Entity::isPickable);
+    private static final int DEFAULT_COLOR = 0xADC3D7;
 
     public ItemStraddleboard(Item.Properties properties) {
         super(properties);
     }
 
     public int getColor(ItemStack stack) {
-        DyedItemColor color = stack.get(DataComponents.DYED_COLOR);
-        return color != null ? color.rgb() : DEFAULT_COLOR;
+        DyedItemColor dyedColor = stack.get(DataComponents.DYED_COLOR);
+        return dyedColor != null ? dyedColor.rgb() : DEFAULT_COLOR;
     }
-
+    
     public boolean hasCustomColor(ItemStack stack) {
-        return stack.get(DataComponents.DYED_COLOR) != null;
-    }
-
-    public void setColor(ItemStack stack, int rgb) {
-        stack.set(DataComponents.DYED_COLOR, new DyedItemColor(rgb, true));
-    }
-
-    public void removeCustomColor(ItemStack stack) {
-        stack.remove(DataComponents.DYED_COLOR);
-    }
-
-    public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
-        var reg = net.minecraft.core.RegistryAccess.EMPTY.registryOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT);
-        return enchantment.isSupportedItem(stack)
-                && !enchantment.equals(reg.getHolderOrThrow(Enchantments.UNBREAKING).value())
-                && !enchantment.equals(reg.getHolderOrThrow(Enchantments.MENDING).value());
+        return stack.has(DataComponents.DYED_COLOR);
     }
 
     public int getEnchantmentValue() {
         return 1;
     }
 
-    public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
+    public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
         ItemStack itemstack = playerIn.getItemInHand(handIn);
         HitResult raytraceresult = getPlayerPOVHitResult(worldIn, playerIn, ClipContext.Fluid.ANY);
         if (raytraceresult.getType() == HitResult.Type.MISS) {
-            return InteractionResultHolder.pass(itemstack);
+            return InteractionResult.PASS;
         } else {
             Vec3 vector3d = playerIn.getViewVector(1.0F);
             double d0 = 5.0D;
@@ -74,21 +57,21 @@ public class ItemStraddleboard extends Item {
                 for (Entity entity : list) {
                     AABB axisalignedbb = entity.getBoundingBox().inflate(entity.getPickRadius());
                     if (axisalignedbb.contains(vector3d1)) {
-                        return InteractionResultHolder.pass(itemstack);
+                        return InteractionResult.PASS;
                     }
                 }
             }
 
             if (raytraceresult.getType() == HitResult.Type.BLOCK) {
                 EntityStraddleboard boatentity = new EntityStraddleboard(worldIn, raytraceresult.getLocation().x, raytraceresult.getLocation().y, raytraceresult.getLocation().z);
-                boatentity.setDefaultColor(!this.hasCustomColor(itemstack));
+                boatentity.setDefaultColor(!hasCustomColor(itemstack));
                 boatentity.setItemStack(itemstack.copy());
                 boatentity.setColor(this.getColor(itemstack));
                 boatentity.setYRot(playerIn.getYRot());
                 if (!worldIn.noCollision(boatentity, boatentity.getBoundingBox().inflate(-0.1D))) {
-                    return InteractionResultHolder.fail(itemstack);
+                    return InteractionResult.FAIL;
                 } else {
-                    if (!worldIn.isClientSide) {
+                    if (!worldIn.isClientSide()) {
                         worldIn.addFreshEntity(boatentity);
                         if (!playerIn.getAbilities().instabuild) {
                             itemstack.shrink(1);
@@ -96,10 +79,10 @@ public class ItemStraddleboard extends Item {
                     }
 
                     playerIn.awardStat(Stats.ITEM_USED.get(this));
-                    return InteractionResultHolder.sidedSuccess(itemstack, worldIn.isClientSide());
+                    return worldIn.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
                 }
             } else {
-                return InteractionResultHolder.pass(itemstack);
+                return InteractionResult.PASS;
             }
         }
     }

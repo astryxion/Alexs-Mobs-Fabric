@@ -10,7 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.ai.goal.MoveToBlockGoal;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.phys.BlockHitResult;
@@ -130,7 +130,7 @@ public class CrowAICircleCrops extends MoveToBlockGoal {
             return;
         }
         if(crow.level().getBlockState(blockPos).getBlock() instanceof CropBlock){
-            if(crow.level().getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING)){
+            if(crow.level().getServer().getGameRules().get(GameRules.MOB_GRIEFING)){
                 CropBlock block = (CropBlock)crow.level().getBlockState(blockPos).getBlock();
                 int cropAge = block.getAge(crow.level().getBlockState(blockPos));
                 if(cropAge > 0){
@@ -140,7 +140,7 @@ public class CrowAICircleCrops extends MoveToBlockGoal {
                 }
             }
         }else{
-            if(crow.level().getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING)) {
+            if(crow.level().getServer().getGameRules().get(GameRules.MOB_GRIEFING)) {
                 crow.level().destroyBlock(blockPos, true);
             }
         }

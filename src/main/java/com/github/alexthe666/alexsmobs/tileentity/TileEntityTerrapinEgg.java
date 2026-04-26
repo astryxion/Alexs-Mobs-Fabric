@@ -3,12 +3,12 @@ package com.github.alexthe666.alexsmobs.tileentity;
 import com.github.alexthe666.alexsmobs.entity.EntityTerrapin;
 import com.github.alexthe666.alexsmobs.entity.util.TerrapinTypes;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 public class TileEntityTerrapinEgg extends BlockEntity {
     public ParentData parent1;
@@ -45,28 +45,20 @@ public class TileEntityTerrapinEgg extends BlockEntity {
 
 
     @Override
-    protected void loadAdditional(CompoundTag compound, HolderLookup.Provider registries) {
-        super.loadAdditional(compound, registries);
-        if(compound.contains("Parent1Data")){
-            this.parent1 = new ParentData(compound.getCompound("Parent1Data"));
-        }
-        if(compound.contains("Parent2Data")){
-            this.parent2 = new ParentData(compound.getCompound("Parent2Data"));
-        }
+    protected void loadAdditional(ValueInput compound) {
+        super.loadAdditional(compound);
+        compound.child("Parent1Data").ifPresent(sub -> this.parent1 = new ParentData(sub));
+        compound.child("Parent2Data").ifPresent(sub -> this.parent2 = new ParentData(sub));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag compound, HolderLookup.Provider registries) {
-        super.saveAdditional(compound, registries);
+    protected void saveAdditional(ValueOutput compound) {
+        super.saveAdditional(compound);
         if(this.parent1 != null){
-            CompoundTag tag = new CompoundTag();
-            parent1.writeToNBT(tag);
-            compound.put("Parent1Data", tag);
+            this.parent1.write(compound.child("Parent1Data"));
         }
         if(this.parent2 != null){
-            CompoundTag tag = new CompoundTag();
-            parent2.writeToNBT(tag);
-            compound.put("Parent2Data", tag);
+            this.parent2.write(compound.child("Parent2Data"));
         }
     }
 
@@ -87,13 +79,13 @@ public class TileEntityTerrapinEgg extends BlockEntity {
             this.skinColor = skinColor;
         }
 
-        public ParentData(CompoundTag tag){
-            this(TerrapinTypes.values()[Mth.clamp(tag.getInt("TerrapinType"), 0, TerrapinTypes.values().length - 1)],
-                    tag.getInt("ShellType"),
-                    tag.getInt("SkinType"),
-                    tag.getInt("TurtleColor"),
-                    tag.getInt("ShellColor"),
-                    tag.getInt("SkinColor")
+        public ParentData(ValueInput tag){
+            this(TerrapinTypes.values()[Mth.clamp(tag.getIntOr("TerrapinType", 0), 0, TerrapinTypes.values().length - 1)],
+                    tag.getIntOr("ShellType", 0),
+                    tag.getIntOr("SkinType", 0),
+                    tag.getIntOr("TurtleColor", 0),
+                    tag.getIntOr("ShellColor", 0),
+                    tag.getIntOr("SkinColor", 0)
                     );
         }
 
@@ -104,7 +96,7 @@ public class TileEntityTerrapinEgg extends BlockEntity {
             return other.type == this.type;
         }
 
-        public void writeToNBT(CompoundTag tag){
+        public void write(ValueOutput tag){
             tag.putInt("TerrapinType", type.ordinal());
             tag.putInt("ShellType", shellType);
             tag.putInt("SkinType", skinType);

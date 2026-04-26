@@ -1,10 +1,12 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
+
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityEndPirateShipWheel;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -13,6 +15,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
@@ -20,7 +23,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -29,10 +32,13 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 
-public class BlockEndPirateShipWheel extends BaseEntityBlock implements AMSpecialRenderBlock{
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
-    public static final MapCodec<BlockEndPirateShipWheel> CODEC = BlockBehaviour.simpleCodec(BlockEndPirateShipWheel::new);
-    public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+public class BlockEndPirateShipWheel extends BaseEntityBlock implements AMSpecialRenderBlock{
+    public static final MapCodec<BlockEndPirateShipWheel> CODEC = simpleCodec(BlockEndPirateShipWheel::new);
+
+
+    public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
     private static final VoxelShape SOUTH_AABB = Block.box(-2, -2, 0, 18, 18, 3);
     private static final VoxelShape NORTH_AABB = Block.box(-2, -2, 13, 18, 18, 16);
     private static final VoxelShape EAST_AABB = Block.box(0, -2, -2, 3, 18, 18);
@@ -40,18 +46,23 @@ public class BlockEndPirateShipWheel extends BaseEntityBlock implements AMSpecia
     private static final VoxelShape UP_AABB = Block.box(-2, 0, -2, 18, 3, 18);
     private static final VoxelShape DOWN_AABB = Block.box(-2, 13, -2, 16, 16, 18);
 
-    public BlockEndPirateShipWheel(BlockBehaviour.Properties properties) {
-        super(properties);
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.TERRACOTTA_WHITE).noOcclusion().sound(SoundType.ANCIENT_DEBRIS).strength(1F).lightLevel((i) -> 3).noCollision().requiresCorrectToolForDrops();
+    }
+
+    public BlockEndPirateShipWheel(BlockBehaviour.Properties props) {
+        super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
 
     @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
+    public MapCodec<? extends BaseEntityBlock> codec() {
         return CODEC;
     }
 
-    public BlockState updateShape(BlockState state, Direction direction, BlockState state2, LevelAccessor level, BlockPos pos, BlockPos p_52801_) {
-        return !state.canSurvive(level, pos) ? Blocks.AIR.defaultBlockState() : super.updateShape(state, direction, state2, level, pos, p_52801_);
+    @Override
+    protected BlockState updateShape(BlockState state, LevelReader reader, ScheduledTickAccess tickAccess, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, RandomSource random) {
+        return !state.canSurvive(reader, pos) ? Blocks.AIR.defaultBlockState() : super.updateShape(state, reader, tickAccess, pos, direction, neighborPos, neighborState, random);
     }
 
     public VoxelShape getShape(BlockState p_54561_, BlockGetter p_54562_, BlockPos p_54563_, CollisionContext p_54564_) {

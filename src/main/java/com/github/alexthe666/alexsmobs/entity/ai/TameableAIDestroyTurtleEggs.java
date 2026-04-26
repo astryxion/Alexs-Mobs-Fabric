@@ -35,7 +35,7 @@ public class TameableAIDestroyTurtleEggs extends RemoveBlockGoal {
     }
 
     public void playBreakSound(Level worldIn, BlockPos pos) {
-        worldIn.playSound(null, pos, SoundEvents.TURTLE_EGG_BREAK, SoundSource.BLOCKS, 0.7F, 0.9F + worldIn.random.nextFloat() * 0.2F);
+        worldIn.playSound(null, pos, SoundEvents.TURTLE_EGG_BREAK, SoundSource.BLOCKS, 0.7F, 0.9F + this.mob.getRandom().nextFloat() * 0.2F);
     }
 
     public double acceptedDistance() {

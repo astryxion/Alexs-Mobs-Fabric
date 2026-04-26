@@ -1,14 +1,15 @@
 package com.github.alexthe666.alexsmobs.entity;
 
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -16,16 +17,28 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+// NetworkHooks removed in NeoForge 1.21
 
 import javax.annotation.Nullable;
 import java.util.UUID;
 
 public class EntityFart extends Entity {
+
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+        if (this.isInvulnerableToBase(source)) {
+            return false;
+        }
+        this.discard();
+        return true;
+    }
+
     private UUID ownerUUID;
     private int ownerNetworkId;
     private boolean leftOwner;
@@ -41,7 +54,6 @@ public class EntityFart extends Entity {
         float rot = p_i47273_2_.yHeadRot + (right ? 60 : -60);
         this.setPos(p_i47273_2_.getX() - (double) (p_i47273_2_.getBbWidth()) * 0.5D * (double) Mth.sin(rot * Mth.DEG_TO_RAD), p_i47273_2_.getEyeY() - (double) 0.2F, p_i47273_2_.getZ() + (double) (p_i47273_2_.getBbWidth()) * 0.5D * (double) Mth.cos(rot * Mth.DEG_TO_RAD));
     }
-
     public void tick(){
         super.tick();
         Vec3 vector3d = this.getDeltaMovement();
@@ -76,9 +88,9 @@ public class EntityFart extends Entity {
 
     protected void onEntityHit(EntityHitResult result) {
         if (result.getEntity() instanceof LivingEntity living) {
-            living.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 300, 0));
-            for(int i = 0; i < 10 + random.nextInt(6); i++){
-                level().addParticle(AMParticleRegistry.SMELLY, living.getRandomX(1.0F), living.getRandomY(), living.getRandomZ(1.0F), 0, 0, 0);
+            living.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 300, 0));
+            for (int i = 0; i < 10 + this.getRandom().nextInt(6); i++) {
+                level().addParticle(AMParticleRegistry.SMELLY, true, false, living.getRandomX(1.0F), living.getRandomY(), living.getRandomZ(1.0F), 0, 0, 0);
             }
             for (Mob nearby : level().getEntitiesOfClass(Mob.class, living.getBoundingBox().inflate(15))) {
                 if(nearby == living || nearby.getId() == living.getId() ||nearby.getUUID().equals(living.getUUID()) || nearby.isAlliedTo(living) || living.isAlliedTo(nearby) || living instanceof IHurtableMultipart){
@@ -130,14 +142,15 @@ public class EntityFart extends Entity {
             this.setYRot( (float) (Mth.atan2(x, z) * (double) Mth.RAD_TO_DEG));
             this.xRotO = this.getXRot();
             this.yRotO = this.getYRot();
-            this.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+            this.snapTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
         }
 
     }
 
-    protected void addAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void addAdditionalSaveData(ValueOutput compound) {
         if (this.ownerUUID != null) {
-            compound.putUUID("Owner", this.ownerUUID);
+            compound.store("Owner", UUIDUtil.CODEC, this.ownerUUID);
         }
 
         if (this.leftOwner) {
@@ -146,20 +159,15 @@ public class EntityFart extends Entity {
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-    }
+    protected void readAdditionalSaveData(ValueInput compound) {
+        compound.read("Owner", UUIDUtil.CODEC).ifPresent(u -> this.ownerUUID = u);
 
-    protected void readAdditionalSaveData(CompoundTag compound) {
-        if (compound.hasUUID("Owner")) {
-            this.ownerUUID = compound.getUUID("Owner");
-        }
-
-        this.leftOwner = compound.getBoolean("LeftOwner");
+        this.leftOwner = compound.getBooleanOr("LeftOwner", false);
     }
 
     @Nullable
@@ -180,7 +188,7 @@ public class EntityFart extends Entity {
     }
 
     public void shoot(double x, double y, double z, float velocity, float inaccuracy) {
-        Vec3 vector3d = (new Vec3(x, y, z)).normalize().add(this.random.nextGaussian() * (double) 0.0075F * (double) inaccuracy, this.random.nextGaussian() * (double) 0.0075F * (double) inaccuracy, this.random.nextGaussian() * (double) 0.0075F * (double) inaccuracy).scale(velocity);
+        Vec3 vector3d = (new Vec3(x, y, z)).normalize().add(this.getRandom().nextGaussian() * (double) 0.0075F * (double) inaccuracy, this.getRandom().nextGaussian() * (double) 0.0075F * (double) inaccuracy, this.getRandom().nextGaussian() * (double) 0.0075F * (double) inaccuracy).scale(velocity);
         this.setDeltaMovement(vector3d);
         float f = Mth.sqrt((float) vector3d.horizontalDistanceSqr());
         this.setYRot( (float) (Mth.atan2(vector3d.x, vector3d.z) * (double) Mth.RAD_TO_DEG));

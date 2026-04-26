@@ -3,8 +3,15 @@
     "icon": {
       "id": "citadel:fancy_item",
       "components": {
-        "minecraft:custom_data": "{DisplayItem:\"minecraft:warped_fungus\", DisplayBob:0, DisplayZoom:0, DisplayScale:1, DisplaySpin:0, DisplayShake:1}"
-      }
+            "citadel:fancy_item_display": {
+              "display_item": "minecraft:warped_fungus",
+              "display_bob": false,
+              "display_zoom": false,
+              "display_scale": 1,
+              "display_spin": false,
+              "display_shake": true
+            }
+          }
     },
     "title": {
       "translate": "advancements.alexsmobs.crimson_mosquito_sick.title"

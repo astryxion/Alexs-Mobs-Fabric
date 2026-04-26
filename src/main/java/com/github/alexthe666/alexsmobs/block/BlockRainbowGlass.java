@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.EntityType;
@@ -7,15 +9,25 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.block.HalfTransparentBlock;
+import net.minecraft.world.level.block.TransparentBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.MapColor;
 
-public class BlockRainbowGlass extends HalfTransparentBlock {
+public class BlockRainbowGlass extends TransparentBlock {
+
+    @Override
+    public MapCodec<? extends TransparentBlock> codec() {
+        return CODEC;
+    }
+
+    public static final MapCodec<BlockRainbowGlass> CODEC = simpleCodec(BlockRainbowGlass::new);
 
     public static final BooleanProperty UP = BooleanProperty.create("up");
     public static final BooleanProperty DOWN = BooleanProperty.create("down");
@@ -24,8 +36,12 @@ public class BlockRainbowGlass extends HalfTransparentBlock {
     public static final BooleanProperty NORTH = BooleanProperty.create("north");
     public static final BooleanProperty SOUTH = BooleanProperty.create("south");
 
-    protected BlockRainbowGlass() {
-        super(Properties.of().mapColor(MapColor.COLOR_PURPLE).friction(0.97F).strength(0.2F).lightLevel((i) -> 11).sound(SoundType.GLASS).noOcclusion().isValidSpawn(BlockRainbowGlass::noOption).isRedstoneConductor(BlockRainbowGlass::noOption).isSuffocating(BlockRainbowGlass::noOption).isViewBlocking(BlockRainbowGlass::noOption).emissiveRendering(BlockRainbowGlass::yes));
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).friction(0.97F).strength(0.2F).lightLevel((i) -> 11).sound(SoundType.GLASS).noOcclusion().isValidSpawn(BlockRainbowGlass::noOption).isRedstoneConductor(BlockRainbowGlass::noOption).isSuffocating(BlockRainbowGlass::noOption).isViewBlocking(BlockRainbowGlass::noOption).emissiveRendering(BlockRainbowGlass::yes);
+    }
+
+    protected BlockRainbowGlass(BlockBehaviour.Properties props) {
+        super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(UP, Boolean.valueOf(false))
                 .setValue(DOWN, Boolean.valueOf(false))
                 .setValue(EAST, Boolean.valueOf(false))

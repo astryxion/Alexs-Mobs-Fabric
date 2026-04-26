@@ -7,4 +7,5 @@ public class ItemFancyRender extends Item {
     public ItemFancyRender(Properties props) {
         super(props);
     }
+
 }

@@ -144,7 +144,7 @@ public class LeafcutterAntAIForageLeaves extends MoveToBlockGoal {
     private void breakLeaves() {
         BlockState blockstate = ant.level().getBlockState(this.blockPos);
         if (blockstate.is(AMTagRegistry.LEAFCUTTER_ANT_BREAKABLES)) {
-            if (ant.level().getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING)) {
+            if (this.ant.level() instanceof net.minecraft.server.level.ServerLevel serverLevel && serverLevel.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
                 ant.level().destroyBlock(blockPos, false);
                 if (ant.getRandom().nextFloat() > AMConfig.leafcutterAntBreakLeavesChance) {
                     ant.level().setBlockAndUpdate(blockPos, blockstate);
@@ -175,7 +175,7 @@ public class LeafcutterAntAIForageLeaves extends MoveToBlockGoal {
                 for (int i1 = 0; i1 <= l; i1 = i1 > 0 ? -i1 : 1 - i1) {
                     for (int j1 = i1 < l && i1 > -l ? l : 0; j1 <= l; j1 = j1 > 0 ? -j1 : 1 - j1) {
                         blockpos$mutableblockpos.setWithOffset(blockpos, i1, k - 1, j1);
-                        if (this.mob.isWithinRestriction(blockpos$mutableblockpos) && this.isValidTarget(this.mob.level(), blockpos$mutableblockpos)) {
+                        if (this.ant.isWithinHome(blockpos$mutableblockpos) && this.isValidTarget(this.mob.level(), blockpos$mutableblockpos)) {
                             this.blockPos = blockpos$mutableblockpos;
                             return true;
                         }

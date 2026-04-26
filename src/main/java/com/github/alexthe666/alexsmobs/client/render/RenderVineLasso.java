@@ -1,0 +1,165 @@
+package com.github.alexthe666.alexsmobs.client.render;
+
+import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
+import com.github.alexthe666.alexsmobs.entity.EntityVineLasso;
+import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Axis;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.LightCoordsUtil;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
+
+public class RenderVineLasso extends EntityRenderer<EntityVineLasso, EntityRenderState> {
+    private static final Identifier TEXTURE = Identifier.parse("alexsmobs:textures/entity/vine_lasso.png");
+
+    private static final float VINES_COLOR_R = 96F / 255F;
+    private static final float VINES_COLOR_G = 143F / 255F;
+    private static final float VINES_COLOR_B = 62F / 255F;
+    private static final float VINES_COLOR_R2 = 166F / 255F;
+    private static final float VINES_COLOR_G2 = 191F / 255F;
+    private static final float VINES_COLOR_B2 = 97F / 255F;
+
+    public RenderVineLasso(EntityRendererProvider.Context renderManagerIn) {
+        super(renderManagerIn);
+    }
+
+    @Override
+    public EntityRenderState createRenderState() {
+        return new EntityRenderState();
+    }
+
+    @Override
+    public void submit(EntityRenderState state, PoseStack matrixStackIn, SubmitNodeCollector collector, CameraRenderState camera) {
+        Entity raw = AlexsMobsClientKeys.getEntity(state);
+        if (!(raw instanceof EntityVineLasso entityIn)) {
+            return;
+        }
+        float partialTicks = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+        int packedLightIn = state.lightCoords;
+
+        matrixStackIn.pushPose();
+        matrixStackIn.translate(0.0D, 0.25F, 0.0D);
+        matrixStackIn.mulPose(Axis.YN.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 180F));
+        matrixStackIn.mulPose(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+        matrixStackIn.translate(0.0D, -0.1F, 0.0D);
+        matrixStackIn.pushPose();
+        matrixStackIn.scale(0.45F, 0.45F, 0.45F);
+        renderCircle(matrixStackIn, collector, packedLightIn);
+        matrixStackIn.popPose();
+
+        matrixStackIn.popPose();
+
+        LivingEntity holder = Minecraft.getInstance().player;
+        if (holder != null) {
+            double d0 = Mth.lerp(partialTicks, entityIn.xOld, entityIn.getX());
+            double d1 = Mth.lerp(partialTicks, entityIn.yOld, entityIn.getY());
+            double d2 = Mth.lerp(partialTicks, entityIn.zOld, entityIn.getZ());
+            matrixStackIn.pushPose();
+            matrixStackIn.translate(-d0, -d1, -d2);
+            renderVine(entityIn, partialTicks, matrixStackIn, collector, holder, holder.getMainArm() != HumanoidArm.LEFT, -0.4F);
+            matrixStackIn.popPose();
+        }
+    }
+
+    private static void renderCircle(PoseStack matrixStackIn, SubmitNodeCollector collector, int packedLightIn) {
+        matrixStackIn.pushPose();
+        collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityCutout(TEXTURE), (pose, ivertexbuilder) -> {
+            Matrix4f lvt_20_1_ = pose.pose();
+            Matrix3f lvt_21_1_ = pose.normal();
+            drawVertex(lvt_20_1_, lvt_21_1_, ivertexbuilder, -1, 0, -1, 0, 0, 1, 0, 1, packedLightIn);
+            drawVertex(lvt_20_1_, lvt_21_1_, ivertexbuilder, -1, 0, 1, 0, 1, 1, 0, 1, packedLightIn);
+            drawVertex(lvt_20_1_, lvt_21_1_, ivertexbuilder, 1, 0, 1, 1, 1, 1, 0, 1, packedLightIn);
+            drawVertex(lvt_20_1_, lvt_21_1_, ivertexbuilder, 1, 0, -1, 1, 0, 1, 0, 1, packedLightIn);
+        });
+        matrixStackIn.popPose();
+    }
+
+    public static <E extends Entity> void renderVine(Entity mob, float partialTick, PoseStack p_115464_, SubmitNodeCollector collector, LivingEntity player, boolean left, float zOffset) {
+        p_115464_.pushPose();
+        float bodyRot = mob instanceof LivingEntity ? ((LivingEntity) mob).yBodyRot : mob.getYRot();
+        float bodyRot0 = mob instanceof LivingEntity ? ((LivingEntity) mob).yBodyRotO : mob.yRotO;
+        Vec3 vec3 = player.getRopeHoldPosition(partialTick);
+        double d0 = (double) (Mth.lerp(partialTick, bodyRot, bodyRot0) * Mth.DEG_TO_RAD) + (Math.PI / 2D);
+        Vec3 vec31 = new Vec3((left ? -0.05F : 0.05F), mob.getEyeHeight(), zOffset);
+        double d1 = Math.cos(d0) * vec31.z + Math.sin(d0) * vec31.x;
+        double d2 = Math.sin(d0) * vec31.z - Math.cos(d0) * vec31.x;
+        double d3 = Mth.lerp(partialTick, mob.xo, mob.getX()) + d1;
+        double d4 = Mth.lerp(partialTick, mob.yo, mob.getY()) + vec31.y;
+        double d5 = Mth.lerp(partialTick, mob.zo, mob.getZ()) + d2;
+        p_115464_.translate(d3, d4, d5);
+        float f = (float) (vec3.x - d3);
+        float f1 = (float) (vec3.y - d4);
+        float f2 = (float) (vec3.z - d5);
+        Matrix4f matrix4f = p_115464_.last().pose();
+        float f4 = (float) (Mth.fastInvSqrt(f * f + f2 * f2) * 0.025F / 2.0F);
+        float f5 = f2 * f4;
+        float f6 = f * f4;
+        BlockPos blockpos = AMBlockPos.fromVec3(mob.getEyePosition(partialTick));
+        BlockPos blockpos1 = AMBlockPos.fromVec3(player.getEyePosition(partialTick));
+        int i = getVineLightLevel(mob, blockpos);
+        int j = mob.level().getBrightness(LightLayer.BLOCK, blockpos1);
+        int k = mob.level().getBrightness(LightLayer.SKY, blockpos);
+        int l = mob.level().getBrightness(LightLayer.SKY, blockpos1);
+        float width = 0.1F;
+        collector.submitCustomGeometry(p_115464_, RenderTypes.leash(), (pose, vertexconsumer) -> {
+            Matrix4f mat = pose.pose();
+            for (int i1 = 0; i1 <= 24; ++i1) {
+                addVertexPairAlex(vertexconsumer, mat, f, f1, f2, i, j, k, l, width, width, f5, f6, i1, false);
+            }
+            for (int j1 = 24; j1 >= 0; --j1) {
+                addVertexPairAlex(vertexconsumer, mat, f, f1, f2, i, j, k, l, width, width, f5, f6, j1, true);
+            }
+        });
+        p_115464_.popPose();
+    }
+
+    protected static int getVineLightLevel(Entity p_114496_, BlockPos p_114497_) {
+        return p_114496_.isOnFire() ? 15 : p_114496_.level().getBrightness(LightLayer.BLOCK, p_114497_);
+    }
+
+    private static void addVertexPairAlex(VertexConsumer p_174308_, Matrix4f p_174309_, float p_174310_, float p_174311_, float p_174312_, int p_174313_, int p_174314_, int p_174315_, int p_174316_, float p_174317_, float p_174318_, float p_174319_, float p_174320_, int p_174321_, boolean p_174322_) {
+        float f = (float) p_174321_ / 24.0F;
+        int i = (int) Mth.lerp(f, (float) p_174313_, (float) p_174314_);
+        int j = (int) Mth.lerp(f, (float) p_174315_, (float) p_174316_);
+        int k = LightCoordsUtil.pack(i, j);
+        float f2 = VINES_COLOR_R;
+        float f3 = VINES_COLOR_G;
+        float f4 = VINES_COLOR_B;
+        if (p_174321_ % 2 == (p_174322_ ? 1 : 0)) {
+            f2 = VINES_COLOR_R2;
+            f3 = VINES_COLOR_G2;
+            f4 = VINES_COLOR_B2;
+        }
+        float f5 = p_174310_ * f;
+        float f6 = p_174311_ > 0.0F ? p_174311_ * f * f : p_174311_ - p_174311_ * (1.0F - f) * (1.0F - f);
+        float f7 = p_174312_ * f;
+        p_174308_.addVertex(p_174309_, f5 - p_174319_, f6 + p_174318_, f7 + p_174320_).setColor((int)(f2 * 255), (int)(f3 * 255), (int)(f4 * 255), 255).setLight(k);
+        p_174308_.addVertex(p_174309_, f5 + p_174319_, f6 + p_174317_ - p_174318_, f7 - p_174320_).setColor((int)(f2 * 255), (int)(f3 * 255), (int)(f4 * 255), 255).setLight(k);
+    }
+
+    private static void drawVertex(Matrix4f p_229039_1_, Matrix3f p_229039_2_, VertexConsumer p_229039_3_, int p_229039_4_, int p_229039_5_, int p_229039_6_, float p_229039_7_, float p_229039_8_, int p_229039_9_, int p_229039_10_, int p_229039_11_, int p_229039_12_) {
+        p_229039_3_.addVertex(p_229039_1_, (float) p_229039_4_, (float) p_229039_5_, (float) p_229039_6_)
+            .setColor(255, 255, 255, 255)
+            .setUv(p_229039_7_, p_229039_8_)
+            .setOverlay(OverlayTexture.NO_OVERLAY)
+            .setLight(p_229039_12_)
+            .setNormal((float) p_229039_9_, (float) p_229039_11_, (float) p_229039_10_);
+    }
+}

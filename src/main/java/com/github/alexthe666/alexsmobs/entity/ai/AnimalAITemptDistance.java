@@ -1,16 +1,16 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.crafting.Ingredient;
 
 import java.util.EnumSet;
 
 public class AnimalAITemptDistance extends Goal {
-    private final TargetingConditions targetingConditions;
+    private final double maxDistance;
     protected final PathfinderMob mob;
     private final double speedModifier;
     private double px;
@@ -29,8 +29,8 @@ public class AnimalAITemptDistance extends Goal {
         this.speedModifier = p_25940_;
         this.items = p_25941_;
         this.canScare = p_25942_;
+        this.maxDistance = distance;
         this.setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.LOOK));
-        this.targetingConditions = TargetingConditions.forNonCombat().range(distance).ignoreLineOfSight().copy().selector(this::shouldFollow);
     }
 
     public boolean canUse() {
@@ -38,13 +38,24 @@ public class AnimalAITemptDistance extends Goal {
             --this.calmDown;
             return false;
         } else {
-            this.player = this.mob.level().getNearestPlayer(this.targetingConditions, this.mob);
+            if (!(this.mob.level() instanceof ServerLevel serverLevel)) {
+                return false;
+            }
+            this.player = serverLevel.getNearestPlayer(
+                    this.mob.getX(),
+                    this.mob.getY(),
+                    this.mob.getZ(),
+                    this.maxDistance,
+                    this::isTemptingPlayer);
             return this.player != null;
         }
     }
 
-    private boolean shouldFollow(LivingEntity p_148139_) {
-        return this.items.test(p_148139_.getMainHandItem()) || this.items.test(p_148139_.getOffhandItem());
+    private boolean isTemptingPlayer(Entity entity) {
+        if (!(entity instanceof Player player)) {
+            return false;
+        }
+        return this.items.test(player.getMainHandItem()) || this.items.test(player.getOffhandItem());
     }
 
     public boolean canContinueToUse() {

@@ -1,40 +1,35 @@
 {
-  "schemaVersion": 1,
-  "authors": [
-    "Alexthe668",
-    "Carro1001",
-    "Paint_Ninja"
-  ],
-  "contact": {
-    "homepage": "https://www.curseforge.com/minecraft/mc-mods/alexs-mobs",
-    "issues": "https://github.com/Alex-the-666/AlexsMobs/issues"
-  },
-  "depends": {
-    "fabricloader": ">=0.18.0",
-    "minecraft": "~1.21.1",
-    "java": ">=21",
-    "fabric-api": "*",
-    "citadel": "*"
-  },
-  "description": "New, original, engaging, and aesthetic mobs for Minecraft.",
-  "entrypoints": {
-    "main": [
-      "com.github.alexthe666.alexsmobs.AlexsMobs"
-    ],
-    "client": [
-      "com.github.alexthe666.alexsmobs.ClientNetworkInit"
-    ],
-    "jei_mod_plugin": [
-      "com.github.alexthe666.alexsmobs.compat.jei.AlexMobsJEIPlugin"
-    ]
-  },
-  "environment": "*",
-  "id": "alexsmobs",
-  "license": "LGPL-3.0-or-later",
-  "mixins": [
-    "alexsmobs.mixins.json",
-    "alexsmobs.client.mixins.json"
-  ],
-  "name": "Alex's Mobs",
-  "version": "${version}"
+	"schemaVersion": 1,
+	"id": "alexsmobs",
+	"version": "${version}",
+	"name": "Alex's Mobs",
+	"description": "Minecraft Fabric port of Alex's Mobs (same-version cross-loader port from NeoForge 26.1).",
+	"authors": [
+		"Alexthe666"
+	],
+	"contact": {
+		"homepage": "https://www.curseforge.com/minecraft/mc-mods/alexs-mobs",
+		"sources": "https://github.com/Alex-the-666/Alexs-Mobs"
+	},
+	"license": "GPL-3.0",
+	"icon": "assets/alexsmobs/textures/item/animal_dictionary.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.github.alexthe666.alexsmobs.AlexsMobs"
+		],
+		"client": [
+			"com.github.alexthe666.alexsmobs.AlexsMobsClient"
+		]
+	},
+	"mixins": [
+		"mixins.alexsmobs.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.0",
+		"minecraft": ">=26.1",
+		"java": ">=25",
+		"citadel": "*",
+		"fabric-api": "*"
+	}
 }

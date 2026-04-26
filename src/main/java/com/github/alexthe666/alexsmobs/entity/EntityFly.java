@@ -1,11 +1,14 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
-import com.google.common.base.Predicate;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -30,22 +33,22 @@ import net.minecraft.world.entity.ai.util.HoverRandomPos;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.animal.FlyingAnimal;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.Spider;
+import net.minecraft.world.entity.monster.spider.Spider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import com.github.alexthe666.alexsmobs.misc.IngredientOr;
 import net.minecraft.world.level.*;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-
 import javax.annotation.Nullable;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class EntityFly extends Animal implements FlyingAnimal {
@@ -56,7 +59,7 @@ public class EntityFly extends Animal implements FlyingAnimal {
     protected EntityFly(EntityType<? extends Animal> type, Level worldIn) {
         super(type, worldIn);
         this.moveControl = new FlyingMoveControl(this, 20, true);
-        this.setPathfindingMalus(PathType.DANGER_FIRE, -1.0F);
+        this.setPathfindingMalus(PathType.DAMAGE_CAUTIOUS, -1.0F);
         this.setPathfindingMalus(PathType.WATER, -1.0F);
         this.setPathfindingMalus(PathType.WATER_BORDER, 16.0F);
         this.setPathfindingMalus(PathType.COCOA, -1.0F);
@@ -65,14 +68,16 @@ public class EntityFly extends Animal implements FlyingAnimal {
 
     protected void playStepSound(BlockPos pos, BlockState blockIn) {}
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("NoFlyDespawn", this.isNoDespawn());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setNoDespawn(compound.getBoolean("NoFlyDespawn"));
+        this.setNoDespawn(compound.getBooleanOr("NoFlyDespawn", false));
     }
 
     @Override
@@ -90,8 +95,8 @@ public class EntityFly extends Animal implements FlyingAnimal {
     }
 
 
-    public static boolean canFlySpawn(EntityType<EntityFly> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
-        return reason == MobSpawnType.SPAWNER || pos.getY() > 63 && random.nextInt(4) == 0 && worldIn.getRawBrightness(pos, 0) > 8 && worldIn.getBrightness(LightLayer.BLOCK, pos) == 0 && worldIn.getBlockState(pos.below()).is(AMTagRegistry.FLY_SPAWNS);
+    public static boolean canFlySpawn(EntityType<EntityFly> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
+        return reason == EntitySpawnReason.SPAWNER || pos.getY() > 63 && random.nextInt(4) == 0 && worldIn.getRawBrightness(pos, 0) > 8 && worldIn.getBrightness(LightLayer.BLOCK, pos) == 0 && worldIn.getBlockState(pos.below()).is(AMTagRegistry.FLY_SPAWNS);
     }
 
     public boolean removeWhenFarAway(double distanceToClosestPlayer) {
@@ -102,7 +107,7 @@ public class EntityFly extends Animal implements FlyingAnimal {
         return this.isNoDespawn()  || this.hasCustomName() || this.isLeashed() || super.requiresCustomPersistence();
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.flySpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -136,7 +141,7 @@ public class EntityFly extends Animal implements FlyingAnimal {
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 2.0D).add(Attributes.FLYING_SPEED, 0.8F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.25F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 2.0D).add(Attributes.FLYING_SPEED, 0.8F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.25F);
     }
 
     public float getWalkTargetValue(BlockPos pos, LevelReader worldIn) {
@@ -145,7 +150,9 @@ public class EntityFly extends Animal implements FlyingAnimal {
 
     protected void registerGoals() {
         this.goalSelector.addGoal(1, new BreedGoal(this, 1.0D));
-        this.goalSelector.addGoal(2, new TemptGoal(this, 1.25D, AMTagRegistry.ingredientFromTags(AMTagRegistry.FLY_BREEDABLES, AMTagRegistry.FLY_FOODSTUFFS), false));
+        this.goalSelector.addGoal(2, new TemptGoal(this, 1.25D, IngredientOr.of(
+                Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.FLY_BREEDABLES)),
+                Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.FLY_FOODSTUFFS))), false));
         this.goalSelector.addGoal(3, new FollowParentGoal(this, 1.25D));
         this.goalSelector.addGoal(3, new AvoidEntityGoal<>(this, Spider.class, 6.0F, 1.0D, 1.2D));
         this.goalSelector.addGoal(4, new AnnoyZombieGoal());
@@ -161,7 +168,6 @@ public class EntityFly extends Animal implements FlyingAnimal {
         };
         flyingpathnavigator.setCanOpenDoors(false);
         flyingpathnavigator.setCanFloat(false);
-        flyingpathnavigator.setCanPassDoors(true);
         return flyingpathnavigator;
     }
 
@@ -190,13 +196,13 @@ public class EntityFly extends Animal implements FlyingAnimal {
             this.setNoDespawn(true);
             conversionTime++;
             if(conversionTime > 300){
-                EntityCrimsonMosquito mosquito = AMEntityRegistry.CRIMSON_MOSQUITO.create(level());
-                mosquito.copyPosition(this);
-                if(!this.level().isClientSide){
-                    mosquito.finalizeSpawn((ServerLevelAccessor)level(), level().getCurrentDifficultyAt(this.blockPosition()), MobSpawnType.CONVERSION, null);
+                if (this.level() instanceof ServerLevel serverLevel) {
+                    EntityCrimsonMosquito mosquito = AMEntityRegistry.CRIMSON_MOSQUITO.create(serverLevel, EntitySpawnReason.CONVERSION);
+                    mosquito.copyPosition(this);
+                    mosquito.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(this.blockPosition()), EntitySpawnReason.CONVERSION, null);
+                    serverLevel.addFreshEntity(mosquito);
+                    mosquito.onSpawnFromFly();
                 }
-                level().addFreshEntity(mosquito);
-                mosquito.onSpawnFromFly();
                 this.remove(RemovalReason.DISCARDED);
             }
         }
@@ -234,7 +240,7 @@ public class EntityFly extends Animal implements FlyingAnimal {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel level, AgeableMob parent) {
-        EntityFly fly = AMEntityRegistry.FLY.create(level());
+        EntityFly fly = AMEntityRegistry.FLY.create(level, EntitySpawnReason.BREEDING);
         fly.setNoDespawn(true);
         return fly;
     }
@@ -254,7 +260,7 @@ public class EntityFly extends Animal implements FlyingAnimal {
          * method as well.
          */
         public boolean canUse() {
-            return EntityFly.this.navigation.isDone() && EntityFly.this.random.nextInt(3) == 0;
+            return EntityFly.this.navigation.isDone() && EntityFly.this.getRandom().nextInt(3) == 0;
         }
 
         /**
@@ -285,8 +291,7 @@ public class EntityFly extends Animal implements FlyingAnimal {
     }
 
     private class AnnoyZombieGoal extends Goal {
-        protected final Sorter theNearestAttackableTargetSorter;
-        protected final Predicate<? super Entity> targetEntitySelector;
+        protected final Predicate<Entity> targetEntitySelector;
         protected int executionChance = 8;
         protected boolean mustUpdate;
         private Entity targetEntity;
@@ -294,13 +299,11 @@ public class EntityFly extends Animal implements FlyingAnimal {
 
         AnnoyZombieGoal() {
             this.setFlags(EnumSet.of(Goal.Flag.MOVE));
-            this.theNearestAttackableTargetSorter = new Sorter(EntityFly.this);
-            this.targetEntitySelector = new Predicate<Entity>() {
-                @Override
-                public boolean apply(@Nullable Entity e) {
-                    return e.isAlive() && e.getType().is(AMTagRegistry.FLY_TARGETS) && (!(e instanceof LivingEntity) || ((LivingEntity) e).getHealth() >= 2D);
-                }
-            };
+            this.targetEntitySelector = e ->
+                e != null
+                    && e.isAlive()
+                    && e.getType().builtInRegistryHolder().is(AMTagRegistry.FLY_TARGETS)
+                    && (!(e instanceof LivingEntity living) || living.getHealth() >= 2D);
         }
 
         @Override
@@ -321,7 +324,7 @@ public class EntityFly extends Animal implements FlyingAnimal {
             if (list.isEmpty()) {
                 return false;
             } else {
-                Collections.sort(list, this.theNearestAttackableTargetSorter);
+                list.sort(Comparator.comparingDouble(e -> EntityFly.this.distanceToSqr(e)));
                 this.targetEntity = list.get(0);
                 this.mustUpdate = false;
                 return true;
@@ -350,9 +353,11 @@ public class EntityFly extends Animal implements FlyingAnimal {
                     EntityFly.this.getNavigation().moveTo(this.targetEntity.getX() + i, this.targetEntity.getY() + l, this.targetEntity.getZ() + k, 1);
                 }
                 if(EntityFly.this.distanceToSqr(targetEntity) < 3.0F){
-                    if(targetEntity instanceof LivingEntity && ((LivingEntity) targetEntity).getHealth() > 2D){
+                    if(targetEntity instanceof LivingEntity living && living.getHealth() > 2D){
                         if(cooldown == 0){
-                            targetEntity.hurt(damageSources().generic(), 1);
+                            if (EntityFly.this.level() instanceof ServerLevel serverLevel) {
+                                living.hurtServer(serverLevel, EntityFly.this.damageSources().generic(), 1.0F);
+                            }
                             cooldown = 100;
                         }
                     }else{
@@ -372,15 +377,6 @@ public class EntityFly extends Animal implements FlyingAnimal {
             double renderRadius = 5;
             AABB aabb = new AABB(-renderRadius, -renderRadius, -renderRadius, renderRadius, renderRadius, renderRadius);
             return aabb.move(renderCenter);
-        }
-
-
-        public record Sorter(Entity theEntity) implements Comparator<Entity> {
-            public int compare(Entity p_compare_1_, Entity p_compare_2_) {
-                final double d0 = this.theEntity.distanceToSqr(p_compare_1_);
-                final double d1 = this.theEntity.distanceToSqr(p_compare_2_);
-                return Double.compare(d0, d1);
-            }
         }
     }
 }

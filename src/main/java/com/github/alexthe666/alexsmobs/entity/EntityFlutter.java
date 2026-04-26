@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
@@ -42,12 +45,15 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.util.ProblemReporter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -89,7 +95,7 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 8.0D).add(Attributes.FLYING_SPEED, 0.8F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, 0.21F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 8.0D).add(Attributes.FLYING_SPEED, 0.8F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, 0.21F);
     }
 
 
@@ -101,27 +107,27 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
         return super.requiresCustomPersistence() || this.hasCustomName() || this.isTame() || this.isPotted();
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.flutterSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static boolean canFlutterSpawnInLight(EntityType<? extends EntityFlutter> p_223325_0_, ServerLevelAccessor p_223325_1_, MobSpawnType p_223325_2_, BlockPos p_223325_3_, RandomSource p_223325_4_) {
+    public static boolean canFlutterSpawnInLight(EntityType<? extends EntityFlutter> p_223325_0_, ServerLevelAccessor p_223325_1_, EntitySpawnReason p_223325_2_, BlockPos p_223325_3_, RandomSource p_223325_4_) {
         return checkMobSpawnRules(p_223325_0_, p_223325_1_, p_223325_2_, p_223325_3_, p_223325_4_);
     }
 
-    public static <T extends Mob> boolean canFlutterSpawn(EntityType<EntityFlutter> entityType, ServerLevelAccessor iServerWorld, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static <T extends Mob> boolean canFlutterSpawn(EntityType<EntityFlutter> entityType, ServerLevelAccessor iServerWorld, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         BlockState blockstate = iServerWorld.getBlockState(pos.below());
-        return reason == MobSpawnType.SPAWNER || !iServerWorld.canSeeSky(pos) && blockstate.is(AMTagRegistry.FLUTTER_SPAWNS) && pos.getY() <= 64 && canFlutterSpawnInLight(entityType, iServerWorld, reason, pos, random);
+        return reason == EntitySpawnReason.SPAWNER || !iServerWorld.canSeeSky(pos) && blockstate.is(AMTagRegistry.FLUTTER_SPAWNS) && pos.getY() <= 64 && canFlutterSpawnInLight(entityType, iServerWorld, reason, pos, random);
     }
 
     protected void registerGoals() {
         super.registerGoals();
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new FlyAwayFromTarget(this));
-        this.goalSelector.addGoal(2, new TameableAITempt(this, 1.1D, Ingredient.of(AMTagRegistry.FLUTTER_BREEDABLES), false) {
+        this.goalSelector.addGoal(2, new TameableAITempt(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.FLUTTER_BREEDABLES)), false) {
             @Override
-            public boolean shouldFollowAM(LivingEntity le) {
-                return EntityFlutter.this.canEatFlower(le.getMainHandItem()) || EntityFlutter.this.canEatFlower(le.getOffhandItem()) || super.shouldFollowAM(le);
+            public boolean shouldFollowAM(LivingEntity le, ServerLevel serverLevel) {
+                return EntityFlutter.this.canEatFlower(le.getMainHandItem()) || EntityFlutter.this.canEatFlower(le.getOffhandItem()) || super.shouldFollowAM(le, serverLevel);
             }
         });
         this.goalSelector.addGoal(3, new FlyingAIFollowOwner(this, 1.3D, 7.0F, 2.0F, false));
@@ -269,7 +275,7 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
         }
         this.FlutterRotation += this.rotationVelocity;
         if ((double) this.FlutterRotation > (Mth.TWO_PI)) {
-            if (this.level().isClientSide) {
+            if (this.level().isClientSide()) {
                 this.FlutterRotation = Mth.TWO_PI;
             } else {
                 this.FlutterRotation = (float) ((double) this.FlutterRotation - (Mth.TWO_PI));
@@ -285,7 +291,7 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
                 this.entityData.set(TENTACLING, true);
                 if (squishCooldown == 0 && this.isFlying()) {
                     squishCooldown = 10;
-                    this.gameEvent(GameEvent.ENTITY_ACTION);
+                    this.gameEvent(GameEvent.ENTITY_INTERACT);
                     this.playSound(AMSoundRegistry.FLUTTER_FLAP, 3F, 1.5F * this.getVoicePitch());
                 }
                 this.randomMotionSpeed = 0.8F;
@@ -294,7 +300,7 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
                 randomMotionSpeed = 0.01F;
             }
         }
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (isFlying() && this.isLandNavigator) {
                 switchNavigator(false);
             }
@@ -339,7 +345,7 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
         if (shooting) {
             this.incrementFlutterPitch(-30);
         }
-        if (!this.level().isClientSide && shooting && shootProgress == 5F) {
+        if (!this.level().isClientSide() && shooting && shootProgress == 5F) {
             if (this.getTarget() != null) {
                 this.spit(this.getTarget());
             }
@@ -389,39 +395,46 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
         Item item = itemstack.getItem();
-        InteractionResult type = super.mobInteract(player, hand);
+        // Check taming BEFORE calling super to prevent player from eating the item
         if (!isTame() && canEatFlower(itemstack)) {
-            this.usePlayerItem(player, hand, itemstack);
-            this.flowersEaten.add(BuiltInRegistries.ITEM.getKey(itemstack.getItem()).toString());
-            this.gameEvent(GameEvent.ENTITY_INTERACT);
-            this.playSound(AMSoundRegistry.FLUTTER_YES, this.getSoundVolume(), this.getVoicePitch());
-            if (this.flowersEaten.size() > 3 && getRandom().nextInt(3) == 0 || this.flowersEaten.size() > 6) {
-                this.tame(player);
-                this.level().broadcastEntityEvent(this, (byte) 7);
-            } else {
-                this.level().broadcastEntityEvent(this, (byte) 6);
+            if (!this.level().isClientSide()) {
+                this.usePlayerItem(player, hand, itemstack);
+                this.flowersEaten.add(BuiltInRegistries.ITEM.getKey(itemstack.getItem()).toString());
+                this.gameEvent(GameEvent.ENTITY_INTERACT);
+                this.playSound(AMSoundRegistry.FLUTTER_YES, this.getSoundVolume(), this.getVoicePitch());
+                if (this.flowersEaten.size() > 3 && getRandom().nextInt(3) == 0 || this.flowersEaten.size() > 6) {
+                    this.tame(player);
+                    this.level().broadcastEntityEvent(this, (byte) 7);
+                } else {
+                    this.level().broadcastEntityEvent(this, (byte) 6);
+                }
             }
-            return InteractionResult.SUCCESS;
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
         } else if (!isTame() && itemstack.is(ItemTags.FLOWERS)) {
             this.gameEvent(GameEvent.ENTITY_INTERACT);
             this.playSound(AMSoundRegistry.FLUTTER_NO, this.getSoundVolume(), this.getVoicePitch());
             this.entityData.set(SHAKING_HEAD_TICKS, 20);
         }
+        InteractionResult type = super.mobInteract(player, hand);
         if (isTame() && itemstack.is(ItemTags.FLOWERS) && this.getHealth() < this.getMaxHealth()) {
-            this.usePlayerItem(player, hand, itemstack);
-            this.gameEvent(GameEvent.EAT);
-            this.playSound(SoundEvents.CAT_EAT, this.getSoundVolume(), this.getVoicePitch());
-            this.heal(5);
-            return InteractionResult.SUCCESS;
+            if (!this.level().isClientSide()) {
+                this.usePlayerItem(player, hand, itemstack);
+                this.gameEvent(GameEvent.EAT);
+                this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
+                this.heal(5);
+            }
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
         }
         InteractionResult interactionresult = itemstack.interactLivingEntity(player, this, hand);
         if (interactionresult != InteractionResult.SUCCESS && type != InteractionResult.SUCCESS && isTame() && isOwnedBy(player) && !isFood(itemstack) && !itemstack.is(ItemTags.FLOWERS)) {
             if (item == Items.FLOWER_POT && !this.isPotted()) {
                 this.setPotted(true);
                 return InteractionResult.SUCCESS;
-            } else if (itemstack.is(Items.SHEARS) && this.isPotted()) {
+            } else if (itemstack.getItem() instanceof net.minecraft.world.item.ShearsItem && this.isPotted()) {
                 this.setPotted(false);
-                this.spawnAtLocation(Items.FLOWER_POT);
+                if (this.level() instanceof ServerLevel serverLevel) {
+                    this.spawnAtLocation(serverLevel, Items.FLOWER_POT);
+                }
                 return InteractionResult.SUCCESS;
             } else if(this.isPotted() && player.isShiftKeyDown()){
                 ItemStack fish = getFishBucket();
@@ -429,13 +442,13 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
                     player.drop(fish, false);
                 }
                 this.remove(RemovalReason.DISCARDED);
-                return InteractionResult.sidedSuccess(this.level().isClientSide);
+                return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
             } else {
                 this.setCommand(this.getCommand() + 1);
                 if (this.getCommand() == 3) {
                     this.setCommand(0);
                 }
-                player.displayClientMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()), true);
+                player.sendOverlayMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()));
                 boolean sit = this.getCommand() == 2;
                 if (sit) {
                     this.setOrderedToSit(true);
@@ -473,16 +486,16 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
         return this.getCommand() == 1;
     }
 
-    protected void dropEquipment() {
-        super.dropEquipment();
+    @Override
+    protected void dropEquipment(ServerLevel serverLevel) {
+        super.dropEquipment(serverLevel);
         if (this.isPotted()) {
-            if (!this.level().isClientSide) {
-                this.spawnAtLocation(Items.FLOWER_POT);
-            }
+            this.spawnAtLocation(serverLevel, Items.FLOWER_POT);
         }
     }
 
-    public boolean isAlliedTo(Entity entityIn) {
+    @Override
+    protected boolean considersEntityAsAlly(Entity entityIn) {
         if (this.isTame()) {
             LivingEntity livingentity = this.getOwner();
             if (entityIn == livingentity) {
@@ -495,10 +508,11 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
                 return livingentity.isAlliedTo(entityIn);
             }
         }
-        return super.isAlliedTo(entityIn);
+        return super.considersEntityAsAlly(entityIn);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("Flying", this.isFlying());
         compound.putBoolean("Potted", this.isPotted());
@@ -510,20 +524,25 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
         compound.putBoolean("FlutterSitting", this.isSitting());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readFlutterDataFromItem(ValueInput compound) {
+        this.readAdditionalSaveData(compound);
+    }
+
+    @Override
+    protected void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setFlying(compound.getBoolean("Flying"));
-        this.setPotted(compound.getBoolean("Potted"));
-        int flowerCount = compound.getInt("FlowersEaten");
+        this.setFlying(compound.getBooleanOr("Flying", false));
+        this.setPotted(compound.getBooleanOr("Potted", false));
+        int flowerCount = compound.getIntOr("FlowersEaten", 0);
         this.flowersEaten = new ArrayList<>();
         for (int i = 0; i < flowerCount; i++) {
-            String s = compound.getString("FlowerEaten" + i);
-            if (s != null) {
+            String s = compound.getStringOr("FlowerEaten" + i, "");
+            if (!s.isEmpty()) {
                 flowersEaten.add(s);
             }
         }
-        this.setCommand(compound.getInt("FlutterCommand"));
-        this.setOrderedToSit(compound.getBoolean("FlutterSitting"));
+        this.setCommand(compound.getIntOr("FlutterCommand", 0));
+        this.setOrderedToSit(compound.getBooleanOr("FlutterSitting", false));
     }
 
 
@@ -597,11 +616,10 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
 
     protected ItemStack getFishBucket() {
         ItemStack stack = new ItemStack(AMItemRegistry.POTTED_FLUTTER);
-        CompoundTag platTag = new CompoundTag();
-        this.addAdditionalSaveData(platTag);
-        CompoundTag compound = new CompoundTag();
-        compound.put("FlutterData", platTag);
-        stack.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(compound));
+        TagValueOutput platOut = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, this.level().registryAccess());
+        this.addAdditionalSaveData(platOut);
+        CompoundTag platTag = platOut.buildResult();
+        stack.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag().put("FlutterData", platTag);
         if (this.hasCustomName()) {
             stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, this.getCustomName());
         }
@@ -611,7 +629,7 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel level, AgeableMob mobo) {
-        EntityFlutter baby = AMEntityRegistry.FLUTTER.create(level());
+        EntityFlutter baby = AMEntityRegistry.FLUTTER.create(level, EntitySpawnReason.BREEDING);
         baby.setPersistenceRequired();
         return baby;
     }
@@ -661,10 +679,10 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
             if (this.phage.isVehicle() || phage.isSitting() || phage.shouldFollow() || (phage.getTarget() != null && phage.getTarget().isAlive()) || this.phage.isPassenger()) {
                 return false;
             } else {
-                if (this.phage.getRandom().nextInt(30) != 0 && !phage.isFlying() && !phage.isInWaterOrBubble()) {
+                if (this.phage.getRandom().nextInt(30) != 0 && !phage.isFlying() && !AMEntityRegistry.isInWaterOrBubble(phage)) {
                     return false;
                 }
-                if (this.phage.onGround() && !phage.isInWaterOrBubble()) {
+                if (this.phage.onGround() && !AMEntityRegistry.isInWaterOrBubble(phage)) {
                     this.flightTarget = random.nextInt(4) == 0 && !phage.isBaby();
                 } else {
                     this.flightTarget = random.nextInt(5) > 0 && phage.timeFlying < 100 && !phage.isBaby();

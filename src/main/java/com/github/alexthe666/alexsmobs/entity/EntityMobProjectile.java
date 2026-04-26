@@ -1,13 +1,17 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+import net.minecraft.network.syncher.SynchedEntityData;
+
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.Level;
@@ -17,6 +21,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+// NetworkHooks removed in NeoForge 1.21
 
 import javax.annotation.Nullable;
 import java.util.UUID;
@@ -51,14 +56,12 @@ public abstract class EntityMobProjectile extends Entity {
         return Mth.lerp(0.2F, f, f1);
     }
 
-    @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        // EntityMobProjectile: no extra data
-    }
+    // getAddEntityPacket is no longer needed in 1.21
+    // public Packet<ClientGamePacketListener> getAddEntityPacket() {
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+
     }
 
     public void tick() {
@@ -78,7 +81,7 @@ public abstract class EntityMobProjectile extends Entity {
         this.updateRotation();
         if (this.isInWall() && (!isInWater() || removeInWater())) {
             this.remove(RemovalReason.DISCARDED);
-        } else if (this.isInWaterOrBubble() && this.removeInWater()) {
+        } else if (AMEntityRegistry.isInWaterOrBubble(this) && this.removeInWater()) {
             this.remove(RemovalReason.DISCARDED);
         } else {
             this.setDeltaMovement(vector3d.scale(0.99F));
@@ -95,8 +98,7 @@ public abstract class EntityMobProjectile extends Entity {
     protected void onEntityHit(EntityHitResult result) {
         Entity entity = this.getShooter();
         if (entity instanceof LivingEntity) {
-            boolean b = result.getEntity().hurt(damageSources().mobProjectile(this, (LivingEntity) entity), this.getDamage());
-
+            result.getEntity().hurt(damageSources().mobProjectile(this, (LivingEntity) entity), this.getDamage());
         }
         this.remove(RemovalReason.DISCARDED);
     }
@@ -105,7 +107,7 @@ public abstract class EntityMobProjectile extends Entity {
 
     protected void onHitBlock(BlockHitResult p_230299_1_) {
         BlockState blockstate = this.level().getBlockState(p_230299_1_.getBlockPos());
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.remove(RemovalReason.DISCARDED);
         }
     }
@@ -127,9 +129,9 @@ public abstract class EntityMobProjectile extends Entity {
 
     }
 
-    protected void addAdditionalSaveData(CompoundTag compound) {
+    protected void addAdditionalSaveData(ValueOutput compound) {
         if (this.ownerUUID != null) {
-            compound.putUUID("Owner", this.ownerUUID);
+            compound.store("Owner", UUIDUtil.CODEC, this.ownerUUID);
         }
 
         if (this.leftOwner) {
@@ -138,12 +140,10 @@ public abstract class EntityMobProjectile extends Entity {
 
     }
 
-    protected void readAdditionalSaveData(CompoundTag compound) {
-        if (compound.hasUUID("Owner")) {
-            this.ownerUUID = compound.getUUID("Owner");
-        }
+    protected void readAdditionalSaveData(ValueInput compound) {
+        compound.read("Owner", UUIDUtil.CODEC).ifPresent(u -> this.ownerUUID = u);
 
-        this.leftOwner = compound.getBoolean("LeftOwner");
+        this.leftOwner = compound.getBooleanOr("LeftOwner", false);
     }
 
     private boolean checkLeftOwner() {
@@ -199,7 +199,7 @@ public abstract class EntityMobProjectile extends Entity {
             this.setYRot((float) (Mth.atan2(x, z) * (double) Mth.RAD_TO_DEG));
             this.xRotO = this.getXRot();
             this.yRotO = this.getYRot();
-            this.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+            this.snapTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
         }
 
     }
@@ -216,11 +216,14 @@ public abstract class EntityMobProjectile extends Entity {
     public boolean isSameTeam(Entity shooter, Entity entity) {
         if(shooter instanceof TamableAnimal tamableAnimal && tamableAnimal.isTame()){
             if(entity instanceof TamableAnimal alsoTameable && alsoTameable.isTame()){
-                if(alsoTameable.getOwnerUUID() != null && tamableAnimal.getOwnerUUID() != null && tamableAnimal.getOwnerUUID().equals(alsoTameable.getOwnerUUID())){
+                UUID alsoOwner = alsoTameable.getOwnerReference().getUUID();
+                UUID tameOwner = tamableAnimal.getOwnerReference().getUUID();
+                if (alsoOwner != null && tameOwner != null && tameOwner.equals(alsoOwner)) {
                     return true;
                 }
             }
-            return tamableAnimal.getOwnerUUID() != null && tamableAnimal.getOwnerUUID().equals(entity.getUUID()) || shooter.isAlliedTo(entity);
+            UUID ownerUuid = tamableAnimal.getOwnerReference().getUUID();
+            return ownerUuid != null && ownerUuid.equals(entity.getUUID()) || shooter.isAlliedTo(entity);
         }
         return shooter.isAlliedTo(entity);
     }
@@ -230,6 +233,11 @@ public abstract class EntityMobProjectile extends Entity {
         float f = Mth.sqrt((float) vector3d.horizontalDistance());
         this.setXRot(lerpRotation(this.xRotO, (float) (Mth.atan2(vector3d.y, f) * (double) Mth.RAD_TO_DEG)));
         this.setYRot(lerpRotation(this.yRotO, (float) (Mth.atan2(vector3d.x, vector3d.z) * (double) Mth.RAD_TO_DEG)));
+    }
+
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        return false;
     }
 }
 

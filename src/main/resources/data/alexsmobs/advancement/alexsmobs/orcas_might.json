@@ -1,10 +1,7 @@
 {
   "display": {
     "icon": {
-      "id": "alexsmobs:tab_icon",
-      "components": {
-        "minecraft:custom_data": "{DisplayEntityType:\"alexsmobs:orca\"}"
-      }
+      "id": "alexsmobs:tab_icon"
     },
     "title": {
       "translate": "advancements.alexsmobs.orcas_might.title"

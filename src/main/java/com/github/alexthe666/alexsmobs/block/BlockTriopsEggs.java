@@ -2,19 +2,32 @@ package com.github.alexthe666.alexsmobs.block;
 
 import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityTriops;
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.FrogspawnBlock;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
 
 public class BlockTriopsEggs extends FrogspawnBlock {
-    public BlockTriopsEggs() {
-        super(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_ORANGE).instabreak().noOcclusion().noCollission().sound(SoundType.FROGSPAWN).offsetType(OffsetType.XZ));
+    public static final MapCodec<FrogspawnBlock> CODEC = FrogspawnBlock.CODEC;
+
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_ORANGE).instabreak().noOcclusion().noCollision().sound(SoundType.FROGSPAWN).offsetType(BlockBehaviour.OffsetType.XZ);
+    }
+
+    public BlockTriopsEggs(BlockBehaviour.Properties props) {
+        super(props);
+    }
+
+    @Override
+    public MapCodec<FrogspawnBlock> codec() {
+        return CODEC;
     }
 
     public void tick(BlockState blockState, ServerLevel serverLevel, BlockPos blockPos, RandomSource randomSource) {
@@ -24,12 +37,12 @@ public class BlockTriopsEggs extends FrogspawnBlock {
             serverLevel.destroyBlock(blockPos, false);
             int i = 2 + randomSource.nextInt(2);
             for (int j = 1; j <= i; ++j) {
-                EntityTriops tadpole = AMEntityRegistry.TRIOPS.create(serverLevel);
+                EntityTriops tadpole = AMEntityRegistry.TRIOPS.create(serverLevel, EntitySpawnReason.BREEDING);
                 if (tadpole != null) {
                     double d0 = (double) blockPos.getX();
                     double d1 = (double) blockPos.getZ();
                     int k = randomSource.nextInt(1, 361);
-                    tadpole.moveTo(d0, (double) blockPos.getY() - 0.5D, d1, (float) k, 0.0F);
+                    tadpole.snapTo(d0, (double) blockPos.getY() - 0.5D, d1, (float) k, 0.0F);
                     tadpole.setPersistenceRequired();
                     tadpole.setBabyAge(-12000);
                     serverLevel.addFreshEntity(tadpole);

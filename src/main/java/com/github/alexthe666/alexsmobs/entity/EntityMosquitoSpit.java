@@ -1,13 +1,17 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+import net.minecraft.network.syncher.SynchedEntityData;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -19,6 +23,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+// NetworkHooks removed in NeoForge 1.21
 
 import javax.annotation.Nullable;
 import java.util.UUID;
@@ -30,11 +35,6 @@ public class EntityMosquitoSpit extends Entity {
 
     public EntityMosquitoSpit(EntityType p_i50162_1_, Level p_i50162_2_) {
         super(p_i50162_1_, p_i50162_2_);
-    }
-
-    @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        // Entity.defineSynchedData is abstract; only register our own data here
     }
 
     public EntityMosquitoSpit(Level worldIn, EntityCrimsonMosquito p_i47273_2_) {
@@ -54,11 +54,8 @@ public class EntityMosquitoSpit extends Entity {
         this.setPos(x, y, z);
         this.setDeltaMovement(p_i47274_8_, p_i47274_10_, p_i47274_12_);
     }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
-    }
+    // getAddEntityPacket is no longer needed in 1.21
+    // public Packet<ClientGamePacketListener> getAddEntityPacket() {
 
     public void tick() {
         if (!this.leftOwner) {
@@ -78,7 +75,7 @@ public class EntityMosquitoSpit extends Entity {
         this.updateRotation();
         if (this.level().getBlockStates(this.getBoundingBox()).noneMatch(BlockBehaviour.BlockStateBase::isAir)) {
             this.remove(RemovalReason.DISCARDED);
-        } else if (this.isInWaterOrBubble()) {
+        } else if (AMEntityRegistry.isInWaterOrBubble(this)) {
             this.remove(RemovalReason.DISCARDED);
         } else {
             this.setDeltaMovement(vector3d.scale((double)0.99F));
@@ -96,7 +93,7 @@ public class EntityMosquitoSpit extends Entity {
         if (entity instanceof LivingEntity) {
             hitEntity.hurt(damageSources().mobProjectile(this, (LivingEntity)entity), 4.0F);
         }
-        if (hitEntity instanceof EntityCrimsonMosquito && !this.level().isClientSide) {
+        if (hitEntity instanceof EntityCrimsonMosquito && !this.level().isClientSide()) {
             EntityCrimsonMosquito mosquito = ((EntityCrimsonMosquito)hitEntity);
             mosquito.setBloodLevel(mosquito.getBloodLevel() + 1);
         }
@@ -104,9 +101,12 @@ public class EntityMosquitoSpit extends Entity {
 
     protected void onHitBlock(BlockHitResult p_230299_1_) {
         BlockState blockstate = this.level().getBlockState(p_230299_1_.getBlockPos());
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.remove(RemovalReason.DISCARDED);
         }
+    }
+
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
     }
 
     public void setShooter(@Nullable Entity entityIn) {
@@ -126,9 +126,9 @@ public class EntityMosquitoSpit extends Entity {
         }
     }
 
-    protected void addAdditionalSaveData(CompoundTag compound) {
+    protected void addAdditionalSaveData(ValueOutput compound) {
         if (this.ownerUUID != null) {
-            compound.putUUID("Owner", this.ownerUUID);
+            compound.store("Owner", UUIDUtil.CODEC, this.ownerUUID);
         }
 
         if (this.leftOwner) {
@@ -140,12 +140,10 @@ public class EntityMosquitoSpit extends Entity {
     /**
      * (abstract) Protected helper method to read subclass entity data from NBT.
      */
-    protected void readAdditionalSaveData(CompoundTag compound) {
-        if (compound.hasUUID("Owner")) {
-            this.ownerUUID = compound.getUUID("Owner");
-        }
+    protected void readAdditionalSaveData(ValueInput compound) {
+        compound.read("Owner", UUIDUtil.CODEC).ifPresent(u -> this.ownerUUID = u);
 
-        this.leftOwner = compound.getBoolean("LeftOwner");
+        this.leftOwner = compound.getBooleanOr("LeftOwner", false);
     }
 
     private boolean checkLeftOwner() {
@@ -202,7 +200,7 @@ public class EntityMosquitoSpit extends Entity {
             this.setYRot( (float)(Mth.atan2(x, z) * (double)Mth.RAD_TO_DEG));
             this.xRotO = this.getXRot();
             this.yRotO = this.getYRot();
-            this.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+            this.snapTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
         }
 
     }
@@ -233,5 +231,10 @@ public class EntityMosquitoSpit extends Entity {
         }
 
         return Mth.lerp(0.2F, p_234614_0_, p_234614_1_);
+    }
+
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        return false;
     }
 }

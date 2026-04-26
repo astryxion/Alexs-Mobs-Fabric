@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.entity.ai.DirectPathNavigator;
@@ -10,6 +13,7 @@ import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -67,10 +71,10 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 20D).add(Attributes.ARMOR, 0.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.MOVEMENT_SPEED, 0.15F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 20D).add(Attributes.ARMOR, 0.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.MOVEMENT_SPEED, 0.15F);
     }
 
-    public static boolean canEndergradeSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean canEndergradeSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         return !worldIn.getBlockState(pos.below()).isAir();
     }
 
@@ -78,14 +82,14 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
         return new DirectPathNavigator(this, worldIn);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("Saddled", this.isSaddled());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setSaddled(compound.getBoolean("Saddled"));
+        this.setSaddled(compound.getBooleanOr("Saddled", false));
     }
 
     @Override
@@ -108,7 +112,7 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
                 EntityEndergrade.this.stopWandering = false;
             }
         });
-        this.goalSelector.addGoal(3, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.ENDERGRADE_BREEDABLES), false) {
+        this.goalSelector.addGoal(3, new TemptGoal(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.ENDERGRADE_BREEDABLES)), false) {
             public void start() {
                 super.start();
                 EntityEndergrade.this.stopWandering = true;
@@ -155,12 +159,12 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
             this.setSaddled(true);
             return InteractionResult.SUCCESS;
         }
-        if (itemstack.is(AMTagRegistry.ENDERGRADE_BREEDABLES) && this.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getHolderOrThrow(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getResourceKey(AMEffectRegistry.ENDER_FLU).orElseThrow()))) {
+        if (itemstack.is(AMTagRegistry.ENDERGRADE_BREEDABLES) && this.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.ENDER_FLU))) {
             if (!player.isCreative()) {
                 itemstack.shrink(1);
             }
             this.heal(8);
-            this.removeEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getHolderOrThrow(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getResourceKey(AMEffectRegistry.ENDER_FLU).orElseThrow()));
+            this.removeEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.ENDER_FLU));
             return InteractionResult.SUCCESS;
         }
         InteractionResult type = super.mobInteract(player, hand);
@@ -183,7 +187,7 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
             float angle = (Maths.STARTING_ANGLE * this.yBodyRot);
             double extraX = radius * Mth.sin(Mth.PI + angle);
             double extraZ = radius * Mth.cos(angle);
-            passenger.setPos(this.getX() + extraX, this.getPassengersRidingOffset() + this.getPassengerRidingPosition(passenger).y, this.getZ() + extraZ);
+            passenger.setPos(this.getX() + extraX, this.getY() + this.getBbHeight() * 0.75 + 0, this.getZ() + extraZ);
         }
     }
 
@@ -234,7 +238,7 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
     }
 
     private BlockPos getGroundPosition(BlockPos radialPos) {
-        while (radialPos.getY() > 1 && level().isEmptyBlock(radialPos)) {
+        while (radialPos.getY() > 1 && this.level().getBlockState(radialPos).isAir()) {
             radialPos = radialPos.below();
         }
         if (radialPos.getY() <= 1) {
@@ -254,7 +258,7 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
 
     public void onGetItem(ItemEntity targetEntity) {
         this.gameEvent(GameEvent.EAT);
-        this.playSound(SoundEvents.CAT_EAT, this.getSoundVolume(), this.getVoicePitch());
+        this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
         this.heal(5);
     }
 
@@ -262,22 +266,21 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
         this.entityData.set(BITE_TICK, 5);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.endergradeSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel p_241840_1_, AgeableMob p_241840_2_) {
-        return AMEntityRegistry.ENDERGRADE.create(p_241840_1_);
+        return AMEntityRegistry.ENDERGRADE.create(p_241840_1_, EntitySpawnReason.BREEDING);
     }
 
-    protected void dropEquipment() {
-        super.dropEquipment();
+    @Override
+    protected void dropEquipment(ServerLevel serverLevel) {
+        super.dropEquipment(serverLevel);
         if (this.isSaddled()) {
-            if (!this.level().isClientSide) {
-                this.spawnAtLocation(Items.SADDLE);
-            }
+            this.spawnAtLocation(serverLevel, Items.SADDLE);
         }
     }
 
@@ -300,7 +303,7 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
         if(player.zza != 0 || player.xxa != 0){
             this.setRot(player.getYRot(), player.getXRot() * 0.25F);
             this.yRotO = this.yBodyRot = this.yHeadRot = this.getYRot();
-            this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.0);
+            // setMaxUpStep removed in 1.21
             this.getNavigation().stop();
             this.setTarget(null);
             this.setSprinting(true);

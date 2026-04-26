@@ -1,11 +1,11 @@
 package com.github.alexthe666.alexsmobs.entity.util;
 
+import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.item.ItemRainbowJelly;
 import com.github.alexthe666.alexsmobs.misc.AMSimplexNoise;
-import com.github.alexthe666.citadel.Citadel;
+import com.github.alexthe666.alexsmobs.network.MessageSyncEntityData;
 import com.github.alexthe666.citadel.server.entity.CitadelEntityData;
-import com.github.alexthe666.citadel.server.message.PropertiesMessage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.LivingEntity;
@@ -22,19 +22,14 @@ public class RainbowUtil {
         CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(fabulous);
         tag.putInt(RAINBOW_TYPE, type);
         CitadelEntityData.setCitadelTag(fabulous, tag);
-        if (!fabulous.level().isClientSide) {
-            Citadel.sendMSGToAll(new PropertiesMessage("CitadelPatreonConfig", tag, fabulous.getId()));
-        }else{
-            Citadel.sendMSGToServer(new PropertiesMessage("CitadelPatreonConfig", tag, fabulous.getId()));
+        if (!fabulous.level().isClientSide()) {
+            AlexsMobs.sendMSGToAll(new MessageSyncEntityData(fabulous.getId(), tag));
         }
     }
 
     public static int getRainbowType(LivingEntity entity) {
         CompoundTag lassoedTag = CitadelEntityData.getOrCreateCitadelTag(entity);
-        if (lassoedTag.contains(RAINBOW_TYPE)) {
-            return lassoedTag.getInt(RAINBOW_TYPE);
-        }
-        return 0;
+        return lassoedTag.getIntOr(RAINBOW_TYPE, 0);
     }
 
     public static int getRainbowTypeFromStack(ItemStack stack){

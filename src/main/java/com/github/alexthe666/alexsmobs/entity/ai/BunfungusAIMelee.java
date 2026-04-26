@@ -1,5 +1,6 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
+import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityBunfungus;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
@@ -48,7 +49,7 @@ public class BunfungusAIMelee extends Goal {
                     chungus.setAnimation(EntityBunfungus.ANIMATION_BELLY);
                 }
             }
-        }else if(dist < 5.0D || !chungus.hasLineOfSight(chungus.getTarget()) || jumpCooldown > 0 || chungus.isInWaterOrBubble()){
+        }else if(dist < 5.0D || !chungus.hasLineOfSight(chungus.getTarget()) || jumpCooldown > 0 || AMEntityRegistry.isInWaterOrBubble(chungus)){
             chungus.getNavigation().moveTo(chungus.getTarget(), 1.0D);
         }else{
             chungus.getNavigation().stop();

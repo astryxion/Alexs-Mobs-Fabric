@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.StraddlerAIShoot;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
@@ -32,14 +35,15 @@ import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.Strider;
-import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.DismountHelper;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.material.Fluid;
@@ -49,7 +53,7 @@ import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.tags.FluidTags;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.util.Set;
 
@@ -63,8 +67,7 @@ public class EntityStraddler extends Monster implements IAnimatedEntity {
     protected EntityStraddler(EntityType type, Level world) {
         super(type, world);
         this.setPathfindingMalus(PathType.LAVA, 0.0F);
-        this.setPathfindingMalus(PathType.DANGER_FIRE, 0.0F);
-        this.setPathfindingMalus(PathType.DAMAGE_FIRE, 0.0F);
+        this.setPathfindingMalus(PathType.DAMAGE_CAUTIOUS, 0.0F);
     }
 
     protected SoundEvent getAmbientSound() {
@@ -79,7 +82,7 @@ public class EntityStraddler extends Monster implements IAnimatedEntity {
         return AMSoundRegistry.STRADDLER_HURT;
     }
 
-    public static boolean canStraddlerSpawn(EntityType animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean canStraddlerSpawn(EntityType animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         boolean spawnBlock = worldIn.getBlockState(pos.below()).is(BlockTags.BASE_STONE_NETHER);
         return spawnBlock;
     }
@@ -102,7 +105,7 @@ public class EntityStraddler extends Monster implements IAnimatedEntity {
         this.entityData.set(STRADPOLE_COUNT, index);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.straddlerSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -118,7 +121,7 @@ public class EntityStraddler extends Monster implements IAnimatedEntity {
     }
 
     protected void checkFallDamage(double p_184231_1_, boolean p_184231_3_, BlockState p_184231_4_, BlockPos p_184231_5_) {
-        this.checkInsideBlocks();
+        this.applyEffectsFromBlocks();
         if (this.isInLava()) {
             this.fallDistance = 0.0F;
         } else {
@@ -149,10 +152,15 @@ public class EntityStraddler extends Monster implements IAnimatedEntity {
                     this.setDeltaMovement(this.getDeltaMovement().multiply(1, 0, 1));
                 }
                 this.setOnGround(true);
-            }else if (lvt_1_1_.isAbove(LiquidBlock.STABLE_SHAPE, this.blockPosition().below(), true) && !this.level().getFluidState(this.blockPosition().above()).is(FluidTags.LAVA)) {
-                this.setOnGround(true);
             } else {
-                this.setDeltaMovement(0, Math.min((d1 - 0.5F), 1) * 0.2F, 0);
+                BlockPos belowPos = this.blockPosition().below();
+                VoxelShape belowShape = this.level().getBlockState(belowPos).getCollisionShape(this.level(), belowPos);
+                boolean aboveLava = this.level().getFluidState(this.blockPosition().above()).is(FluidTags.LAVA);
+                if (!belowShape.isEmpty() && lvt_1_1_.isAbove(belowShape, belowPos, true) && !aboveLava) {
+                    this.setOnGround(true);
+                } else {
+                    this.setDeltaMovement(0, Math.min((d1 - 0.5F), 1) * 0.2F, 0);
+                }
             }
         }
 
@@ -218,41 +226,41 @@ public class EntityStraddler extends Monster implements IAnimatedEntity {
         return p_230285_1_.is(FluidTags.LAVA);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putInt("StradpoleCount", getStradpoleCount());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setStradpoleCount(compound.getInt("StradpoleCount"));
+        this.setStradpoleCount(compound.getIntOr("StradpoleCount", 0));
     }
 
     public void tick() {
         super.tick();
         this.floatStrider();
-        this.checkInsideBlocks();
+        this.applyEffectsFromBlocks();
         if (this.getAnimation() == ANIMATION_LAUNCH && this.isAlive()){
             if(this.getAnimationTick() == 2){
                 this.playSound(SoundEvents.CROSSBOW_LOADING_MIDDLE.value(), 2F, 1F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
             }
         }
-        if (this.getAnimation() == ANIMATION_LAUNCH && this.isAlive() && this.getAnimationTick() == 20 && this.getTarget() != null) {
-            EntityStradpole pole = AMEntityRegistry.STRADPOLE.create(level());
-            pole.setParentId(this.getUUID());
-            pole.setPos(this.getX(), this.getEyeY(), this.getZ());
-            final double d0 = this.getTarget().getEyeY() - (double)1.1F;
-            final double d1 = this.getTarget().getX() - this.getX();
-            final double d2 = d0 - pole.getY();
-            final double d3 = this.getTarget().getZ() - this.getZ();
-            final float f3 = Mth.sqrt((float) (d1 * d1 + d2 * d2 + d3 * d3)) * 0.2F;
-            this.gameEvent(GameEvent.PROJECTILE_SHOOT);
-            this.playSound(SoundEvents.CROSSBOW_LOADING_END.value(), 2F, 1F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
-            pole.shoot(d1, d2 + (double)f3, d3, 2F, 0F);
-            pole.setYRot(this.getYRot() % 360.0F);
-            pole.setXRot(Mth.clamp(this.getYRot(), -90.0F, 90.0F) % 360.0F);
-            if(!this.level().isClientSide){
-                this.level().addFreshEntity(pole);
+        if (this.getAnimation() == ANIMATION_LAUNCH && this.isAlive() && this.getAnimationTick() == 20 && this.getTarget() != null && this.level() instanceof ServerLevel serverLevel) {
+            EntityStradpole pole = AMEntityRegistry.STRADPOLE.create(serverLevel, EntitySpawnReason.TRIGGERED);
+            if (pole != null) {
+                pole.setParentId(this.getUUID());
+                pole.setPos(this.getX(), this.getEyeY(), this.getZ());
+                final double d0 = this.getTarget().getEyeY() - (double)1.1F;
+                final double d1 = this.getTarget().getX() - this.getX();
+                final double d2 = d0 - pole.getY();
+                final double d3 = this.getTarget().getZ() - this.getZ();
+                final float f3 = Mth.sqrt((float) (d1 * d1 + d2 * d2 + d3 * d3)) * 0.2F;
+                this.gameEvent(GameEvent.PROJECTILE_SHOOT);
+                this.playSound(SoundEvents.CROSSBOW_LOADING_END.value(), 2F, 1F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
+                pole.shoot(d1, d2 + (double)f3, d3, 2F, 0F);
+                pole.setYRot(this.getYRot() % 360.0F);
+                pole.setXRot(Mth.clamp(this.getYRot(), -90.0F, 90.0F) % 360.0F);
+                serverLevel.addFreshEntity(pole);
             }
         }
         AnimationHandler.INSTANCE.updateAnimations(this);
@@ -302,7 +310,7 @@ public class EntityStraddler extends Monster implements IAnimatedEntity {
         }
 
         protected boolean hasValidPathType(PathType p_230287_1_) {
-            return p_230287_1_ == PathType.LAVA || p_230287_1_ == PathType.DAMAGE_FIRE || p_230287_1_ == PathType.DANGER_FIRE || super.hasValidPathType(p_230287_1_);
+            return p_230287_1_ == PathType.LAVA || p_230287_1_ == PathType.DAMAGE_CAUTIOUS || super.hasValidPathType(p_230287_1_);
         }
 
         public boolean isStableDestination(BlockPos pos) {

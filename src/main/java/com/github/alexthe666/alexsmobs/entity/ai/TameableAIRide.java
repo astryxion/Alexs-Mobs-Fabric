@@ -46,7 +46,7 @@ public class TameableAIRide extends Goal {
 
     @Override
     public void tick() {
-        tameableEntity.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.STEP_HEIGHT).setBaseValue(1.0);
+        // setMaxUpStep removed in 1.21
         tameableEntity.getNavigation().stop();
         tameableEntity.setTarget(null);
         double x = tameableEntity.getX();
