@@ -15,11 +15,6 @@ import com.github.alexthe666.alexsmobs.client.render.item.GhostlyPickaxeBakedMod
 import com.github.alexthe666.alexsmobs.client.render.tile.RenderCapsid;
 import com.github.alexthe666.alexsmobs.client.render.tile.RenderTransmutationTable;
 import com.github.alexthe666.alexsmobs.client.render.tile.RenderVoidWormBeak;
-import com.github.alexthe666.alexsmobs.client.render.tile.RenderEndPirateDoor;
-import com.github.alexthe666.alexsmobs.client.render.tile.RenderEndPirateFlag;
-import com.github.alexthe666.alexsmobs.client.render.tile.RenderEndPirateAnchor;
-import com.github.alexthe666.alexsmobs.client.render.tile.RenderEndPirateAnchorWinch;
-import com.github.alexthe666.alexsmobs.client.render.tile.RenderEndPirateShipWheel;
 import com.github.alexthe666.alexsmobs.client.sound.SoundBearMusicBox;
 import com.github.alexthe666.alexsmobs.client.sound.SoundLaCucaracha;
 import com.github.alexthe666.alexsmobs.client.sound.SoundWormBoss;
@@ -33,9 +28,10 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
-import net.minecraft.client.renderer.entity.EntityRenderers;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.client.renderer.item.ItemProperties;
@@ -65,6 +61,17 @@ public class ClientProxy extends CommonProxy {
     private int pupfishChunkZ = 0;
     private int singingBlueJayId = -1;
     private final ItemStack[] transmuteStacks = new ItemStack[3];
+    /** Vanilla inner leggings shell — same model HumanoidArmorLayer uses for the leggings slot. */
+    private static HumanoidModel<?> vanillaLeggingsArmorModel;
+
+    private static HumanoidModel<LivingEntity> getVanillaLeggingsArmorModel() {
+        if (vanillaLeggingsArmorModel == null) {
+            vanillaLeggingsArmorModel = new HumanoidModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(ModelLayers.PLAYER_INNER_ARMOR));
+        }
+        @SuppressWarnings("unchecked")
+        HumanoidModel<LivingEntity> model = (HumanoidModel<LivingEntity>) vanillaLeggingsArmorModel;
+        return model;
+    }
 
     public void init() {
         // Fabric: client event registration done in clientInit / Fabric event callbacks
@@ -72,11 +79,13 @@ public class ClientProxy extends CommonProxy {
 
     public void clientInit() {
         AMModelLayers.register();
+        ClientEvents.register();
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(ClientEvents::onClientTick);
         if (AMItemRegistry.STRADDLEBOARD != null) {
             net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry.ITEM.register((stack, tint) -> tint < 1 ? -1 : ((DyeableLeatherItem) stack.getItem()).getColor(stack), AMItemRegistry.STRADDLEBOARD);
         }
         net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry.BLOCK.register((state, world, pos, tint) -> world != null && pos != null ? RainbowUtil.calculateGlassColor(pos) : -1, AMBlockRegistry.RAINBOW_GLASS);
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.RAINBOW_GLASS, RenderType.translucent());
         setupParticles();
         net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin.register(pluginContext ->
                 pluginContext.modifyModelAfterBake().register((model, context) -> {
@@ -150,9 +159,7 @@ public class ClientProxy extends CommonProxy {
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(AMEntityRegistry.CACHALOT_ECHO, RenderCachalotEcho::new);
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(AMEntityRegistry.LEAFCUTTER_ANT, RenderLeafcutterAnt::new);
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(AMEntityRegistry.ENDERIOPHAGE, RenderEnderiophage::new);
-        net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(AMEntityRegistry.ENDERIOPHAGE_ROCKET, (render) -> {
-            return new ThrownItemRenderer<>(render, 0.75F, true);
-        });
+        net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(AMEntityRegistry.ENDERIOPHAGE_ROCKET, RenderEnderiophageRocket::new);
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(AMEntityRegistry.BALD_EAGLE, RenderBaldEagle::new);
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(AMEntityRegistry.TIGER, RenderTiger::new);
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(AMEntityRegistry.TARANTULA_HAWK, RenderTarantulaHawk::new);
@@ -245,29 +252,33 @@ public class ClientProxy extends CommonProxy {
         net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry.register(AMTileEntityRegistry.CAPSID, RenderCapsid::new);
         net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry.register(AMTileEntityRegistry.VOID_WORM_BEAK, RenderVoidWormBeak::new);
         net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry.register(AMTileEntityRegistry.TRANSMUTATION_TABLE, RenderTransmutationTable::new);
-        net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry.register(AMTileEntityRegistry.END_PIRATE_DOOR, RenderEndPirateDoor::new);
-        net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry.register(AMTileEntityRegistry.END_PIRATE_FLAG, RenderEndPirateFlag::new);
-        net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry.register(AMTileEntityRegistry.END_PIRATE_ANCHOR, RenderEndPirateAnchor::new);
-        net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry.register(AMTileEntityRegistry.END_PIRATE_ANCHOR_WINCH, RenderEndPirateAnchorWinch::new);
-        net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry.register(AMTileEntityRegistry.END_PIRATE_SHIP_WHEEL, RenderEndPirateShipWheel::new);
+        //TODO reimplement end pirate block entity renderers
         MenuScreens.register(AMMenuRegistry.TRANSMUTATION_TABLE, GUITransmutationTable::new);
-        // Forge ISTER replacement: attach BEWLR to transmutation table item so 3D model + glow + overlay render in-world/in-hand/in-GUI
-        net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(
-                AMBlockRegistry.TRANSMUTATION_TABLE.asItem(),
-                (stack, mode, matrices, vertexConsumers, light, overlay) ->
-                        AMItemRenderProperties.getRenderer().renderByItem(stack, mode, matrices, vertexConsumers, light, overlay));
+        registerBuiltinItemRenderer(AMBlockRegistry.TRANSMUTATION_TABLE.asItem());
+        registerBuiltinItemRenderer(AMItemRegistry.SHATTERED_DIMENSIONAL_CARVER);
+        registerBuiltinItemRenderer(AMItemRegistry.SHIELD_OF_THE_DEEP);
+        registerBuiltinItemRenderer(AMItemRegistry.MYSTERIOUS_WORM);
+        registerBuiltinItemRenderer(AMItemRegistry.FALCONRY_GLOVE);
+        registerBuiltinItemRenderer(AMItemRegistry.VINE_LASSO);
+        registerBuiltinItemRenderer(AMItemRegistry.SKELEWAG_SWORD);
+        registerBuiltinItemRenderer(AMItemRegistry.STINK_RAY);
+        registerBuiltinItemRenderer(AMItemRegistry.TAB_ICON);
         // Forge armor render hook replacement: all mod armor uses custom texture (and model where defined) via Fabric ArmorRenderer
         net.fabricmc.fabric.api.client.rendering.v1.ArmorRenderer.register(
                 (matrices, vertexConsumers, stack, entity, slot, light, contextModel) -> {
                     ResourceLocation texture = getModArmorTexture(stack, entity, slot);
                     if (texture == null) return;
-                    CustomArmorRenderProperties.initializeModels();
-                    CustomArmorRenderProperties armorProps = new CustomArmorRenderProperties();
-                    net.minecraft.client.model.HumanoidModel<?> model = armorProps.getHumanoidArmorModel(entity, stack, slot, contextModel);
-                    boolean useDefaultModel = (model == contextModel);
-                    if (!useDefaultModel) {
-                        contextModel.setAllVisible(false);
-                        contextModel.copyPropertiesTo((net.minecraft.client.model.HumanoidModel<LivingEntity>) model);
+                    HumanoidModel<?> model;
+                    if (slot == EquipmentSlot.LEGS && (stack.getItem() == AMItemRegistry.CENTIPEDE_LEGGINGS || stack.getItem() == AMItemRegistry.EMU_LEGGINGS)) {
+                        model = getVanillaLeggingsArmorModel();
+                        contextModel.copyPropertiesTo((HumanoidModel<LivingEntity>) model);
+                    } else {
+                        CustomArmorRenderProperties.initializeModels();
+                        CustomArmorRenderProperties armorProps = new CustomArmorRenderProperties();
+                        model = armorProps.getHumanoidArmorModel(entity, stack, slot, contextModel);
+                        if (model != contextModel) {
+                            contextModel.copyPropertiesTo((HumanoidModel<LivingEntity>) model);
+                        }
                     }
                     model.setAllVisible(false);
                     switch (slot) {
@@ -286,9 +297,6 @@ public class ClientProxy extends CommonProxy {
                         default -> { }
                     }
                     net.fabricmc.fabric.api.client.rendering.v1.ArmorRenderer.renderPart(matrices, vertexConsumers, light, stack, model, texture);
-                    if (useDefaultModel) {
-                        contextModel.setAllVisible(true);
-                    }
                 },
                 AMItemRegistry.TARANTULA_HAWK_ELYTRA,
                 AMItemRegistry.ROADDRUNNER_BOOTS, AMItemRegistry.CROCODILE_CHESTPLATE, AMItemRegistry.CENTIPEDE_LEGGINGS,
@@ -415,7 +423,7 @@ public class ClientProxy extends CommonProxy {
     }
 
     public void updateBiomeVisuals(int x, int z) {
-        Minecraft.getInstance().levelRenderer.setBlocksDirty(x - 32, 0, x - 32, z + 32, 255, z + 32);
+        Minecraft.getInstance().levelRenderer.setBlocksDirty(x - 32, 0, z - 32, x + 32, 255, z + 32);
     }
 
     private static void setupParticles() {
@@ -510,6 +518,13 @@ public class ClientProxy extends CommonProxy {
 
     public int getSingingBlueJayId() {
         return singingBlueJayId;
+    }
+
+    private static void registerBuiltinItemRenderer(net.minecraft.world.item.Item item) {
+        net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(
+                item,
+                (stack, mode, matrices, vertexConsumers, light, overlay) ->
+                        AMItemRenderProperties.getRenderer().renderByItem(stack, mode, matrices, vertexConsumers, light, overlay));
     }
 
 }

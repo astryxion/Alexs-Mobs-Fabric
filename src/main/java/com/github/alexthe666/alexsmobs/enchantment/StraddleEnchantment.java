@@ -35,6 +35,6 @@ public class StraddleEnchantment extends Enchantment {
 
     @Override
     public boolean canEnchant(ItemStack stack) {
-        return super.canEnchant(stack) && stack.getItem() instanceof ItemStraddleboard && AMConfig.straddleboardEnchants;
+        return AMConfig.straddleboardEnchants && stack.getItem() instanceof ItemStraddleboard;
     }
 }

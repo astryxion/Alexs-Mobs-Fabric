@@ -232,6 +232,9 @@ public class ServerEvents {
                     return false;
                 }
             }
+            if (entity.isUsingItem() && entity.getUseItem().getItem() == AMItemRegistry.SHIELD_OF_THE_DEEP) {
+                tryShieldOfTheDeepBlock(entity, source);
+            }
             if (amount > 0) enqueueAfterDamage(entity, source, amount);
             return true;
         });
@@ -275,6 +278,9 @@ public class ServerEvents {
         }
 
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD.register((entity, serverWorld) -> {
+            if (entity instanceof EntityKangaroo kangaroo && !serverWorld.isClientSide()) {
+                kangaroo.syncInventoryToClients();
+            }
             if (entity instanceof WanderingTrader trader && AMConfig.elephantTraderSpawnChance > 0) {
                 Biome biome = serverWorld.getBiome(entity.blockPosition()).value();
                 if (RAND.nextFloat() <= AMConfig.elephantTraderSpawnChance && (!AMConfig.limitElephantTraderBiomes || biome.getBaseTemperature() >= 1.0F)) {
@@ -478,29 +484,53 @@ public class ServerEvents {
         }
     }
 
-    /** Called per-entity from LivingEntityMixin (server-only). Replaces full-world getEntitiesOfClass scan. */
+    /** Called per-entity from LivingEntityMixin (both sides; server-only work is guarded inside). */
     public static void onLivingEntityTick(LivingEntity entity) {
         onLivingTick(entity);
     }
 
+    private static void tryShieldOfTheDeepBlock(LivingEntity entity, DamageSource source) {
+        if (entity.getUseItem().isEmpty() || entity.getUseItem().getItem() != AMItemRegistry.SHIELD_OF_THE_DEEP) {
+            return;
+        }
+        if (!(source.getEntity() instanceof LivingEntity living)) {
+            return;
+        }
+        boolean flag = false;
+        if (living.distanceTo(entity) <= 4 && !living.hasEffect(AMEffectRegistry.EXSANGUINATION)) {
+            living.addEffect(new MobEffectInstance(AMEffectRegistry.EXSANGUINATION, 60, 2));
+            flag = true;
+        }
+        if (entity.isInWaterOrBubble()) {
+            entity.setAirSupply(Math.min(entity.getMaxAirSupply(), entity.getAirSupply() + 150));
+            flag = true;
+        }
+        if (flag) {
+            entity.getUseItem().hurtAndBreak(1, entity, p -> p.broadcastBreakEvent(entity.getUsedItemHand()));
+        }
+    }
+
     private static void onLivingTick(LivingEntity entity) {
-        if (!entity.isUsingItem() && CHORUS_FRUIT_USERS_LAST_TICK.remove(entity.getId()) && entity.hasEffect(AMEffectRegistry.ENDER_FLU) && RAND.nextInt(3) == 0) {
-            entity.removeEffect(AMEffectRegistry.ENDER_FLU);
-        }
-        if (entity.isUsingItem() && entity.getUseItem().getItem() == Items.CHORUS_FRUIT) {
-            CHORUS_FRUIT_USERS_LAST_TICK.add(entity.getId());
-        }
-        if (entity instanceof Mob mob && mob.getTarget() != null) {
-            LivingEntity target = mob.getTarget();
-            if (mob.getMobType() == MobType.ARTHROPOD && target.hasEffect(AMEffectRegistry.BUG_PHEROMONES) && mob.getLastHurtByMob() != target) {
-                mob.setTarget(null);
+        final boolean server = !entity.level().isClientSide;
+        if (server) {
+            if (!entity.isUsingItem() && CHORUS_FRUIT_USERS_LAST_TICK.remove(entity.getId()) && entity.hasEffect(AMEffectRegistry.ENDER_FLU) && RAND.nextInt(3) == 0) {
+                entity.removeEffect(AMEffectRegistry.ENDER_FLU);
             }
-            if (mob.getMobType() == MobType.UNDEAD && !mob.getType().is(AMTagRegistry.IGNORES_KIMONO) && target.getItemBySlot(EquipmentSlot.CHEST).is(AMItemRegistry.UNSETTLING_KIMONO) && mob.getLastHurtByMob() != target) {
-                mob.setTarget(null);
+            if (entity.isUsingItem() && entity.getUseItem().getItem() == Items.CHORUS_FRUIT) {
+                CHORUS_FRUIT_USERS_LAST_TICK.add(entity.getId());
             }
-        }
-        if (entity.hasEffect(AMEffectRegistry.DEBILITATING_STING) && entity.getEffect(AMEffectRegistry.DEBILITATING_STING) != null && entity.getEffect(AMEffectRegistry.DEBILITATING_STING).getAmplifier() > 0 && entity instanceof Mob mob) {
-            mob.setPersistenceRequired();
+            if (entity instanceof Mob mob && mob.getTarget() != null) {
+                LivingEntity target = mob.getTarget();
+                if (mob.getMobType() == MobType.ARTHROPOD && target.hasEffect(AMEffectRegistry.BUG_PHEROMONES) && mob.getLastHurtByMob() != target) {
+                    mob.setTarget(null);
+                }
+                if (mob.getMobType() == MobType.UNDEAD && !mob.getType().is(AMTagRegistry.IGNORES_KIMONO) && target.getItemBySlot(EquipmentSlot.CHEST).is(AMItemRegistry.UNSETTLING_KIMONO) && mob.getLastHurtByMob() != target) {
+                    mob.setTarget(null);
+                }
+            }
+            if (entity.hasEffect(AMEffectRegistry.DEBILITATING_STING) && entity.getEffect(AMEffectRegistry.DEBILITATING_STING) != null && entity.getEffect(AMEffectRegistry.DEBILITATING_STING).getAmplifier() > 0 && entity instanceof Mob mob) {
+                mob.setPersistenceRequired();
+            }
         }
         if (entity instanceof Player player) {
             if (player.getEyeHeight() < player.getBbHeight() * 0.5D) {
@@ -531,7 +561,7 @@ public class ServerEvents {
                     }
                 }
             }
-            if (player.getItemBySlot(EquipmentSlot.HEAD).getItem() == AMItemRegistry.SPIKED_TURTLE_SHELL && !player.isEyeInFluid(FluidTags.WATER)) {
+            if (server && player.getItemBySlot(EquipmentSlot.HEAD).getItem() == AMItemRegistry.SPIKED_TURTLE_SHELL && !player.isEyeInFluid(FluidTags.WATER)) {
                 player.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 310, 0, false, false, true));
             }
         }
@@ -548,19 +578,19 @@ public class ServerEvents {
                 entity.setDeltaMovement(entity.getDeltaMovement().add(0, 0.1F, 0));
             }
         }
-        if (entity.getItemBySlot(EquipmentSlot.LEGS).getItem() == AMItemRegistry.CENTIPEDE_LEGGINGS) {
+        if (entity.getItemBySlot(EquipmentSlot.LEGS).is(AMItemRegistry.CENTIPEDE_LEGGINGS)) {
             if (entity.horizontalCollision && !entity.isInWater()) {
                 entity.fallDistance = 0.0F;
                 Vec3 motion = entity.getDeltaMovement();
                 double d2 = 0.1D;
-                if (entity.isShiftKeyDown() || !entity.getFeetBlockState().is(Blocks.SCAFFOLDING) && entity.isSuppressingSlidingDownLadder()) {
+                if (entity.isShiftKeyDown() || entity.isSuppressingSlidingDownLadder()) {
                     d2 = 0.0D;
                 }
                 motion = new Vec3(Mth.clamp(motion.x, -0.15F, 0.15F), d2, Mth.clamp(motion.z, -0.15F, 0.15F));
                 entity.setDeltaMovement(motion);
             }
         }
-        if (entity.getItemBySlot(EquipmentSlot.HEAD).getItem() == AMItemRegistry.SOMBRERO && !entity.level().isClientSide && AlexsMobs.isAprilFools() && entity.isInWaterOrBubble()) {
+        if (server && entity.getItemBySlot(EquipmentSlot.HEAD).is(AMItemRegistry.SOMBRERO) && AlexsMobs.isAprilFools() && entity.isInWaterOrBubble()) {
             RandomSource random = entity.getRandom();
             if (random.nextInt(245) == 0 && !EntitySeaBear.isMobSafe(entity)) {
                 final int dist = 32;
@@ -602,6 +632,11 @@ public class ServerEvents {
     }
 
     private static void onPlayerLoggedIn(ServerPlayer player) {
+        if (player.level() instanceof ServerLevel serverLevel) {
+            for (EntityKangaroo kangaroo : serverLevel.getEntitiesOfClass(EntityKangaroo.class, player.getBoundingBox().inflate(128))) {
+                kangaroo.syncInventoryToPlayer(player);
+            }
+        }
         if (AMConfig.giveBookOnStartup && player.level() instanceof ServerLevel serverLevel) {
             if (!AMGiftedBookData.get(serverLevel).claimFirstTimeGift(player.getUUID())) {
                 return;

@@ -1,6 +1,7 @@
 package com.github.alexthe666.alexsmobs.effect;
 
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
+import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionUtils;
@@ -50,6 +51,61 @@ public class ProperBrewingRecipe {
 
     public ItemStack getOutput(ItemStack inputStack, ItemStack ingredientStack) {
         return output.copy();
+    }
+
+    public Ingredient getInput() {
+        return input;
+    }
+
+    public Ingredient getIngredient() {
+        return ingredient;
+    }
+
+    public ItemStack getOutputTemplate() {
+        return output.copy();
+    }
+
+    public static boolean isValidInput(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        for (ProperBrewingRecipe recipe : CUSTOM_RECIPES) {
+            if (recipe.isInput(stack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isValidIngredient(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        for (ProperBrewingRecipe recipe : CUSTOM_RECIPES) {
+            if (recipe.isIngredient(stack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean canBrew(NonNullList<ItemStack> items) {
+        ItemStack ingredient = items.get(3);
+        if (ingredient.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < 3; i++) {
+            ItemStack input = items.get(i);
+            if (input.isEmpty()) {
+                continue;
+            }
+            for (ProperBrewingRecipe recipe : CUSTOM_RECIPES) {
+                if (recipe.isInput(input) && recipe.isIngredient(ingredient)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** Recipes that need custom handling (item input or item output). Applied by mixin. */

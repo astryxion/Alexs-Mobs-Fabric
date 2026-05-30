@@ -2,6 +2,7 @@ package com.github.alexthe666.alexsmobs.mixin;
 
 import com.github.alexthe666.alexsmobs.world.StructureSettingsExtension;
 import net.minecraft.util.random.WeightedRandomList;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -10,9 +11,7 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.Unique;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,13 +24,31 @@ public class StructureSettingsMixin implements StructureSettingsExtension {
     @Mutable
     @Shadow @Final private Map<MobCategory, StructureSpawnOverride> spawnOverrides;
 
-    @Inject(method = "<init>", at = @At("RETURN"))
-    private void alexsmobs$makeSpawnOverridesMutable(CallbackInfo ci) {
-        this.spawnOverrides = new HashMap<>(this.spawnOverrides);
+    /** Registry-loaded settings keep an immutable map; copy before first mutation. */
+    @Unique
+    private void alexsmobs$ensureMutableSpawnOverrides() {
+        if (!(this.spawnOverrides instanceof HashMap)) {
+            this.spawnOverrides = new HashMap<>(this.spawnOverrides);
+        }
+    }
+
+    @Override
+    public boolean alexsmobs$hasSpawn(MobCategory category, EntityType<?> type) {
+        StructureSpawnOverride current = spawnOverrides.get(category);
+        if (current == null) {
+            return false;
+        }
+        for (MobSpawnSettings.SpawnerData spawn : current.spawns().unwrap()) {
+            if (spawn.type == type) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
     public void alexsmobs$addSpawn(MobCategory category, MobSpawnSettings.SpawnerData data) {
+        alexsmobs$ensureMutableSpawnOverrides();
         StructureSpawnOverride current = spawnOverrides.get(category);
         List<MobSpawnSettings.SpawnerData> spawns = new ArrayList<>();
         if (current != null) {

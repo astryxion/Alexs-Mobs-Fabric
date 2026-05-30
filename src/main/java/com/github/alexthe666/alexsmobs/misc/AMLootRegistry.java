@@ -36,18 +36,9 @@ public class AMLootRegistry {
     public static LootItemConditionType ANCIENT_DART_CONDITION_TYPE;
     public static LootItemConditionType PIGSHOES_CONDITION_TYPE;
 
-    /** Loot table IDs for leaf blocks (banana drop). 1:1 with Forge modifier targeting leaves. */
-    private static final Set<ResourceLocation> LEAVES_LOOT_TABLES = new HashSet<>(Arrays.asList(
-            new ResourceLocation("minecraft", "blocks/oak_leaves"),
-            new ResourceLocation("minecraft", "blocks/jungle_leaves"),
-            new ResourceLocation("minecraft", "blocks/birch_leaves"),
-            new ResourceLocation("minecraft", "blocks/spruce_leaves"),
-            new ResourceLocation("minecraft", "blocks/acacia_leaves"),
-            new ResourceLocation("minecraft", "blocks/dark_oak_leaves"),
-            new ResourceLocation("minecraft", "blocks/mangrove_leaves"),
-            new ResourceLocation("minecraft", "blocks/cherry_leaves"),
-            new ResourceLocation("minecraft", "blocks/azalea_leaves"),
-            new ResourceLocation("minecraft", "blocks/flowering_azalea_leaves")
+    /** Loot table IDs for leaf blocks (banana drop). Mirrors data/alexsmobs/loot_modifiers/banana_drop.json. */
+    private static final Set<ResourceLocation> BANANA_LOOT_TABLES = new HashSet<>(Arrays.asList(
+            new ResourceLocation("minecraft", "blocks/jungle_leaves")
     ));
 
     /** Loot table IDs for acacia leaves only (blossom drop). */
@@ -55,43 +46,15 @@ public class AMLootRegistry {
             new ResourceLocation("minecraft", "blocks/acacia_leaves")
     ));
 
-    /** Loot table IDs for chests (ancient dart and pigshoes). 1:1 with Forge modifier targeting chests. */
-    private static final Set<ResourceLocation> CHEST_LOOT_TABLES = new HashSet<>(Arrays.asList(
-            new ResourceLocation("minecraft", "chests/abandoned_mineshaft"),
-            new ResourceLocation("minecraft", "chests/buried_treasure"),
-            new ResourceLocation("minecraft", "chests/desert_pyramid"),
-            new ResourceLocation("minecraft", "chests/end_city_treasure"),
+    /** Loot table IDs for ancient dart. Mirrors data/alexsmobs/loot_modifiers/ancient_dart.json. */
+    private static final Set<ResourceLocation> ANCIENT_DART_LOOT_TABLES = new HashSet<>(Arrays.asList(
             new ResourceLocation("minecraft", "chests/jungle_temple"),
-            new ResourceLocation("minecraft", "chests/nether_bridge"),
-            new ResourceLocation("minecraft", "chests/shipwreck_supply"),
-            new ResourceLocation("minecraft", "chests/shipwreck_treasure"),
-            new ResourceLocation("minecraft", "chests/simple_dungeon"),
-            new ResourceLocation("minecraft", "chests/stronghold_corridor"),
-            new ResourceLocation("minecraft", "chests/stronghold_crossing"),
-            new ResourceLocation("minecraft", "chests/stronghold_library"),
-            new ResourceLocation("minecraft", "chests/underwater_ruin_small"),
-            new ResourceLocation("minecraft", "chests/underwater_ruin_big"),
-            new ResourceLocation("minecraft", "chests/woodland_mansion"),
-            new ResourceLocation("minecraft", "chests/village/village_weaponsmith"),
-            new ResourceLocation("minecraft", "chests/village/village_toolsmith"),
-            new ResourceLocation("minecraft", "chests/village/village_armorer"),
-            new ResourceLocation("minecraft", "chests/village/village_cartographer"),
-            new ResourceLocation("minecraft", "chests/village/village_mason"),
-            new ResourceLocation("minecraft", "chests/village/village_shepherd"),
-            new ResourceLocation("minecraft", "chests/village/village_butcher"),
-            new ResourceLocation("minecraft", "chests/village/village_fisher"),
-            new ResourceLocation("minecraft", "chests/village/village_fletcher"),
-            new ResourceLocation("minecraft", "chests/village/village_desert_house"),
-            new ResourceLocation("minecraft", "chests/village/village_plains_house"),
-            new ResourceLocation("minecraft", "chests/village/village_savanna_house"),
-            new ResourceLocation("minecraft", "chests/village/village_snowy_house"),
-            new ResourceLocation("minecraft", "chests/village/village_taiga_house"),
-            new ResourceLocation("minecraft", "chests/pillager_outpost"),
-            new ResourceLocation("minecraft", "chests/bastion_treasure"),
-            new ResourceLocation("minecraft", "chests/bastion_other"),
-            new ResourceLocation("minecraft", "chests/bastion_bridge"),
-            new ResourceLocation("minecraft", "chests/bastion_hoglin_stable"),
-            new ResourceLocation("minecraft", "chests/ruined_portal")
+            new ResourceLocation("minecraft", "chests/jungle_temple_dispenser")
+    ));
+
+    /** Loot table IDs for pigshoes. Mirrors data/alexsmobs/loot_modifiers/pigshoes.json. */
+    private static final Set<ResourceLocation> PIGSHOES_LOOT_TABLES = new HashSet<>(Arrays.asList(
+            new ResourceLocation("minecraft", "gameplay/piglin_bartering")
     ));
 
     /** Custom conditions that delegate to modifier shouldAdd(); types set in init(). */
@@ -164,7 +127,7 @@ public class AMLootRegistry {
             if (!source.isBuiltin()) return;
             ResourceLocation tableId = id;
 
-            if (LEAVES_LOOT_TABLES.contains(tableId)) {
+            if (BANANA_LOOT_TABLES.contains(tableId)) {
                 tableBuilder.pool(LootPool.lootPool()
                         .when(BananaCondition::new)
                         .add(LootItem.lootTableItem(AMItemRegistry.BANANA))
@@ -176,11 +139,13 @@ public class AMLootRegistry {
                         .add(LootItem.lootTableItem(AMItemRegistry.ACACIA_BLOSSOM))
                         .build());
             }
-            if (CHEST_LOOT_TABLES.contains(tableId)) {
+            if (ANCIENT_DART_LOOT_TABLES.contains(tableId)) {
                 tableBuilder.pool(LootPool.lootPool()
                         .when(AncientDartCondition::new)
                         .add(LootItem.lootTableItem(AMItemRegistry.ANCIENT_DART))
                         .build());
+            }
+            if (PIGSHOES_LOOT_TABLES.contains(tableId)) {
                 tableBuilder.pool(LootPool.lootPool()
                         .when(PigshoesCondition::new)
                         .add(LootItem.lootTableItem(AMItemRegistry.PIGSHOES))

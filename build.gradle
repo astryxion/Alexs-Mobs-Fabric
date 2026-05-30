@@ -41,6 +41,7 @@ dependencies {
 
 	// JEI (optional, client-only compat)
 	modCompileOnlyApi("mezz.jei:jei-1.20.1-fabric-api:15.2.0.27")
+	modLocalRuntime("mezz.jei:jei-1.20.1-fabric:15.2.0.27")
 
 	// javax.annotation (Nullable, etc.) for migration compatibility
 	compileOnly "com.google.code.findbugs:jsr305:3.0.2"

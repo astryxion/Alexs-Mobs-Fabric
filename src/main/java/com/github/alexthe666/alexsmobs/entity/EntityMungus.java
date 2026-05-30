@@ -8,6 +8,7 @@ import com.github.alexthe666.alexsmobs.entity.ai.MungusAIAlertBunfungus;
 import com.github.alexthe666.alexsmobs.entity.ai.MungusAITemptMushroom;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.message.MessageMungusBiomeChange;
+import com.github.alexthe666.alexsmobs.misc.AMChunkBiomeUtil;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
@@ -289,9 +290,12 @@ public class EntityMungus extends Animal implements ITargetsDroppedItems, Sheara
         ResourceLocation blockRegName = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         if (blockRegName != null && MUSHROOM_TO_BIOME.containsKey(blockRegName.toString())) {
             String str = MUSHROOM_TO_BIOME.get(blockRegName.toString());
-            Biome biome = registry.getOptional(new ResourceLocation(str)).orElse(null);
+            Biome biome = registry.get(new ResourceLocation(str));
+            if (biome == null) {
+                return null;
+            }
             ResourceKey<Biome> resourceKey = registry.getResourceKey(biome).orElse(null);
-            return registry.getHolder(resourceKey).orElse(null);
+            return resourceKey == null ? null : registry.getHolder(resourceKey).orElse(null);
         }
         return null;
     }
@@ -316,20 +320,17 @@ public class EntityMungus extends Animal implements ITargetsDroppedItems, Sheara
         }
     }
 
-    /** Fabric: LevelChunkSection.biomes is not public in 1.20.1; use reflection to preserve 1:1 behavior. */
-    private static void setSectionBiomes(LevelChunkSection section, PalettedContainer<Holder<Biome>> container) {
-        try {
-            java.lang.reflect.Field f = LevelChunkSection.class.getDeclaredField("biomes");
-            f.setAccessible(true);
-            f.set(section, container);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set chunk section biomes", e);
-        }
+    private void setSectionBiomes(LevelChunkSection section, PalettedContainer<Holder<Biome>> container) {
+        AMChunkBiomeUtil.setSectionBiomes(section, container);
     }
 
     private void transformBiome(BlockPos pos, Holder<Biome> biome) {
         LevelChunk chunk = level().getChunkAt(pos);
-        PalettedContainer<Holder<Biome>> container = getChunkBiomes(chunk).recreate();
+        PalettedContainerRO<Holder<Biome>> existing = getChunkBiomes(chunk);
+        if (existing == null) {
+            return;
+        }
+        PalettedContainer<Holder<Biome>> container = existing.recreate();
         if (this.entityData.get(REVERTING)) {
             int lvt_4_1_ = chunk.getPos().getMinBlockX() >> 2;
             int yChunk = (int)this.getY() >> 2;

@@ -822,6 +822,9 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
                     if (stack.getItem() instanceof ArmorItem ai && ai.getEquipmentSlot() == EquipmentSlot.HEAD && !this.isBaby() && helmetIndex == -1) {
                         helmetIndex = i;
                     }
+                    if (stack.getItem() instanceof ArmorItem ai && ai.getEquipmentSlot() == EquipmentSlot.CHEST && !this.isBaby() && chestplateIndex == -1) {
+                        chestplateIndex = i;
+                    }
                     if (stack.getItem() instanceof ArmorItem && !this.isBaby()) {
                         ArmorItem armorItem = (ArmorItem) stack.getItem();
                         if (armorItem.getEquipmentSlot() == EquipmentSlot.HEAD) {
@@ -845,6 +848,18 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
             this.entityData.set(CHEST_INDEX, chestplateIndex);
             this.entityData.set(HELMET_INDEX, helmetIndex);
             updateClientInventory();
+        }
+    }
+
+    public void syncInventoryToClients() {
+        updateClientInventory();
+    }
+
+    public void syncInventoryToPlayer(ServerPlayer player) {
+        if (!this.level().isClientSide) {
+            for (int i = 0; i < 9; i++) {
+                AlexsMobs.sendNonLocal(new MessageKangarooInventorySync(this.getId(), i, kangarooInventory.getItem(i)), player);
+            }
         }
     }
 
@@ -899,6 +914,9 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
     }
 
     private ItemStack getArmorInSlot(EquipmentSlot slot) {
+        if (kangarooInventory == null) {
+            return ItemStack.EMPTY;
+        }
         int helmIndex = entityData.get(HELMET_INDEX);
         int chestIndex = entityData.get(CHEST_INDEX);
         return slot == EquipmentSlot.HEAD && helmIndex >= 0 ? kangarooInventory.getItem(helmIndex) : slot == EquipmentSlot.CHEST && chestIndex >= 0 ? kangarooInventory.getItem(chestIndex) : ItemStack.EMPTY;

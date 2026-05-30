@@ -1,8 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity.util;
 
-import com.github.alexthe666.citadel.Citadel;
+import com.github.alexthe666.alexsmobs.AlexsMobs;
+import com.github.alexthe666.alexsmobs.message.MessageSyncEntityData;
 import com.github.alexthe666.citadel.server.entity.CitadelEntityData;
-import com.github.alexthe666.citadel.server.message.PropertiesMessage;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -27,51 +27,51 @@ public class VineLassoUtil {
             lassoedTag.putInt(LASSOED_TO_ENTITY_ID_TAG, -1);
             lassoedTag.putBoolean(LASSO_REMOVED, true);
         } else {
-            if (!lassoedTag.contains(LASSOED_TO_ENTITY_ID_TAG) || lassoedTag.getInt(LASSOED_TO_ENTITY_ID_TAG) == -1) {
-                lassoedTag.putUUID(LASSOED_TO_TAG, lassoer.getUUID());
-                lassoedTag.putInt(LASSOED_TO_ENTITY_ID_TAG, lassoer.getId());
-                lassoedTag.putBoolean(LASSO_REMOVED, false);
-            }
+            lassoedTag.putUUID(LASSOED_TO_TAG, lassoer.getUUID());
+            lassoedTag.putInt(LASSOED_TO_ENTITY_ID_TAG, lassoer.getId());
+            lassoedTag.putBoolean(LASSO_REMOVED, false);
         }
         lassoedTag.putBoolean(LASSO_PACKET, true);
         CitadelEntityData.setCitadelTag(lassoed, lassoedTag);
-        if(!lassoed.level().isClientSide){
-            Citadel.sendMSGToAll(new PropertiesMessage("CitadelPatreonConfig", lassoedTag, lassoed.getId()));
+        if (!lassoed.level().isClientSide) {
+            AlexsMobs.sendMSGToAll(new MessageSyncEntityData(lassoed.getId(), lassoedTag));
         }
     }
 
     public static boolean hasLassoData(LivingEntity lasso) {
         CompoundTag lassoedTag = CitadelEntityData.getOrCreateCitadelTag(lasso);
-        return lassoedTag.contains(LASSOED_TO_ENTITY_ID_TAG) && !lassoedTag.getBoolean(LASSO_REMOVED) && lassoedTag.getInt(LASSOED_TO_ENTITY_ID_TAG) != -1;
+        if (lassoedTag.getBoolean(LASSO_REMOVED)) {
+            return false;
+        }
+        boolean hasEntityId = lassoedTag.contains(LASSOED_TO_ENTITY_ID_TAG) && lassoedTag.getInt(LASSOED_TO_ENTITY_ID_TAG) != -1;
+        boolean hasUuid = lassoedTag.hasUUID(LASSOED_TO_TAG);
+        return hasEntityId || hasUuid;
     }
 
     public static Entity getLassoedTo(LivingEntity lassoed) {
         CompoundTag lassoedTag = CitadelEntityData.getOrCreateCitadelTag(lassoed);
-        if(lassoedTag.getBoolean(LASSO_REMOVED)){
+        if (lassoedTag.getBoolean(LASSO_REMOVED)) {
             return null;
         }
         if (hasLassoData(lassoed)) {
-            if (lassoed.level().isClientSide && lassoedTag.contains(LASSOED_TO_ENTITY_ID_TAG)) {
-                int i = lassoedTag.getInt(LASSOED_TO_ENTITY_ID_TAG);
-                if (i != -1) {
-                    Entity found = lassoed.level().getEntity(i);
-                    if (found != null) {
-                        return found;
-                    } else {
-                        UUID uuid = lassoedTag.getUUID(LASSOED_TO_TAG);
-                        if (uuid != null) {
-                            return lassoed.level().getPlayerByUUID(uuid);
-                        }
-                    }
+            int entityId = lassoedTag.contains(LASSOED_TO_ENTITY_ID_TAG) ? lassoedTag.getInt(LASSOED_TO_ENTITY_ID_TAG) : -1;
+            if (entityId != -1) {
+                Entity found = lassoed.level().getEntity(entityId);
+                if (found != null) {
+                    return found;
                 }
-            } else if (lassoed.level() instanceof ServerLevel) {
-                UUID uuid = lassoedTag.getUUID(LASSOED_TO_TAG);
-                if (uuid != null) {
-                    Entity found = ((ServerLevel) lassoed.level()).getEntity(uuid);
+            }
+            UUID uuid = lassoedTag.hasUUID(LASSOED_TO_TAG) ? lassoedTag.getUUID(LASSOED_TO_TAG) : null;
+            if (uuid != null) {
+                if (lassoed.level() instanceof ServerLevel serverLevel) {
+                    Entity found = serverLevel.getEntity(uuid);
                     if (found != null) {
                         lassoedTag.putInt(LASSOED_TO_ENTITY_ID_TAG, found.getId());
                         return found;
                     }
+                }
+                if (lassoed.level().isClientSide) {
+                    return lassoed.level().getPlayerByUUID(uuid);
                 }
             }
         }
@@ -84,15 +84,14 @@ public class VineLassoUtil {
             if (tag.contains(LASSO_PACKET) || tag.getBoolean(LASSO_REMOVED)) {
                 tag.putBoolean(LASSO_PACKET, false);
                 CitadelEntityData.setCitadelTag(lassoed, tag);
-                Citadel.sendMSGToAll(new PropertiesMessage("CitadelPatreonConfig", tag, lassoed.getId()));
+                AlexsMobs.sendMSGToAll(new MessageSyncEntityData(lassoed.getId(), tag));
             }
         }
         Entity lassoedOwner = VineLassoUtil.getLassoedTo(lassoed);
         if (lassoedOwner != null) {
             double distance = lassoed.distanceTo(lassoedOwner);
 
-            if (lassoed instanceof Mob) {
-                Mob mob = (Mob) lassoed;
+            if (lassoed instanceof Mob mob) {
                 if (distance > 3.0F) {
                     mob.getNavigation().moveTo(lassoedOwner, 1.0F);
                 } else {
@@ -100,11 +99,11 @@ public class VineLassoUtil {
                 }
             }
             if (distance > 10) {
-                double d0 = (lassoedOwner.getX() - lassoed.getX()) / (double)distance;
-                double d1 = (lassoedOwner.getY() - lassoed.getY()) / (double)distance;
-                double d2 = (lassoedOwner.getZ() - lassoed.getZ()) / (double)distance;
+                double d0 = (lassoedOwner.getX() - lassoed.getX()) / distance;
+                double d1 = (lassoedOwner.getY() - lassoed.getY()) / distance;
+                double d2 = (lassoedOwner.getZ() - lassoed.getZ()) / distance;
                 double yd = Math.copySign(d1 * d1 * 0.4D, d1);
-                if(lassoed instanceof Player){
+                if (lassoed instanceof Player) {
                     yd = 0;
                 }
                 lassoed.setDeltaMovement(lassoed.getDeltaMovement().add(Math.copySign(d0 * d0 * 0.4D, d0), yd, Math.copySign(d2 * d2 * 0.4D, d2)));

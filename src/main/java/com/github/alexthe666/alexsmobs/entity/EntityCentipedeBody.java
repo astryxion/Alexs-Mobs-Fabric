@@ -1,6 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
+import com.github.alexthe666.alexsmobs.entity.util.MultipartEntityUtil;
 import com.github.alexthe666.alexsmobs.message.MessageHurtMultipart;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import net.minecraft.core.BlockPos;
@@ -75,11 +76,7 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
             refreshDimensions();
             if (parent != null && !this.level().isClientSide) {
                 if (parent instanceof final LivingEntity parentEntity) {
-                    if ((parentEntity.hurtTime > 0 || parentEntity.deathTime > 0)) {
-                        AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), 0));
-                        this.hurtTime = parentEntity.hurtTime;
-                        this.deathTime = parentEntity.deathTime;
-                    }
+                    MultipartEntityUtil.syncHurtTimesFromParent(this, parentEntity);
                 }
                 if (parent.isRemoved()) {
                     this.remove(RemovalReason.DISCARDED);

@@ -281,7 +281,8 @@ public class CommonConfig {
         acaciaBlossomsDropFromLeaves = true;
         acaciaBlossomChance = 130;
         wanderingTraderOffers = true;
-        mungusBiomeTransformationType = 2;
+        // 0 = off, 1 = blocks only, 2 = blocks + chunk biome rewrite (uses packets; conflicts with Biome Replacer)
+        mungusBiomeTransformationType = 1;
         mungusBiomeMatches = Lists.newArrayList(
             "minecraft:red_mushroom|minecraft:mushroom_fields|minecraft:mycelium",
             "minecraft:brown_mushroom|minecraft:mushroom_fields|minecraft:mycelium",

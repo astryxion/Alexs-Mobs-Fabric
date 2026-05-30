@@ -218,7 +218,7 @@ public class AMEntityRegistry {
         TIGER = register("tiger", EntityType.Builder.of(EntityTiger::new, MobCategory.CREATURE).sized(1.45F, 1.2F).clientTrackingRange(10));
         TARANTULA_HAWK = register("tarantula_hawk", EntityType.Builder.of(EntityTarantulaHawk::new, MobCategory.CREATURE).sized(1.2F, 0.9F).clientTrackingRange(10));
         VOID_WORM = register("void_worm", EntityType.Builder.of(EntityVoidWorm::new, MobCategory.MONSTER).sized(3.4F, 3F).fireImmune().clientTrackingRange(20).updateInterval(1));
-        VOID_WORM_PART = register("void_worm_part", EntityType.Builder.<EntityVoidWormPart>of(EntityVoidWormPart::new, MobCategory.MONSTER).sized(1.2F, 1.35F).fireImmune().clientTrackingRange(20).updateInterval(1));
+        VOID_WORM_PART = register("void_worm_part", EntityType.Builder.<EntityVoidWormPart>of(EntityVoidWormPart::new, MobCategory.MONSTER).sized(1.2F, 1.35F).fireImmune().clientTrackingRange(20).updateInterval(2));
         VOID_WORM_SHOT = register("void_worm_shot", EntityType.Builder.<EntityVoidWormShot>of(EntityVoidWormShot::new, MobCategory.MISC).sized(0.5F, 0.5F).fireImmune());
         VOID_PORTAL = register("void_portal", EntityType.Builder.<EntityVoidPortal>of(EntityVoidPortal::new, MobCategory.MISC).sized(0.5F, 0.5F).fireImmune());
         FRILLED_SHARK = register("frilled_shark", EntityType.Builder.of(EntityFrilledShark::new, MobCategory.WATER_CREATURE).sized(1.3F, 0.4F).clientTrackingRange(8));
@@ -232,7 +232,7 @@ public class AMEntityRegistry {
         TOUCAN = register("toucan", EntityType.Builder.of(EntityToucan::new, MobCategory.CREATURE).sized(0.45F, 0.45F).clientTrackingRange(10));
         MANED_WOLF = register("maned_wolf", EntityType.Builder.of(EntityManedWolf::new, MobCategory.CREATURE).sized(0.9F, 1.26F).clientTrackingRange(10));
         ANACONDA = register("anaconda", EntityType.Builder.of(EntityAnaconda::new, MobCategory.CREATURE).sized(0.8F, 0.8F).clientTrackingRange(10));
-        ANACONDA_PART = register("anaconda_part", EntityType.Builder.<EntityAnacondaPart>of(EntityAnacondaPart::new, MobCategory.MISC).sized(0.8F, 0.8F).updateInterval(1).clientTrackingRange(10));
+        ANACONDA_PART = register("anaconda_part", EntityType.Builder.<EntityAnacondaPart>of(EntityAnacondaPart::new, MobCategory.MISC).sized(0.8F, 0.8F).updateInterval(2).clientTrackingRange(10));
         VINE_LASSO = register("vine_lasso", EntityType.Builder.<EntityVineLasso>of(EntityVineLasso::new, MobCategory.MISC).sized(0.85F, 0.2F).fireImmune());
         ANTEATER = register("anteater", EntityType.Builder.of(EntityAnteater::new, MobCategory.CREATURE).sized(1.3F, 1.1F).clientTrackingRange(10));
         ROCKY_ROLLER = register("rocky_roller", EntityType.Builder.of(EntityRockyRoller::new, MobCategory.MONSTER).sized(1.2F, 1.45F).clientTrackingRange(8));

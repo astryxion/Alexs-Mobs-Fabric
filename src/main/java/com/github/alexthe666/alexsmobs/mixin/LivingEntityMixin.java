@@ -8,18 +8,13 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Fabric: Invoke Alex's Mobs living-entity tick logic per entity when it ticks (server-only).
- * Replaces the previous full-world getEntitiesOfClass(LivingEntity.class, WORLD_BORDER_AABB) scan
- * every tick, which was O(world) and destroyed TPS.
+ * Fabric: per-entity armor tick logic (both sides; server-only work is guarded inside ServerEvents).
  */
 @Mixin(LivingEntity.class)
 public class LivingEntityMixin {
 
     @Inject(method = "tick", at = @At("TAIL"))
     private void alexsmobs$onLivingTick(CallbackInfo ci) {
-        LivingEntity self = (LivingEntity) (Object) this;
-        if (!self.level().isClientSide) {
-            ServerEvents.onLivingEntityTick(self);
-        }
+        ServerEvents.onLivingEntityTick((LivingEntity) (Object) this);
     }
 }

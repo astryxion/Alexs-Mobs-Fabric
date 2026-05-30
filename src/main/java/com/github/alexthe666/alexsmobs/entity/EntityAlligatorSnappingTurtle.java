@@ -5,6 +5,7 @@ import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
+import com.github.alexthe666.alexsmobs.entity.util.LivingEntityUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -212,7 +213,7 @@ public class EntityAlligatorSnappingTurtle extends Animal implements ISemiAquati
                     chaseTime = -50;
                     this.setTarget(null);
                     this.setLastHurtByMob(null);
-                    this.setLastHurtMob(null);
+                    LivingEntityUtil.clearLastHurtMob(this);
                     this.lastHurtByPlayer = null;
                 }
             } else {

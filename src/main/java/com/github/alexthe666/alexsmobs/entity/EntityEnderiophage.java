@@ -8,6 +8,7 @@ import com.github.alexthe666.alexsmobs.entity.ai.DirectPathNavigator;
 import com.github.alexthe666.alexsmobs.entity.ai.EntityAINearestTarget3D;
 import com.github.alexthe666.alexsmobs.entity.ai.FlightMoveController;
 import com.github.alexthe666.alexsmobs.entity.ai.GroundPathNavigatorWide;
+import com.github.alexthe666.alexsmobs.entity.util.LivingEntityUtil;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.alexsmobs.message.MessageMosquitoDismount;
 import com.github.alexthe666.alexsmobs.message.MessageMosquitoMountPlayer;
@@ -270,7 +271,7 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
                                     }
                                     if (!this.level().isClientSide) {
                                         this.setTarget(null);
-                                        this.setLastHurtMob(null);
+                                        LivingEntityUtil.clearLastHurtMob(this);
                                         this.setLastHurtByMob(null);
                                         this.goalSelector.getRunningGoals().forEach(Goal::stop);
                                         this.targetSelector.getRunningGoals().forEach(Goal::stop);

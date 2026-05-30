@@ -210,7 +210,7 @@ public class AMConfig {
     public static boolean limitElephantTraderBiomes = true;
     public static boolean wanderingTraderOffers = true;
     public static boolean soulVultureSpawnOnFossil = true;
-    public static int mungusBiomeTransformationType = 2;
+    public static int mungusBiomeTransformationType = 1;
     public static List<? extends String> mungusBiomeMatches = Lists.newArrayList(
             "minecraft:red_mushroom|minecraft:mushroom_fields|minecraft:mycelium",
             "minecraft:brown_mushroom|minecraft:mushroom_fields|minecraft:mycelium",

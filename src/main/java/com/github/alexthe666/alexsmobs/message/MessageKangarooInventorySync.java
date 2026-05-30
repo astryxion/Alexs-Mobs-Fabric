@@ -6,6 +6,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+
 import java.util.function.Supplier;
 
 public class MessageKangarooInventorySync {
@@ -40,21 +42,19 @@ public class MessageKangarooInventorySync {
         public static void handle(MessageKangarooInventorySync message, Supplier<AlexsMobs.PacketContext> context) {
             context.get().setPacketHandled(true);
             context.get().enqueueWork(() -> {
+                Level level = null;
                 Player player = context.get().getSender();
                 if (context.get().isClient()) {
                     player = AlexsMobs.PROXY.getClientSidePlayer();
                 }
-
                 if (player != null) {
-                    if (player.level() != null) {
-                        Entity entity = player.level().getEntity(message.kangaroo);
-                        if (entity instanceof EntityKangaroo && ((EntityKangaroo) entity).kangarooInventory != null) {
-                            if (message.slotId < 0) {
+                    level = player.level();
+                }
 
-                            } else {
-                                ((EntityKangaroo) entity).kangarooInventory.setItem(message.slotId, message.stack);
-                            }
-                        }
+                if (level != null) {
+                    Entity entity = level.getEntity(message.kangaroo);
+                    if (entity instanceof EntityKangaroo kangaroo && kangaroo.kangarooInventory != null && message.slotId >= 0) {
+                        kangaroo.kangarooInventory.setItem(message.slotId, message.stack);
                     }
                 }
             });

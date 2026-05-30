@@ -18,10 +18,13 @@ public class ModelEmuLeggings extends HumanoidModel {
 
     public static LayerDefinition createArmorLayer(CubeDeformation deformation) {
         MeshDefinition meshdefinition = HumanoidModel.createMesh(new CubeDeformation(0.2F), 0.0F);
-        PartDefinition partdefinition = meshdefinition.getRoot();
-        PartDefinition body = partdefinition.getChild("body");
-        PartDefinition leftLeg = partdefinition.getChild("left_leg");
-        PartDefinition rightLeg = partdefinition.getChild("right_leg");
+        PartDefinition root = meshdefinition.getRoot();
+        root.addOrReplaceChild("body", CubeListBuilder.create(), PartPose.ZERO);
+        root.addOrReplaceChild("left_leg", CubeListBuilder.create(), PartPose.offset(1.9F, 12.0F, 0.0F));
+        root.addOrReplaceChild("right_leg", CubeListBuilder.create(), PartPose.offset(-1.9F, 12.0F, 0.0F));
+        PartDefinition body = root.getChild("body");
+        PartDefinition leftLeg = root.getChild("left_leg");
+        PartDefinition rightLeg = root.getChild("right_leg");
 
         body.addOrReplaceChild("emu_waist",
             CubeListBuilder.create().texOffs(0, 0).addBox(-4.0F, 11.0F, -2.0F, 8.0F, 3.0F, 4.0F, new CubeDeformation(0.5F)),

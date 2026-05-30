@@ -57,7 +57,7 @@ public class AMWorldData extends SavedData {
                     data.level =  overworld;
                     data.setDirty();
                 }
-                dataMap.put(world, data);
+                dataMap.put(overworld, data);
                 return data;
             }
             return fromMap;
@@ -162,17 +162,25 @@ public class AMWorldData extends SavedData {
     }
 
     private void searchForPupfishChunk() {
-        if (level != null && level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator chunkGenerator) {
-            Random random = new Random(level.getSeed() + pupfishSeedAddition);
-            int randomXCoord = random.nextInt(AMConfig.pupfishChunkSpawnDistance * 2) - AMConfig.pupfishChunkSpawnDistance;
-            int randomZCoord = random.nextInt(AMConfig.pupfishChunkSpawnDistance * 2) - AMConfig.pupfishChunkSpawnDistance;
-            ChunkPos checkPos = new ChunkPos(randomXCoord >> 4, randomZCoord >> 4);
-            BlockPos center = new BlockPos(checkPos.getMiddleBlockX(), chunkGenerator.getSeaLevel(), checkPos.getMiddleBlockZ());
-            int maxWater = getWaterHeight(chunkGenerator, level.getChunkSource().randomState(), center.getX(), center.getZ(), level);
-            if(maxWater > 31 && maxWater < 63){
-                pupfishChunk = checkPos;
-                AlexsMobs.LOGGER.info("Found Pupfish chunk at " + pupfishChunk.getMaxBlockX() + " ~ " + pupfishChunk.getMinBlockZ() + " after " + pupfishSeedAddition + " tries");
+        if (level == null) {
+            return;
+        }
+        if (!(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator chunkGenerator)) {
+            if (!noPupfishChunk) {
+                AlexsMobs.LOGGER.warn("Alex's Mobs: cannot search for Devil's Hole Pupfish chunk — world generator is not noise-based. Disabling pupfish chunk restriction.");
+                noPupfishChunk = true;
             }
+            return;
+        }
+        Random random = new Random(level.getSeed() + pupfishSeedAddition);
+        int randomXCoord = random.nextInt(AMConfig.pupfishChunkSpawnDistance * 2) - AMConfig.pupfishChunkSpawnDistance;
+        int randomZCoord = random.nextInt(AMConfig.pupfishChunkSpawnDistance * 2) - AMConfig.pupfishChunkSpawnDistance;
+        ChunkPos checkPos = new ChunkPos(randomXCoord >> 4, randomZCoord >> 4);
+        BlockPos center = new BlockPos(checkPos.getMiddleBlockX(), chunkGenerator.getSeaLevel(), checkPos.getMiddleBlockZ());
+        int maxWater = getWaterHeight(chunkGenerator, level.getChunkSource().randomState(), center.getX(), center.getZ(), level);
+        if (maxWater > 31 && maxWater < 63) {
+            pupfishChunk = checkPos;
+            AlexsMobs.LOGGER.info("Found Pupfish chunk at " + pupfishChunk.getMaxBlockX() + " ~ " + pupfishChunk.getMinBlockZ() + " after " + pupfishSeedAddition + " tries");
         }
         pupfishSeedAddition++;
     }

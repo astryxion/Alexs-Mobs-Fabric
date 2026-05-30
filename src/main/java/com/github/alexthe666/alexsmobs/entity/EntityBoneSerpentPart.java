@@ -1,6 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
+import com.github.alexthe666.alexsmobs.entity.util.MultipartEntityUtil;
 import com.github.alexthe666.alexsmobs.message.MessageHurtMultipart;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.nbt.CompoundTag;
@@ -126,24 +127,27 @@ public class EntityBoneSerpentPart extends LivingEntity implements IHurtableMult
             refreshDimensions();
             if (parent != null && !this.level().isClientSide) {
                 this.setNoGravity(true);
+                final double prevX = this.getX();
+                final double prevY = this.getY();
+                final double prevZ = this.getZ();
                 this.setPos(parent.xo + this.radius * Math.cos(parent.yRotO * Mth.DEG_TO_RAD + this.angleYaw), parent.yo + this.offsetY, parent.zo + this.radius * Math.sin(parent.yRotO * Mth.DEG_TO_RAD + this.angleYaw));
                 final double d0 = parent.getX() - this.getX();
                 final double d1 = parent.getY() - this.getY();
                 final double d2 = parent.getZ() - this.getZ();
                 final float f2 = -((float) (Mth.atan2(d1, Mth.sqrt((float)(d0 * d0 + d2 * d2))) * Mth.RAD_TO_DEG));
                 this.setXRot(this.limitAngle(this.getXRot(), f2, 5.0F));
-                this.markHurt();
+                if (this.getX() != prevX || this.getY() != prevY || this.getZ() != prevZ) {
+                    this.markHurt();
+                }
                 this.setYRot(parent.yRotO);
                 this.yHeadRot = this.getYRot();
                 this.yBodyRot = this.yRotO;
-                if (parent instanceof LivingEntity) {
-                    if(!this.level().isClientSide && (((LivingEntity) parent).hurtTime > 0 || ((LivingEntity) parent).deathTime > 0)){
-                        AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), 0));
-                        this.hurtTime = ((LivingEntity) parent).hurtTime;
-                        this.deathTime = ((LivingEntity) parent).deathTime;
-                    }
+                if (parent instanceof LivingEntity livingParent) {
+                    MultipartEntityUtil.syncHurtTimesFromParent(this, livingParent);
                 }
-                this.pushEntities();
+                if (this.tickCount % 3 == 0) {
+                    this.pushEntities();
+                }
                 if (parent.isRemoved() && !this.level().isClientSide) {
                     this.remove(RemovalReason.DISCARDED);
                 }

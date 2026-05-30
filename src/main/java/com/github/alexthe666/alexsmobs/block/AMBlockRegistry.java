@@ -48,11 +48,6 @@ public class AMBlockRegistry {
     public static Block CRYSTALIZED_BANANA_SLUG_MUCUS;
     public static Block CAIMAN_EGG;
     public static Block TRIOPS_EGGS;
-    public static Block END_PIRATE_DOOR;
-    public static Block END_PIRATE_ANCHOR;
-    public static Block END_PIRATE_ANCHOR_WINCH;
-    public static Block END_PIRATE_SHIP_WHEEL;
-    public static Block END_PIRATE_FLAG;
     /*
         public static final RegistryObject<Block> PURPUR_PLANKS = registerBlockAndItem("purpur_planks", () -> new Block(PURPUR_PLANKS_PROPERTIES));;
     public static final RegistryObject<Block> PURPUR_PLANKS_STAIRS = registerBlockAndItem("purpur_planks_stairs", () -> new StairBlock(PURPUR_PLANKS.get().defaultBlockState(), PURPUR_PLANKS_PROPERTIES));;
@@ -95,11 +90,7 @@ public class AMBlockRegistry {
         CRYSTALIZED_BANANA_SLUG_MUCUS = registerBlockAndItem("crystalized_banana_slug_mucus", new BlockCrystalizedMucus());
         CAIMAN_EGG = registerBlockAndItem("caiman_egg", new BlockReptileEgg(AMEntityRegistry.CAIMAN));
         TRIOPS_EGGS = registerBlockAndItem("triops_eggs", new BlockTriopsEggs());
-        END_PIRATE_DOOR = registerBlockAndItem("end_pirate_door", new BlockEndPirateDoor());
-        END_PIRATE_ANCHOR = registerBlockAndItem("end_pirate_anchor", new BlockEndPirateAnchor());
-        END_PIRATE_ANCHOR_WINCH = registerBlockAndItem("end_pirate_anchor_winch", new BlockEndPirateAnchorWinch());
-        END_PIRATE_SHIP_WHEEL = registerBlockAndItem("end_pirate_ship_wheel", new BlockEndPirateShipWheel());
-        END_PIRATE_FLAG = registerBlockAndItem("end_pirate_flag", new BlockEndPirateFlag());
+        //TODO reimplement end pirate blocks
     }
 
     private static Block registerBlockAndItem(String name, Block block) {

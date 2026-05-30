@@ -10,7 +10,7 @@ import net.minecraft.world.item.enchantment.EnchantmentCategory;
 
 public class AMEnchantmentRegistry {
 
-    /** Fabric: vanilla has no custom EnchantmentCategory; use BREAKABLE and restrict in canEnchant. */
+    /** Category is only used for anvil/book defaults; table rolls use {@link Enchantment#canEnchant}. */
     public static final EnchantmentCategory STRADDLEBOARD = EnchantmentCategory.BREAKABLE;
 
     public static Enchantment STRADDLE_JUMP;
