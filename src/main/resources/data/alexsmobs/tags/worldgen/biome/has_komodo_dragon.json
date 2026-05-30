@@ -1,0 +1,24 @@
+{
+  "values": [
+    "#minecraft:is_jungle",
+    {
+      "id": "terralith:sandstone_valley",
+      "required": false
+    },
+    {
+      "id": "terralith:red_oasis",
+      "required": false
+    },
+    {
+      "id": "terralith:skylands_summer",
+      "required": false
+    },
+    {
+      "id": "biomesoplenty:tropics",
+      "required": false
+    }
+  ],
+  "remove": [
+    "#forge:is_dense/overworld"
+  ]
+}

@@ -6,9 +6,8 @@ import com.github.alexthe666.alexsmobs.client.model.ModelRockyChestplateRolling;
 import com.github.alexthe666.alexsmobs.client.model.ModelWanderingVillagerRider;
 import com.github.alexthe666.alexsmobs.client.model.layered.AMModelLayers;
 import com.github.alexthe666.alexsmobs.client.render.AMItemstackRenderer;
-import com.github.alexthe666.alexsmobs.client.render.AMRenderTypes;
-import com.github.alexthe666.alexsmobs.client.render.LavaVisionFluidRenderer;
 import com.github.alexthe666.alexsmobs.client.render.RenderVineLasso;
+import com.github.alexthe666.alexsmobs.client.render.AMRenderTypes;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.effect.EffectPowerDown;
@@ -28,6 +27,7 @@ import com.github.alexthe666.citadel.client.event.EventGetFluidRenderType;
 import com.github.alexthe666.citadel.client.event.EventGetOutlineColor;
 import com.github.alexthe666.citadel.client.event.EventGetStarBrightness;
 import com.github.alexthe666.citadel.client.event.EventPosePlayerHand;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import com.google.common.base.MoreObjects;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -48,7 +48,6 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.block.LiquidBlockRenderer;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.ItemRenderer;
@@ -66,8 +65,25 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.EntityHitResult;
-/** Fabric 1.20.1: Forge events replaced with Fabric/Citadel registration; call register() from ClientProxy. */
+/** Fabric: Forge client events replaced with Citadel listeners and {@link com.github.alexthe666.alexsmobs.mixin.LivingEntityRendererMixin}. */
 public class ClientEvents {
+
+    private static final ClientEvents INSTANCE = new ClientEvents();
+
+    public static ClientEvents getInstance() {
+        return INSTANCE;
+    }
+
+    /** Registers Citadel/Fabric client hooks that replaced NeoForge {@code @SubscribeEvent} handlers. */
+    public static void register() {
+        ClientEvents inst = getInstance();
+        EventGetFluidRenderType.addListener(inst::onGetFluidRenderType);
+        EventGetOutlineColor.addListener(inst::onOutlineEntityColor);
+        EventGetStarBrightness.addListener(inst::onGetStarBrightness);
+        EventPosePlayerHand.addListener(inst::onPoseHand);
+        WorldRenderEvents.BEFORE_ENTITIES.register(context ->
+                inst.onRenderWorldLastEvent(RenderLevelStageEvent.Stage.AFTER_SKY));
+    }
 
     /** Result type for Citadel-style events (matches Forge Event.Result). */
     public enum Result { ALLOW, DENY }
@@ -91,6 +107,7 @@ public class ClientEvents {
         MultiBufferSource getMultiBufferSource();
         net.minecraft.client.renderer.entity.LivingEntityRenderer<?, ?> getRenderer();
         void setCanceled(boolean b);
+        boolean isCanceled();
     }
     /** Fabric: adapter for living render post (replaces RenderLivingEvent.Post). */
     public interface RenderLivingEventPost {
@@ -134,7 +151,6 @@ public class ClientEvents {
     private static final ModelRockyChestplateRolling ROCKY_CHESTPLATE_MODEL = new ModelRockyChestplateRolling();
 
     private boolean previousLavaVision = false;
-    private LiquidBlockRenderer previousFluidRenderer;
     public long lastStaticTick = -1;
     public static int renderStaticScreenFor = 0;
 
@@ -279,14 +295,14 @@ public class ClientEvents {
         }
         if (VineLassoUtil.hasLassoData(event.getEntity()) && !(event.getEntity() instanceof Player)) {
             Entity lassoedOwner = VineLassoUtil.getLassoedTo(event.getEntity());
-            if (lassoedOwner instanceof LivingEntity && lassoedOwner != event.getEntity()) {
+            if (lassoedOwner instanceof LivingEntity holder && holder != event.getEntity()) {
+                double d0 = Mth.lerp(event.getPartialTick(), event.getEntity().xOld, event.getEntity().getX());
+                double d1 = Mth.lerp(event.getPartialTick(), event.getEntity().yOld, event.getEntity().getY());
+                double d2 = Mth.lerp(event.getPartialTick(), event.getEntity().zOld, event.getEntity().getZ());
                 event.getPoseStack().pushPose();
                 try {
-                    double d0 = Mth.lerp(event.getPartialTick(), event.getEntity().xOld, event.getEntity().getX());
-                    double d1 = Mth.lerp(event.getPartialTick(), event.getEntity().yOld, event.getEntity().getY());
-                    double d2 = Mth.lerp(event.getPartialTick(), event.getEntity().zOld, event.getEntity().getZ());
                     event.getPoseStack().translate(-d0, -d1, -d2);
-                    RenderVineLasso.renderVine(event.getEntity(), event.getPartialTick(), event.getPoseStack(), event.getMultiBufferSource(), (LivingEntity) lassoedOwner, ((LivingEntity) lassoedOwner).getMainArm() == HumanoidArm.LEFT, 0.1F);
+                    RenderVineLasso.renderVine(event.getEntity(), event.getPartialTick(), event.getPoseStack(), event.getMultiBufferSource(), holder, holder.getMainArm() == HumanoidArm.LEFT, 0.1F);
                 } finally {
                     event.getPoseStack().popPose();
                 }
@@ -402,22 +418,15 @@ public class ClientEvents {
         }
     }
 
-    public void onRenderWorldLastEvent(RenderLevelStageEvent event) {
-        if(event.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY){
+    public void onRenderWorldLastEvent(RenderLevelStageEvent.Stage stage) {
+        if (stage == RenderLevelStageEvent.Stage.AFTER_SKY) {
             if (!AMConfig.shadersCompat) {
                 if (Minecraft.getInstance().player.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.LAVA_VISION))) {
                     if (!previousLavaVision) {
-                        previousFluidRenderer = getLiquidBlockRenderer(Minecraft.getInstance().getBlockRenderer());
-                        setLiquidBlockRenderer(Minecraft.getInstance().getBlockRenderer(), new LavaVisionFluidRenderer());
                         updateAllChunks();
                     }
-                } else {
-                    if (previousLavaVision) {
-                        if (previousFluidRenderer != null) {
-                            setLiquidBlockRenderer(Minecraft.getInstance().getBlockRenderer(), previousFluidRenderer);
-                        }
-                        updateAllChunks();
-                    }
+                } else if (previousLavaVision) {
+                    updateAllChunks();
                 }
                 previousLavaVision = Minecraft.getInstance().player.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.LAVA_VISION));
                 if (AMConfig.clingingFlipEffect) {
@@ -528,21 +537,6 @@ public class ClientEvents {
             java.lang.reflect.Field f = net.minecraft.client.renderer.entity.LivingEntityRenderer.class.getDeclaredField("model");
             f.setAccessible(true);
             f.set(r, model);
-        } catch (Exception e) {}
-    }
-    /** Fabric: reflection for BlockRenderDispatcher.liquidBlockRenderer (private). */
-    private static LiquidBlockRenderer getLiquidBlockRenderer(net.minecraft.client.renderer.block.BlockRenderDispatcher d) {
-        try {
-            java.lang.reflect.Field f = net.minecraft.client.renderer.block.BlockRenderDispatcher.class.getDeclaredField("liquidBlockRenderer");
-            f.setAccessible(true);
-            return (LiquidBlockRenderer) f.get(d);
-        } catch (Exception e) { return null; }
-    }
-    private static void setLiquidBlockRenderer(net.minecraft.client.renderer.block.BlockRenderDispatcher d, LiquidBlockRenderer r) {
-        try {
-            java.lang.reflect.Field f = net.minecraft.client.renderer.block.BlockRenderDispatcher.class.getDeclaredField("liquidBlockRenderer");
-            f.setAccessible(true);
-            f.set(d, r);
         } catch (Exception e) {}
     }
     /** Fabric: reflection for GameRenderer.loadEffect (package-private). */

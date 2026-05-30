@@ -115,6 +115,15 @@ public class ModelManedWolf extends AdvancedEntityModel<EntityManedWolf> {
         return ImmutableList.of(root, body, head_pivot, head, neck, tail, left_ear, right_ear, left_arm, right_arm, left_leg, right_leg, right_ear_pivot, left_ear_pivot);
     }
 
+    @Override
+    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, int color) {
+        float alpha = ((color >> 24) & 0xFF) / 255.0F;
+        float red = ((color >> 16) & 0xFF) / 255.0F;
+        float green = ((color >> 8) & 0xFF) / 255.0F;
+        float blue = (color & 0xFF) / 255.0F;
+        renderToBuffer(matrixStackIn, bufferIn, packedLightIn, packedOverlayIn, red, green, blue, alpha);
+    }
+
     public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.35F;

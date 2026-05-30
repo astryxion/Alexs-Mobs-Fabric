@@ -35,6 +35,7 @@
     "alexsmobs.mixins.json",
     "alexsmobs.client.mixins.json"
   ],
+  "accessWidener": "alexsmobs.accesswidener",
   "name": "Alex's Mobs",
   "version": "${version}"
 }

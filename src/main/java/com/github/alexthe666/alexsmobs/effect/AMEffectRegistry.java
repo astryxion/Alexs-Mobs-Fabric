@@ -72,9 +72,21 @@ public class AMEffectRegistry {
         return BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect);
     }
 
+    public static Holder<Potion> potionHolder(Potion potion) {
+        return BuiltInRegistries.POTION.wrapAsHolder(potion);
+    }
+
+    private static MobEffectInstance effectInstance(MobEffect effect, int duration) {
+        return new MobEffectInstance(holder(effect), duration);
+    }
+
+    private static MobEffectInstance effectInstance(MobEffect effect, int duration, int amplifier) {
+        return new MobEffectInstance(holder(effect), duration, amplifier);
+    }
+
     public static ItemStack createPotion(Potion potion) {
         ItemStack stack = new ItemStack(Items.POTION);
-        stack.set(DataComponents.POTION_CONTENTS, new PotionContents(net.minecraft.core.Holder.direct(potion)));
+        stack.set(DataComponents.POTION_CONTENTS, new PotionContents(potionHolder(potion)));
         return stack;
     }
 
@@ -99,39 +111,39 @@ public class AMEffectRegistry {
         POWER_DOWN = registerEffect("power_down", new EffectPowerDown());
         MOSQUITO_REPELLENT = registerEffect("mosquito_repellent", new EffectMosquitoRepellent());
 
-        KNOCKBACK_RESISTANCE_POTION = registerPotion("knockback_resistance", new Potion(new MobEffectInstance(Holder.direct(KNOCKBACK_RESISTANCE), 3600)));
-        LONG_KNOCKBACK_RESISTANCE_POTION = registerPotion("long_knockback_resistance", new Potion(new MobEffectInstance(Holder.direct(KNOCKBACK_RESISTANCE), 9600)));
-        STRONG_KNOCKBACK_RESISTANCE_POTION = registerPotion("strong_knockback_resistance", new Potion(new MobEffectInstance(Holder.direct(KNOCKBACK_RESISTANCE), 1800, 1)));
-        LAVA_VISION_POTION = registerPotion("lava_vision", new Potion(new MobEffectInstance(Holder.direct(LAVA_VISION), 3600)));
-        LONG_LAVA_VISION_POTION = registerPotion("long_lava_vision", new Potion(new MobEffectInstance(Holder.direct(LAVA_VISION), 9600)));
+        KNOCKBACK_RESISTANCE_POTION = registerPotion("knockback_resistance", new Potion(effectInstance(KNOCKBACK_RESISTANCE, 3600)));
+        LONG_KNOCKBACK_RESISTANCE_POTION = registerPotion("long_knockback_resistance", new Potion(effectInstance(KNOCKBACK_RESISTANCE, 9600)));
+        STRONG_KNOCKBACK_RESISTANCE_POTION = registerPotion("strong_knockback_resistance", new Potion(effectInstance(KNOCKBACK_RESISTANCE, 1800, 1)));
+        LAVA_VISION_POTION = registerPotion("lava_vision", new Potion(effectInstance(LAVA_VISION, 3600)));
+        LONG_LAVA_VISION_POTION = registerPotion("long_lava_vision", new Potion(effectInstance(LAVA_VISION, 9600)));
         SPEED_III_POTION = registerPotion("speed_iii", new Potion(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 2200, 2)));
-        POISON_RESISTANCE_POTION = registerPotion("poison_resistance", new Potion(new MobEffectInstance(Holder.direct(POISON_RESISTANCE), 3600)));
-        LONG_POISON_RESISTANCE_POTION = registerPotion("long_poison_resistance", new Potion(new MobEffectInstance(Holder.direct(POISON_RESISTANCE), 9600)));
-        BUG_PHEROMONES_POTION = registerPotion("bug_pheromones", new Potion(new MobEffectInstance(Holder.direct(BUG_PHEROMONES), 3600)));
-        LONG_BUG_PHEROMONES_POTION = registerPotion("long_bug_pheromones", new Potion(new MobEffectInstance(Holder.direct(BUG_PHEROMONES), 9600)));
-        SOULSTEAL_POTION = registerPotion("soulsteal", new Potion(new MobEffectInstance(Holder.direct(SOULSTEAL), 3600)));
-        LONG_SOULSTEAL_POTION = registerPotion("long_soulsteal", new Potion(new MobEffectInstance(Holder.direct(SOULSTEAL), 9600)));
-        STRONG_SOULSTEAL_POTION = registerPotion("strong_soulsteal", new Potion(new MobEffectInstance(Holder.direct(SOULSTEAL), 1800, 1)));
-        CLINGING_POTION = registerPotion("clinging", new Potion(new MobEffectInstance(Holder.direct(CLINGING), 3600)));
-        LONG_CLINGING_POTION = registerPotion("long_clinging", new Potion(new MobEffectInstance(Holder.direct(CLINGING), 9600)));
+        POISON_RESISTANCE_POTION = registerPotion("poison_resistance", new Potion(effectInstance(POISON_RESISTANCE, 3600)));
+        LONG_POISON_RESISTANCE_POTION = registerPotion("long_poison_resistance", new Potion(effectInstance(POISON_RESISTANCE, 9600)));
+        BUG_PHEROMONES_POTION = registerPotion("bug_pheromones", new Potion(effectInstance(BUG_PHEROMONES, 3600)));
+        LONG_BUG_PHEROMONES_POTION = registerPotion("long_bug_pheromones", new Potion(effectInstance(BUG_PHEROMONES, 9600)));
+        SOULSTEAL_POTION = registerPotion("soulsteal", new Potion(effectInstance(SOULSTEAL, 3600)));
+        LONG_SOULSTEAL_POTION = registerPotion("long_soulsteal", new Potion(effectInstance(SOULSTEAL, 9600)));
+        STRONG_SOULSTEAL_POTION = registerPotion("strong_soulsteal", new Potion(effectInstance(SOULSTEAL, 1800, 1)));
+        CLINGING_POTION = registerPotion("clinging", new Potion(effectInstance(CLINGING, 3600)));
+        LONG_CLINGING_POTION = registerPotion("long_clinging", new Potion(effectInstance(CLINGING, 9600)));
     }
 
     /** Call after AMItemRegistry.init() so item refs are non-null (1:1 behavior). */
     public static void registerBrewing() {
         FabricBrewingRecipeRegistryBuilder.BUILD.register((builder) -> {
-        builder.registerPotionRecipe(Potions.STRENGTH, Ingredient.of(AMItemRegistry.BEAR_FUR), Holder.direct(KNOCKBACK_RESISTANCE_POTION));
-        builder.registerPotionRecipe(Holder.direct(KNOCKBACK_RESISTANCE_POTION), Ingredient.of(Items.REDSTONE), Holder.direct(LONG_KNOCKBACK_RESISTANCE_POTION));
-        builder.registerPotionRecipe(Holder.direct(KNOCKBACK_RESISTANCE_POTION), Ingredient.of(Items.GLOWSTONE_DUST), Holder.direct(STRONG_KNOCKBACK_RESISTANCE_POTION));
-        builder.registerPotionRecipe(Holder.direct(LAVA_VISION_POTION), Ingredient.of(Items.REDSTONE), Holder.direct(LONG_LAVA_VISION_POTION));
-        builder.registerPotionRecipe(Holder.direct(POISON_RESISTANCE_POTION), Ingredient.of(AMItemRegistry.KOMODO_SPIT), Holder.direct(LONG_POISON_RESISTANCE_POTION));
-        builder.registerPotionRecipe(Potions.STRONG_SWIFTNESS, Ingredient.of(AMItemRegistry.GAZELLE_HORN), Holder.direct(SPEED_III_POTION));
-        builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(AMItemRegistry.COCKROACH_WING), Holder.direct(BUG_PHEROMONES_POTION));
-        builder.registerPotionRecipe(Holder.direct(BUG_PHEROMONES_POTION), Ingredient.of(Items.REDSTONE), Holder.direct(LONG_BUG_PHEROMONES_POTION));
-        builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(AMItemRegistry.SOUL_HEART), Holder.direct(SOULSTEAL_POTION));
-        builder.registerPotionRecipe(Holder.direct(SOULSTEAL_POTION), Ingredient.of(Items.REDSTONE), Holder.direct(LONG_SOULSTEAL_POTION));
-        builder.registerPotionRecipe(Holder.direct(SOULSTEAL_POTION), Ingredient.of(Items.GLOWSTONE_DUST), Holder.direct(STRONG_SOULSTEAL_POTION));
-        builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(AMItemRegistry.DROPBEAR_CLAW), Holder.direct(CLINGING_POTION));
-        builder.registerPotionRecipe(Holder.direct(CLINGING_POTION), Ingredient.of(Items.REDSTONE), Holder.direct(LONG_CLINGING_POTION));
+        builder.registerPotionRecipe(Potions.STRENGTH, Ingredient.of(AMItemRegistry.BEAR_FUR), potionHolder(KNOCKBACK_RESISTANCE_POTION));
+        builder.registerPotionRecipe(potionHolder(KNOCKBACK_RESISTANCE_POTION), Ingredient.of(Items.REDSTONE), potionHolder(LONG_KNOCKBACK_RESISTANCE_POTION));
+        builder.registerPotionRecipe(potionHolder(KNOCKBACK_RESISTANCE_POTION), Ingredient.of(Items.GLOWSTONE_DUST), potionHolder(STRONG_KNOCKBACK_RESISTANCE_POTION));
+        builder.registerPotionRecipe(potionHolder(LAVA_VISION_POTION), Ingredient.of(Items.REDSTONE), potionHolder(LONG_LAVA_VISION_POTION));
+        builder.registerPotionRecipe(potionHolder(POISON_RESISTANCE_POTION), Ingredient.of(AMItemRegistry.KOMODO_SPIT), potionHolder(LONG_POISON_RESISTANCE_POTION));
+        builder.registerPotionRecipe(Potions.STRONG_SWIFTNESS, Ingredient.of(AMItemRegistry.GAZELLE_HORN), potionHolder(SPEED_III_POTION));
+        builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(AMItemRegistry.COCKROACH_WING), potionHolder(BUG_PHEROMONES_POTION));
+        builder.registerPotionRecipe(potionHolder(BUG_PHEROMONES_POTION), Ingredient.of(Items.REDSTONE), potionHolder(LONG_BUG_PHEROMONES_POTION));
+        builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(AMItemRegistry.SOUL_HEART), potionHolder(SOULSTEAL_POTION));
+        builder.registerPotionRecipe(potionHolder(SOULSTEAL_POTION), Ingredient.of(Items.REDSTONE), potionHolder(LONG_SOULSTEAL_POTION));
+        builder.registerPotionRecipe(potionHolder(SOULSTEAL_POTION), Ingredient.of(Items.GLOWSTONE_DUST), potionHolder(STRONG_SOULSTEAL_POTION));
+        builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(AMItemRegistry.DROPBEAR_CLAW), potionHolder(CLINGING_POTION));
+        builder.registerPotionRecipe(potionHolder(CLINGING_POTION), Ingredient.of(Items.REDSTONE), potionHolder(LONG_CLINGING_POTION));
         ProperBrewingRecipe.registerCustomRecipes();
         });
     }

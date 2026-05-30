@@ -6,7 +6,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
@@ -25,9 +24,10 @@ public class ItemEnderiophageRocket extends Item {
             ItemStack itemstack = context.getItemInHand();
             Vec3 vector3d = context.getClickLocation();
             Direction direction = context.getClickedFace();
-            FireworkRocketEntity fireworkrocketentity = new EntityEnderiophageRocket(world, context.getPlayer(), vector3d.x + (double)direction.getStepX() * 0.15D, vector3d.y + (double)direction.getStepY() * 0.15D, vector3d.z + (double)direction.getStepZ() * 0.15D, itemstack);
-            world.addFreshEntity(fireworkrocketentity);
-            if(!context.getPlayer().isCreative()){
+            EntityEnderiophageRocket rocket = new EntityEnderiophageRocket(world, vector3d.x + (double) direction.getStepX() * 0.15D, vector3d.y + (double) direction.getStepY() * 0.15D, vector3d.z + (double) direction.getStepZ() * 0.15D, itemstack);
+            rocket.setOwner(context.getPlayer());
+            world.addFreshEntity(rocket);
+            if (!context.getPlayer().isCreative()) {
                 itemstack.shrink(1);
             }
         }
@@ -49,5 +49,4 @@ public class ItemEnderiophageRocket extends Item {
             return InteractionResultHolder.pass(playerIn.getItemInHand(handIn));
         }
     }
-
 }

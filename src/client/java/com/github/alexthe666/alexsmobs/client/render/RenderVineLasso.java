@@ -40,40 +40,30 @@ public class RenderVineLasso extends EntityRenderer<EntityVineLasso> {
 
     public void render(EntityVineLasso entityIn, float entityYaw, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn) {
         matrixStackIn.pushPose();
-        try {
-            matrixStackIn.translate(0.0D, 0.25F, 0.0D);
-            matrixStackIn.mulPose(Axis.YN.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 180F));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
-            matrixStackIn.translate(0.0D, -0.1F, 0.0D);
-            matrixStackIn.pushPose();
-            try {
-                matrixStackIn.scale(0.45F, 0.45F, 0.45F);
-                renderCircle(matrixStackIn, bufferIn, packedLightIn);
-            } finally {
-                matrixStackIn.popPose();
-            }
-        } finally {
-            matrixStackIn.popPose();
-        }
+        matrixStackIn.translate(0.0D, 0.25F, 0.0D);
+        matrixStackIn.mulPose(Axis.YN.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 180F));
+        matrixStackIn.mulPose(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+        matrixStackIn.translate(0.0D, -0.1F, 0.0D);
+        matrixStackIn.pushPose();
+        matrixStackIn.scale(0.45F, 0.45F, 0.45F);
+        renderCircle(matrixStackIn, bufferIn, packedLightIn);
+        matrixStackIn.popPose();
+        matrixStackIn.popPose();
         super.render(entityIn, entityYaw, partialTicks, matrixStackIn, bufferIn, packedLightIn);
         LivingEntity holder = Minecraft.getInstance().player;
         if (holder != null) {
+            double d0 = Mth.lerp(partialTicks, entityIn.xOld, entityIn.getX());
+            double d1 = Mth.lerp(partialTicks, entityIn.yOld, entityIn.getY());
+            double d2 = Mth.lerp(partialTicks, entityIn.zOld, entityIn.getZ());
             matrixStackIn.pushPose();
-            try {
-                double d0 = Mth.lerp(partialTicks, entityIn.xOld, entityIn.getX());
-                double d1 = Mth.lerp(partialTicks, entityIn.yOld, entityIn.getY());
-                double d2 = Mth.lerp(partialTicks, entityIn.zOld, entityIn.getZ());
-                matrixStackIn.translate(-d0, -d1, -d2);
-                renderVine(entityIn, partialTicks, matrixStackIn, bufferIn, holder, holder.getMainArm() != HumanoidArm.LEFT, -0.4F);
-            } finally {
-                matrixStackIn.popPose();
-            }
+            matrixStackIn.translate(-d0, -d1, -d2);
+            renderVine(entityIn, partialTicks, matrixStackIn, bufferIn, holder, holder.getMainArm() != HumanoidArm.LEFT, -0.4F);
+            matrixStackIn.popPose();
         }
     }
 
     private void renderCircle(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn) {
         matrixStackIn.pushPose();
-        try {
         VertexConsumer ivertexbuilder = bufferIn.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
         PoseStack.Pose lvt_19_1_ = matrixStackIn.last();
         Matrix4f lvt_20_1_ = lvt_19_1_.pose();
@@ -82,15 +72,12 @@ public class RenderVineLasso extends EntityRenderer<EntityVineLasso> {
         this.drawVertex(lvt_20_1_, lvt_21_1_, ivertexbuilder, -1, 0, 1, 0, 1, 1, 0, 1, packedLightIn);
         this.drawVertex(lvt_20_1_, lvt_21_1_, ivertexbuilder, 1, 0, 1, 1, 1, 1, 0, 1, packedLightIn);
         this.drawVertex(lvt_20_1_, lvt_21_1_, ivertexbuilder, 1, 0, -1, 1, 0, 1, 0, 1, packedLightIn);
-        } finally {
-            matrixStackIn.popPose();
-        }
+        matrixStackIn.popPose();
     }
 
 
     public static <E extends Entity> void renderVine(Entity mob, float partialTick, PoseStack p_115464_, MultiBufferSource p_115465_, LivingEntity player, boolean left, float zOffset) {
         p_115464_.pushPose();
-        try {
         float bodyRot = mob instanceof LivingEntity ? ((LivingEntity) mob).yBodyRot : mob.getYRot();
         float bodyRot0 = mob instanceof LivingEntity ? ((LivingEntity) mob).yBodyRotO : mob.yRotO;
         Vec3 vec3 = player.getRopeHoldPosition(partialTick);
@@ -123,44 +110,11 @@ public class RenderVineLasso extends EntityRenderer<EntityVineLasso> {
         for (int j1 = 24; j1 >= 0; --j1) {
             addVertexPairAlex(vertexconsumer, matrix4f, f, f1, f2, i, j, k, l, width, width, f5, f6, j1, true);
         }
-        } finally {
-            p_115464_.popPose();
-        }
+        p_115464_.popPose();
     }
 
     protected static int getVineLightLevel(Entity p_114496_, BlockPos p_114497_) {
         return p_114496_.isOnFire() ? 15 : p_114496_.level().getBrightness(LightLayer.BLOCK, p_114497_);
-    }
-
-
-    private static Vec3 getVinePosition(LivingEntity entity, float p_36374_, boolean left, float shake) {
-        double d0 = 0.4D * (left ? -1.0D : 1.0D) - 0;
-        float f = Mth.lerp(p_36374_ * 0.5F, entity.getXRot(), entity.xRotO) * Mth.DEG_TO_RAD;
-        float f1 = Mth.lerp(p_36374_, entity.yBodyRotO, entity.yBodyRot) * Mth.DEG_TO_RAD;
-        if (!entity.isFallFlying() && !entity.isAutoSpinAttack()) {
-            if (entity.isVisuallySwimming()) {
-                return entity.getPosition(p_36374_).add((new Vec3(d0, 0.3D, -0.34D)).xRot(-f).yRot(-f1));
-            } else {
-                double d5 = entity.getBoundingBox().getYsize() - 1.0D;
-                double d6 = entity.isCrouching() ? -0.2D : 0.07D;
-                return entity.getPosition(p_36374_).add((new Vec3(d0, d5, d6)).yRot(-f1));
-            }
-        } else {
-            Vec3 vec3 = entity.getViewVector(p_36374_);
-            Vec3 vec31 = entity.getDeltaMovement();
-            double d1 = vec31.horizontalDistanceSqr();
-            double d2 = vec3.horizontalDistanceSqr();
-            float f2;
-            if (d1 > 0.0D && d2 > 0.0D) {
-                double d3 = (vec31.x * vec3.x + vec31.z * vec3.z) / Math.sqrt(d1 * d2);
-                double d4 = vec31.x * vec3.z - vec31.z * vec3.x;
-                f2 = (float) (Math.signum(d4) * Math.acos(d3));
-            } else {
-                f2 = 0.0F;
-            }
-
-            return entity.getPosition(p_36374_).add((new Vec3(d0, -0.11D, 0.85D)).zRot(-f2).xRot(-f).yRot(-f1));
-        }
     }
 
 
@@ -180,8 +134,8 @@ public class RenderVineLasso extends EntityRenderer<EntityVineLasso> {
         float f5 = p_174310_ * f;
         float f6 = p_174311_ > 0.0F ? p_174311_ * f * f : p_174311_ - p_174311_ * (1.0F - f) * (1.0F - f);
         float f7 = p_174312_ * f;
-        p_174308_.addVertex(p_174309_, f5 - p_174319_, f6 + p_174318_, f7 + p_174320_).setColor(f2, f3, f4, 1.0F).setLight(k);
-        p_174308_.addVertex(p_174309_, f5 + p_174319_, f6 + p_174317_ - p_174318_, f7 - p_174320_).setColor(f2, f3, f4, 1.0F).setLight(k);
+        p_174308_.addVertex(p_174309_, f5 - p_174319_, f6 + p_174318_, f7 + p_174320_).setColor((int) (f2 * 255), (int) (f3 * 255), (int) (f4 * 255), 255).setLight(k);
+        p_174308_.addVertex(p_174309_, f5 + p_174319_, f6 + p_174317_ - p_174318_, f7 - p_174320_).setColor((int) (f2 * 255), (int) (f3 * 255), (int) (f4 * 255), 255).setLight(k);
     }
 
     @Override

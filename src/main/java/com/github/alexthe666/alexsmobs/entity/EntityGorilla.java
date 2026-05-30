@@ -234,10 +234,9 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
     public void positionRider(Entity passenger, Entity.MoveFunction moveFunc) {
         if (this.hasPassenger(passenger)) {
             this.setOrderedToSit(false);
-            if (passenger instanceof EntityGorilla) {
-                EntityGorilla babyGorilla = (EntityGorilla) passenger;
-                babyGorilla.setStanding(this.isStanding());
-                babyGorilla.setOrderedToSit(this.isSitting());
+            if (passenger instanceof EntityGorilla babyGorilla && babyGorilla.isBaby()) {
+                babyGorilla.setStanding(false);
+                babyGorilla.setOrderedToSit(false);
                 babyGorilla.yBodyRot = this.yBodyRot;
             }
             float sitAdd = -0.03F * this.sitProgress;
@@ -246,7 +245,7 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
             float angle = (Maths.STARTING_ANGLE * this.yBodyRot);
             double extraX = radius * Mth.sin(Mth.PI + angle);
             double extraZ = radius * Mth.cos(angle);
-            passenger.setPos(this.getX() + extraX, this.getPassengersRidingOffset() + this.getPassengerRidingPosition(passenger).y, this.getZ() + extraZ);
+            passenger.setPos(this.getX() + extraX, this.getY() + this.getBbHeight() * 0.75F, this.getZ() + extraZ);
         }
     }
 
@@ -436,6 +435,8 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
                 this.removeVehicle();
             }else{
                 EntityGorilla mount = (EntityGorilla) this.getVehicle();
+                this.setStanding(false);
+                this.setOrderedToSit(false);
                 this.setYRot( mount.yBodyRot);
                 this.yHeadRot = mount.yBodyRot;
                 this.yBodyRot = mount.yBodyRot;
@@ -570,7 +571,7 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
     }
 
     public float getGorillaScale() {
-        return isBaby() ? 0.5F : isSilverback() ? 1.3F : 1.0F;
+        return isBaby() ? 0.5F : isSilverback() ? 1.3F : 1.15F;
     }
 
     public boolean isDonkeyKong() {

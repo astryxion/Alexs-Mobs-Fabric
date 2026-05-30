@@ -252,6 +252,15 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
         return new BoneSerpentPathNavigator(this, worldIn);
     }
 
+    @Override
+    public void baseTick() {
+        int i = this.getAirSupply();
+        super.baseTick();
+        if (this.isInWater() || this.isInLava()) {
+            this.setAirSupply(i);
+        }
+    }
+
     public void tick() {
         float f = 1.0F;
         if (entityData.get(LAUNCHED)) {
@@ -385,10 +394,6 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
         } else {
             super.travel(travelVector);
         }
-
-    }
-
-    protected void handleAirSupply(int p_209207_1_) {
 
     }
 

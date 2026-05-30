@@ -29,6 +29,11 @@ public class RenderGrizzlyBear extends MobRenderer<EntityGrizzlyBear, ModelGrizz
         this.addLayer(new LayerGrizzlyItem(this));
     }
 
+    @Override
+    protected void scale(EntityGrizzlyBear entitylivingbaseIn, PoseStack matrixStackIn, float partialTickTime) {
+        this.model.young = entitylivingbaseIn.isBaby();
+    }
+
     public boolean shouldRender(EntityGrizzlyBear livingEntityIn, Frustum camera, double camX, double camY, double camZ) {
         if (livingEntityIn.getAprilFoolsFlag() == 5) {
             return false;
@@ -63,7 +68,7 @@ public class RenderGrizzlyBear extends MobRenderer<EntityGrizzlyBear, ModelGrizz
         public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, EntityGrizzlyBear entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
             if (entitylivingbaseIn.getAprilFoolsFlag() == 4 && entitylivingbaseIn.tickCount % 6 <= 2) {
                 VertexConsumer ivertexbuilder = bufferIn.getBuffer(AMRenderTypes.getEyesNoFog(TEXTURE_FREDDY_EYES));
-                this.getParentModel().renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, LivingEntityRenderer.getOverlayCoords(entitylivingbaseIn, 0.0F), 1.0F, 1.0F, 1.0F, 0.1F);
+                this.getParentModel().renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, LivingEntityRenderer.getOverlayCoords(entitylivingbaseIn, 0.0F), 0x1AFFFFFF);
             }
         }
     }

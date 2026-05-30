@@ -94,7 +94,18 @@ public class ServerEvents {
     public record Triple<A, B, C>(A a, B b, C c) {}
     /** Fabric 1.20.1: no AFTER_DAMAGE event; queue (entity, source, amount) and process at end of tick (1:1). */
     private static final Queue<AfterDamageEntry> DEFERRED_AFTER_DAMAGE = new ConcurrentLinkedQueue<>();
-    private record AfterDamageEntry(LivingEntity entity, DamageSource source, float amount) {}
+
+    private static final class AfterDamageEntry {
+        final LivingEntity entity;
+        final DamageSource source;
+        final float amount;
+
+        AfterDamageEntry(LivingEntity entity, DamageSource source, float amount) {
+            this.entity = entity;
+            this.source = source;
+            this.amount = amount;
+        }
+    }
 
     private static void enqueueAfterDamage(LivingEntity entity, DamageSource source, float amount) {
         DEFERRED_AFTER_DAMAGE.add(new AfterDamageEntry(entity, source, amount));
@@ -123,9 +134,9 @@ public class ServerEvents {
     private static void runDeferredAfterDamage() {
         AfterDamageEntry e;
         while ((e = DEFERRED_AFTER_DAMAGE.poll()) != null) {
-            LivingEntity entity = e.entity();
-            DamageSource source = e.source();
-            float amount = e.amount();
+            LivingEntity entity = e.entity;
+            DamageSource source = e.source;
+            float amount = e.amount;
             if (!entity.isAlive()) continue;
             if (source.getEntity() instanceof LivingEntity attacker) {
                 if (amount > 0 && attacker.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.SOULSTEAL)) && attacker.getEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.SOULSTEAL)) != null) {
@@ -482,29 +493,32 @@ public class ServerEvents {
         }
     }
 
-    /** Called per-entity from LivingEntityMixin (server-only). Replaces full-world getEntitiesOfClass scan. */
+    /** Called per-entity from LivingEntityMixin (both sides; server-only work is guarded inside). */
     public static void onLivingEntityTick(LivingEntity entity) {
         onLivingTick(entity);
     }
 
     private static void onLivingTick(LivingEntity entity) {
-        if (!entity.isUsingItem() && CHORUS_FRUIT_USERS_LAST_TICK.remove(entity.getId()) && entity.hasEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ENDER_FLU)) && RAND.nextInt(3) == 0) {
-            entity.removeEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ENDER_FLU));
-        }
-        if (entity.isUsingItem() && entity.getUseItem().getItem() == Items.CHORUS_FRUIT) {
-            CHORUS_FRUIT_USERS_LAST_TICK.add(entity.getId());
-        }
-        if (entity instanceof Mob mob && mob.getTarget() != null) {
-            LivingEntity target = mob.getTarget();
-            if (MobType.getMobType(mob) == MobType.ARTHROPOD && target.hasEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.BUG_PHEROMONES)) && mob.getLastHurtByMob() != target) {
-                mob.setTarget(null);
+        final boolean server = !entity.level().isClientSide;
+        if (server) {
+            if (!entity.isUsingItem() && CHORUS_FRUIT_USERS_LAST_TICK.remove(entity.getId()) && entity.hasEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ENDER_FLU)) && RAND.nextInt(3) == 0) {
+                entity.removeEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ENDER_FLU));
             }
-            if (MobType.getMobType(mob) == MobType.UNDEAD && !mob.getType().is(AMTagRegistry.IGNORES_KIMONO) && target.getItemBySlot(EquipmentSlot.CHEST).is(AMItemRegistry.UNSETTLING_KIMONO) && mob.getLastHurtByMob() != target) {
-                mob.setTarget(null);
+            if (entity.isUsingItem() && entity.getUseItem().getItem() == Items.CHORUS_FRUIT) {
+                CHORUS_FRUIT_USERS_LAST_TICK.add(entity.getId());
             }
-        }
-        if (entity.hasEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.DEBILITATING_STING)) && entity.getEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.DEBILITATING_STING)) != null && entity.getEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.DEBILITATING_STING)).getAmplifier() > 0 && entity instanceof Mob mob) {
-            mob.setPersistenceRequired();
+            if (entity instanceof Mob mob && mob.getTarget() != null) {
+                LivingEntity target = mob.getTarget();
+                if (MobType.getMobType(mob) == MobType.ARTHROPOD && target.hasEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.BUG_PHEROMONES)) && mob.getLastHurtByMob() != target) {
+                    mob.setTarget(null);
+                }
+                if (MobType.getMobType(mob) == MobType.UNDEAD && !mob.getType().is(AMTagRegistry.IGNORES_KIMONO) && target.getItemBySlot(EquipmentSlot.CHEST).is(AMItemRegistry.UNSETTLING_KIMONO) && mob.getLastHurtByMob() != target) {
+                    mob.setTarget(null);
+                }
+            }
+            if (entity.hasEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.DEBILITATING_STING)) && entity.getEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.DEBILITATING_STING)) != null && entity.getEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.DEBILITATING_STING)).getAmplifier() > 0 && entity instanceof Mob mob) {
+                mob.setPersistenceRequired();
+            }
         }
         if (entity instanceof Player player) {
             if (player.getEyeHeight() < player.getBbHeight() * 0.5D) {
@@ -535,7 +549,7 @@ public class ServerEvents {
                     }
                 }
             }
-            if (player.getItemBySlot(EquipmentSlot.HEAD).getItem() == AMItemRegistry.SPIKED_TURTLE_SHELL && !player.isEyeInFluid(FluidTags.WATER)) {
+            if (server && player.getItemBySlot(EquipmentSlot.HEAD).is(AMItemRegistry.SPIKED_TURTLE_SHELL) && !player.isEyeInFluid(FluidTags.WATER)) {
                 player.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 310, 0, false, false, true));
             }
         }
@@ -553,19 +567,19 @@ public class ServerEvents {
                 entity.setDeltaMovement(entity.getDeltaMovement().add(0, 0.1F, 0));
             }
         }
-        if (entity.getItemBySlot(EquipmentSlot.LEGS).getItem() == AMItemRegistry.CENTIPEDE_LEGGINGS) {
+        if (entity.getItemBySlot(EquipmentSlot.LEGS).is(AMItemRegistry.CENTIPEDE_LEGGINGS)) {
             if (entity.horizontalCollision && !entity.isInWater()) {
                 entity.fallDistance = 0.0F;
                 Vec3 motion = entity.getDeltaMovement();
                 double d2 = 0.1D;
-                if (entity.isShiftKeyDown() || !entity.getBlockStateOn().is(Blocks.SCAFFOLDING) && entity.isSuppressingSlidingDownLadder()) {
+                if (entity.isShiftKeyDown() || entity.isSuppressingSlidingDownLadder()) {
                     d2 = 0.0D;
                 }
                 motion = new Vec3(Mth.clamp(motion.x, -0.15F, 0.15F), d2, Mth.clamp(motion.z, -0.15F, 0.15F));
                 entity.setDeltaMovement(motion);
             }
         }
-        if (entity.getItemBySlot(EquipmentSlot.HEAD).getItem() == AMItemRegistry.SOMBRERO && !entity.level().isClientSide && AlexsMobs.isAprilFools() && entity.isInWaterOrBubble()) {
+        if (server && entity.getItemBySlot(EquipmentSlot.HEAD).is(AMItemRegistry.SOMBRERO) && AlexsMobs.isAprilFools() && entity.isInWaterOrBubble()) {
             RandomSource random = entity.getRandom();
             if (random.nextInt(245) == 0 && !EntitySeaBear.isMobSafe(entity)) {
                 final int dist = 32;

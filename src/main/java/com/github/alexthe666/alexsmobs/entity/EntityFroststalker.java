@@ -67,6 +67,7 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
     public static final Predicate<Player> VALID_LEADER_PLAYERS = (player) -> {
         return player.getItemBySlot(EquipmentSlot.HEAD).is(AMItemRegistry.FROSTSTALKER_HELMET);
     };
+    public static final double PLAYER_FOLLOW_RANGE = 60.0D;
     public float bipedProgress;
     public float prevBipedProgress;
     public float tackleProgress;
@@ -379,6 +380,9 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
             fleeFireFlag--;
         }
         if(!this.level().isClientSide){
+            if (this.leader != null && !this.isValidLeader(this.leader)) {
+                this.stopFollowing();
+            }
             if(resetLeaderCooldown > 0){
                 resetLeaderCooldown--;
             }else{
@@ -390,20 +394,38 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
     }
 
     private void lookForPlayerLeader() {
-       if(!(this.leader instanceof Player)){
-           float range = 10;
-           List<Player> playerList = this.level().getEntitiesOfClass(Player.class, this.getBoundingBox().inflate(range, range, range), EntityFroststalker.VALID_LEADER_PLAYERS);
-           Player closestPlayer = null;
-           for(Player player : playerList){
-               if(closestPlayer == null || player.distanceTo(this) < closestPlayer.distanceTo(this)){
-                   closestPlayer = player;
-               }
-           }
-           if(closestPlayer != null){
-               this.stopFollowing();
-               this.startFollowing(closestPlayer);
-           }
-       }
+        if (!(this.leader instanceof Player playerLeader) || !this.isValidLeader(playerLeader)) {
+            this.tryFollowPlayerLeader(PLAYER_FOLLOW_RANGE);
+        }
+    }
+
+    @Nullable
+    public Player findClosestValidPlayerLeader(double range) {
+        List<Player> playerList = this.level().getEntitiesOfClass(Player.class, this.getBoundingBox().inflate(range, range, range), VALID_LEADER_PLAYERS);
+        Player closestPlayer = null;
+        for (Player player : playerList) {
+            if (closestPlayer == null || player.distanceTo(this) < closestPlayer.distanceTo(this)) {
+                closestPlayer = player;
+            }
+        }
+        return closestPlayer;
+    }
+
+    public boolean tryFollowPlayerLeader(double range) {
+        Player closestPlayer = this.findClosestValidPlayerLeader(range);
+        if (closestPlayer != null) {
+            if (this.leader != closestPlayer) {
+                this.stopFollowing();
+                this.startFollowing(closestPlayer);
+            }
+            return this.isFollower();
+        }
+        return false;
+    }
+
+    @Nullable
+    public LivingEntity getLeader() {
+        return this.leader;
     }
 
     public boolean isFleeingFire(){

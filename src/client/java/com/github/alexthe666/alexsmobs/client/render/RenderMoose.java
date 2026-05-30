@@ -23,7 +23,9 @@ public class RenderMoose extends MobRenderer<EntityMoose, ModelMoose> {
         this.addLayer(new LayerSnow());
     }
 
+    @Override
     protected void scale(EntityMoose entitylivingbaseIn, PoseStack matrixStackIn, float partialTickTime) {
+        this.model.young = entitylivingbaseIn.isBaby();
     }
 
 

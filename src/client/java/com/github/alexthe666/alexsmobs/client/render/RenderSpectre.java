@@ -61,11 +61,10 @@ public class RenderSpectre extends MobRenderer<EntitySpectre, ModelSpectre> {
 
         public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, EntitySpectre entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
             VertexConsumer lvt_11_1_ = bufferIn.getBuffer(this.getRenderType());
-            float a = getAlphaForRender(entitylivingbaseIn, partialTicks);
-            this.getParentModel().renderToBuffer(matrixStackIn, lvt_11_1_, 15728640, LivingEntityRenderer.getOverlayCoords(entitylivingbaseIn, 0), ((int)(a * 255) << 24) | 0x00FFFFFF);
+            this.getParentModel().renderToBuffer(matrixStackIn, lvt_11_1_, 15728640, LivingEntityRenderer.getOverlayCoords(entitylivingbaseIn, 0));
             if (entitylivingbaseIn.isLeashed()) {
                 VertexConsumer lead = bufferIn.getBuffer(AMRenderTypes.entityCutoutNoCull(TEXTURE_LEAD));
-                this.getParentModel().renderToBuffer(matrixStackIn, lead, 15728640, LivingEntityRenderer.getOverlayCoords(entitylivingbaseIn, 0), 0xFFFFFFFF);
+                this.getParentModel().renderToBuffer(matrixStackIn, lead, 15728640, LivingEntityRenderer.getOverlayCoords(entitylivingbaseIn, 0));
             }
         }
 

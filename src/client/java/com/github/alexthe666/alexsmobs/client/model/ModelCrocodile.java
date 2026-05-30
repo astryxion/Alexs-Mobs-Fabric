@@ -292,6 +292,15 @@ public class ModelCrocodile extends AdvancedEntityModel<EntityCrocodile> {
         return ImmutableList.of(root, body, neck, head, jaw, left_arm, right_arm, left_leg, right_leg, tail1, tail2, tail3, crown, left_foot, right_foot, left_hand, right_hand, left_upperteeth, right_upperteeth, left_lowerteeth, right_lowerteeth);
     }
 
+    @Override
+    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, int color) {
+        float alpha = ((color >> 24) & 0xFF) / 255.0F;
+        float red = ((color >> 16) & 0xFF) / 255.0F;
+        float green = ((color >> 8) & 0xFF) / 255.0F;
+        float blue = (color & 0xFF) / 255.0F;
+        renderToBuffer(matrixStackIn, bufferIn, packedLightIn, packedOverlayIn, red, green, blue, alpha);
+    }
+
     public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.5F;

@@ -1,9 +1,9 @@
 package com.github.alexthe666.alexsmobs.client.render.layer;
 
 import com.github.alexthe666.alexsmobs.client.model.ModelMimicube;
+import com.github.alexthe666.alexsmobs.client.render.AMArmorLayerUtil;
 import com.github.alexthe666.alexsmobs.client.render.RenderMimicube;
 import com.github.alexthe666.alexsmobs.entity.EntityMimicube;
-import com.google.common.collect.Maps;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -23,11 +23,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.Map;
-
 public class LayerMimicubeHelmet extends RenderLayer<EntityMimicube, ModelMimicube> {
 
-    private static final Map<String, ResourceLocation> ARMOR_TEXTURE_RES_MAP = Maps.newHashMap();
     private final HumanoidModel defaultBipedModel;
     private final RenderMimicube renderer;
 
@@ -35,25 +32,6 @@ public class LayerMimicubeHelmet extends RenderLayer<EntityMimicube, ModelMimicu
         super(render);
         this.renderer = render;
         defaultBipedModel = new HumanoidModel(renderManagerIn.bakeLayer(ModelLayers.ARMOR_STAND_OUTER_ARMOR));
-    }
-
-    public static ResourceLocation getArmorResource(net.minecraft.world.entity.Entity entity, ItemStack stack, EquipmentSlot slot, @javax.annotation.Nullable String type) {
-        ArmorItem item = (ArmorItem) stack.getItem();
-        net.minecraft.resources.ResourceLocation rl = item.getMaterial().value().layers().get(0).texture(false);
-        String domain = rl.getNamespace();
-        String path = rl.getPath();
-        String texture = path.replaceFirst("textures/models/armor/", "").replaceAll("_layer_[12]", "");
-        String s1 = String.format("%s:textures/models/armor/%s_layer_%d%s.png", domain, texture, (1), type == null ? "" : String.format("_%s", type));
-
-        // Fabric: no ForgeHooksClient; use computed texture (1:1 when no other mod overrides)
-        ResourceLocation resourcelocation = ARMOR_TEXTURE_RES_MAP.get(s1);
-
-        if (resourcelocation == null) {
-            resourcelocation = ResourceLocation.parse(s1);
-            ARMOR_TEXTURE_RES_MAP.put(s1, resourcelocation);
-        }
-
-        return resourcelocation;
     }
 
     public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, EntityMimicube cube, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
@@ -83,10 +61,10 @@ public class LayerMimicubeHelmet extends RenderLayer<EntityMimicube, ModelMimicu
                     float f = (float) (i >> 16 & 255) / 255.0F;
                     float f1 = (float) (i >> 8 & 255) / 255.0F;
                     float f2 = (float) (i & 255) / 255.0F;
-                    renderArmor(cube, matrixStackIn, bufferIn, clampedLight, flag1, a, f, f1, f2, getArmorResource(cube, itemstack, EquipmentSlot.HEAD, null), notAVanillaModel);
-                    renderArmor(cube, matrixStackIn, bufferIn, clampedLight, flag1, a, 1.0F, 1.0F, 1.0F, getArmorResource(cube, itemstack, EquipmentSlot.HEAD, "overlay"), notAVanillaModel);
+                    renderArmor(cube, matrixStackIn, bufferIn, clampedLight, flag1, a, f, f1, f2, AMArmorLayerUtil.getArmorResource(itemstack, null), notAVanillaModel);
+                    renderArmor(cube, matrixStackIn, bufferIn, clampedLight, flag1, a, 1.0F, 1.0F, 1.0F, AMArmorLayerUtil.getArmorResource(itemstack, "overlay"), notAVanillaModel);
                 } else {
-                    renderArmor(cube, matrixStackIn, bufferIn, clampedLight, flag1, a, 1.0F, 1.0F, 1.0F, getArmorResource(cube, itemstack, EquipmentSlot.HEAD, null), notAVanillaModel);
+                    renderArmor(cube, matrixStackIn, bufferIn, clampedLight, flag1, a, 1.0F, 1.0F, 1.0F, AMArmorLayerUtil.getArmorResource(itemstack, null), notAVanillaModel);
                 }
 
             }

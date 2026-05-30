@@ -1,0 +1,10 @@
+{
+  "values": [
+    "minecraft:frozen_ocean",
+    "minecraft:deep_frozen_ocean",
+    {
+      "id": "alexscaves:abyssal_chasm",
+      "required": false
+    }
+  ]
+}

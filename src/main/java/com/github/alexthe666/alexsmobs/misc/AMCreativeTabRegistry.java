@@ -32,8 +32,6 @@ public class AMCreativeTabRegistry {
                             for (Item item : BuiltInRegistries.ITEM) {
                                 ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
                                 if (!key.getNamespace().equals(AlexsMobs.MODID)) continue;
-                                String path = key.getPath();
-                                if ("shield_of_the_deep".equals(path) || "end_pirate_anchor".equals(path) || "end_pirate_anchor_winch".equals(path)) continue;
                                 CreativeModeTab.Output collector = new CreativeModeTab.Output() {
                                     @Override
                                     public void accept(ItemStack stack, TabVisibility visibility) {

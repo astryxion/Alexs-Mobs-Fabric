@@ -169,6 +169,15 @@ public class ModelGorilla extends AdvancedEntityModel<EntityGorilla> {
 		animator.resetKeyframe(6);
 	}
 
+    @Override
+    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, int color) {
+        float alpha = ((color >> 24) & 0xFF) / 255.0F;
+        float red = ((color >> 16) & 0xFF) / 255.0F;
+        float green = ((color >> 8) & 0xFF) / 255.0F;
+        float blue = (color & 0xFF) / 255.0F;
+        renderToBuffer(matrixStackIn, bufferIn, packedLightIn, packedOverlayIn, red, green, blue, alpha);
+    }
+
 	public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
 		if (this.young) {
 			float f = 1.35F;
@@ -200,7 +209,8 @@ public class ModelGorilla extends AdvancedEntityModel<EntityGorilla> {
 		float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
 		float sitProgress = entityIn.prevSitProgress + (entityIn.sitProgress - entityIn.prevSitProgress) * partialTick;
 		float standProgress = entityIn.prevStandProgress + (entityIn.standProgress - entityIn.prevStandProgress) * partialTick;
-		float rideProgress = entityIn.isPassenger() && entityIn.isBaby() ? 5F : 0;
+		boolean ridingParent = entityIn.isPassenger() && entityIn.isBaby();
+		float rideProgress = ridingParent ? 5F : 0;
 		this.faceTarget(netHeadYaw, headPitch, 1, head);
 		progressRotationPrev(leftArm, rideProgress, Maths.rad(-20), Maths.rad(-20), Maths.rad(-40), 5F);
 		progressRotationPrev(rightArm, rideProgress, Maths.rad(-20), Maths.rad(20), Maths.rad(40), 5F);
@@ -234,11 +244,13 @@ public class ModelGorilla extends AdvancedEntityModel<EntityGorilla> {
 		progressPositionPrev(rightArm, standProgress, -2, 1, 0, 10F);
 		progressPositionPrev(head, standProgress, 0, 4, -2, 10F);
 
-		this.walk(leftLeg, walkSpeed, walkDegree * 1.2F, true, 0F, 0F, limbSwing, limbSwingAmount);
-		this.walk(rightLeg, walkSpeed, walkDegree * 1.2F, false, 0F, 0F, limbSwing, limbSwingAmount);
-		this.walk(leftArm, walkSpeed, walkDegree * 1.2F, false, 0F, 0F, limbSwing, limbSwingAmount);
-		this.walk(rightArm, walkSpeed, walkDegree * 1.2F, true, 0F, 0F, limbSwing, limbSwingAmount);
-		this.flap(body, walkSpeed, walkDegree * 0.2F, true, 1F, 0F, limbSwing, limbSwingAmount);
+		if (!ridingParent) {
+			this.walk(leftLeg, walkSpeed, walkDegree * 1.2F, true, 0F, 0F, limbSwing, limbSwingAmount);
+			this.walk(rightLeg, walkSpeed, walkDegree * 1.2F, false, 0F, 0F, limbSwing, limbSwingAmount);
+			this.walk(leftArm, walkSpeed, walkDegree * 1.2F, false, 0F, 0F, limbSwing, limbSwingAmount);
+			this.walk(rightArm, walkSpeed, walkDegree * 1.2F, true, 0F, 0F, limbSwing, limbSwingAmount);
+			this.flap(body, walkSpeed, walkDegree * 0.2F, true, 1F, 0F, limbSwing, limbSwingAmount);
+		}
 		if(entityIn.isEating()){
 			this.walk(rightArm, eatSpeed, eatDegree, false, 1F, -0.3F, ageInTicks, 1);
 			this.walk(leftArm, eatSpeed, eatDegree, false, 1F, -0.3F, ageInTicks, 1);

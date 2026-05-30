@@ -214,40 +214,45 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
 
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
-        Item item = itemstack.getItem();
-        InteractionResult type = super.mobInteract(player, hand);
         if (!isTame() && itemstack.is(AMTagRegistry.KANGAROO_TAMEABLES)) {
-            this.usePlayerItem(player, hand, itemstack);
-            this.gameEvent(GameEvent.EAT);
-            this.playSound(SoundEvents.HORSE_EAT, this.getSoundVolume(), this.getVoicePitch());
-            carrotFeedings++;
-            if (carrotFeedings > 10 && getRandom().nextInt(2) == 0 || carrotFeedings > 15) {
-                this.tame(player);
-                this.level().broadcastEntityEvent(this, (byte) 7);
-            } else {
-                this.level().broadcastEntityEvent(this, (byte) 6);
-            }
-            return InteractionResult.SUCCESS;
-        }
-        if (isTame() && this.getHealth() < this.getMaxHealth() && itemstack.get(net.minecraft.core.component.DataComponents.FOOD) != null) {
-            net.minecraft.world.food.FoodProperties food = itemstack.get(net.minecraft.core.component.DataComponents.FOOD);
-            if (food != null && !itemstack.is(net.minecraft.tags.ItemTags.MEAT)) {
+            if (!this.level().isClientSide) {
                 this.usePlayerItem(player, hand, itemstack);
                 this.gameEvent(GameEvent.EAT);
                 this.playSound(SoundEvents.HORSE_EAT, this.getSoundVolume(), this.getVoicePitch());
-                this.heal(food.nutrition());
-                return InteractionResult.SUCCESS;
+                carrotFeedings++;
+                if (carrotFeedings > 10 && getRandom().nextInt(2) == 0 || carrotFeedings > 15) {
+                    this.tame(player);
+                    this.level().broadcastEntityEvent(this, (byte) 7);
+                } else {
+                    this.level().broadcastEntityEvent(this, (byte) 6);
+                }
+            }
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
+        InteractionResult type = super.mobInteract(player, hand);
+        if (isTame() && this.getHealth() < this.getMaxHealth() && itemstack.has(net.minecraft.core.component.DataComponents.FOOD)) {
+            net.minecraft.world.food.FoodProperties food = itemstack.get(net.minecraft.core.component.DataComponents.FOOD);
+            if (food != null && !itemstack.is(net.minecraft.tags.ItemTags.MEAT)) {
+                if (!this.level().isClientSide) {
+                    this.usePlayerItem(player, hand, itemstack);
+                    this.gameEvent(GameEvent.EAT);
+                    this.playSound(SoundEvents.HORSE_EAT, this.getSoundVolume(), this.getVoicePitch());
+                    this.heal(food.nutrition());
+                }
+                return InteractionResult.sidedSuccess(this.level().isClientSide);
             }
         }
         InteractionResult interactionresult = itemstack.interactLivingEntity(player, this, hand);
         if (interactionresult != InteractionResult.SUCCESS && type != InteractionResult.SUCCESS && isTame() && isOwnedBy(player) && !isFood(itemstack)) {
             if (player.isShiftKeyDown()) {
-                if(!this.isBaby()){
-                    this.openGUI(player);
+                if (!this.isBaby()) {
+                    if (!this.level().isClientSide) {
+                        this.openGUI(player);
+                    }
                     this.ejectPassengers();
                     this.entityData.set(POUCH_TICK, -1);
                 }
-                return InteractionResult.SUCCESS;
+                return InteractionResult.sidedSuccess(this.level().isClientSide);
             } else {
                 this.setCommand(this.getCommand() + 1);
                 if (this.getCommand() == 3) {
@@ -824,6 +829,9 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
                     if (stack.getItem() instanceof ArmorItem ai && ai.getEquipmentSlot() == EquipmentSlot.HEAD && !this.isBaby() && helmetIndex == -1) {
                         helmetIndex = i;
                     }
+                    if (stack.getItem() instanceof ArmorItem ai && ai.getEquipmentSlot() == EquipmentSlot.CHEST && !this.isBaby() && chestplateIndex == -1) {
+                        chestplateIndex = i;
+                    }
                     if (stack.getItem() instanceof ArmorItem && !this.isBaby()) {
                         ArmorItem armorItem = (ArmorItem) stack.getItem();
                         if (armorItem.getEquipmentSlot() == EquipmentSlot.HEAD) {
@@ -923,28 +931,28 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
     }
 
     public double getDamageForItem(ItemStack itemStack) {
-        Multimap<net.minecraft.core.Holder<Attribute>, AttributeModifier> map = getAttributeModifiersForSlot(itemStack, EquipmentSlot.MAINHAND);
-        if (!map.isEmpty()) {
-            double d = 0;
-            for (AttributeModifier mod : map.get(Attributes.ATTACK_DAMAGE)) {
-                d += mod.amount();
-            }
-            return d;
-        }
-        return 0;
+        return sumAttributeAmount(itemStack, Attributes.ATTACK_DAMAGE);
     }
 
-
     public double getProtectionForItem(ItemStack itemStack, EquipmentSlot type) {
-        Multimap<net.minecraft.core.Holder<Attribute>, AttributeModifier> map = getAttributeModifiersForSlot(itemStack, type);
-        if (!map.isEmpty()) {
-            double d = 0;
-            for (AttributeModifier mod : map.get(Attributes.ARMOR)) {
-                d += mod.amount();
-            }
-            return d;
+        return sumAttributeAmount(itemStack, Attributes.ARMOR);
+    }
+
+    private static double sumAttributeAmount(ItemStack itemStack, net.minecraft.core.Holder<Attribute> attribute) {
+        ItemAttributeModifiers comp = itemStack.get(DataComponents.ATTRIBUTE_MODIFIERS);
+        if (comp == null) {
+            comp = itemStack.getItem().getDefaultAttributeModifiers();
         }
-        return 0;
+        if (comp == null || comp.modifiers().isEmpty()) {
+            return 0;
+        }
+        double total = 0;
+        for (ItemAttributeModifiers.Entry entry : comp.modifiers()) {
+            if (entry.attribute().is(attribute)) {
+                total += entry.modifier().amount();
+            }
+        }
+        return total;
     }
 
     /** Called when kangaroo jumps (cannot override final jumpFromGround in 1.21.1). */

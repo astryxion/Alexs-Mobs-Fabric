@@ -20,6 +20,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -82,15 +83,17 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
         map.put(Blocks.MANGROVE_LEAVES, Items.MANGROVE_PROPAGULE);
     });
     private static Map<Block, List<Item>> LEAF_TO_RARES;
-    private static Map<Block, List<Item>> getLeafToRares() {
-        if (LEAF_TO_RARES == null) {
-            LEAF_TO_RARES = Util.make(Maps.newHashMap(), (map) -> {
-                map.put(Blocks.OAK_LEAVES, List.of(Items.APPLE));
-                map.put(Blocks.JUNGLE_LEAVES, List.of(AMItemRegistry.BANANA, AMItemRegistry.LEAFCUTTER_ANT_PUPA, Items.COCOA_BEANS));
-                map.put(Blocks.ACACIA_LEAVES, List.of(AMItemRegistry.ACACIA_BLOSSOM));
-            });
+
+    /** Call from {@link AMItemRegistry#init()} after mod items are registered. */
+    public static void initLeafToRares() {
+        if (LEAF_TO_RARES != null) {
+            return;
         }
-        return LEAF_TO_RARES;
+        LEAF_TO_RARES = Util.make(Maps.newHashMap(), (map) -> {
+            map.put(Blocks.OAK_LEAVES, List.of(Items.APPLE));
+            map.put(Blocks.JUNGLE_LEAVES, List.of(AMItemRegistry.BANANA, AMItemRegistry.LEAFCUTTER_ANT_PUPA, Items.COCOA_BEANS));
+            map.put(Blocks.ACACIA_LEAVES, List.of(AMItemRegistry.ACACIA_BLOSSOM));
+        });
     }
 
     private static final EntityDataAccessor<Direction> ATTACHED_FACE = SynchedEntityData.defineId(EntitySugarGlider.class, EntityDataSerializers.DIRECTION);
@@ -369,19 +372,33 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
     }
 
     private List<ItemStack> getForageLoot(BlockState leafState) {
+        if (!(this.level() instanceof ServerLevel serverLevel)) {
+            return List.of();
+        }
+        MinecraftServer server = serverLevel.getServer();
+        if (server == null) {
+            return List.of();
+        }
+        initLeafToRares();
         Item sapling = LEAF_TO_SAPLING.get(leafState.getBlock());
-        List<Item> rares = getLeafToRares().get(leafState.getBlock());
+        List<Item> rares = LEAF_TO_RARES.get(leafState.getBlock());
         final float rng = this.getRandom().nextFloat();
-        if (rng < 0.1F && rares != null) {
+        if (rng < 0.1F && rares != null && !rares.isEmpty()) {
             Item item = rares.size() <= 1 ? rares.get(0) : rares.get(this.getRandom().nextInt(rares.size()));
-            return List.of(new ItemStack(item));
+            if (item != null) {
+                return List.of(new ItemStack(item));
+            }
         }
         if (rng < 0.25F && sapling != null) {
             return List.of(new ItemStack(sapling));
         }
-        LootTable loottable = this.level().getServer().reloadableRegistries().getLootTable(SUGAR_GLIDER_REWARD);
-        return loottable.getRandomItems((new LootParams.Builder((ServerLevel) this.level())).withParameter(LootContextParams.THIS_ENTITY, this).withParameter(LootContextParams.BLOCK_STATE, leafState).create(LootContextParamSets.PIGLIN_BARTER));
-
+        LootTable loottable = server.reloadableRegistries().getLootTable(SUGAR_GLIDER_REWARD);
+        return loottable.getRandomItems(
+                (new LootParams.Builder(serverLevel))
+                        .withParameter(LootContextParams.THIS_ENTITY, this)
+                        .withParameter(LootContextParams.BLOCK_STATE, leafState)
+                        .create(LootContextParamSets.PIGLIN_BARTER),
+                this.getRandom());
     }
 
     public void travel(Vec3 travelVector) {

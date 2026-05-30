@@ -3,7 +3,6 @@ package com.github.alexthe666.alexsmobs;
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
-import com.github.alexthe666.alexsmobs.config.BiomeConfig;
 import com.github.alexthe666.alexsmobs.config.ConfigHolder;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.enchantment.AMEnchantmentRegistry;
@@ -15,10 +14,7 @@ import com.github.alexthe666.alexsmobs.message.*;
 import com.github.alexthe666.alexsmobs.misc.*;
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.world.AMFeatureRegistry;
-import com.github.alexthe666.alexsmobs.world.AMLeafcutterAntBiomeModifier;
-import com.github.alexthe666.alexsmobs.world.AMMobSpawnBiomeModifier;
-import com.github.alexthe666.alexsmobs.world.AMMobSpawnStructureModifier;
-import com.github.alexthe666.alexsmobs.world.AMWorldRegistry;
+import com.github.alexthe666.alexsmobs.world.AMSpawnRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -137,7 +133,6 @@ public class AlexsMobs implements ModInitializer {
         isHalloween = calendar.get(Calendar.MONTH) + 1 == 10 && calendar.get(Calendar.DATE) >= 29 && calendar.get(Calendar.DATE) <= 31;
 
         ConfigHolder.loadConfig();
-        BiomeConfig.init();
 
         AMEntityRegistry.init();
         AMBlockRegistry.init();
@@ -155,10 +150,7 @@ public class AlexsMobs implements ModInitializer {
         AMRecipeRegistry.init();
         AMLootRegistry.init();
         AMCreativeTabRegistry.init();
-        AMMobSpawnBiomeModifier.register();
-        AMWorldRegistry.logSpawnDiagnosticStartup();
-        AMLeafcutterAntBiomeModifier.register();
-        AMMobSpawnStructureModifier.register();
+        AMSpawnRegistry.register();
 
         PayloadTypeRegistry.playC2S().register(AlexsMobsPayload.TYPE, AlexsMobsPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(AlexsMobsPayload.TYPE, AlexsMobsPayload.STREAM_CODEC);
@@ -212,7 +204,7 @@ public class AlexsMobs implements ModInitializer {
     private static final int ID_MOSQUITO_MOUNT = 0, ID_MOSQUITO_DISMOUNT = 1, ID_HURT_MULTIPART = 2, ID_CROW_MOUNT = 3, ID_CROW_DISMOUNT = 4;
     private static final int ID_MUNGUS_BIOME = 5, ID_KANGAROO_SYNC = 6, ID_KANGAROO_EAT = 7, ID_UPDATE_CAPSID = 8, ID_SWING_ARM = 9;
     private static final int ID_EAGLE_CONTROLS = 10, ID_SYNC_ENTITY_POS = 11, ID_TARANTULA_STING = 12, ID_START_DANCING = 13, ID_INTERACT_MULTIPART = 14;
-    private static final int ID_VISUAL_FLAG = 15, ID_PUPFISH_CHUNK = 16, ID_TRANSMUTABLES = 17, ID_TRANSMUTE_MENU = 18;
+    private static final int ID_VISUAL_FLAG = 15, ID_PUPFISH_CHUNK = 16, ID_TRANSMUTABLES = 17, ID_TRANSMUTE_MENU = 18, ID_SYNC_ENTITY_DATA = 19;
 
     private static void registerNetworking() {
         ServerPlayNetworking.registerGlobalReceiver(AlexsMobsPayload.TYPE, (payload, context) -> {
@@ -255,6 +247,9 @@ public class AlexsMobs implements ModInitializer {
             case ID_VISUAL_FLAG -> MessageSendVisualFlagFromServer.Handler.handle(MessageSendVisualFlagFromServer.read(buf), sup);
             case ID_PUPFISH_CHUNK -> MessageSetPupfishChunkOnClient.Handler.handle(MessageSetPupfishChunkOnClient.read(buf), sup);
             case ID_TRANSMUTABLES -> MessageUpdateTransmutablesToDisplay.Handler.handle(MessageUpdateTransmutablesToDisplay.read(buf, registryAccess), sup);
+            case ID_SYNC_ENTITY_DATA -> MessageSyncEntityData.Handler.handle(MessageSyncEntityData.read(buf), sup);
+            case ID_KANGAROO_SYNC -> MessageKangarooInventorySync.Handler.handle(MessageKangarooInventorySync.read(buf, registryAccess), sup);
+            case ID_KANGAROO_EAT -> MessageKangarooEat.Handler.handle(MessageKangarooEat.read(buf, registryAccess), sup);
             default -> {}
         }
     }
@@ -280,6 +275,7 @@ public class AlexsMobs implements ModInitializer {
         else if (message instanceof MessageSetPupfishChunkOnClient m) { buf.writeVarInt(ID_PUPFISH_CHUNK); MessageSetPupfishChunkOnClient.write(m, buf); }
         else if (message instanceof MessageUpdateTransmutablesToDisplay m) { buf.writeVarInt(ID_TRANSMUTABLES); MessageUpdateTransmutablesToDisplay.write(m, buf, registryAccess); }
         else if (message instanceof MessageTransmuteFromMenu m) { buf.writeVarInt(ID_TRANSMUTE_MENU); MessageTransmuteFromMenu.write(m, buf); }
+        else if (message instanceof MessageSyncEntityData m) { buf.writeVarInt(ID_SYNC_ENTITY_DATA); MessageSyncEntityData.write(m, buf); }
         return buf;
     }
 

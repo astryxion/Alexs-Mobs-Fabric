@@ -16,6 +16,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
@@ -40,16 +41,20 @@ public class EntityTossedItem extends ThrowableItemProjectile {
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        super.defineSynchedData(builder);
         builder.define(DART, false);
+        super.defineSynchedData(builder);
     }
 
     public boolean isDart() {
-        return this.entityData.get(DART);
+        return this.entityData != null && this.entityData.get(DART);
     }
 
     public void setDart(boolean dart) {
+        if (this.entityData == null) {
+            return;
+        }
         this.entityData.set(DART, dart);
+        this.setItem(new ItemStack(dart ? AMItemRegistry.ANCIENT_DART : Items.COBBLESTONE));
     }
 
     @Override
@@ -127,6 +132,10 @@ public class EntityTossedItem extends ThrowableItemProjectile {
     }
 
     protected Item getDefaultItem() {
-        return isDart() ? AMItemRegistry.ANCIENT_DART : Items.COBBLESTONE;
+        // Parent defineSynchedData calls this before entityData exists on 1.21.1; capuchin setDart() sets the real stack after spawn.
+        if (this.entityData != null && isDart()) {
+            return AMItemRegistry.ANCIENT_DART;
+        }
+        return Items.COBBLESTONE;
     }
 }

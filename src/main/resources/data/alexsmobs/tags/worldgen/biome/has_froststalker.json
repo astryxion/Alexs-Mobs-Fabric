@@ -1,0 +1,26 @@
+{
+  "values": [
+    "minecraft:ice_spikes",
+    "minecraft:frozen_peaks",
+    {
+      "id": "terralith:cave/frostfire_caves",
+      "required": false
+    },
+    {
+      "id": "terralith:frozen_cliffs",
+      "required": false
+    },
+    {
+      "id": "terralith:glacial_chasm",
+      "required": false
+    },
+    {
+      "id": "terralith:snowy_badlands",
+      "required": false
+    },
+    {
+      "id": "terralith:gravel_desert",
+      "required": false
+    }
+  ]
+}

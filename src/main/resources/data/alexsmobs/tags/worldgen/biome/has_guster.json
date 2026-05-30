@@ -1,0 +1,39 @@
+{
+  "values": [
+    {
+      "id": "#forge:is_hot/overworld",
+      "required": false
+    },
+    {
+      "id": "#forge:is_dry/overworld",
+      "required": false
+    },
+    {
+      "id": "#forge:is_sandy",
+      "required": false
+    },
+    {
+      "id": "terralith:ancient_sands",
+      "required": false
+    },
+    {
+      "id": "terralith:desert_canyon",
+      "required": false
+    },
+    {
+      "id": "terralith:desert_spires",
+      "required": false
+    },
+    {
+      "id": "terralith:ashen_savanna",
+      "required": false
+    },
+    {
+      "id": "terralith:cave/desert_caves",
+      "required": false
+    }
+  ],
+  "remove": [
+    "#forge:no_default_monsters"
+  ]
+}

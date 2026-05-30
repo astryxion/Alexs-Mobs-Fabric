@@ -168,7 +168,7 @@ public class AMEntityRegistry {
         HUMMINGBIRD = register("hummingbird", EntityType.Builder.of(EntityHummingbird::new, MobCategory.CREATURE).sized(0.45F, 0.45F).clientTrackingRange(5));
         ORCA = register("orca", EntityType.Builder.of(EntityOrca::new, MobCategory.WATER_CREATURE).sized(3.75F, 1.75F).clientTrackingRange(10));
         SUNBIRD = register("sunbird", EntityType.Builder.of(EntitySunbird::new, MobCategory.CREATURE).sized(2.75F, 1.5F).fireImmune().clientTrackingRange(12).updateInterval(1));
-        GORILLA = register("gorilla", EntityType.Builder.of(EntityGorilla::new, MobCategory.CREATURE).sized(1.15F, 1.35F).clientTrackingRange(10));
+        GORILLA = register("gorilla", EntityType.Builder.of(EntityGorilla::new, MobCategory.CREATURE).sized(1.25F, 1.5F).clientTrackingRange(10));
         CRIMSON_MOSQUITO = register("crimson_mosquito", EntityType.Builder.of(EntityCrimsonMosquito::new, MobCategory.MONSTER).sized(1.25F, 1.15F).fireImmune().clientTrackingRange(8));
         MOSQUITO_SPIT = register("mosquito_spit", EntityType.Builder.<EntityMosquitoSpit>of(EntityMosquitoSpit::new, MobCategory.MISC).sized(0.5F, 0.5F).fireImmune());
         RATTLESNAKE = register("rattlesnake", EntityType.Builder.of(EntityRattlesnake::new, MobCategory.CREATURE).sized(0.95F, 0.35F).clientTrackingRange(10));
@@ -522,15 +522,9 @@ public class AMEntityRegistry {
         }
     }
 
-    /** Fabric: LivingEntity.jumping is protected in 1.20.1; use reflection for cross-class access (1:1 behavior). */
+    /** Fabric 1.21.1: LivingEntity.jumping is not reliably accessible; use upward velocity when jumping. */
     public static boolean getLivingJumping(LivingEntity living) {
-        try {
-            java.lang.reflect.Field f = LivingEntity.class.getDeclaredField("jumping");
-            f.setAccessible(true);
-            return f.getBoolean(living);
-        } catch (Exception e) {
-            return false;
-        }
+        return living.getDeltaMovement().y > 0.0D && !living.onGround();
     }
 
 }

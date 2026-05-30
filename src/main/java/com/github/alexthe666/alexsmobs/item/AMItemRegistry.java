@@ -54,7 +54,7 @@ public class AMItemRegistry {
     public static boolean isShieldBlocking(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return false;
         Item i = stack.getItem();
-        return i instanceof ShieldItem || i == SHIELD_OF_THE_DEEP || i == SKELEWAG_SWORD;
+        return i instanceof ShieldItem || i == SKELEWAG_SWORD;
     }
 
     public static final AMArmorMaterial ROADRUNNER_ARMOR_MATERIAL = new AMArmorMaterial("roadrunner", 18, new int[]{3, 3, 3, 3}, 20, SoundEvents.ARMOR_EQUIP_TURTLE, 0);
@@ -343,6 +343,7 @@ public class AMItemRegistry {
     }
 
     public static void init() {
+        AMDataComponents.register();
         registerArmorMaterials();
         SWIM_SPEED_ATTRIBUTE = Registry.register(BuiltInRegistries.ATTRIBUTE, id("swim_speed"), new RangedAttribute("attribute.name.generic.alexsmobs.swim_speed", 1.0D, 0.0D, Double.MAX_VALUE).setSyncable(true));
         BLOCK_REACH_ATTRIBUTE = Registry.register(BuiltInRegistries.ATTRIBUTE, id("block_reach"), new RangedAttribute("attribute.name.generic.alexsmobs.block_reach", 4.5D, 0.0D, 1024.0D).setSyncable(true));
@@ -514,6 +515,7 @@ public class AMItemRegistry {
         NOVELTY_HAT_MATERIAL.setRepairMaterial(Ingredient.of(Items.BONE));
         KIMONO_MATERIAL.setRepairMaterial(Ingredient.of(ItemTags.WOOL));
         LecternBooks.BOOKS.put(BuiltInRegistries.ITEM.getKey(ANIMAL_DICTIONARY), new LecternBooks.BookData(0x606B26, 0xFDF8ED));
+        EntitySugarGlider.initLeafToRares();
     }
 
     public static void initDispenser(){

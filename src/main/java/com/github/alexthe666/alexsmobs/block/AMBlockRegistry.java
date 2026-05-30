@@ -49,11 +49,6 @@ public class AMBlockRegistry {
     public static Block CRYSTALIZED_BANANA_SLUG_MUCUS;
     public static Block CAIMAN_EGG;
     public static Block TRIOPS_EGGS;
-    public static Block END_PIRATE_DOOR;
-    public static Block END_PIRATE_ANCHOR;
-    public static Block END_PIRATE_ANCHOR_WINCH;
-    public static Block END_PIRATE_SHIP_WHEEL;
-    public static Block END_PIRATE_FLAG;
     /*
         public static final RegistryObject<Block> PURPUR_PLANKS = registerBlockAndItem("purpur_planks", () -> new Block(PURPUR_PLANKS_PROPERTIES));;
     public static final RegistryObject<Block> PURPUR_PLANKS_STAIRS = registerBlockAndItem("purpur_planks_stairs", () -> new StairBlock(PURPUR_PLANKS.get().defaultBlockState(), PURPUR_PLANKS_PROPERTIES));;
@@ -96,11 +91,6 @@ public class AMBlockRegistry {
         CRYSTALIZED_BANANA_SLUG_MUCUS = registerBlockAndItem("crystalized_banana_slug_mucus", new BlockCrystalizedMucus());
         CAIMAN_EGG = registerBlockAndItem("caiman_egg", new BlockReptileEgg(AMEntityRegistry.CAIMAN));
         TRIOPS_EGGS = registerBlockAndItem("triops_eggs", new BlockTriopsEggs());
-        END_PIRATE_DOOR = registerBlockAndItem("end_pirate_door", new BlockEndPirateDoor(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).noOcclusion().sound(SoundType.GLASS).lightLevel((state) -> 3).requiresCorrectToolForDrops().strength(1.5F)));
-        END_PIRATE_ANCHOR = registerBlockAndItem("end_pirate_anchor", new BlockEndPirateAnchor(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLACK).friction(0.97F).strength(10.0F).lightLevel((i) -> 6).sound(SoundType.STONE).noOcclusion()));
-        END_PIRATE_ANCHOR_WINCH = registerBlockAndItem("end_pirate_anchor_winch", new BlockEndPirateAnchorWinch(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLACK).friction(0.97F).strength(10.0F).lightLevel((i) -> 6).sound(SoundType.STONE).noOcclusion()));
-        END_PIRATE_SHIP_WHEEL = registerBlockAndItem("end_pirate_ship_wheel", new BlockEndPirateShipWheel(BlockBehaviour.Properties.of().mapColor(MapColor.TERRACOTTA_WHITE).noOcclusion().sound(SoundType.ANCIENT_DEBRIS).strength(1F).lightLevel((i) -> 3).noCollission().requiresCorrectToolForDrops()));
-        END_PIRATE_FLAG = registerBlockAndItem("end_pirate_flag", new BlockEndPirateFlag(BlockBehaviour.Properties.of().mapColor(MapColor.TERRACOTTA_WHITE).noOcclusion().sound(SoundType.WOOD).strength(1F).lightLevel((i) -> 15).noCollission().requiresCorrectToolForDrops()));
     }
 
     private static Block registerBlockAndItem(String name, Block block) {

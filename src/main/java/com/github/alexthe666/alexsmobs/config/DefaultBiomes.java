@@ -295,7 +295,7 @@ public class DefaultBiomes {
             .addBiomeEntry(BiomeEntryType.REGISTRY_NAME, false, "biomesoplenty:snowblossom_grove", 13);
 
     public static final SpawnBiomeData MIMICUBE = new SpawnBiomeData()
-            .addBiomeEntry(BiomeEntryType.REGISTRY_NAME, true, "minecraft:mushroom_fields", 0)
+            .addBiomeEntry(BiomeEntryType.BIOME_TAG, true, "c:no_default_monsters", 0)
             .addBiomeEntry(BiomeEntryType.BIOME_TAG, false, "minecraft:is_end", 0)
             .addBiomeEntry(BiomeEntryType.REGISTRY_NAME, true, "minecraft:the_end", 0);
 

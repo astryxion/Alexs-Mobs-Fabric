@@ -130,6 +130,15 @@ public class ModelMantisShrimp extends AdvancedEntityModel<EntityMantisShrimp> {
 		return ImmutableList.of(root, body, head, eye_left, eye_right, fist_left, fist_right, arm_left, arm_right, whisker_left, whisker_right, flapper_left, flapper_right, tail, legs_back, legs_front);
 	}
 
+    @Override
+    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, int color) {
+        float alpha = ((color >> 24) & 0xFF) / 255.0F;
+        float red = ((color >> 16) & 0xFF) / 255.0F;
+        float green = ((color >> 8) & 0xFF) / 255.0F;
+        float blue = (color & 0xFF) / 255.0F;
+        renderToBuffer(matrixStackIn, bufferIn, packedLightIn, packedOverlayIn, red, green, blue, alpha);
+    }
+
 	public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
 		if (this.young) {
 			this.eye_left.setScale(1.15F, 1.15F, 1.15F);

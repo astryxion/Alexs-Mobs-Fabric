@@ -69,6 +69,7 @@ public class EntityRaccoon extends TamableAnimal implements IAnimatedEntity, IFo
     private static final EntityDataAccessor<Optional<BlockPos>> WASH_POS = SynchedEntityData.defineId(EntityRaccoon.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(EntityRaccoon.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> CARPET_COLOR = SynchedEntityData.defineId(EntityRaccoon.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<ItemStack> EAT_PARTICLE_ITEM = SynchedEntityData.defineId(EntityRaccoon.class, EntityDataSerializers.ITEM_STACK);
     public float prevStandProgress;
     public float standProgress;
     public float prevBegProgress;
@@ -437,6 +438,11 @@ public class EntityRaccoon extends TamableAnimal implements IAnimatedEntity, IFo
     }
 
     public void onEatItem() {
+        ItemStack particleItem = this.getMainHandItem().copy();
+        if (!particleItem.isEmpty()) {
+            particleItem.setCount(1);
+            this.entityData.set(EAT_PARTICLE_ITEM, particleItem);
+        }
         this.heal(10);
         this.level().broadcastEntityEvent(this, (byte) 92);
         this.gameEvent(GameEvent.EAT);
@@ -460,11 +466,20 @@ public class EntityRaccoon extends TamableAnimal implements IAnimatedEntity, IFo
     }
     public void handleEntityEvent(byte id) {
         if (id == 92) {
-            for (int i = 0; i < 6 + random.nextInt(3); i++) {
-                double d2 = this.random.nextGaussian() * 0.02D;
-                double d0 = this.random.nextGaussian() * 0.02D;
-                double d1 = this.random.nextGaussian() * 0.02D;
-                this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, this.getItemInHand(InteractionHand.MAIN_HAND)), this.getX() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, this.getY() + this.getBbHeight() * 0.5F + (double) (this.random.nextFloat() * this.getBbHeight() * 0.5F), this.getZ() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, d0, d1, d2);
+            ItemStack particleStack = this.entityData.get(EAT_PARTICLE_ITEM);
+            if (particleStack.isEmpty()) {
+                particleStack = this.getItemInHand(InteractionHand.MAIN_HAND);
+            }
+            if (!particleStack.isEmpty()) {
+                ItemStack stack = particleStack.copy();
+                stack.setCount(1);
+                for (int i = 0; i < 6 + random.nextInt(3); i++) {
+                    double d2 = this.random.nextGaussian() * 0.02D;
+                    double d0 = this.random.nextGaussian() * 0.02D;
+                    double d1 = this.random.nextGaussian() * 0.02D;
+                    this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, stack), this.getX() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, this.getY() + this.getBbHeight() * 0.5F + (double) (this.random.nextFloat() * this.getBbHeight() * 0.5F), this.getZ() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, d0, d1, d2);
+                }
+                this.entityData.set(EAT_PARTICLE_ITEM, ItemStack.EMPTY);
             }
         } else if (id == 93) {
             for (int i = 0; i < 6 + random.nextInt(3); i++) {
@@ -516,6 +531,7 @@ public class EntityRaccoon extends TamableAnimal implements IAnimatedEntity, IFo
         builder.define(CARPET_COLOR, -1);
         builder.define(COMMAND, 0);
         builder.define(WASH_POS, Optional.<BlockPos>empty());
+        builder.define(EAT_PARTICLE_ITEM, ItemStack.EMPTY);
     }
 
 

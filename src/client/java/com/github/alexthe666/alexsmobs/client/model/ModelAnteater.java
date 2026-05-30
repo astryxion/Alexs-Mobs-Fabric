@@ -220,7 +220,12 @@ public class ModelAnteater extends AdvancedEntityModel<EntityAnteater> {
         return ImmutableList.of(root, body, tail, head, left_ear, right_ear, left_arm, right_arm, left_leg, right_leg, left_claws, right_claws, snout, tongue1, tongue2);
     }
 
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
+    @Override
+    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, int color) {
+        float alpha = ((color >> 24) & 0xFF) / 255.0F;
+        float red = ((color >> 16) & 0xFF) / 255.0F;
+        float green = ((color >> 8) & 0xFF) / 255.0F;
+        float blue = (color & 0xFF) / 255.0F;
         if (this.young) {
             float f = 1.35F;
             head.setScale(f, f, f);

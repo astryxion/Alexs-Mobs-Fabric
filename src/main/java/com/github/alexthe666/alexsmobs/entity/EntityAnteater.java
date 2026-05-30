@@ -266,7 +266,9 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
         }
 
         if (this.isPassenger() && this.getVehicle() instanceof final EntityAnteater mount) {
-            if (this.isBaby()) {
+            if (!mount.isAlive()) {
+                this.stopRiding();
+            } else if (this.isBaby()) {
                 this.setYRot(mount.yBodyRot);
                 this.yHeadRot = mount.yBodyRot;
                 this.yBodyRot = mount.yBodyRot;

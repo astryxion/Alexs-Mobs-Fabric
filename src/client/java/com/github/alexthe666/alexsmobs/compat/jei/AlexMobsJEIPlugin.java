@@ -44,9 +44,7 @@ public class AlexMobsJEIPlugin implements IModPlugin {
     public void registerRecipes(IRecipeRegistration registration) {
         registration.addRecipes(CAPID_RECIPE_TYPE, AlexsMobs.PROXY.getCapsidRecipeManager().getCapsidRecipes());
         registration.getIngredientManager().removeIngredientsAtRuntime(VanillaTypes.ITEM_STACK, List.of(
-                new ItemStack(AMItemRegistry.SHIELD_OF_THE_DEEP),
-                new ItemStack(AMBlockRegistry.END_PIRATE_ANCHOR),
-                new ItemStack(AMBlockRegistry.END_PIRATE_ANCHOR_WINCH)
+                new ItemStack(AMItemRegistry.SHIELD_OF_THE_DEEP)
         ));
     }
 

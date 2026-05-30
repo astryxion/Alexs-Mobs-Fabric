@@ -3,6 +3,7 @@ package com.github.alexthe666.alexsmobs.message;
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.EntityMungus;
+import com.github.alexthe666.alexsmobs.misc.AMChunkBiomeUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
@@ -64,11 +65,9 @@ public class MessageMungusBiomeChange {
                     if (player.level() != null) {
                         Entity entity = player.level().getEntity(message.mungusID);
                         Registry<Biome> registry = player.level().registryAccess().registryOrThrow(Registries.BIOME);
-                        Biome biome = registry.get(ResourceLocation.parse(message.biomeOption));
-                        ResourceKey<Biome> resourceKey = registry.getResourceKey(biome).orElse(null);
-                        Holder<Biome> holder = registry.getHolder(resourceKey).orElse(null);
+                        Holder<Biome> holder = registry.getHolder(ResourceKey.create(Registries.BIOME, ResourceLocation.parse(message.biomeOption))).orElse(null);
                         if (AMConfig.mungusBiomeTransformationType == 2) {
-                            if (entity instanceof EntityMungus && entity.distanceToSqr(message.posX, entity.getY(), message.posZ) < 1000 && biome != null) {
+                            if (entity instanceof EntityMungus && entity.distanceToSqr(message.posX, entity.getY(), message.posZ) < 1000 && holder != null) {
                                 LevelChunk chunk = player.level().getChunkAt(new BlockPos(message.posX, 0, message.posZ));
                                 int i = QuartPos.fromBlock(chunk.getMinBuildHeight());
                                 int k = i + QuartPos.fromBlock(chunk.getHeight()) - 1;
@@ -84,7 +83,7 @@ public class MessageMungusBiomeChange {
                                             }
                                         }
                                     }
-                                    setSectionBiomes(section, container);
+                                    AMChunkBiomeUtil.setSectionBiomes(section, container);
                                 }
                                 AlexsMobs.PROXY.updateBiomeVisuals(message.posX, message.posZ);
                             }
@@ -96,14 +95,4 @@ public class MessageMungusBiomeChange {
         }
     }
 
-    /** Fabric: LevelChunkSection.biomes is not public in 1.20.1; use reflection to preserve 1:1 behavior. */
-    private static void setSectionBiomes(LevelChunkSection section, PalettedContainer<Holder<Biome>> container) {
-        try {
-            java.lang.reflect.Field f = LevelChunkSection.class.getDeclaredField("biomes");
-            f.setAccessible(true);
-            f.set(section, container);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set chunk section biomes", e);
-        }
-    }
 }

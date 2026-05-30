@@ -1,0 +1,99 @@
+{
+  "values": [
+    "#minecraft:is_overworld",
+    "#minecraft:is_forest",
+    {
+      "id": "#forge:is_plains",
+      "required": false
+    },
+    "#minecraft:is_taiga",
+    {
+      "id": "terralith:alpine_grove",
+      "required": false
+    },
+    {
+      "id": "terralith:birch_taiga",
+      "required": false
+    },
+    {
+      "id": "terralith:blooming_valley",
+      "required": false
+    },
+    {
+      "id": "terralith:lavender_forest",
+      "required": false
+    },
+    {
+      "id": "terralith:lavender_valley",
+      "required": false
+    },
+    {
+      "id": "terralith:moonlight_grove",
+      "required": false
+    },
+    {
+      "id": "terralith:moonlight_valley",
+      "required": false
+    },
+    {
+      "id": "terralith:sakura_grove",
+      "required": false
+    },
+    {
+      "id": "terralith:sakura_valley",
+      "required": false
+    },
+    {
+      "id": "terralith:cold_shrubland",
+      "required": false
+    },
+    {
+      "id": "terralith:highlands",
+      "required": false
+    },
+    {
+      "id": "terralith:hot_shrubland",
+      "required": false
+    },
+    {
+      "id": "terralith:rocky_shrubland",
+      "required": false
+    },
+    {
+      "id": "terralith:shield_clearing",
+      "required": false
+    },
+    {
+      "id": "terralith:steppe",
+      "required": false
+    },
+    {
+      "id": "terralith:valley_clearing",
+      "required": false
+    },
+    {
+      "id": "terralith:temperate_highlands",
+      "required": false
+    },
+    {
+      "id": "terralith:skylands_autumn",
+      "required": false
+    },
+    {
+      "id": "terralith:mirage_isles",
+      "required": false
+    },
+    {
+      "id": "biomesoplenty:redwood_forest",
+      "required": false
+    },
+    "minecraft:cherry_grove",
+    {
+      "id": "biomesoplenty:snowblossom_grove",
+      "required": false
+    }
+  ],
+  "remove": [
+    "#minecraft:is_savanna"
+  ]
+}

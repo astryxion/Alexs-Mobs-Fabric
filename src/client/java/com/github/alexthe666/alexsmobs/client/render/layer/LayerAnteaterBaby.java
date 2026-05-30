@@ -25,29 +25,30 @@ public class LayerAnteaterBaby extends RenderLayer<EntityAnteater, ModelAnteater
     }
 
     public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, EntityAnteater roo, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
-        if(roo.isVehicle() && !roo.isBaby()){
-            for(Entity passenger : roo.getPassengers()){
+        if (roo.isAlive() && roo.isVehicle() && !roo.isBaby()) {
+            for (Entity passenger : roo.getPassengers()) {
                 float riderRot = passenger.yRotO + (passenger.getYRot() - passenger.yRotO) * partialTicks;
-                EntityRenderer render = Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(passenger);
-                EntityModel modelBase = null;
-                if (render instanceof LivingEntityRenderer) {
-                    modelBase = ((LivingEntityRenderer) render).getModel();
+                EntityRenderer<?> render = Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(passenger);
+                EntityModel<?> modelBase = null;
+                if (render instanceof LivingEntityRenderer<?, ?> livingRenderer) {
+                    modelBase = livingRenderer.getModel();
                 }
-                if(modelBase != null){
+                if (modelBase != null) {
                     ClientProxy.currentUnrenderedEntities.remove(passenger.getUUID());
                     matrixStackIn.pushPose();
-                    translateToPouch(matrixStackIn);
-                    matrixStackIn.translate(0, -0.12F, 0.1F);
-                    matrixStackIn.mulPose(Axis.ZP.rotationDegrees(180F));
-                    matrixStackIn.mulPose(Axis.YP.rotationDegrees(riderRot + 180F));
-                    renderEntity(passenger, 0, 0, 0, 0, partialTicks, matrixStackIn, bufferIn, packedLightIn);
-                    matrixStackIn.popPose();
-                    ClientProxy.currentUnrenderedEntities.add(passenger.getUUID());
+                    try {
+                        translateToPouch(matrixStackIn);
+                        matrixStackIn.translate(0, -0.12F, 0.1F);
+                        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(180F));
+                        matrixStackIn.mulPose(Axis.YP.rotationDegrees(riderRot + 180F));
+                        renderEntity(passenger, 0, 0, 0, 0, partialTicks, matrixStackIn, bufferIn, packedLightIn);
+                    } finally {
+                        matrixStackIn.popPose();
+                        ClientProxy.currentUnrenderedEntities.add(passenger.getUUID());
+                    }
                 }
-
             }
         }
-
     }
 
     public <E extends Entity> void renderEntity(E entityIn, double x, double y, double z, float yaw, float partialTicks, PoseStack matrixStack, MultiBufferSource bufferIn, int packedLight) {

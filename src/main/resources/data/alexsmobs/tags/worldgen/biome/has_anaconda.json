@@ -1,0 +1,30 @@
+{
+  "values": [
+    "#minecraft:is_overworld",
+    {
+      "id": "#forge:is_swamp",
+      "required": false
+    },
+    "minecraft:mangrove_swamp",
+    {
+      "id": "terralith:ice_marsh",
+      "required": false
+    },
+    {
+      "id": "terralith:orchid_swamp",
+      "required": false
+    },
+    {
+      "id": "terralith:amethyst_rainforest",
+      "required": false
+    },
+    {
+      "id": "terralith:tropical_jungle",
+      "required": false
+    },
+    {
+      "id": "terralith:skylands_summer",
+      "required": false
+    }
+  ]
+}

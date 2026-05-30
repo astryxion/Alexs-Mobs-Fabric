@@ -1,0 +1,26 @@
+{
+  "values": [
+    "#minecraft:is_overworld",
+    {
+      "id": "#forge:is_swamp",
+      "required": false
+    },
+    "#minecraft:is_river",
+    {
+      "id": "terralith:orchid_swamp",
+      "required": false
+    },
+    {
+      "id": "terralith:ice_marsh",
+      "required": false
+    },
+    {
+      "id": "terralith:warm_river",
+      "required": false
+    }
+  ],
+  "remove": [
+    "minecraft:mangrove_swamp",
+    "#forge:is_cold/overworld"
+  ]
+}

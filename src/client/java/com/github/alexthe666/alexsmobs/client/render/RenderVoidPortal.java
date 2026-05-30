@@ -69,12 +69,8 @@ public class RenderVoidPortal extends EntityRenderer<EntityVoidPortal> {
         }else{
             tex = getIdleTexture(entityIn.tickCount % 9, shattered);
         }
-        VertexConsumer ivertexbuilder;
-        try {
-            ivertexbuilder = shattered ? AMRenderTypes.createMergedVertexConsumer(bufferIn.getBuffer(AMRenderTypes.STATIC_PORTAL), bufferIn.getBuffer(RenderType.entityCutoutNoCull(tex))) : bufferIn.getBuffer(AMRenderTypes.getFullBright(tex));
-        } catch (IllegalStateException e) {
-            ivertexbuilder = bufferIn.getBuffer(AMRenderTypes.getFullBright(tex));
-        }
+        // In 1.21, VertexMultiConsumer does not work with entity rendering — use a single render type
+        VertexConsumer ivertexbuilder = shattered ? bufferIn.getBuffer(RenderType.entityTranslucentEmissive(tex)) : bufferIn.getBuffer(AMRenderTypes.getFullBright(tex));
         renderArc(matrixStackIn, ivertexbuilder);
     }
     private void renderArc(PoseStack matrixStackIn, VertexConsumer ivertexbuilder) {

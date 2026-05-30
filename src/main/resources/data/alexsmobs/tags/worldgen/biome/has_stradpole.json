@@ -1,0 +1,20 @@
+{
+  "values": [
+    "minecraft:basalt_deltas",
+    {
+      "id": "biomesoplenty:withered_abyss",
+      "required": false
+    },
+    {
+      "id": "incendium:volcanic_deltas",
+      "required": false
+    },
+    {
+      "id": "incendium:withered_forest",
+      "required": false
+    }
+  ],
+  "remove": [
+    "#forge:no_default_monsters"
+  ]
+}

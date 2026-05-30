@@ -9,6 +9,13 @@ import com.github.alexthe666.alexsmobs.tileentity.TileEntityTransmutationTable;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.network.chat.Component;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionResult;
@@ -16,6 +23,7 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -34,6 +42,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecialRenderBlock {
 
@@ -111,8 +120,20 @@ public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecia
     }
 
     @Override
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
+        ItemStack tool = builder.getOptionalParameter(LootContextParams.TOOL);
+        if (tool != null) {
+            ServerLevel level = builder.getLevel();
+            if (EnchantmentHelper.getItemEnchantmentLevel(level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.SILK_TOUCH), tool) > 0) {
+                return List.of(new ItemStack(this));
+            }
+        }
+        return List.of(new ItemStack(Items.NETHER_STAR));
+    }
+
+    @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (AMConfig.transmutingTableExplodes) {
+        if (!level.isClientSide() && AMConfig.transmutingTableExplodes) {
             level.explode(null, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, 3F, false, Level.ExplosionInteraction.BLOCK);
         }
         return super.playerWillDestroy(level, pos, state, player);

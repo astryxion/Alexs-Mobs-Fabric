@@ -1,0 +1,8 @@
+{
+  "values": [
+    "#alexsmobs:skreechers_can_spawn_wardens"
+  ],
+  "remove": [
+    "#forge:no_default_monsters"
+  ]
+}

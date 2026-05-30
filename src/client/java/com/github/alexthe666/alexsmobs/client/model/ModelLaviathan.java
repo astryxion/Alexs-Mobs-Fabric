@@ -218,6 +218,15 @@ public class ModelLaviathan extends AdvancedEntityModel<EntityLaviathan> {
         return ImmutableList.of(root, body, leftArm, rightArm, leftLeg, rightLeg, tail, neck, neck2, head, bottom_jaw, top_jaw, shell, vent1, vent2, vent3, vent4);
     }
 
+    @Override
+    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, int color) {
+        float alpha = ((color >> 24) & 0xFF) / 255.0F;
+        float red = ((color >> 16) & 0xFF) / 255.0F;
+        float green = ((color >> 8) & 0xFF) / 255.0F;
+        float blue = (color & 0xFF) / 255.0F;
+        renderToBuffer(matrixStackIn, bufferIn, packedLightIn, packedOverlayIn, red, green, blue, alpha);
+    }
+
     public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.45F;

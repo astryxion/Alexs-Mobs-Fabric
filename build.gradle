@@ -20,6 +20,7 @@ repositories {
 }
 
 loom {
+	accessWidenerPath = file("src/main/resources/alexsmobs.accesswidener")
 	splitEnvironmentSourceSets()
 
 	mods {
