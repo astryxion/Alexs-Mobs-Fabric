@@ -1,0 +1,17 @@
+{
+  "values": [
+    "#minecraft:is_overworld",
+    "#minecraft:is_ocean",
+    {
+      "id": "#forge:is_cold/overworld",
+      "required": false
+    },
+    "minecraft:lukewarm_ocean",
+    "minecraft:deep_ocean",
+    "minecraft:deep_lukewarm_ocean",
+    {
+      "id": "alexscaves:abyssal_chasm",
+      "required": false
+    }
+  ]
+}

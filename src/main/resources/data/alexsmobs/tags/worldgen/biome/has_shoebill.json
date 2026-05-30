@@ -1,0 +1,20 @@
+{
+  "values": [
+    "#minecraft:is_overworld",
+    {
+      "id": "#forge:is_swamp",
+      "required": false
+    },
+    {
+      "id": "terralith:orchid_swamp",
+      "required": false
+    },
+    {
+      "id": "terralith:red_oasis",
+      "required": false
+    }
+  ],
+  "remove": [
+    "minecraft:mangrove_swamp"
+  ]
+}

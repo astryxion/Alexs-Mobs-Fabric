@@ -3,7 +3,6 @@ package com.github.alexthe666.alexsmobs;
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
-import com.github.alexthe666.alexsmobs.config.BiomeConfig;
 import com.github.alexthe666.alexsmobs.config.ConfigHolder;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.enchantment.AMEnchantmentRegistry;
@@ -15,10 +14,7 @@ import com.github.alexthe666.alexsmobs.message.*;
 import com.github.alexthe666.alexsmobs.misc.*;
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.world.AMFeatureRegistry;
-import com.github.alexthe666.alexsmobs.world.AMLeafcutterAntBiomeModifier;
-import com.github.alexthe666.alexsmobs.world.AMMobSpawnBiomeModifier;
-import com.github.alexthe666.alexsmobs.world.AMMobSpawnStructureModifier;
-import com.github.alexthe666.alexsmobs.world.AMWorldRegistry;
+import com.github.alexthe666.alexsmobs.world.AMSpawnRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -108,7 +104,6 @@ public class AlexsMobs implements ModInitializer {
         isHalloween = calendar.get(Calendar.MONTH) + 1 == 10 && calendar.get(Calendar.DATE) >= 29 && calendar.get(Calendar.DATE) <= 31;
 
         ConfigHolder.loadConfig();
-        BiomeConfig.init();
 
         AMEntityRegistry.init();
         AMBlockRegistry.init();
@@ -127,10 +122,7 @@ public class AlexsMobs implements ModInitializer {
         AMLootRegistry.init();
         AMBannerRegistry.init();
         AMCreativeTabRegistry.init();
-        AMMobSpawnBiomeModifier.register();
-        AMWorldRegistry.logSpawnDiagnosticStartup();
-        AMLeafcutterAntBiomeModifier.register();
-        AMMobSpawnStructureModifier.register();
+        AMSpawnRegistry.register();
 
         registerNetworking();
         PROXY.init();

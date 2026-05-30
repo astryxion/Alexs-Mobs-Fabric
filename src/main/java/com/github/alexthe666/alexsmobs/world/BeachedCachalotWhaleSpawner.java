@@ -1,10 +1,11 @@
 package com.github.alexthe666.alexsmobs.world;
 
 import com.github.alexthe666.alexsmobs.config.AMConfig;
-import com.github.alexthe666.alexsmobs.config.BiomeConfig;
 import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityCachalotWhale;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
@@ -100,7 +101,9 @@ public class BeachedCachalotWhaleSpawner {
             int k = p_221244_1_.getZ() + this.random.nextInt(p_221244_2_ * 2) - p_221244_2_;
             int l = this.world.getHeight(Types.WORLD_SURFACE, j, k);
             BlockPos blockpos1 = new BlockPos(j, l, k);
-            if (AMWorldRegistry.testBiome(BiomeConfig.cachalot_whale_beached_spawns, world.getBiome(blockpos1)) && NaturalSpawner.isSpawnPositionOk(Type.ON_GROUND, this.world, blockpos1, EntityType.WANDERING_TRADER)) {
+            Holder<net.minecraft.world.level.biome.Biome> biomeHolder = world.getBiome(blockpos1);
+            ResourceLocation biomeId = biomeHolder.unwrapKey().map(key -> key.location()).orElse(new ResourceLocation("minecraft:plains"));
+            if (AMSpawnBiomeMatcher.matches(biomeHolder, biomeId, AMDefaultBiomes.BEACHED_CACHALOT_WHALE) && NaturalSpawner.isSpawnPositionOk(Type.ON_GROUND, this.world, blockpos1, EntityType.WANDERING_TRADER)) {
                 blockpos = blockpos1;
                 break;
             }

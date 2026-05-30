@@ -1,0 +1,16 @@
+{
+  "values": [
+    "minecraft:soul_sand_valley",
+    {
+      "id": "byg:warped_desert",
+      "required": false
+    },
+    {
+      "id": "incendium:weeping_valley",
+      "required": false
+    }
+  ],
+  "remove": [
+    "#forge:no_default_monsters"
+  ]
+}

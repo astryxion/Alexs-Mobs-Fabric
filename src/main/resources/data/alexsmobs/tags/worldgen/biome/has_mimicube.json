@@ -1,0 +1,9 @@
+{
+  "values": [
+    "#minecraft:is_end"
+  ],
+  "remove": [
+    "#forge:no_default_monsters",
+    "minecraft:the_end"
+  ]
+}

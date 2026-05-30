@@ -1,0 +1,49 @@
+{
+  "values": [
+    "#minecraft:is_badlands",
+    {
+      "id": "#forge:is_dry/overworld",
+      "required": false
+    },
+    {
+      "id": "#forge:is_hot/overworld",
+      "required": false
+    },
+    {
+      "id": "#forge:is_sandy",
+      "required": false
+    },
+    {
+      "id": "terralith:ancient_sands",
+      "required": false
+    },
+    {
+      "id": "terralith:desert_canyon",
+      "required": false
+    },
+    {
+      "id": "terralith:desert_oasis",
+      "required": false
+    },
+    {
+      "id": "terralith:desert_spires",
+      "required": false
+    },
+    {
+      "id": "terralith:red_oasis",
+      "required": false
+    },
+    {
+      "id": "terralith:sandstone_valley",
+      "required": false
+    },
+    {
+      "id": "terralith:warped_mesa",
+      "required": false
+    },
+    {
+      "id": "terralith:white_mesa",
+      "required": false
+    }
+  ]
+}

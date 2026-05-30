@@ -1,0 +1,17 @@
+{
+  "values": [
+    "#minecraft:is_overworld",
+    "#minecraft:is_river",
+    {
+      "id": "biomesoplenty:tundra_bog",
+      "required": false
+    },
+    {
+      "id": "terralith:warm_river",
+      "required": false
+    }
+  ],
+  "remove": [
+    "#forge:is_cold/overworld"
+  ]
+}
