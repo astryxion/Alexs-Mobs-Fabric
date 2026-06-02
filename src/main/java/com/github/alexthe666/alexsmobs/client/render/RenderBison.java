@@ -71,7 +71,7 @@ public class RenderBison extends MobRenderer<EntityBison, LivingEntityRenderStat
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             this.getParentModel().setupAnim(state);
             bufferIn.submitCustomGeometry(matrixStackIn, RenderTypes.entityCutout(tex), (pose, consumer) ->
-                    this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, overlay, -1));
+                    this.getParentModel().submitCitadel(pose, consumer, packedLightIn, overlay, -1));
         }
     }
 }

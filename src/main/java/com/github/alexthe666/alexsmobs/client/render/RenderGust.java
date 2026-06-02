@@ -1,4 +1,5 @@
 package com.github.alexthe666.alexsmobs.client.render;
+import com.github.alexthe666.alexsmobs.client.model.AlexAdvancedEntityModel;
 
 import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
 import com.github.alexthe666.alexsmobs.client.model.ModelGuster;
@@ -48,7 +49,7 @@ public class RenderGust extends EntityRenderer<EntityGust, EntityRenderState> {
         this.model.hideEyes();
         int packedLightIn = state.lightCoords;
         collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucent(TEXTURE), (pose, ivertexbuilder) ->
-            this.model.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
+            AlexAdvancedEntityModel.submitModel(pose, this.model, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
         );
         this.model.showEyes();
         matrixStackIn.popPose();

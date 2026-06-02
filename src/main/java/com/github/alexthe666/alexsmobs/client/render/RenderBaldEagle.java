@@ -103,7 +103,7 @@ public class RenderBaldEagle extends MobRenderer<EntityBaldEagle, LivingEntityRe
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             this.getParentModel().setupAnim(state);
             bufferIn.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucent(TEXTURE_CAP), (pose, lead) ->
-                    this.getParentModel().renderCitadelToBuffer(matrixStackIn, lead, packedLightIn, overlay, -1));
+                    this.getParentModel().submitCitadel(pose, lead, packedLightIn, overlay, -1));
         }
     }
 }

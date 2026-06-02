@@ -23,6 +23,6 @@ public class LayerBasicGlow<E extends Mob> extends RenderLayer<LivingEntityRende
     public void submit(PoseStack matrixStackIn, SubmitNodeCollector collector, int packedLightIn, LivingEntityRenderState state, float netHeadYaw, float headPitch) {
         this.getParentModel().setupAnim(state);
         collector.submitCustomGeometry(matrixStackIn, RenderTypes.eyes(this.texture), (pose, consumer) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, OverlayTexture.NO_OVERLAY, -1));
+                this.getParentModel().submitCitadel(pose, consumer, packedLightIn, OverlayTexture.NO_OVERLAY, -1));
     }
 }

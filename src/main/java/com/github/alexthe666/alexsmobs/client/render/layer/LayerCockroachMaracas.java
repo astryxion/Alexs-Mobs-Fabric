@@ -1,4 +1,5 @@
 package com.github.alexthe666.alexsmobs.client.render.layer;
+import com.github.alexthe666.alexsmobs.client.model.AlexAdvancedEntityModel;
 
 import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
 import com.github.alexthe666.alexsmobs.client.model.ModelCockroach;
@@ -90,7 +91,7 @@ public class LayerCockroachMaracas extends RenderLayer<LivingEntityRenderState, 
             matrixStackIn.scale(0.8F, 0.8F, 0.8F);
             matrixStackIn.mulPose(Axis.XP.rotationDegrees(60F * entitylivingbaseIn.danceProgress * 0.2F));
             bufferIn.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(SOMBRERO_TEX), (pose, consumer) ->
-                    sombrero.renderToBuffer(matrixStackIn, consumer, packedLightIn, overlay, -1));
+                    AlexAdvancedEntityModel.submitModel(pose, sombrero, consumer, packedLightIn, overlay, -1));
             matrixStackIn.popPose();
         }
         matrixStackIn.popPose();

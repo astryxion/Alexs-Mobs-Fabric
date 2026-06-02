@@ -2,7 +2,9 @@ package com.github.alexthe666.alexsmobs.client.model;
 
 import com.github.alexthe666.citadel.client.model.AdvancedEntityModel;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.model.EntityModel;
+import net.minecraft.client.model.Model;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
@@ -44,6 +46,21 @@ public abstract class AlexAdvancedEntityModel<T extends Entity> extends Advanced
         while (!scratch.isEmpty()) {
             scratch.popPose();
         }
+    }
+
+    /**
+     * Vanilla-{@link Model} counterpart to {@link CitadelEntityModelBridge#submitCitadel}: draws a model from a deferred
+     * {@code submitCustomGeometry} replay using the captured submit {@code pose}. Pass the lambda's {@code pose}, never the
+     * renderer's live {@link PoseStack} (which is usually already popped at replay time, leaving the model at the camera).
+     */
+    public static void submitModel(PoseStack.Pose submitPose, Model model, VertexConsumer buffer, int packedLight, int packedOverlay, int color) {
+        withCitadelSubmitPose(submitPose, new PoseStack(), s -> model.renderToBuffer(s, buffer, packedLight, packedOverlay, color));
+    }
+
+    /** Citadel-{@link AdvancedEntityModel} overload of {@link #submitModel(PoseStack.Pose, Model, VertexConsumer, int, int, int)}
+     * (Citadel models do not extend vanilla {@link Model}). */
+    public static void submitModel(PoseStack.Pose submitPose, AdvancedEntityModel<?> model, VertexConsumer buffer, int packedLight, int packedOverlay, int color) {
+        withCitadelSubmitPose(submitPose, new PoseStack(), s -> model.renderToBuffer(s, buffer, packedLight, packedOverlay, color));
     }
 
     /**

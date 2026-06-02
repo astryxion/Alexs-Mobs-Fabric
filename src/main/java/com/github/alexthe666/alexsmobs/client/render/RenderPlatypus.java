@@ -57,7 +57,7 @@ public class RenderPlatypus extends MobRenderer<EntityPlatypus, LivingEntityRend
             this.getParentModel().setupAnim(state);
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityCutout(FEDORA_TEXTURE), (pose, ivertexbuilder) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, overlay, -1)
+                this.getParentModel().submitCitadel(pose, ivertexbuilder, packedLightIn, overlay, -1)
             );
         }
     }

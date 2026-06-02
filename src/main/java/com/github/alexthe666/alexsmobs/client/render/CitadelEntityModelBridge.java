@@ -35,6 +35,18 @@ public final class CitadelEntityModelBridge<E extends LivingEntity> extends Enti
     }
 
     /**
+     * Draws the Citadel mesh from a deferred {@link net.minecraft.client.renderer.SubmitNodeCollector#submitCustomGeometry}
+     * replay. The lambda MUST pass its {@code pose} (the captured submit pose) here, never the renderer's live
+     * {@link PoseStack} — the live stack is usually already popped by the time the replay runs, so Citadel (which builds
+     * quads from {@link PoseStack#last()} at draw time) would read a stale/identity transform and draw the mesh at the
+     * camera/origin (stray "ghost" geometry across the screen). See {@link AlexAdvancedEntityModel#withCitadelSubmitPose}.
+     */
+    public void submitCitadel(PoseStack.Pose submitPose, VertexConsumer buffer, int packedLight, int packedOverlay, int color) {
+        AlexAdvancedEntityModel.withCitadelSubmitPose(submitPose, new PoseStack(), s ->
+            this.citadel.renderToBuffer(s, buffer, packedLight, packedOverlay, color));
+    }
+
+    /**
      * Sets {@link AlexAdvancedEntityModel#young} on the wrapped Citadel model (replaces removed {@code EntityModel#young}).
      */
     public void setCitadelYoung(boolean young) {
@@ -49,6 +61,13 @@ public final class CitadelEntityModelBridge<E extends LivingEntity> extends Enti
         }
         @SuppressWarnings("unchecked")
         E entity = (E) raw;
+        // Per-entity baby flag: vanilla 26.1 no longer sets EntityModel#young, and only a handful of
+        // renderers call setCitadelYoung() in extractRenderState. Set it here for every Citadel model so
+        // the shared model's young flag can't leak from the previously rendered entity (babies rendering
+        // adult-sized, or vice versa). Mirrors AlexAdvancedEntityModel.CitadelEntityModelBridge#setupAnim.
+        if (this.citadel instanceof AlexAdvancedEntityModel<?> alex) {
+            alex.young = state.isBaby;
+        }
         float limbSwing = state.walkAnimationPos;
         float limbSwingAmount = Math.min(1.0F, state.walkAnimationSpeed);
         float ageInTicks = state.ageInTicks;

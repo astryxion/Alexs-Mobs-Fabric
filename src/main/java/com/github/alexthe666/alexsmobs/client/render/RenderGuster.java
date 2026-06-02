@@ -72,7 +72,7 @@ public class RenderGuster extends MobRenderer<EntityGuster, LivingEntityRenderSt
             RenderType eyeType = entitylivingbaseIn.getVariant() == 2 ? AMRenderTypes.getEyesNoCull(TEXTURE_SOUL_EYES) : AMRenderTypes.getEyesNoCull(TEXTURE_EYES);
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             collector.submitCustomGeometry(matrixStackIn, eyeType, (pose, ivertexbuilder) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, ivertexbuilder, 15728640, overlay, -1)
+                this.getParentModel().submitCitadel(pose, ivertexbuilder, 15728640, overlay, -1)
             );
         }
     }

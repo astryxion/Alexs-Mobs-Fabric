@@ -1,4 +1,5 @@
 package com.github.alexthe666.alexsmobs.client.render;
+import com.github.alexthe666.alexsmobs.client.model.AlexAdvancedEntityModel;
 
 import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
 import com.github.alexthe666.alexsmobs.entity.EntityGuster;
@@ -54,7 +55,7 @@ public class RenderSandShot extends EntityRenderer<EntitySandShot, LlamaSpitRend
         this.model.setupAnim(state);
         int packedLightIn = state.lightCoords;
         collector.submitCustomGeometry(matrixStackIn, this.model.renderType(SAND_SHOT), (pose, ivertexbuilder) ->
-            this.model.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
+            AlexAdvancedEntityModel.submitModel(pose, this.model, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
         );
         matrixStackIn.popPose();
         super.submit(state, matrixStackIn, collector, cameraState);

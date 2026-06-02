@@ -1,4 +1,5 @@
 package com.github.alexthe666.alexsmobs.client.render.layer;
+import com.github.alexthe666.alexsmobs.client.model.AlexAdvancedEntityModel;
 
 import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
 import com.github.alexthe666.alexsmobs.client.model.ModelElephant;
@@ -40,7 +41,7 @@ public class LayerElephantOverlays extends RenderLayer<LivingEntityRenderState, 
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             this.getParentModel().setupAnim(state);
             collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityCutout(TEXTURE_CHEST), (pose, consumer) ->
-                    this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, overlay, -1));
+                    this.getParentModel().submitCitadel(pose, consumer, packedLightIn, overlay, -1));
         }
         DyeColor lvt_11_1_ = elephant.getColor();
         if (lvt_11_1_ != null || elephant.isTrader()) {
@@ -54,7 +55,7 @@ public class LayerElephantOverlays extends RenderLayer<LivingEntityRenderState, 
             ((ModelElephant) this.getParentModel().citadel()).copyPropertiesTo(this.model);
             this.model.setupAnim(elephant, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
             collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityCutout(lvt_12_3_), (pose, consumer) ->
-                    this.model.renderToBuffer(matrixStackIn, consumer, packedLightIn, OverlayTexture.NO_OVERLAY, -1));
+                    AlexAdvancedEntityModel.submitModel(pose, this.model, consumer, packedLightIn, OverlayTexture.NO_OVERLAY, -1));
         }
     }
 }

@@ -50,7 +50,7 @@ public class RenderWarpedMosco extends MobRenderer<EntityWarpedMosco, LivingEnti
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             int packedColor = AMColorUtil.packColor(0.5F, 1.0F, 1.0F, alpha);
             collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getEyesFlickering(TEXTURE_EYES, 0), (pose, ivertexbuilder) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, ivertexbuilder, 240, overlay, packedColor)
+                this.getParentModel().submitCitadel(pose, ivertexbuilder, 240, overlay, packedColor)
             );
         }
     }

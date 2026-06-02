@@ -1,4 +1,5 @@
 package com.github.alexthe666.alexsmobs.client.render;
+import com.github.alexthe666.alexsmobs.client.model.AlexAdvancedEntityModel;
 
 import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
 import com.github.alexthe666.alexsmobs.client.model.ModelStraddleboard;
@@ -67,11 +68,11 @@ public class RenderStraddleboard extends EntityRenderer<EntityStraddleboard, Ent
         matrixStackIn.translate(0, -1.5F - Math.abs(boardRot * 0.007F) - (lava ? 0 : 0.25F), 0);
         BOARD_MODEL.animateBoard(entityIn, entityIn.tickCount + partialTicks);
         collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(TEXTURE_OVERLAY), (pose, ivertexbuilder2) ->
-            BOARD_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder2, packedLightIn, NO_OVERLAY, -1)
+            AlexAdvancedEntityModel.submitModel(pose, BOARD_MODEL, ivertexbuilder2, packedLightIn, NO_OVERLAY, -1)
         );
         int color = (255 << 24) | ((int) (r * 255) << 16) | ((int) (g * 255) << 8) | (int) (b * 255);
         collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucentCullItemTarget(TEXTURE), (pose, ivertexbuilder) ->
-            BOARD_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, NO_OVERLAY, color)
+            AlexAdvancedEntityModel.submitModel(pose, BOARD_MODEL, ivertexbuilder, packedLightIn, NO_OVERLAY, color)
         );
         matrixStackIn.popPose();
         matrixStackIn.popPose();

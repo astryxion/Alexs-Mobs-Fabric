@@ -28,6 +28,6 @@ public class LayerEndergradeSaddle extends RenderLayer<LivingEntityRenderState, 
         int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
         this.getParentModel().setupAnim(state);
         collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityCutout(TEXTURE), (pose, consumer) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, overlay, -1));
+                this.getParentModel().submitCitadel(pose, consumer, packedLightIn, overlay, -1));
     }
 }

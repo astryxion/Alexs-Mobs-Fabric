@@ -70,7 +70,7 @@ public class RenderGrizzlyBear extends MobRenderer<EntityGrizzlyBear, LivingEnti
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             this.getParentModel().setupAnim(state);
             bufferIn.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(TEXTURE_SNOWY), (pose, consumer) ->
-                    this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, overlay, -1));
+                    this.getParentModel().submitCitadel(pose, consumer, packedLightIn, overlay, -1));
         }
     }
 
@@ -90,7 +90,7 @@ public class RenderGrizzlyBear extends MobRenderer<EntityGrizzlyBear, LivingEnti
             int packedColor = AMColorUtil.packColor(1.0F, 1.0F, 1.0F, 0.1F);
             this.getParentModel().setupAnim(state);
             bufferIn.submitCustomGeometry(matrixStackIn, AMRenderTypes.getEyesNoFog(TEXTURE_FREDDY_EYES), (pose, consumer) ->
-                    this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, overlay, packedColor));
+                    this.getParentModel().submitCitadel(pose, consumer, packedLightIn, overlay, packedColor));
         }
     }
 }

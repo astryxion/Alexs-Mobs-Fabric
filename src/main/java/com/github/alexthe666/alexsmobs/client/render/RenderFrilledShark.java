@@ -58,7 +58,7 @@ public class RenderFrilledShark extends MobRenderer<EntityFrilledShark, LivingEn
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             this.getParentModel().setupAnim(state);
             collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getEyesFlickering(TEXTURE_TEETH, 240), (pose, consumer) ->
-                    this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, 240, overlay, -1));
+                    this.getParentModel().submitCitadel(pose, consumer, 240, overlay, -1));
         }
     }
 }

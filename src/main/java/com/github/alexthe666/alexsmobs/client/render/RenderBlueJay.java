@@ -79,7 +79,7 @@ public class RenderBlueJay extends MobRenderer<EntityBlueJay, LivingEntityRender
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             this.getParentModel().setupAnim(state);
             collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucent(TEXTURE_SHINY), (pose, consumer) ->
-                    this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, overlay, AMColorUtil.packColor(1.0F, 1.0F, 1.0F, alpha)));
+                    this.getParentModel().submitCitadel(pose, consumer, packedLightIn, overlay, AMColorUtil.packColor(1.0F, 1.0F, 1.0F, alpha)));
         }
     }
 }

@@ -31,11 +31,11 @@ public class LayerSoulVultureGlow extends RenderLayer<LivingEntityRenderState, C
         this.getParentModel().setupAnim(state);
         int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
         collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getGhost(TEXTURE_GLOW), (pose, consumer) ->
-            this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, 240, overlay, -1)
+            this.getParentModel().submitCitadel(pose, consumer, 240, overlay, -1)
         );
         if (entitylivingbaseIn.hasSoulHeart()) {
             collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getGhost(getFlames(entitylivingbaseIn.tickCount)), (pose, consumer) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, 240, overlay, -1)
+                this.getParentModel().submitCitadel(pose, consumer, 240, overlay, -1)
             );
         }
     }

@@ -45,7 +45,7 @@ public class LayerTigerEyes extends RenderLayer<LivingEntityRenderState, Citadel
             this.getParentModel().setupAnim(state);
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             collector.submitCustomGeometry(matrixStackIn, RenderTypes.eyes(texture), (pose, consumer) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, overlay, -1)
+                this.getParentModel().submitCitadel(pose, consumer, packedLightIn, overlay, -1)
             );
         }
     }

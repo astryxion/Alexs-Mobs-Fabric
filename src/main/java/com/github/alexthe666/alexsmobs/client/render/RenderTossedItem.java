@@ -1,4 +1,5 @@
 package com.github.alexthe666.alexsmobs.client.render;
+import com.github.alexthe666.alexsmobs.client.model.AlexAdvancedEntityModel;
 
 import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
 import com.github.alexthe666.alexsmobs.client.model.ModelAncientDart;
@@ -58,7 +59,7 @@ public class RenderTossedItem extends EntityRenderer<EntityTossedItem, EntityRen
             matrixStackIn.translate(0, 0.5F, 0);
             matrixStackIn.scale(1F, 1F, 1F);
             collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(DART_TEXTURE), (pose, ivertexbuilder) ->
-                DART_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
+                AlexAdvancedEntityModel.submitModel(pose, DART_MODEL, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
             );
             matrixStackIn.popPose();
         } else {
