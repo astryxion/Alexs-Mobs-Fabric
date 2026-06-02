@@ -312,7 +312,7 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
     }
 
     public boolean isFood(ItemStack stack) {
-        return !stack.is(AMTagRegistry.MANED_WOLF_STENCH_FOODS) && allFoods.test(stack);
+        return stack.is(AMTagRegistry.MANED_WOLF_BREEDABLES) && !stack.is(AMTagRegistry.MANED_WOLF_STENCH_FOODS);
     }
 
     public void travel(Vec3 vec3d) {
@@ -327,7 +327,7 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
 
     @Override
     public boolean canTargetItem(ItemStack stack) {
-        return allFoods.test(stack) && !this.isShaking();
+        return (stack.is(AMTagRegistry.MANED_WOLF_BREEDABLES) || stack.is(AMTagRegistry.MANED_WOLF_STENCH_FOODS)) && !this.isShaking();
     }
 
     @Override
