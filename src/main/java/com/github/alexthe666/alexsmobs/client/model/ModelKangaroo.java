@@ -37,6 +37,7 @@ public class ModelKangaroo extends AlexAdvancedEntityModel<EntityKangaroo> {
 	public final AdvancedModelBox ear_right;
 	public final AdvancedModelBox snout;
 	public static boolean renderOnlyHead = false;
+	private EntityKangaroo animEntity;
 	private ModelAnimator animator;
 
 	public ModelKangaroo() {
@@ -239,6 +240,7 @@ public class ModelKangaroo extends AlexAdvancedEntityModel<EntityKangaroo> {
 
 	@Override
 	public void setupAnim(EntityKangaroo entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch){
+		this.animEntity = entity;
 		animate(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
 		float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
 		float jumpRotation = Mth.sin(entity.getJumpCompletion(partialTick) * 3.1415927F);
@@ -335,6 +337,7 @@ public class ModelKangaroo extends AlexAdvancedEntityModel<EntityKangaroo> {
 	// @Override removed - signature changed in 1.21
 	@Override
     public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, int color) {
+		boolean inPouch = this.animEntity != null && this.animEntity.isBaby() && this.animEntity.isPassenger() && this.animEntity.getVehicle() instanceof EntityKangaroo;
 		if (this.young) {
 			float f = 1.65F;
 			head.setScale(f, f, f);
@@ -342,7 +345,7 @@ public class ModelKangaroo extends AlexAdvancedEntityModel<EntityKangaroo> {
 			matrixStackIn.pushPose();
 			matrixStackIn.scale(0.5F, 0.5F, 0.5F);
 			matrixStackIn.translate(0.0D, 1.5D, 0D);
-			if(renderOnlyHead){
+			if (renderOnlyHead || inPouch) {
 				neck.setPos(0.0F, 0F, 0.0F);
 				this.neck.render(matrixStackIn, bufferIn, packedLightIn, packedOverlayIn, color);
 			}else{

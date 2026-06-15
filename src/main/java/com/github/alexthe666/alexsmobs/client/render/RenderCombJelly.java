@@ -3,6 +3,10 @@ package com.github.alexthe666.alexsmobs.client.render;
 import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
 import com.github.alexthe666.alexsmobs.client.model.ModelCombJelly;
 import com.github.alexthe666.alexsmobs.entity.EntityCombJelly;
+import com.github.alexthe666.alexsmobs.entity.util.RainbowUtil;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.github.alexthe666.alexsmobs.client.model.ModelCombJelly;
+import com.github.alexthe666.alexsmobs.entity.EntityCombJelly;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -85,12 +89,26 @@ public class RenderCombJelly extends MobRenderer<EntityCombJelly, LivingEntityRe
             float ageInTicks = state.ageInTicks;
             float wrappedHead = state.yRot;
             STRIPES_MODEL.setupAnim(entitylivingbaseIn, limbSwing, limbSwingAmount, ageInTicks, wrappedHead, state.xRot);
-            collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.COMBJELLY_RAINBOW_GLINT, (pose, rainbow) ->
-                STRIPES_MODEL.renderToBuffer(matrixStackIn, rainbow, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
-            );
+
+            if (RainbowUtil.getRainbowType(entitylivingbaseIn) > 0) {
+                collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.COMBJELLY_RAINBOW_GLINT, (pose, rainbow) ->
+                {
+                    PoseStack stackPose = new PoseStack();
+                    stackPose.pushPose();
+                    stackPose.last().set(pose);
+                    STRIPES_MODEL.renderToBuffer(stackPose, rainbow, packedLightIn, OverlayTexture.NO_OVERLAY, -1);
+                    stackPose.popPose();
+                });
+            }
+
             collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(TEXTURE_OVERLAY), (pose, overlay) ->
-                STRIPES_MODEL.renderToBuffer(matrixStackIn, overlay, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
-            );
+            {
+                PoseStack stackPose = new PoseStack();
+                stackPose.pushPose();
+                stackPose.last().set(pose);
+                STRIPES_MODEL.renderToBuffer(stackPose, overlay, packedLightIn, OverlayTexture.NO_OVERLAY, -1);
+                stackPose.popPose();
+            });
         }
     }
 }

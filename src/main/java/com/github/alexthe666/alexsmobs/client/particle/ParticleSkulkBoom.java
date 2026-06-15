@@ -1,19 +1,22 @@
 package com.github.alexthe666.alexsmobs.client.particle;
 
 import com.github.alexthe666.alexsmobs.client.render.AMRenderTypes;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SingleQuadParticle;
+import net.minecraft.client.renderer.state.level.QuadParticleRenderState;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.data.AtlasIds;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+
 public class ParticleSkulkBoom extends SingleQuadParticle {
-    private static final Identifier TEXTURE = Identifier.parse("alexsmobs:textures/particle/skulk_boom.png");
+    public static final Identifier TEXTURE = Identifier.parse("alexsmobs:textures/particle/skulk_boom.png");
     private float size;
     private float prevSize;
     private float prevAlpha;
@@ -52,7 +55,7 @@ public class ParticleSkulkBoom extends SingleQuadParticle {
     }
 
     @Override
-    public void extract(net.minecraft.client.renderer.state.level.QuadParticleRenderState state, net.minecraft.client.Camera camera, float partialTick) {
+    public void extract(QuadParticleRenderState state, Camera camera, float partialTick) {
         float endAlpha = this.alpha;
         float endSize = this.size;
         float saveA = this.alpha;
@@ -93,6 +96,7 @@ public class ParticleSkulkBoom extends SingleQuadParticle {
     public ParticleRenderType getGroup() {
         return ParticleRenderType.SINGLE_QUADS;
     }
+
     public static class Factory implements ParticleProvider<SimpleParticleType> {
         @Override
         public Particle createParticle(SimpleParticleType typeIn, ClientLevel worldIn, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed, RandomSource random) {

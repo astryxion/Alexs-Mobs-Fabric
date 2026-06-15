@@ -1,28 +1,9 @@
 package com.github.alexthe666.alexsmobs.network;
 
-import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.github.alexthe666.alexsmobs.config.AMConfig;
-import com.github.alexthe666.alexsmobs.entity.EntityMungus;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
-import net.minecraft.core.QuartPos;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.level.chunk.PalettedContainer;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 
 /**
  * Server -> Client packet to sync mungus biome transformation.
@@ -30,7 +11,7 @@ import net.minecraft.world.entity.player.Player;
 public record MessageMungusBiomeChange(int mungusID, int posX, int posZ, String biomeOption) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<MessageMungusBiomeChange> ID =
-        new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("alexsmobs", "mungus_biome_change"));
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("alexsmobs", "mungus_biome_change"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, MessageMungusBiomeChange> CODEC = new StreamCodec<>() {
         @Override
@@ -54,40 +35,5 @@ public record MessageMungusBiomeChange(int mungusID, int posX, int posZ, String 
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return ID;
-    }
-
-    public static void handleClient(MessageMungusBiomeChange payload, ClientPlayNetworking.Context context) {
-                    var player = context.player();
-            if (player != null && player.level() != null) {
-                Entity entity = player.level().getEntity(payload.mungusID);
-                ResourceKey<Biome> biomeKey = ResourceKey.create(Registries.BIOME, Identifier.parse(payload.biomeOption));
-                Holder.Reference<Biome> holder = player.level().registryAccess().lookupOrThrow(Registries.BIOME).get(biomeKey).orElse(null);
-                Biome biome = holder == null ? null : holder.value();
-                if (AMConfig.mungusBiomeTransformationType == 2) {
-                    if (entity instanceof EntityMungus && entity.distanceToSqr(payload.posX, entity.getY(), payload.posZ) < 1000 && biome != null) {
-                        LevelChunk chunk = player.level().getChunkAt(new BlockPos(payload.posX, 0, payload.posZ));
-                        Level chunkLevel = chunk.getLevel();
-                        int i = QuartPos.fromBlock(chunkLevel.getMinY());
-                        int k = QuartPos.fromBlock(chunkLevel.getMaxY() - 1);
-                        int l = Mth.clamp(QuartPos.fromBlock((int) entity.getY()), i, k);
-                        int j = chunk.getSectionIndex(QuartPos.toBlock(l));
-                        LevelChunkSection section = chunk.getSection(j);
-                        if (section != null) {
-                            PalettedContainer<Holder<Biome>> container = section.getBiomes().recreate();
-                            for (int biomeX = 0; biomeX < 4; ++biomeX) {
-                                for (int biomeY = 0; biomeY < 4; ++biomeY) {
-                                    for (int biomeZ = 0; biomeZ < 4; ++biomeZ) {
-                                        container.getAndSetUnchecked(biomeX, biomeY, biomeZ, holder);
-                                    }
-                                }
-                            }
-                            // TODO 1.21: biomes field is private - need reflection or alternative approach
-                            // section.biomes = container;
-                        }
-                        AlexsMobs.PROXY.updateBiomeVisuals(payload.posX, payload.posZ);
-                    }
-                }
-            }
-
     }
 }

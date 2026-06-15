@@ -60,7 +60,13 @@ public class RenderRhinoceros extends MobRenderer<EntityRhinoceros, LivingEntity
                 this.getParentModel().setupAnim(state);
                 int packedColor = AMColorUtil.packColor(r, g, b, 1.0F);
                 collector.submitCustomGeometry(p_225628_1_, AMRenderTypes.entityCutoutNoCull(TEXTURE_POTION), (pose, vc) ->
-                    this.getParentModel().renderCitadelToBuffer(p_225628_1_, vc, p_225628_3_, OverlayTexture.NO_OVERLAY, packedColor)
+                        {
+                            PoseStack stackPose = new PoseStack();
+                            stackPose.pushPose();
+                            stackPose.last().set(pose);
+                            this.getParentModel().renderCitadelToBuffer(p_225628_1_, vc, p_225628_3_, OverlayTexture.NO_OVERLAY, packedColor);
+                            stackPose.popPose();
+                        }
                 );
             }
         }

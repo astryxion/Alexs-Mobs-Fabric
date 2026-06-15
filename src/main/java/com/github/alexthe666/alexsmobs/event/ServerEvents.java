@@ -79,7 +79,28 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.*;
 
+import com.github.alexthe666.alexsmobs.world.AMWorldData;
+import com.github.alexthe666.alexsmobs.world.BeachedCachalotWhaleSpawner;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.biome.Biome;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
+
 import java.util.*;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class ServerEvents {
@@ -90,6 +111,197 @@ public class ServerEvents {
     private static final Identifier SNEAK_SPEED_ID = Identifier.fromNamespaceAndPath(AlexsMobs.MODID, "frontier_cap_sneak_speed");
     private static final Random RAND = new Random();
     private static final String HAS_BOOK_TAG = "alexsmobs_has_book";
+    private static final Queue<AfterDamageEntry> DEFERRED_AFTER_DAMAGE = new ConcurrentLinkedQueue<>();
+    private static final Map<ServerLevel, BeachedCachalotWhaleSpawner> BEACHED_CACHALOT_WHALE_SPAWNER_MAP = new HashMap<>();
+    public static final ObjectList<Triple<ServerPlayer, ServerLevel, BlockPos>> teleportPlayers = new ObjectArrayList<>();
+
+    private static final class AfterDamageEntry {
+        final LivingEntity entity;
+        final DamageSource source;
+        final float amount;
+
+        AfterDamageEntry(LivingEntity entity, DamageSource source, float amount) {
+            this.entity = entity;
+            this.source = source;
+            this.amount = amount;
+        }
+    }
+
+    public record Triple<A, B, C>(A a, B b, C c) {}
+
+    private static void enqueueAfterDamage(LivingEntity entity, DamageSource source, float amount) {
+        DEFERRED_AFTER_DAMAGE.add(new AfterDamageEntry(entity, source, amount));
+    }
+
+    private static void runDeferredAfterDamage() {
+        AfterDamageEntry entry;
+        while ((entry = DEFERRED_AFTER_DAMAGE.poll()) != null) {
+            float adjusted = onLivingDamageEvent(entry.entity, entry.source, entry.amount);
+            if (adjusted <= 0 || !entry.entity.isAlive()) {
+                continue;
+            }
+            if (!entry.entity.getUseItem().isEmpty() && entry.source.getEntity() instanceof LivingEntity attacker) {
+                if (entry.entity.getUseItem().is(AMItemRegistry.SHIELD_OF_THE_DEEP)) {
+                    boolean flag = false;
+                    if (attacker.distanceTo(entry.entity) <= 4 && !attacker.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.EXSANGUINATION))) {
+                        attacker.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.EXSANGUINATION), 60, 2));
+                        flag = true;
+                    }
+                    if (AMEntityRegistry.isInWaterOrBubble(entry.entity)) {
+                        entry.entity.setAirSupply(Math.min(entry.entity.getMaxAirSupply(), entry.entity.getAirSupply() + 150));
+                        flag = true;
+                    }
+                    if (flag) {
+                        entry.entity.getUseItem().hurtAndBreak(1, entry.entity, entry.entity.getUsedItemHand() == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void onLevelTick(ServerLevel level) {
+        BEACHED_CACHALOT_WHALE_SPAWNER_MAP.computeIfAbsent(level, k -> new BeachedCachalotWhaleSpawner(level));
+        BEACHED_CACHALOT_WHALE_SPAWNER_MAP.get(level).tick();
+        AMWorldData data = AMWorldData.get(level);
+        if (data != null) {
+            data.tickPupfish();
+        }
+    }
+
+    private static void resetArrowPierceLevel(AbstractArrow arrow) {
+        try {
+            java.lang.reflect.Method method = AbstractArrow.class.getDeclaredMethod("setPierceLevel", byte.class);
+            method.setAccessible(true);
+            method.invoke(arrow, (byte) 0);
+        } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
+    /** Fabric: register server/world/entity events here (replaces Forge EVENT_BUS). */
+    public static void register() {
+        AlexsMobs.LOGGER.info("Registering Alex's Mobs server events");
+
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            for (ServerLevel level : server.getAllLevels()) {
+                onLevelTick(level);
+            }
+            runDeferredAfterDamage();
+        });
+
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> onPlayerLoggedIn(handler.getPlayer()));
+
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+            if (entity.getType() == EntityType.SQUID && !entity.level().isClientSide() && source.is(DamageTypeTags.IS_LIGHTNING)) {
+                onStruckByLightning(entity);
+                return false;
+            }
+            if (entity instanceof EntityEmu emu && source.getDirectEntity() instanceof Projectile projectile && !entity.level().isClientSide()) {
+                if (projectile instanceof AbstractArrow arrow) {
+                    resetArrowPierceLevel(arrow);
+                }
+                if ((emu.getAnimation() == EntityEmu.ANIMATION_DODGE_RIGHT || emu.getAnimation() == EntityEmu.ANIMATION_DODGE_LEFT) && emu.getAnimationTick() < 7) {
+                    return false;
+                }
+                if (emu.getAnimation() != EntityEmu.ANIMATION_DODGE_RIGHT && emu.getAnimation() != EntityEmu.ANIMATION_DODGE_LEFT) {
+                    Vec3 arrowPos = projectile.position();
+                    Vec3 rightVector = emu.getLookAngle().yRot(0.5F * Mth.PI).add(emu.position());
+                    Vec3 leftVector = emu.getLookAngle().yRot(-0.5F * Mth.PI).add(emu.position());
+                    boolean left = arrowPos.distanceTo(rightVector) >= arrowPos.distanceTo(leftVector);
+                    Vec3 vector3d2 = projectile.getDeltaMovement().yRot((float) ((left ? -0.5F : 0.5F) * Math.PI)).normalize();
+                    emu.setAnimation(left ? EntityEmu.ANIMATION_DODGE_LEFT : EntityEmu.ANIMATION_DODGE_RIGHT);
+                    emu.needsSync = true;
+                    if (!emu.horizontalCollision) {
+                        emu.move(MoverType.SELF, new Vec3(vector3d2.x() * 0.25F, 0.1F, vector3d2.z() * 0.25F));
+                    }
+                    if (projectile.getOwner() instanceof ServerPlayer serverPlayer) {
+                        AMAdvancementTriggerRegistry.EMU_DODGE.trigger(serverPlayer);
+                    }
+                    emu.setDeltaMovement(emu.getDeltaMovement().add(vector3d2.x() * 0.5F, 0.32F, vector3d2.z() * 0.5F));
+                    return false;
+                }
+            }
+            if (entity instanceof Player player && source.getEntity() instanceof EntityMimicOctopus octopus && octopus.isOwnedBy(player)) {
+                return false;
+            }
+            if (!entity.getItemBySlot(EquipmentSlot.LEGS).isEmpty() && entity.getItemBySlot(EquipmentSlot.LEGS).is(AMItemRegistry.EMU_LEGGINGS)) {
+                if (source.is(DamageTypeTags.IS_PROJECTILE) && entity.getRandom().nextFloat() < AMConfig.emuPantsDodgeChance) {
+                    return false;
+                }
+            }
+            if (amount > 0) {
+                enqueueAfterDamage(entity, source, amount);
+            }
+            return true;
+        });
+
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, damageAmount) -> {
+            if (entity.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.DEBILITATING_STING))
+                    && entity.getEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.DEBILITATING_STING)) != null
+                    && entity.getEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.DEBILITATING_STING)).getAmplifier() > 0
+                    && entity instanceof Mob mob) {
+                mob.setPersistenceRequired();
+            }
+            return true;
+        });
+
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
+            if (VineLassoUtil.hasLassoData(entity)) {
+                VineLassoUtil.lassoTo(null, entity);
+                entity.level().addFreshEntity(new ItemEntity(entity.level(), entity.getX(), entity.getY(), entity.getZ(), new ItemStack(AMItemRegistry.VINE_LASSO)));
+            }
+        });
+
+        ServerEntityEvents.ENTITY_LOAD.register((entity, serverWorld) -> {
+            if (entity instanceof WanderingTrader trader && AMConfig.elephantTraderSpawnChance > 0) {
+                Biome biome = serverWorld.getBiome(entity.blockPosition()).value();
+                if (RAND.nextFloat() <= AMConfig.elephantTraderSpawnChance && (!AMConfig.limitElephantTraderBiomes || biome.getBaseTemperature() >= 1.0F)) {
+                    BlockPos traderPos = trader.blockPosition();
+                    ChunkPos chunkPos = new ChunkPos(traderPos.getX() >> 4, traderPos.getZ() >> 4);
+                    if (serverWorld.getChunkSource().getChunkNow(chunkPos.x(), chunkPos.z()) != null) {
+                        EntityElephant elephant = AMEntityRegistry.ELEPHANT.create(serverWorld, EntitySpawnReason.TRIGGERED);
+                        if (elephant != null) {
+                            elephant.snapTo(trader.getX(), trader.getY(), trader.getZ(), trader.getYRot(), trader.getXRot());
+                            if (elephant.canSpawnWithTraderHere()) {
+                                elephant.setTrader(true);
+                                elephant.setChested(true);
+                                serverWorld.addFreshEntity(elephant);
+                                trader.startRiding(elephant);
+                            }
+                            elephant.addElephantLoot(null, RAND.nextInt());
+                        }
+                    }
+                }
+            }
+            onEntityJoinLevel(entity);
+            onEntityJoinWanderingTrader(serverWorld, entity);
+        });
+
+        AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+            onPlayerAttackEntityEvent(player, entity);
+            return InteractionResult.PASS;
+        });
+
+        UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> onUseItemOnBlock(player, hitResult.getBlockPos(), player.getItemInHand(hand)));
+
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) ->
+                onInteractWithEntity(player, entity, world, player.getItemInHand(hand)));
+
+        UseItemCallback.EVENT.register((player, world, hand) -> {
+            ItemStack stack = player.getItemInHand(hand);
+            onUseItem(world, player, hand, stack);
+            if (RainbowUtil.getRainbowType(player) > 0 && stack.is(Items.SPONGE)) {
+                onUseItemAir(player, hand);
+                return InteractionResult.SUCCESS;
+            }
+            return InteractionResult.PASS;
+        });
+
+        PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> !onHarvestCheck(player));
+    }
+
+    public static void onLivingEntityTick(LivingEntity entity) {
+        onLivingTick(entity);
+    }
 
     @SuppressWarnings("unchecked")
     private static void addGoalReflective(Mob mob, boolean targetGoals, int priority, net.minecraft.world.entity.ai.goal.Goal goal) {
@@ -421,6 +633,12 @@ public class ServerEvents {
 
 
         public static void onLivingTick(LivingEntity entity) {
+        if (!entity.level().isClientSide() && entity instanceof Mob mob && mob.getTarget() != null) {
+            LivingEntity target = mob.getTarget();
+            if (shouldCancelTargeting(mob, target)) {
+                mob.setTarget(null);
+            }
+        }
         if (!entity.level().isClientSide()
                 && entity instanceof net.minecraft.world.entity.player.Player player
                 && player.isFallFlying()

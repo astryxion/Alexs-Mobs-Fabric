@@ -23,12 +23,6 @@ public class RenderRoadrunner extends MobRenderer<EntityRoadrunner, LivingEntity
     }
 
     @Override
-    public void extractRenderState(EntityRoadrunner entity, LivingEntityRenderState state, float partialTick) {
-        super.extractRenderState(entity, state, partialTick);
-        getModel().setCitadelYoung(entity.isBaby());
-    }
-
-    @Override
     public Identifier getTextureLocation(LivingEntityRenderState state) {
         EntityRoadrunner entity = AlexsMobsClientKeys.getLiving(state) instanceof EntityRoadrunner r ? r : null;
         if (entity == null) {

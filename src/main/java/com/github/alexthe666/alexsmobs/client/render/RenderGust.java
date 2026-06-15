@@ -48,7 +48,13 @@ public class RenderGust extends EntityRenderer<EntityGust, EntityRenderState> {
         this.model.hideEyes();
         int packedLightIn = state.lightCoords;
         collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucent(TEXTURE), (pose, ivertexbuilder) ->
-            this.model.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
+                {
+                    PoseStack stackPose = new PoseStack();
+                    stackPose.pushPose();
+                    stackPose.last().set(pose);
+                    this.model.renderToBuffer(stackPose, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, -1);
+                    stackPose.popPose();
+                }
         );
         this.model.showEyes();
         matrixStackIn.popPose();

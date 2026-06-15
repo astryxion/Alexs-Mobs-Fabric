@@ -62,6 +62,7 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 
 public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
 
@@ -124,7 +125,17 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
         this.goalSelector.addGoal(0, new BreathAirGoal(this));
         this.goalSelector.addGoal(1, new MateGoal(this, 1.0D));
         this.goalSelector.addGoal(1, new LayEggGoal(this, 1.0D));
-        this.goalSelector.addGoal(2, new TemptGoal(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.TERRAPIN_BREEDABLES)), false));
+        this.goalSelector.addGoal(2, new TemptGoal(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.TERRAPIN_BREEDABLES)), false) {
+            @Override
+            public boolean canUse() {
+                return !EntityTerrapin.this.isInLove() && !EntityTerrapin.this.hasEgg() && super.canUse();
+            }
+
+            @Override
+            public boolean canContinueToUse() {
+                return !EntityTerrapin.this.isInLove() && !EntityTerrapin.this.hasEgg() && super.canContinueToUse();
+            }
+        });
         this.goalSelector.addGoal(3, new AnimalAIFindWater(this));
         this.goalSelector.addGoal(3, new AnimalAILeaveWater(this));
         this.goalSelector.addGoal(4, new SemiAquaticAIRandomSwimming(this, 1.0D, 30));
@@ -230,6 +241,9 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
             }
             if (hideInShellTimer > 0) {
                 hideInShellTimer--;
+            }
+            if (this.isInLove() || this.hasEgg()) {
+                hideInShellTimer = 0;
             }
             this.setRetreated(hideInShellTimer > 0 && !this.isSpinning());
         }
@@ -492,7 +506,13 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
 
     @Override
     public boolean shouldStopMoving() {
-        return this.isSpinning() || this.hasRetreated();
+        if (this.isSpinning()) {
+            return true;
+        }
+        if (this.isInLove() || this.hasEgg()) {
+            return false;
+        }
+        return this.hasRetreated();
     }
 
     @Override
@@ -574,10 +594,29 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
     @Nonnull
     public InteractionResult mobInteract(@Nonnull Player player, @Nonnull InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
-        if (itemstack.is(AMTagRegistry.TERRAPIN_BREEDABLES)){
+        if (itemstack.is(AMTagRegistry.TERRAPIN_BREEDABLES)) {
             this.setPersistenceRequired();
         }
-        return Bucketable.bucketMobPickup(player, hand, this).orElse(super.mobInteract(player, hand));
+        Optional<InteractionResult> bucketResult = Bucketable.bucketMobPickup(player, hand, this);
+        if (bucketResult.isPresent()) {
+            return bucketResult.get();
+        }
+        if (isFood(itemstack) && !this.isBaby() && this.getAge() == 0 && this.canFallInLove()) {
+            if (!this.level().isClientSide()) {
+                this.usePlayerItem(player, hand, itemstack);
+                this.setInLove(player);
+                this.gameEvent(GameEvent.EAT);
+                this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
+                this.hideInShellTimer = 0;
+                this.setRetreated(false);
+            }
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        }
+        InteractionResult type = super.mobInteract(player, hand);
+        if (type.consumesAction() && isFood(itemstack)) {
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        }
+        return type;
     }
 
     public void calculateEntityAnimation(boolean flying) {
@@ -627,7 +666,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
             this.animal.setAge(6000);
             this.partner.setAge(6000);
             RandomSource random = this.animal.getRandom();
-            if (this.level.getServer().getGameRules().get(GameRules.MOB_DROPS)) {
+            if (this.level.getGameRules().get(GameRules.MOB_DROPS)) {
                 this.level.addFreshEntity(new ExperienceOrb(this.level, this.animal.getX(), this.animal.getY(), this.animal.getZ(), random.nextInt(7) + 1));
             }
 

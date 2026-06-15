@@ -17,8 +17,14 @@ import java.util.List;
 
 public interface ICustomCollisions {
     /*
-        Override Entity#getAllowedMovement with entity method
+        Routed through Entity#collide mixin on 26.1+; do not override collide() in subclasses.
      */
+    default Vec3 getCustomAllowedMovement(Vec3 movement) {
+        return getAllowedMovementForEntity((Entity) this, movement);
+    }
+
+    boolean canPassThrough(BlockPos mutablePos, BlockState blockstate, VoxelShape voxelshape);
+
     static Vec3 getAllowedMovementForEntity(Entity entity, Vec3 vecIN) {
         AABB aabb = entity.getBoundingBox();
         List<VoxelShape> list = entity.level().getEntityCollisions(entity, aabb.expandTowards(vecIN));
@@ -45,9 +51,6 @@ public interface ICustomCollisions {
         return vec3;
     }
 
-    boolean canPassThrough(BlockPos mutablePos, BlockState blockstate, VoxelShape voxelshape);
-
-    //1.18 logic
     private static Vec3 collideBoundingBox2(@Nullable Entity p_198895_, Vec3 p_198896_, AABB p_198897_, Level p_198898_, List<VoxelShape> p_198899_) {
         ImmutableList.Builder<VoxelShape> builder = ImmutableList.builderWithExpectedSize(p_198899_.size() + 1);
         if (!p_198899_.isEmpty()) {

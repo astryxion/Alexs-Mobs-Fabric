@@ -71,7 +71,7 @@ public class RenderMungus extends MobRenderer<EntityMungus, CitadelLivingRenderS
     }
 
     private static void vertex(VertexConsumer consumer, Matrix4f matrix, float x, float y, float z, int r, int g, int b, float u, float v) {
-        consumer.addVertex(matrix, x, y, z).setColor(r, g, b, 255).setUv(u, v).setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightCoordsUtil.FULL_BRIGHT);
+        consumer.addVertex(matrix, x, y, z).setColor(r, g, b, 255).setUv(u, v).setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightCoordsUtil.FULL_BRIGHT).setNormal(0.0F, 1.0F, 0.0F);;
     }
 
     @Override

@@ -202,7 +202,7 @@ public final class AMRenderTypes {
      * {@link BlendFunction#TRANSLUCENT} like 1.21.1 {@code getUnderminer} ({@code TRANSLUCENT_TRANSPARENCY} + energy swirl
      * shader). Vanilla {@code energySwirl} uses {@link BlendFunction#ADDITIVE}, which blows out entity skin quads to white.
      */
-    public static final RenderPipeline UNDERMINER_PIPELINE = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
+    public static final RenderPipeline UNDERMINER_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
             .withLocation(Identifier.parse("alexsmobs:pipeline/underminer"))
             .withVertexShader("core/entity")
             .withFragmentShader("core/entity")
@@ -216,7 +216,7 @@ public final class AMRenderTypes {
             .withCull(false)
             .withVertexFormat(DefaultVertexFormat.ENTITY, VertexFormat.Mode.QUADS)
             .withDepthStencilState(DepthStencilState.DEFAULT)
-            .build();
+            .build());
 
     private static final Function<Identifier, RenderType> UNDERMINER_TYPE = Util.memoize(
             texture -> {
@@ -239,13 +239,13 @@ public final class AMRenderTypes {
      * no cull, item-entity output target (see {@link RenderTypes} {@code ENTITY_TRANSLUCENT_CULL_ITEM_TARGET} but with
      * {@link BlendFunction#LIGHTNING}). Registered on the mod bus via {@code ClientProxy}.
      */
-    public static final RenderPipeline GHOST_PICKAXE_PIPELINE = RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)
+    public static final RenderPipeline GHOST_PICKAXE_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)
             .withLocation(Identifier.parse("alexsmobs:pipeline/ghost_pickaxe"))
             .withShaderDefine("ALPHA_CUTOUT", 0.1F)
             .withSampler("Sampler1")
             .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
             .withCull(false)
-            .build();
+            .build());
 
     private static final Function<Identifier, RenderType> GHOST_PICKAXE_TYPE = Util.memoize(
             texture -> {

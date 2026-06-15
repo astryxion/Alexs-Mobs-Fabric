@@ -84,7 +84,7 @@ public class EntityLeafcutterAnt extends Animal implements NeutralMob, IAnimated
     private static final UniformInt ANGRY_TIMER = TimeUtil.rangeOfSeconds(10, 20);
     public float attachChangeProgress = 0F;
     public float prevAttachChangeProgress = 0F;
-    private Direction prevAttachDir = Direction.DOWN;
+    public Direction prevAttachDir = Direction.DOWN;
     @Nullable
     private EntityLeafcutterAnt caravanHead;
     @Nullable
@@ -254,6 +254,7 @@ public class EntityLeafcutterAnt extends Animal implements NeutralMob, IAnimated
     public void tick() {
         this.prevAttachChangeProgress = this.attachChangeProgress;
         super.tick();
+        this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(this.isQueen() ? 1.0 : 0.5);
         if (this.isQueen() && this.getBbWidth() < QUEEN_SIZE.width()) {
             this.refreshDimensions();
         }
@@ -314,6 +315,15 @@ public class EntityLeafcutterAnt extends Animal implements NeutralMob, IAnimated
             attachChangeProgress = 1F;
         }
         this.prevAttachDir = attachmentFacing;
+        if (!this.level().isClientSide() && attachmentFacing.getAxis().isHorizontal()) {
+            Vec3 horiz = new Vec3(this.getDeltaMovement().x, 0.0D, this.getDeltaMovement().z);
+            if (horiz.lengthSqr() > 1.0E-4D) {
+                float yaw = (float) (Mth.atan2(horiz.z, horiz.x) * (double) Mth.RAD_TO_DEG) - 90.0F;
+                this.setYRot(yaw);
+                this.yBodyRot = yaw;
+                this.yHeadRot = yaw;
+            }
+        }
         if (!this.level().isClientSide()) {
             if (attachmentFacing == Direction.UP && !this.isUpsideDownNavigator) {
                 switchNavigator(false);

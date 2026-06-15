@@ -55,7 +55,7 @@ public class RenderVoidWormShot extends EntityRenderer<EntityVoidWormShot, Entit
         float colorize = home;
         matrixStackIn.translate(0, -1.5F, 0);
         collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getFullBright(TEXTURE), (pose, ivertexbuilder) ->
-            MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, 210, NO_OVERLAY, -1)
+            MODEL.renderToBuffer(DeferredPoseStacks.fromCaptured(pose), ivertexbuilder, 210, NO_OVERLAY, -1)
         );
         matrixStackIn.popPose();
         matrixStackIn.popPose();

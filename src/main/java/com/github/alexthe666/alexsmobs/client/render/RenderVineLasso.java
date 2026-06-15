@@ -91,6 +91,52 @@ public class RenderVineLasso extends EntityRenderer<EntityVineLasso, EntityRende
         matrixStackIn.popPose();
     }
 
+    public static void renderVineFromEntityLayer(Entity mob, float partialTick, PoseStack poseStack, SubmitNodeCollector collector, LivingEntity holder, boolean left, float zOffset) {
+        poseStack.pushPose();
+
+        float bodyRot = mob instanceof LivingEntity living ? living.yBodyRot : mob.getYRot();
+        float bodyRot0 = mob instanceof LivingEntity living ? living.yBodyRotO : mob.yRotO;
+        Vec3 holderPos = holder.getRopeHoldPosition(partialTick);
+
+        double mobX = Mth.lerp(partialTick, mob.xo, mob.getX());
+        double mobY = Mth.lerp(partialTick, mob.yo, mob.getY());
+        double mobZ = Mth.lerp(partialTick, mob.zo, mob.getZ());
+
+        double angle = (double) (Mth.lerp(partialTick, bodyRot0, bodyRot) * Mth.DEG_TO_RAD) + (Math.PI / 2D);
+        Vec3 mobAttachOffset = new Vec3(left ? -0.05F : 0.05F, mob.getEyeHeight(), zOffset);
+        double attachX = Math.cos(angle) * mobAttachOffset.z + Math.sin(angle) * mobAttachOffset.x;
+        double attachZ = Math.sin(angle) * mobAttachOffset.z - Math.cos(angle) * mobAttachOffset.x;
+
+        poseStack.translate(attachX, mobAttachOffset.y, attachZ);
+
+        float f = (float) (holderPos.x - (mobX + attachX));
+        float f1 = (float) (holderPos.y - (mobY + mobAttachOffset.y));
+        float f2 = (float) (holderPos.z - (mobZ + attachZ));
+        float f4 = (float) (Mth.fastInvSqrt(f * f + f2 * f2) * 0.025F / 2.0F);
+        float f5 = f2 * f4;
+        float f6 = f * f4;
+
+        BlockPos mobLightPos = AMBlockPos.fromVec3(mob.getEyePosition(partialTick));
+        BlockPos holderLightPos = AMBlockPos.fromVec3(holder.getEyePosition(partialTick));
+        int mobBlockLight = getVineLightLevel(mob, mobLightPos);
+        int holderBlockLight = mob.level().getBrightness(LightLayer.BLOCK, holderLightPos);
+        int mobSkyLight = mob.level().getBrightness(LightLayer.SKY, mobLightPos);
+        int holderSkyLight = mob.level().getBrightness(LightLayer.SKY, holderLightPos);
+        float width = 0.1F;
+
+        collector.submitCustomGeometry(poseStack, RenderTypes.leash(), (pose, vertexconsumer) -> {
+            Matrix4f mat = pose.pose();
+            for (int i = 0; i <= 24; ++i) {
+                addVertexPairAlex(vertexconsumer, mat, f, f1, f2, mobBlockLight, holderBlockLight, mobSkyLight, holderSkyLight, width, width, f5, f6, i, false);
+            }
+            for (int i = 24; i >= 0; --i) {
+                addVertexPairAlex(vertexconsumer, mat, f, f1, f2, mobBlockLight, holderBlockLight, mobSkyLight, holderSkyLight, width, width, f5, f6, i, true);
+            }
+        });
+
+        poseStack.popPose();
+    }
+
     public static <E extends Entity> void renderVine(Entity mob, float partialTick, PoseStack p_115464_, SubmitNodeCollector collector, LivingEntity player, boolean left, float zOffset) {
         p_115464_.pushPose();
         float bodyRot = mob instanceof LivingEntity ? ((LivingEntity) mob).yBodyRot : mob.getYRot();

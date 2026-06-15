@@ -67,9 +67,8 @@ public class RenderCachalotEcho extends EntityRenderer<EntityCachalotEcho, Entit
             res = getEntityTexture(age);
         }
         collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(res), (pose, ivertexbuilder) -> {
-            PoseStack.Pose lvt_19_1_ = matrixStackIn.last();
-            Matrix4f lvt_20_1_ = lvt_19_1_.pose();
-            Matrix3f lvt_21_1_ = lvt_19_1_.normal();
+            Matrix4f lvt_20_1_ = pose.pose();
+            Matrix3f lvt_21_1_ = pose.normal();
             this.drawVertex(lvt_20_1_, lvt_21_1_, ivertexbuilder, -1, 0, -1, 0, 0, 1, 0, 1, 240);
             this.drawVertex(lvt_20_1_, lvt_21_1_, ivertexbuilder, -1, 0, 1, 0, 1, 1, 0, 1, 240);
             this.drawVertex(lvt_20_1_, lvt_21_1_, ivertexbuilder, 1, 0, 1, 1, 1, 1, 0, 1, 240);

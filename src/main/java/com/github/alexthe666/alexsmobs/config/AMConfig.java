@@ -520,8 +520,7 @@ public class AMConfig {
             warpedToadSpawnWeight = ConfigHolder.COMMON.warpedToadSpawnWeight;
             wolvesAttackMoose = ConfigHolder.COMMON.wolvesAttackMoose;
         } catch (Exception e) {
-            AlexsMobs.LOGGER.warn("An exception was caused trying to load the config for Alex's Mobs.");
-            e.printStackTrace();
+            AlexsMobs.LOGGER.warn("An exception was caused trying to load the config for Alex's Mobs.", e);
         }
     }
 

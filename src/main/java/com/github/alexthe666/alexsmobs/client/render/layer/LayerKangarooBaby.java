@@ -30,8 +30,9 @@ public class LayerKangarooBaby extends RenderLayer<LivingEntityRenderState, Cita
             return;
         }
         float partialTicks = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
-        if(roo.isVehicle() && !roo.isBaby()){
-            for(Entity passenger : roo.getPassengers()){
+        if (roo.isVehicle() && !roo.isBaby()) {
+            this.getParentModel().setupAnim(state);
+            for (Entity passenger : roo.getPassengers()) {
                 float riderRot = passenger.yRotO + (passenger.getYRot() - passenger.yRotO) * partialTicks;
                 EntityRenderer<?, ?> render = Minecraft.getInstance().getEntityRenderDispatcher().getRenderer(passenger);
                 EntityModel<?> modelBase = null;
@@ -43,11 +44,9 @@ public class LayerKangarooBaby extends RenderLayer<LivingEntityRenderState, Cita
                     matrixStackIn.pushPose();
                     translateToPouch(matrixStackIn);
                     matrixStackIn.translate(0, 1.12F, -0.3F);
-                    ModelKangaroo.renderOnlyHead = true;
                     matrixStackIn.mulPose(Axis.ZP.rotationDegrees(180F));
                     matrixStackIn.mulPose(Axis.YP.rotationDegrees(riderRot + 180F));
                     ClientProxy.submitEntityInWorld(passenger, 0, 0, 0, 0, partialTicks, matrixStackIn, collector);
-                    ModelKangaroo.renderOnlyHead = false;
                     matrixStackIn.popPose();
                     ClientProxy.currentUnrenderedEntities.add(passenger.getUUID());
                 }

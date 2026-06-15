@@ -33,6 +33,7 @@ import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.*;
@@ -71,7 +72,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, IFollower, Bucketable {
+public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, IFollower, Bucketable, IAMUnderwaterBreather {
 
     private static final EntityDataAccessor<Boolean> STOP_CHANGE = SynchedEntityData.defineId(EntityMimicOctopus.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> FROM_BUCKET = SynchedEntityData.defineId(EntityMimicOctopus.class, EntityDataSerializers.BOOLEAN);
@@ -465,6 +466,12 @@ public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, I
         this.walkAnimation.update(f2, 0.4F, 1.0F);
     }
 
+    @Override
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.DROWN) || super.isInvulnerableTo(level, source);
+    }
+
+    @Override
     public boolean canBreatheUnderwaterAM() {
         return true;
     }

@@ -65,7 +65,7 @@ public class RenderKomodoDragon extends MobRenderer<EntityKomodoDragon, LivingEn
                     parentModel.copyPropertiesTo(MAID_MODEL);
                     MAID_MODEL.prepareMobModel(entitylivingbaseIn, limbSwing, limbSwingAmount, partialTicks);
                     MAID_MODEL.setupAnim(entitylivingbaseIn, limbSwing, limbSwingAmount, ageInTicks, wrappedHead, headPitch);
-                    MAID_MODEL.renderToBuffer(matrixStackIn, maid, packedLightIn, overlay, -1);
+                    MAID_MODEL.renderToBuffer(DeferredPoseStacks.fromCaptured(pose), maid, packedLightIn, overlay, -1);
                 });
             }
             if (entitylivingbaseIn.isSaddled()) {
@@ -73,7 +73,7 @@ public class RenderKomodoDragon extends MobRenderer<EntityKomodoDragon, LivingEn
                     parentModel.copyPropertiesTo(SADDLE_MODEL);
                     SADDLE_MODEL.prepareMobModel(entitylivingbaseIn, limbSwing, limbSwingAmount, partialTicks);
                     SADDLE_MODEL.setupAnim(entitylivingbaseIn, limbSwing, limbSwingAmount, ageInTicks, wrappedHead, headPitch);
-                    SADDLE_MODEL.renderToBuffer(matrixStackIn, saddle, packedLightIn, overlay, -1);
+                    SADDLE_MODEL.renderToBuffer(DeferredPoseStacks.fromCaptured(pose), saddle, packedLightIn, overlay, -1);
                 });
             }
         }

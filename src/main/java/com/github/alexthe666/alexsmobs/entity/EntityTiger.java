@@ -326,9 +326,6 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         return !(blockstate.getBlock() == Blocks.BAMBOO || blockstate.is(BlockTags.LEAVES)) && super.isColliding(pos, blockstate);
     }
 
-    public Vec3 collide(Vec3 vec3) {
-        return ICustomCollisions.getAllowedMovementForEntity(this, vec3);
-    }
 
     public void tick() {
         super.tick();

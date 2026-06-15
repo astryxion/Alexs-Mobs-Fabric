@@ -1,16 +1,9 @@
 package com.github.alexthe666.alexsmobs.network;
 
-import com.github.alexthe666.alexsmobs.entity.EntityCrow;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 
 /**
  * Server -> Client packet to mount crow on player.
@@ -18,7 +11,7 @@ import net.minecraft.world.entity.player.Player;
 public record MessageCrowMountPlayer(int rider, int mount) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<MessageCrowMountPlayer> ID =
-        new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("alexsmobs", "crow_mount_player"));
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("alexsmobs", "crow_mount_player"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, MessageCrowMountPlayer> CODEC = new StreamCodec<>() {
         @Override
@@ -38,18 +31,5 @@ public record MessageCrowMountPlayer(int rider, int mount) implements CustomPack
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return ID;
-    }
-
-    public static void handleClient(MessageCrowMountPlayer payload, ClientPlayNetworking.Context context) {
-                    var player = context.player();
-            if (player != null && player.level() != null) {
-                Entity entity = player.level().getEntity(payload.rider);
-                Entity mountEntity = player.level().getEntity(payload.mount);
-                if (entity instanceof EntityCrow && mountEntity instanceof Player
-                        && entity.distanceTo(mountEntity) < 16D) {
-                    entity.startRiding(mountEntity, true, true);
-                }
-            }
-
     }
 }

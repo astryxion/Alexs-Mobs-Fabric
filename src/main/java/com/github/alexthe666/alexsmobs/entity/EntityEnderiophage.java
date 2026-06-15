@@ -300,6 +300,15 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
         return true;
     }
 
+    @Override
+    public boolean isPickable() {
+        return true;
+    }
+    @Override
+    public float getPickRadius() {
+        return this.isPassenger() ? 0.75F : super.getPickRadius();
+    }
+
     public void onSpawnFromEffect() {
         prevEnderiophageScale = 0.2F;
         this.setPhageScale(0.2F);

@@ -17,7 +17,13 @@ public final class AMParticleRegistry {
         SimpleParticleType type = FabricParticleTypes.simple(overrideLimiter);
         return Registry.register(BuiltInRegistries.PARTICLE_TYPE, rid, type);
     }
-
+    /**
+     * Call this method during mod initialization to ensure particle types are registered
+     * before the registry freezes.
+     */
+    public static void init() {
+        // This method forces class initialization, which registers all particle types
+    }
     public static final SimpleParticleType GUSTER_SAND_SPIN = register("guster_sand_spin", false);
     public static final SimpleParticleType GUSTER_SAND_SHOT = register("guster_sand_shot", false);
     public static final SimpleParticleType GUSTER_SAND_SPIN_RED = register("guster_sand_spin_red", false);

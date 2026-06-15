@@ -2,6 +2,7 @@ package com.github.alexthe666.alexsmobs.client.render.layer;
 
 import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
 import com.github.alexthe666.alexsmobs.client.render.CitadelEntityModelBridge;
+import com.github.alexthe666.alexsmobs.client.render.DeferredPoseStacks;
 import com.github.alexthe666.alexsmobs.client.render.RenderRaccoon;
 import com.github.alexthe666.alexsmobs.entity.EntityRaccoon;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -42,7 +43,7 @@ public class LayerRaccoonEyes extends RenderLayer<LivingEntityRenderState, Citad
             this.getParentModel().setupAnim(state);
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             collector.submitCustomGeometry(matrixStackIn, RenderTypes.eyes(TEXTURE), (pose, ivertexbuilder) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, overlay, -1)
+                this.getParentModel().renderCitadelToBuffer(DeferredPoseStacks.fromCaptured(pose), ivertexbuilder, packedLightIn, overlay, -1)
             );
         }
     }

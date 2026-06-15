@@ -711,7 +711,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
         this.setTrader(compound.getBooleanOr("Trader", false));
         this.forcedSit = compound.getBooleanOr("ForcedToSit", false);
         this.chargeCooldown = compound.getIntOr("ChargeCooldown", 0);
-        this.entityData.set(CARPET_COLOR, compound.getIntOr("Carpet", 0));
+        this.entityData.set(CARPET_COLOR, compound.getIntOr("Carpet", -1));
         this.initElephantInventory();
         compound.read("Items", CompoundTag.CODEC.listOf()).ifPresent(list -> {
             RegistryOps<Tag> ops = RegistryOps.create(NbtOps.INSTANCE, this.level().registryAccess());

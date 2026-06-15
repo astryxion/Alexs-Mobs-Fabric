@@ -80,6 +80,7 @@ public class EntityCrimsonMosquito extends Monster {
     private static final EntityDataAccessor<Boolean> SICK = SynchedEntityData.defineId(EntityCrimsonMosquito.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> LURING_LAVIATHAN = SynchedEntityData.defineId(EntityCrimsonMosquito.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> FLEEING_ENTITY = SynchedEntityData.defineId(EntityCrimsonMosquito.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> LATCHED_ENTITY = SynchedEntityData.defineId(EntityCrimsonMosquito.class, EntityDataSerializers.INT);
     private static final Predicate<LivingEntity> REPELLENT = (mob) -> {
         return mob.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.MOSQUITO_REPELLENT)) || mob instanceof EntityTriops;
     };
@@ -159,6 +160,161 @@ public class EntityCrimsonMosquito extends Monster {
         return true;
     }
 
+    @Override
+    public boolean isPickable() {
+        return true;
+    }
+
+    @Override
+    public float getPickRadius() {
+        return this.isLatched() ? 1.25F : super.getPickRadius();
+    }
+
+    @Override
+    protected boolean canRide(Entity entity) {
+        return true;
+    }
+
+    private long lastPassengerTickGameTime = -1L;
+
+    public boolean isLatched() {
+        return this.getLatchedEntityId() != -1 || this.isPassenger();
+    }
+
+    public int getLatchedEntityId() {
+        return this.entityData.get(LATCHED_ENTITY);
+    }
+
+    public void setLatchedEntityId(int id) {
+        this.entityData.set(LATCHED_ENTITY, id);
+    }
+
+    @Nullable
+    public LivingEntity getLatchTarget() {
+        int latchedId = this.getLatchedEntityId();
+        if (latchedId != -1) {
+            Entity entity = this.level().getEntity(latchedId);
+            if (entity instanceof LivingEntity living && living.isAlive()) {
+                return living;
+            }
+            return null;
+        }
+        Entity vehicle = this.getVehicle();
+        if (vehicle instanceof LivingEntity living && living.isAlive()) {
+            return living;
+        }
+        return null;
+    }
+
+    public void clearLatch(@Nullable LivingEntity mount) {
+        this.setLatchedEntityId(-1);
+        this.stopRiding();
+        if (mount != null && !this.level().isClientSide()) {
+            AlexsMobs.sendMSGToAll(new MessageMosquitoDismount(this.getId(), mount.getId()));
+        }
+        this.setFlying(false);
+        this.flightTicks = -15;
+    }
+
+    private double getLatchY(LivingEntity mount) {
+        return mount.getY() + mount.getBbHeight() * 0.85D;
+    }
+
+    private void updateLatchTransform(LivingEntity livingEntity) {
+        this.yBodyRot = livingEntity.yBodyRot;
+        this.setYRot(livingEntity.getYRot());
+        this.yHeadRot = livingEntity.yHeadRot;
+        this.yRotO = livingEntity.yHeadRot;
+        float radius = 1.0F;
+        float angle = Maths.STARTING_ANGLE * livingEntity.yBodyRot;
+        double extraX = radius * Mth.sin(Mth.PI + angle);
+        double extraZ = radius * Mth.cos(angle);
+        this.setPos(livingEntity.getX() + extraX, this.getLatchY(livingEntity), livingEntity.getZ() + extraZ);
+    }
+
+    private void finishLatchDismount(LivingEntity mount, boolean resetDrinkCooldown) {
+        this.clearLatch(mount);
+        if (resetDrinkCooldown) {
+            drinkTime = -20 - this.getRandom().nextInt(20);
+        }
+    }
+
+    private void applyLatchDrain(LivingEntity mount) {
+        if (this.level().isClientSide() || drinkTime % 20 != 0 || !this.isAlive()) {
+            return;
+        }
+        final boolean mungus = AMConfig.warpedMoscoTransformation && mount instanceof EntityMungus && ((EntityMungus) mount).isWarpedMoscoReady();
+        if (mount.hurtOrSimulate(this.damageSources().mobAttack(this), mungus ? 7F : 2.0F)) {
+            if (mungus) {
+                ((EntityMungus) mount).disableExplosion();
+            }
+            final boolean sick = this.isNonMungusWarpedTrigger(mount);
+            if (sick || mungus) {
+                if (!this.isSick()) {
+                    for (ServerPlayer serverplayerentity : this.level().getEntitiesOfClass(ServerPlayer.class, this.getBoundingBox().inflate(40.0D, 25.0D, 40.0D))) {
+                        AMAdvancementTriggerRegistry.MOSQUITO_SICK.trigger(serverplayerentity);
+                    }
+                }
+                this.setSick(true);
+                this.setFlying(false);
+                flightTicks = -150 - this.getRandom().nextInt(200);
+            }
+            this.gameEvent(GameEvent.EAT);
+            this.playSound(SoundEvents.HONEY_DRINK.value(), this.getSoundVolume(), this.getVoicePitch());
+            this.setBloodLevel(this.getBloodLevel() + 1);
+            if (this.getBloodLevel() > 3) {
+                this.finishLatchDismount(mount, true);
+            }
+        }
+    }
+
+    private void tickLatchLogic(LivingEntity livingEntity) {
+        if (!this.level().isClientSide() && !this.isPassenger()) {
+            this.startRiding(livingEntity, true, true);
+        }
+        this.setDeltaMovement(0, 0, 0);
+        this.setNoGravity(true);
+        this.updateLatchTransform(livingEntity);
+        if (!livingEntity.isAlive() || livingEntity instanceof Player player && player.isCreative()) {
+            this.clearLatch(livingEntity);
+            return;
+        }
+        if (drinkTime < 0) {
+            drinkTime = 0;
+        }
+        drinkTime++;
+        this.applyLatchDrain(livingEntity);
+        if (!this.level().isClientSide() && drinkTime > 81) {
+            this.finishLatchDismount(livingEntity, true);
+        }
+    }
+
+    /**
+     * Non-player passengers riding players are often skipped by vanilla {@code tickPassenger}.
+     * Latch logic also runs from server/client tick handlers via synced latch target id.
+     */
+    public void ensureLatchTick() {
+        LivingEntity target = this.getLatchTarget();
+        if (target == null) {
+            if (this.getLatchedEntityId() != -1) {
+                this.setLatchedEntityId(-1);
+            }
+            return;
+        }
+        long gameTime = this.level().getGameTime();
+        if (this.lastPassengerTickGameTime == gameTime) {
+            return;
+        }
+        this.lastPassengerTickGameTime = gameTime;
+        if (!this.level().isClientSide()) {
+            this.setOldPosAndRot();
+            this.tickCount++;
+            this.setDeltaMovement(0, 0, 0);
+            this.tick();
+        }
+        this.tickLatchLogic(target);
+    }
+
     protected void registerGoals() {
         this.goalSelector.addGoal(2, new FlyTowardsTarget(this));
         this.goalSelector.addGoal(2, new FlyAwayFromTarget(this));
@@ -229,80 +385,41 @@ public class EntityCrimsonMosquito extends Monster {
 
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
-        if (source.getEntity() != null && this.getRootVehicle() == source.getEntity().getRootVehicle()) {
-            return super.hurtServer(level, source, amount * 0.333F);
+        float damage = amount;
+        if (source.getEntity() != null && this.isLatched() && this.getRootVehicle() == source.getEntity().getRootVehicle()) {
+            damage *= 0.333F;
+        }
+        if (this.isLatched()) {
+            LivingEntity mount = this.getLatchTarget();
+            this.clearLatch(mount);
+            if (source.getEntity() != null) {
+                double dx = source.getEntity().getX() - this.getX();
+                double dz = source.getEntity().getZ() - this.getZ();
+                this.knockback(0.6F, dx, dz);
+            }
         }
         if (flightTicks < 0) {
             flightTicks = 0;
         }
-        return super.hurtServer(level, source, amount);
+        return super.hurtServer(level, source, damage);
     }
 
+    @Override
     public void rideTick() {
-        final Entity entity = this.getVehicle();
-        if (this.isPassenger() && !entity.isAlive()) {
-            this.stopRiding();
-        } else {
-            this.setDeltaMovement(0, 0, 0);
-            this.tick();
+        this.lastPassengerTickGameTime = this.level().getGameTime();
+        LivingEntity target = this.getLatchTarget();
+        if (target == null) {
             if (this.isPassenger()) {
-                final Entity mount = this.getVehicle();
-                if (mount instanceof final LivingEntity livingEntity) {
-                    this.yBodyRot = livingEntity.yBodyRot;
-                    this.setYRot(livingEntity.getYRot());
-                    this.yHeadRot = livingEntity.yHeadRot;
-                    this.yRotO = livingEntity.yHeadRot;
-                    final float radius = 1F;
-                    final float angle = (Maths.STARTING_ANGLE * livingEntity.yBodyRot);
-                    final double extraX = radius * Mth.sin(Mth.PI + angle);
-                    final double extraZ = radius * Mth.cos(angle);
-                    this.setPos(mount.getX() + extraX, Math.max(mount.getY() + mount.getEyeHeight() * 0.25F, mount.getY()), mount.getZ() + extraZ);
-                    if (!mount.isAlive() || mount instanceof Player && ((Player) mount).isCreative()) {
-                        this.removeVehicle();
-                    }
-                    if (!this.level().isClientSide()) {
-                        if (drinkTime % 20 == 0 && this.isAlive()) {
-                            final boolean mungus = AMConfig.warpedMoscoTransformation && mount instanceof EntityMungus && ((EntityMungus) mount).isWarpedMoscoReady();
-                            if (livingEntity.hurtServer((ServerLevel) this.level(), this.damageSources().mobAttack(this), mungus ? 7F : 2.0F)) {
-                                if (mungus) {
-                                    ((EntityMungus) mount).disableExplosion();
-                                }
-                                final boolean sick = this.isNonMungusWarpedTrigger(mount);
-                                if (sick || mungus) {
-                                    if (!this.isSick()) {
-                                        for (ServerPlayer serverplayerentity : this.level().getEntitiesOfClass(ServerPlayer.class, this.getBoundingBox().inflate(40.0D, 25.0D, 40.0D))) {
-                                            AMAdvancementTriggerRegistry.MOSQUITO_SICK.trigger(serverplayerentity);
-                                        }
-                                    }
-                                    this.setSick(true);
-                                    this.setFlying(false);
-                                    flightTicks = -150 - this.getRandom().nextInt(200);
-                                }
-                                this.gameEvent(GameEvent.EAT);
-                                this.playSound(SoundEvents.HONEY_DRINK.value(), this.getSoundVolume(), this.getVoicePitch());
-                                this.setBloodLevel(this.getBloodLevel() + 1);
-                                if (this.getBloodLevel() > 3) {
-                                    this.removeVehicle();
-                                    AlexsMobs.sendMSGToAll(new MessageMosquitoDismount(this.getId(), mount.getId()));
-                                    this.setFlying(false);
-                                    this.flightTicks = -15;
-                                }
-                            }
-                        }
-
-                        if (drinkTime > 81) {
-                            drinkTime = -20 - this.getRandom().nextInt(20);
-                            this.removeVehicle();
-                            AlexsMobs.sendMSGToAll(new MessageMosquitoDismount(this.getId(), mount.getId()));
-                            this.setFlying(false);
-                            this.flightTicks = -15;
-                        }
-                    }
+                Entity entity = this.getVehicle();
+                if (entity != null && !entity.isAlive()) {
+                    this.stopRiding();
                 }
-
             }
+            return;
         }
-
+        this.setDeltaMovement(0, 0, 0);
+        this.tick();
+        this.tickLatchLogic(target);
     }
 
     @Override
@@ -317,6 +434,7 @@ public class EntityCrimsonMosquito extends Monster {
         builder.define(MOSQUITO_SCALE, 1F);
         builder.define(LURING_LAVIATHAN, -1);
         builder.define(FLEEING_ENTITY, -1);
+        builder.define(LATCHED_ENTITY, -1);
     }
 
     public boolean isFlying() {
@@ -412,14 +530,18 @@ public class EntityCrimsonMosquito extends Monster {
                 flyProgress--;
         }
 
-        if (!this.level().isClientSide()) {
-            if (this.isPassenger())
-                this.setFlying(false);
+        if (this.isPassenger() || this.isLatched()) {
+            this.setFlying(false);
+            this.setNoGravity(true);
+        }
 
-            if (isFlying()) {
-                this.setNoGravity(true);
-            } else {
-                this.setNoGravity(false);
+        if (!this.level().isClientSide()) {
+            if (!this.isPassenger()) {
+                if (isFlying()) {
+                    this.setNoGravity(true);
+                } else {
+                    this.setNoGravity(false);
+                }
             }
             LivingEntity target = this.getTarget();
             if (this.getFleeingEntityId() == -1) {
@@ -443,8 +565,8 @@ public class EntityCrimsonMosquito extends Monster {
                 if (fleeing instanceof LivingEntity living && REPELLENT.test(living) && this.distanceTo(living) < 20) {
                     this.setTarget(null);
                     this.setLastHurtByMob(null);
-                    if(this.isPassenger()){
-                        this.stopRiding();
+                    if (this.isLatched()) {
+                        this.clearLatch(this.getLatchTarget());
                     }
                     if(fleePos == null || fleePos.distanceTo(this.position()) < 3 || this.getRandom().nextInt(40) == 0){
                         Vec3 vec = LandRandomPos.getPosAway(this, 8, 4, fleeing.position());
@@ -531,12 +653,7 @@ public class EntityCrimsonMosquito extends Monster {
             }
         }
 
-        if (isPassenger()) {
-            if (drinkTime < 0)
-                drinkTime = 0;
-
-            drinkTime++;
-        } else {
+        if (!this.isPassenger() && !this.isLatched()) {
             drinkTime = 0;
         }
         prevFlyProgress = flyProgress;
@@ -780,7 +897,7 @@ public class EntityCrimsonMosquito extends Monster {
             if (!parentEntity.isFlying() || parentEntity.getBloodLevel() > 0 || parentEntity.drinkTime < 0 || parentEntity.getFleeingEntityId() != -1) {
                 return false;
             }
-            return !parentEntity.isPassenger() && parentEntity.getTarget() != null && !isBittenByMosquito(parentEntity.getTarget());
+            return !parentEntity.isLatched() && parentEntity.getTarget() != null && !isBittenByMosquito(parentEntity.getTarget());
         }
 
         public boolean canContinueToUse() {
@@ -790,6 +907,11 @@ public class EntityCrimsonMosquito extends Monster {
         public boolean isBittenByMosquito(Entity entity) {
             for (Entity e : entity.getPassengers()) {
                 if (e instanceof EntityCrimsonMosquito) {
+                    return true;
+                }
+            }
+            for (EntityCrimsonMosquito mosquito : entity.level().getEntitiesOfClass(EntityCrimsonMosquito.class, entity.getBoundingBox().inflate(2.0D), Entity::isAlive)) {
+                if (mosquito.getLatchedEntityId() == entity.getId()) {
                     return true;
                 }
             }
@@ -803,9 +925,11 @@ public class EntityCrimsonMosquito extends Monster {
             if (parentEntity.getTarget() != null) {
                 this.parentEntity.getMoveControl().setWantedPosition(parentEntity.getTarget().getX(), parentEntity.getTarget().getY(), parentEntity.getTarget().getZ(), 1.0D);
                 if (parentEntity.getBoundingBox().inflate(0.3F, 0.3F, 0.3F).intersects(parentEntity.getTarget().getBoundingBox()) && !isBittenByMosquito(parentEntity.getTarget()) && parentEntity.drinkTime == 0) {
-                    parentEntity.startRiding(parentEntity.getTarget(), true, false);
+                    LivingEntity target = parentEntity.getTarget();
+                    parentEntity.setLatchedEntityId(target.getId());
+                    parentEntity.startRiding(target, true, true);
                     if (!parentEntity.level().isClientSide()) {
-                        AlexsMobs.sendMSGToAll(new MessageMosquitoMountPlayer(parentEntity.getId(), parentEntity.getTarget().getId()));
+                        AlexsMobs.sendMSGToAll(new MessageMosquitoMountPlayer(parentEntity.getId(), target.getId()));
                     }
                 }
             }

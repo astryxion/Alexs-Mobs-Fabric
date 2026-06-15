@@ -1,5 +1,6 @@
 package com.github.alexthe666.alexsmobs.client.render.layer;
 
+import com.github.alexthe666.alexsmobs.client.model.AlexAdvancedEntityModel;
 import com.github.alexthe666.alexsmobs.client.render.CitadelEntityModelBridge;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -22,7 +23,11 @@ public class LayerBasicGlow<E extends Mob> extends RenderLayer<LivingEntityRende
     @Override
     public void submit(PoseStack matrixStackIn, SubmitNodeCollector collector, int packedLightIn, LivingEntityRenderState state, float netHeadYaw, float headPitch) {
         this.getParentModel().setupAnim(state);
+        PoseStack citadelPoseStack = new PoseStack();
         collector.submitCustomGeometry(matrixStackIn, RenderTypes.eyes(this.texture), (pose, consumer) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, OverlayTexture.NO_OVERLAY, -1));
+                AlexAdvancedEntityModel.withCitadelSubmitPose(pose, citadelPoseStack, scratch ->
+                        this.getParentModel().renderCitadelToBuffer(scratch, consumer, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
+                )
+        );
     }
 }

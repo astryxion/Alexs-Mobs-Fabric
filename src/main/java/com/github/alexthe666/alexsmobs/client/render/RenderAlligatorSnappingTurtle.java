@@ -64,8 +64,13 @@ public class RenderAlligatorSnappingTurtle
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             int color = ARGB.colorFromFloat(1.0F, 1.0F, 1.0F, Math.min(1.0F, mossAlpha));
             this.getParentModel().setupAnim(state);
-            bufferIn.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityTranslucent(TEXTURE_MOSS), (pose, mossbuffer) ->
-                    this.getParentModel().renderCitadelToBuffer(matrixStackIn, mossbuffer, packedLightIn, overlay, color));
+            bufferIn.submitCustomGeometry(matrixStackIn, AMRenderTypes.getEyesNoFog(TEXTURE_MOSS), (pose, mossbuffer) -> {
+                PoseStack stackPose = new PoseStack();
+                stackPose.pushPose();
+                stackPose.last().set(pose);
+                this.getParentModel().renderCitadelToBuffer(stackPose, mossbuffer, packedLightIn, overlay, color);
+                stackPose.popPose();
+            });
         }
     }
 }

@@ -4,6 +4,7 @@ import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
 import com.github.alexthe666.alexsmobs.client.model.ModelAncientDart;
 import com.github.alexthe666.alexsmobs.client.model.ModelCapuchinMonkey;
 import com.github.alexthe666.alexsmobs.client.render.CitadelEntityModelBridge;
+import com.github.alexthe666.alexsmobs.client.render.DeferredPoseStacks;
 import com.github.alexthe666.alexsmobs.client.render.RenderCapuchinMonkey;
 import com.github.alexthe666.alexsmobs.entity.EntityCapuchinMonkey;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -63,7 +64,7 @@ public class LayerCapuchinItem extends RenderLayer<LivingEntityRenderState, Cita
             matrixStackIn.pushPose();
             matrixStackIn.mulPose(Axis.XP.rotationDegrees(f));
             bufferIn.submitCustomGeometry(matrixStackIn, RenderTypes.entityCutout(DART_TEXTURE), (pose, consumer) ->
-                    DART_MODEL.renderToBuffer(matrixStackIn, consumer, packedLightIn, overlay, -1));
+                    DART_MODEL.renderToBuffer(DeferredPoseStacks.fromCaptured(pose), consumer, packedLightIn, overlay, -1));
             matrixStackIn.popPose();
             matrixStackIn.popPose();
 

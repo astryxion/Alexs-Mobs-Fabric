@@ -23,7 +23,9 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.DifficultyInstance;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -44,7 +46,7 @@ import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 
-public class EntitySkelewag extends Monster implements IAnimatedEntity {
+public class EntitySkelewag extends Monster implements IAnimatedEntity, IAMUnderwaterBreather {
 
     public static final Animation ANIMATION_STAB = Animation.create(10);
     public static final Animation ANIMATION_SLASH = Animation.create(25);
@@ -224,12 +226,18 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
             drowned.startRiding(this);
             worldIn.addFreshEntityWithPassengers(drowned);
         }
-        if(reason == EntitySpawnReason.STRUCTURE){
+        if (AMConfig.restrictSkelewagSpawns) {
             this.setHomeTo(this.blockPosition(), 15);
         }
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
     }
 
+    @Override
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.DROWN) || super.isInvulnerableTo(level, source);
+    }
+
+    @Override
     public boolean canBreatheUnderwaterAM() {
         return true;
     }

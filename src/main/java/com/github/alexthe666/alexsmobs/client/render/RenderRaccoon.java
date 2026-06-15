@@ -88,7 +88,13 @@ public class RenderRaccoon extends MobRenderer<EntityRaccoon, LivingEntityRender
                 this.getParentModel().setupAnim(state);
                 int packedColor = AMColorUtil.packColor(lvt_11_2_, lvt_12_2_, lvt_13_2_, 1.0F);
                 collector.submitCustomGeometry(p_225628_1_, AMRenderTypes.entityCutoutNoCull(TEXTURE_BANDANA), (pose, buffer) ->
-                    this.getParentModel().renderCitadelToBuffer(p_225628_1_, buffer, p_225628_3_, OverlayTexture.NO_OVERLAY, packedColor)
+                        {
+                            PoseStack stackPose = new PoseStack();
+                            stackPose.pushPose();
+                            stackPose.last().set(pose);
+                            this.getParentModel().renderCitadelToBuffer(stackPose, buffer, p_225628_3_, OverlayTexture.NO_OVERLAY, packedColor);
+                            stackPose.popPose();
+                        }
                 );
             }
         }

@@ -234,13 +234,21 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
 
     // getDimensions is now final in 1.21, removed override
 
+    @Override
+    public EntityDimensions getDefaultDimensions(Pose pose) {
+        return isSilverback() && !isBaby() ? SILVERBACK_SIZE.scale(this.getScale()) : super.getDefaultDimensions(pose);
+    }
+
     public void positionRider(Entity passenger, Entity.MoveFunction moveFunc) {
         if (this.hasPassenger(passenger)) {
             this.setOrderedToSit(false);
-            if (passenger instanceof EntityGorilla) {
-                EntityGorilla babyGorilla = (EntityGorilla) passenger;
-                babyGorilla.setStanding(this.isStanding());
-                babyGorilla.setOrderedToSit(this.isSitting());
+            if (passenger instanceof EntityGorilla babyGorilla && babyGorilla.isBaby()) {
+                babyGorilla.setStanding(false);
+                babyGorilla.setOrderedToSit(false);
+                babyGorilla.standProgress = 0;
+                babyGorilla.prevStandProgress = 0;
+                babyGorilla.sitProgress = 0;
+                babyGorilla.prevSitProgress = 0;
                 babyGorilla.yBodyRot = this.yBodyRot;
             }
             float sitAdd = -0.03F * this.sitProgress;
@@ -249,7 +257,7 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
             float angle = (Maths.STARTING_ANGLE * this.yBodyRot);
             double extraX = radius * Mth.sin(Mth.PI + angle);
             double extraZ = radius * Mth.cos(angle);
-            passenger.setPos(this.getX() + extraX, this.getY() + this.getBbHeight() * 0.75 + 0, this.getZ() + extraZ);
+            moveFunc.accept(passenger, this.getX() + extraX, this.getY() + this.getBbHeight() * 0.75F, this.getZ() + extraZ);
         }
     }
 
@@ -318,16 +326,36 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
 
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
-        Item item = itemstack.getItem();
         if (itemstack.getItem() == Items.NAME_TAG) {
             return super.mobInteract(player, hand);
         }
+        // Hand-feed bananas before super so the player doesn't eat them in 26.1
+        if (!isTame() && isTameableFood(itemstack)) {
+            if (!this.level().isClientSide()) {
+                this.usePlayerItem(player, hand, itemstack);
+                this.gameEvent(GameEvent.EAT);
+                this.playSound(SoundEvents.PANDA_EAT, this.getSoundVolume(), this.getVoicePitch());
+                if (getRandom().nextFloat() < 0.3F) {
+                    this.setTame(true, true);
+                    this.tame(player);
+                    if (player instanceof ServerPlayer serverPlayer) {
+                        CriteriaTriggers.TAME_ANIMAL.trigger(serverPlayer, this);
+                    }
+                    this.level().broadcastEntityEvent(this, (byte) 7);
+                } else {
+                    this.level().broadcastEntityEvent(this, (byte) 6);
+                }
+            }
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        }
         if (isTame() && isTameableFood(itemstack) && this.getHealth() < this.getMaxHealth()) {
-            this.heal(5);
-            this.usePlayerItem(player, hand, itemstack);
-            this.gameEvent(GameEvent.EAT);
-            this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
-            return InteractionResult.SUCCESS;
+            if (!this.level().isClientSide()) {
+                this.heal(5);
+                this.usePlayerItem(player, hand, itemstack);
+                this.gameEvent(GameEvent.EAT);
+                this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
+            }
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
         }
         InteractionResult type = super.mobInteract(player, hand);
         InteractionResult interactionresult = itemstack.interactLivingEntity(player, this, hand);
@@ -341,6 +369,9 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
                 this.setOrderedToSit(true);
                 return InteractionResult.SUCCESS;
             }
+        }
+        if (type.consumesAction() && isFood(itemstack)) {
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
         }
         return type;
     }
@@ -444,6 +475,12 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
                 this.removeVehicle();
             }else{
                 EntityGorilla mount = (EntityGorilla) this.getVehicle();
+                this.setStanding(false);
+                this.setOrderedToSit(false);
+                this.standProgress = 0;
+                this.prevStandProgress = 0;
+                this.sitProgress = 0;
+                this.prevSitProgress = 0;
                 this.setYRot( mount.yBodyRot);
                 this.yHeadRot = mount.yBodyRot;
                 this.yBodyRot = mount.yBodyRot;

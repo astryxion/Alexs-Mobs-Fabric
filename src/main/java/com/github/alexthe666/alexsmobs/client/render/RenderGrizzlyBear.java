@@ -70,7 +70,13 @@ public class RenderGrizzlyBear extends MobRenderer<EntityGrizzlyBear, LivingEnti
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             this.getParentModel().setupAnim(state);
             bufferIn.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(TEXTURE_SNOWY), (pose, consumer) ->
-                    this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, overlay, -1));
+            {
+                PoseStack stackPose = new PoseStack();
+                stackPose.pushPose();
+                stackPose.last().set(pose);
+                this.getParentModel().renderCitadelToBuffer(stackPose, consumer, packedLightIn, overlay, -1);
+                stackPose.popPose();
+            });
         }
     }
 
@@ -90,7 +96,13 @@ public class RenderGrizzlyBear extends MobRenderer<EntityGrizzlyBear, LivingEnti
             int packedColor = AMColorUtil.packColor(1.0F, 1.0F, 1.0F, 0.1F);
             this.getParentModel().setupAnim(state);
             bufferIn.submitCustomGeometry(matrixStackIn, AMRenderTypes.getEyesNoFog(TEXTURE_FREDDY_EYES), (pose, consumer) ->
-                    this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, overlay, packedColor));
+            {
+                PoseStack stackPose = new PoseStack();
+                stackPose.pushPose();
+                stackPose.last().set(pose);
+                this.getParentModel().renderCitadelToBuffer(stackPose, consumer, packedLightIn, overlay, packedColor);
+                stackPose.popPose();
+            });
         }
     }
 }

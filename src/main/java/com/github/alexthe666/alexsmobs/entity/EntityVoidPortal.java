@@ -217,11 +217,12 @@ public class EntityVoidPortal extends Entity {
     }
 
     public Direction getAttachmentFacing() {
-        return this.entityData.get(ATTACHED_FACE);
+        Direction facing = this.entityData.get(ATTACHED_FACE);
+        return facing == null ? Direction.DOWN : facing;
     }
 
     public void setAttachmentFacing(Direction facing) {
-        this.entityData.set(ATTACHED_FACE, facing);
+        this.entityData.set(ATTACHED_FACE, facing == null ? Direction.DOWN : facing);
     }
 
     public int getLifespan() {
@@ -252,6 +253,10 @@ public class EntityVoidPortal extends Entity {
     }
 
     public void createAndSetSister(Level world, Direction dir){
+        BlockPos safeDestination = this.getDestination();
+        if (safeDestination == null) {
+            return;
+        }
         EntityVoidPortal portal = AMEntityRegistry.VOID_PORTAL.create(world, EntitySpawnReason.TRIGGERED);
         Direction attachmentFacing = dir;
         if (attachmentFacing == null) {
@@ -259,7 +264,6 @@ public class EntityVoidPortal extends Entity {
             attachmentFacing = currentFacing != null ? currentFacing.getOpposite() : Direction.NORTH;
         }
         portal.setAttachmentFacing(attachmentFacing);
-        BlockPos safeDestination = this.getDestination();
         portal.teleportTo(safeDestination.getX() + 0.5f, safeDestination.getY() + 0.5f, safeDestination.getZ() + 0.5f);
         portal.link(this);
         portal.exitDimension = this.level().dimension();
@@ -284,7 +288,7 @@ public class EntityVoidPortal extends Entity {
 
     @Override
     protected void readAdditionalSaveData(ValueInput compound) {
-        this.entityData.set(ATTACHED_FACE, Direction.from3DDataValue(compound.getByteOr("AttachFace", (byte) 0)));
+        this.setAttachmentFacing(Direction.from3DDataValue(compound.getByteOr("AttachFace", (byte) Direction.DOWN.get3DDataValue())));
         this.setLifespan(compound.getIntOr("Lifespan", 0));
         if (compound.child("Shattered").isPresent()) {
             this.setShattered(compound.getBooleanOr("Shattered", false));
@@ -303,7 +307,7 @@ public class EntityVoidPortal extends Entity {
 
     @Override
     protected void addAdditionalSaveData(ValueOutput compound) {
-        compound.putByte("AttachFace", (byte) this.entityData.get(ATTACHED_FACE).get3DDataValue());
+        compound.putByte("AttachFace", (byte) this.getAttachmentFacing().get3DDataValue());
         compound.putInt("Lifespan", getLifespan());
         compound.putBoolean("Shattered", isShattered());
         BlockPos blockpos = this.getDestination();

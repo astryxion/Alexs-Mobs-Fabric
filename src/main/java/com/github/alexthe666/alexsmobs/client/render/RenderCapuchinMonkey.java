@@ -27,12 +27,6 @@ public class RenderCapuchinMonkey extends MobRenderer<EntityCapuchinMonkey, Livi
     }
 
     @Override
-    public void extractRenderState(EntityCapuchinMonkey entity, LivingEntityRenderState state, float partialTick) {
-        super.extractRenderState(entity, state, partialTick);
-        this.getModel().setCitadelYoung(entity.isBaby());
-    }
-
-    @Override
     protected void scale(LivingEntityRenderState state, PoseStack matrixStackIn) {
         matrixStackIn.scale(0.8F, 0.8F, 0.8F);
     }

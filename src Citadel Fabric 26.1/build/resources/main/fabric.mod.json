@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "citadel",
-  "version": "26.1-1.0.0",
+  "version": "26.1-1.0.3",
   "name": "Citadel",
   "description": "Core library for Alex's Mobs.",
   "authors": [

@@ -14,6 +14,7 @@ import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.effect.EffectClinging;
 import com.github.alexthe666.alexsmobs.effect.EffectPowerDown;
 import com.github.alexthe666.alexsmobs.entity.EntityBaldEagle;
+import com.github.alexthe666.alexsmobs.entity.EntityCrimsonMosquito;
 import com.github.alexthe666.alexsmobs.entity.EntityBlueJay;
 import com.github.alexthe666.alexsmobs.entity.EntityElephant;
 import com.github.alexthe666.alexsmobs.entity.IFalconry;
@@ -35,13 +36,18 @@ import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.util.TriState;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.npc.wanderingtrader.WanderingTrader;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Enemy;
@@ -49,6 +55,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.EntityHitResult;
 public class ClientEvents {
+
+    private static final ClientEvents INSTANCE = new ClientEvents();
+
+    public static ClientEvents getInstance() {
+        return INSTANCE;
+    }
+
     public void registerFabricHandlers() {
         EventGetOutlineColor.EVENT.register(this::onOutlineEntityColor);
         EventGetStarBrightness.EVENT.register(this::onGetStarBrightness);
@@ -138,9 +151,51 @@ public class ClientEvents {
         ClientProxy.submitEntityInWorld(entityIn, x, y, z, yaw, partialTicks, matrixStack, collector);
     }
 
+    public void renderRockyRolling(LivingEntity entity, LivingEntityRenderState state, PoseStack poseStack, SubmitNodeCollector collector) {
+        float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+        poseStack.pushPose();
+        try {
+            float limbSwing = state.walkAnimationPos - state.walkAnimationSpeed * (1.0F - partialTick);
+            float limbSwingAmount = state.walkAnimationSpeed;
+            float yRot = state.bodyRot;
+            float roll = state.walkAnimationPos;
+            int packedLight = state.lightCoords;
+            boolean foil = entity.getItemBySlot(EquipmentSlot.CHEST).hasFoil();
+            poseStack.translate(0.0D, entity.getBbHeight() - entity.getBbHeight() * 0.5F, 0.0D);
+            poseStack.mulPose(Axis.YN.rotationDegrees(180F + yRot));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
+            poseStack.mulPose(Axis.XP.rotationDegrees(100F * roll));
+            ROCKY_CHESTPLATE_MODEL.setupAnim(entity, limbSwing, limbSwingAmount, entity.tickCount + partialTick, 0, 0);
+            collector.submitCustomGeometry(poseStack, RenderTypes.armorCutoutNoCull(ROCKY_CHESTPLATE_TEXTURE), (pose, vertexConsumer) -> {
+                PoseStack local = new PoseStack();
+                local.pushPose();
+                local.last().set(pose);
+                ROCKY_CHESTPLATE_MODEL.renderToBuffer(local, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY, -1);
+                local.popPose();
+            });
+            if (foil) {
+                collector.submitCustomGeometry(poseStack, RenderTypes.armorEntityGlint(), (pose, vertexConsumer) -> {
+                    PoseStack local = new PoseStack();
+                    local.pushPose();
+                    local.last().set(pose);
+                    ROCKY_CHESTPLATE_MODEL.renderToBuffer(local, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY, -1);
+                    local.popPose();
+                });
+            }
+        } finally {
+            poseStack.popPose();
+        }
+    }
+
     public void clientTick() {
         AMItemstackRenderer.incrementTick();
         onRenderWorldLastEvent();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null && mc.player != null) {
+            for (EntityCrimsonMosquito mosquito : mc.level.getEntitiesOfClass(EntityCrimsonMosquito.class, mc.player.getBoundingBox().inflate(32.0D), m -> m.isAlive() && m.isLatched())) {
+                mosquito.ensureLatchTick();
+            }
+        }
         if (renderStaticScreenFor > 0 && Minecraft.getInstance().player != null && Minecraft.getInstance().level != null) {
             if (Minecraft.getInstance().player.isAlive() && lastStaticTick != Minecraft.getInstance().level.getGameTime()) {
                 renderStaticScreenFor--;

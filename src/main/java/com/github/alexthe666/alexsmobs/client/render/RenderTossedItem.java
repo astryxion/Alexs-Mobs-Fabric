@@ -58,7 +58,7 @@ public class RenderTossedItem extends EntityRenderer<EntityTossedItem, EntityRen
             matrixStackIn.translate(0, 0.5F, 0);
             matrixStackIn.scale(1F, 1F, 1F);
             collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(DART_TEXTURE), (pose, ivertexbuilder) ->
-                DART_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
+                DART_MODEL.renderToBuffer(DeferredPoseStacks.fromCaptured(pose), ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
             );
             matrixStackIn.popPose();
         } else {

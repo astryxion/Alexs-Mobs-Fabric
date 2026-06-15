@@ -46,7 +46,7 @@ public class RenderPollenBall extends EntityRenderer<EntityPollenBall, EntityRen
         matrixStackIn.scale(1F, 1F, 1F);
         int packedLightIn = state.lightCoords;
         collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getFullBright(getTextureLocation(state)), (pose, ivertexbuilder) ->
-            MODEL_POLLEN_BALL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
+            MODEL_POLLEN_BALL.renderToBuffer(DeferredPoseStacks.fromCaptured(pose), ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, -1)
         );
         matrixStackIn.popPose();
         matrixStackIn.popPose();

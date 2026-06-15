@@ -24,12 +24,6 @@ public class RenderCockroach extends MobRenderer<EntityCockroach, LivingEntityRe
     }
 
     @Override
-    public void extractRenderState(EntityCockroach entity, LivingEntityRenderState state, float partialTick) {
-        super.extractRenderState(entity, state, partialTick);
-        this.getModel().setCitadelYoung(entity.isBaby());
-    }
-
-    @Override
     protected void scale(LivingEntityRenderState state, PoseStack matrixStackIn) {
         matrixStackIn.scale(0.85F, 0.85F, 0.85F);
     }

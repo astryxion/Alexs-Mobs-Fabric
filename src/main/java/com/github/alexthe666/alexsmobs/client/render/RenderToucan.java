@@ -78,10 +78,20 @@ public class RenderToucan extends MobRenderer<EntityToucan, LivingEntityRenderSt
             this.getParentModel().setupAnim(state);
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             collector.submitCustomGeometry(matrixStackIn, RenderTypes.armorCutoutNoCull(TEXTURE_GOLDEN), (pose, baseVc) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, baseVc, packedLightIn, overlay, -1)
+                    {                    PoseStack stackPose = new PoseStack();
+                        stackPose.pushPose();
+                        stackPose.last().set(pose);
+                        this.getParentModel().renderCitadelToBuffer(stackPose, baseVc, packedLightIn, overlay, -1);
+                        stackPose.popPose();
+                    }
             );
             collector.submitCustomGeometry(matrixStackIn, RenderTypes.armorEntityGlint(), (pose, glintVc) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, glintVc, packedLightIn, overlay, -1)
+                    {                    PoseStack stackPose = new PoseStack();
+                        stackPose.pushPose();
+                        stackPose.last().set(pose);
+                        this.getParentModel().renderCitadelToBuffer(stackPose, glintVc, packedLightIn, overlay, -1);
+                        stackPose.popPose();
+                    }
             );
         }
     }

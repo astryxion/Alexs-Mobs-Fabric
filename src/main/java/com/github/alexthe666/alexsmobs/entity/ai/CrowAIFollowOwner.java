@@ -57,6 +57,8 @@ public class CrowAIFollowOwner extends Goal {
             return false;
         } else if (crow.getCommand() != 1) {
             return false;
+        } else if (crow.getRemountCooldown() > 0) {
+            return false;
         } else if (this.crow.distanceToSqr(lvt_1_1_) < (double) (this.minDist * this.minDist)) {
             return false;
         } else {
@@ -66,11 +68,10 @@ public class CrowAIFollowOwner extends Goal {
     }
 
     public boolean canContinueToUse() {
-        if (this.crow.isSitting()) {
+        if (this.crow.isSitting() || this.crow.getRemountCooldown() > 0) {
             return false;
-        } else {
-            return crow.getCommand() == 1 && !crow.isPassenger() && (crow.getTarget() == null || !crow.getTarget().isAlive());
         }
+        return crow.getCommand() == 1 && !crow.isPassenger() && (crow.getTarget() == null || !crow.getTarget().isAlive());
     }
 
     public void start() {
@@ -109,7 +110,8 @@ public class CrowAIFollowOwner extends Goal {
                 if (this.crow.isFlying()) {
                     circlingTime++;
                 }
-                if(circlingTime > maxCircleTime && crow.getRidingCrows(owner) < 2){
+                if(circlingTime > maxCircleTime && crow.getRidingCrows(owner) < 2 && crow.getRemountCooldown() <= 0
+                        && !owner.isShiftKeyDown() && !owner.isCrouching() && !owner.isInWater()){
                     crow.getMoveControl().setWantedPosition(owner.getX(), owner.getY() + owner.getEyeHeight() + 0.2F, owner.getZ(), 0.7F);
                     if(crow.distanceTo(owner) < 2){
                         crow.startRiding(owner, true, false);

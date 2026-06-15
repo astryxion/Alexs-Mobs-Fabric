@@ -1,12 +1,9 @@
 package com.github.alexthe666.alexsmobs.network;
 
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
 
 /**
  * Server -> Client packet to sync entity position.
@@ -14,7 +11,7 @@ import net.minecraft.world.level.Level;
 public record MessageSyncEntityPos(int entityId, double x, double y, double z) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<MessageSyncEntityPos> ID =
-        new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("alexsmobs", "sync_entity_pos"));
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("alexsmobs", "sync_entity_pos"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, MessageSyncEntityPos> CODEC = new StreamCodec<>() {
         @Override
@@ -38,15 +35,5 @@ public record MessageSyncEntityPos(int entityId, double x, double y, double z) i
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return ID;
-    }
-
-    public static void handleClient(MessageSyncEntityPos payload, ClientPlayNetworking.Context context) {
-        Level level = context.player().level();
-        Entity entity = level.getEntity(payload.entityId);
-        if (entity instanceof com.github.alexthe666.alexsmobs.entity.IFalconry ||
-            entity instanceof com.github.alexthe666.alexsmobs.entity.EntityStraddleboard) {
-            entity.setPos(payload.x, payload.y, payload.z);
-            entity.teleportTo(payload.x, payload.y, payload.z);
-        }
     }
 }

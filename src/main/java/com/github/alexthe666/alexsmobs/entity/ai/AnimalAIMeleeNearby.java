@@ -2,6 +2,7 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
@@ -37,15 +38,21 @@ public class AnimalAIMeleeNearby extends Goal {
     }
 
     public void tick(){
-        if (entity.getTarget() != null && entity.distanceTo(entity.getTarget()) < 3F + entity.getBbWidth() + entity.getTarget().getBbWidth()) {
+        LivingEntity target = entity.getTarget();
+        if (target == null || !target.isAlive()) {
+            entity.getNavigation().stop();
+            return;
+        }
+
+        if (entity.distanceTo(target) < 3F + entity.getBbWidth() + target.getBbWidth()) {
             if (entity.level() instanceof ServerLevel serverLevel) {
-                entity.doHurtTarget(serverLevel, entity.getTarget());
+                entity.doHurtTarget(serverLevel, target);
             }
-            entity.lookAt(entity.getTarget(), 180F, 180F);
+            entity.lookAt(target, 180F, 180F);
         }else{
             if(fightStartPos != null){
                 if(entity.distanceToSqr(Vec3.atCenterOf(fightStartPos)) < range * range){
-                    entity.getNavigation().moveTo(entity.getTarget(), speed);
+                    entity.getNavigation().moveTo(target, speed);
 
                 }else{
                     entity.getNavigation().moveTo(fightStartPos.getX() + 0.5F, fightStartPos.getY() + 0.5F, fightStartPos.getZ() + 0.5F, 0.4F + speed);

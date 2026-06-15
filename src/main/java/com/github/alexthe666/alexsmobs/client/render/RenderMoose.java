@@ -57,7 +57,13 @@ public class RenderMoose extends MobRenderer<EntityMoose, LivingEntityRenderStat
             this.getParentModel().setupAnim(state);
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(tex), (pose, ivertexbuilder) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, overlay, -1)
+                    {
+                        PoseStack stackPose = new PoseStack();
+                        stackPose.pushPose();
+                        stackPose.last().set(pose);
+                        this.getParentModel().renderCitadelToBuffer(stackPose, ivertexbuilder, packedLightIn, overlay, -1);
+                        stackPose.popPose();
+                    }
             );
         }
     }

@@ -1,15 +1,9 @@
 package com.github.alexthe666.alexsmobs.network;
 
-import com.github.alexthe666.alexsmobs.AlexsMobs;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.Entity;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 
 /**
  * Server -> Client packet to process visual flags on entities.
@@ -17,7 +11,7 @@ import net.minecraft.world.entity.player.Player;
 public record MessageSendVisualFlagFromServer(int entityID, int flag) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<MessageSendVisualFlagFromServer> ID =
-        new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("alexsmobs", "send_visual_flag"));
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("alexsmobs", "send_visual_flag"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, MessageSendVisualFlagFromServer> CODEC = new StreamCodec<>() {
         @Override
@@ -37,14 +31,5 @@ public record MessageSendVisualFlagFromServer(int entityID, int flag) implements
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return ID;
-    }
-
-    public static void handleClient(MessageSendVisualFlagFromServer payload, ClientPlayNetworking.Context context) {
-                    var player = context.player();
-            if (player != null && player.level() != null) {
-                Entity entity = player.level().getEntity(payload.entityID);
-                AlexsMobs.PROXY.processVisualFlag(entity, payload.flag);
-            }
-
     }
 }

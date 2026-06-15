@@ -29,6 +29,10 @@ public class LayerGrizzlyItem extends RenderLayer<LivingEntityRenderState, Citad
             return;
         }
         ItemStack itemstack = entitylivingbaseIn.getItemBySlot(EquipmentSlot.MAINHAND);
+        if (itemstack.isEmpty()) {
+            return;
+        }
+        this.getParentModel().setupAnim(state);
         ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
         matrixStackIn.pushPose();
         if (entitylivingbaseIn.isBaby()) {

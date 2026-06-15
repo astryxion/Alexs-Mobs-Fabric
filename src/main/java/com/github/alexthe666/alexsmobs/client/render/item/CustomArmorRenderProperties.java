@@ -29,6 +29,7 @@ public class CustomArmorRenderProperties {
     public static ModelSombrero SOMBRERO_MODEL;
     public static ModelSombrero SOMBRERO_GOOFY_FASHION_MODEL;
     public static ModelFroststalkerHelmet FROSTSTALKER_HELMET_MODEL;
+    public static ModelCrocodileChestplate CROCODILE_CHESTPLATE_MODEL;
     public static ModelRockyChestplate ROCKY_CHESTPLATE_MODEL;
     public static ModelFlyingFishBoots FLYING_FISH_BOOTS_MODEL;
     public static ModelNoveltyHat NOVELTY_HAT_MODEL;
@@ -45,6 +46,7 @@ public class CustomArmorRenderProperties {
         SOMBRERO_GOOFY_FASHION_MODEL = new ModelSombrero(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.SOMBRERO_GOOFY_FASHION));
         FROSTSTALKER_HELMET_MODEL = new ModelFroststalkerHelmet(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.FROSTSTALKER_HELMET));
         ELYTRA_MODEL = new ModelAMElytra(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.AM_ELYTRA));
+        CROCODILE_CHESTPLATE_MODEL = new ModelCrocodileChestplate(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.CROCODILE_CHESTPLATE));
         ROCKY_CHESTPLATE_MODEL = new ModelRockyChestplate(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.ROCKY_CHESTPLATE));
         FLYING_FISH_BOOTS_MODEL = new ModelFlyingFishBoots(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.FLYING_FISH_BOOTS));
         NOVELTY_HAT_MODEL = new ModelNoveltyHat(Minecraft.getInstance().getEntityModels().bakeLayer(AMModelLayers.NOVELTY_HAT));
@@ -80,6 +82,9 @@ public class CustomArmorRenderProperties {
         if (item == AMItemRegistry.FROSTSTALKER_HELMET) {
             return FROSTSTALKER_HELMET_MODEL;
         }
+        if (item == AMItemRegistry.CROCODILE_CHESTPLATE) {
+            return CROCODILE_CHESTPLATE_MODEL;
+        }
         if (item == AMItemRegistry.ROCKY_CHESTPLATE) {
             return ROCKY_CHESTPLATE_MODEL;
         }
@@ -106,7 +111,9 @@ public class CustomArmorRenderProperties {
         Model replacement = this.getHumanoidArmorModel(itemStack, layerType, original);
         if (replacement != original && original instanceof HumanoidModel<?> originalHumanoid && replacement instanceof HumanoidModel<?> replacementHumanoid) {
             replacementHumanoid.head.loadPose(originalHumanoid.head.storePose());
-            replacementHumanoid.hat.loadPose(originalHumanoid.hat.storePose());
+            if (!itemStack.is(AMItemRegistry.NOVELTY_HAT)) {
+                replacementHumanoid.hat.loadPose(originalHumanoid.hat.storePose());
+            }
             replacementHumanoid.body.loadPose(originalHumanoid.body.storePose());
             replacementHumanoid.rightArm.loadPose(originalHumanoid.rightArm.storePose());
             replacementHumanoid.leftArm.loadPose(originalHumanoid.leftArm.storePose());
@@ -134,7 +141,7 @@ public class CustomArmorRenderProperties {
         switch (slot) {
             case HEAD -> {
                 model.head.visible = true;
-                model.hat.visible = true;
+                model.hat.visible = !itemStack.is(AMItemRegistry.NOVELTY_HAT);
             }
             case CHEST -> {
                 model.body.visible = true;

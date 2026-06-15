@@ -54,12 +54,6 @@ public class RenderTerrapin extends MobRenderer<EntityTerrapin, LivingEntityRend
     }
 
     @Override
-    public void extractRenderState(EntityTerrapin entity, LivingEntityRenderState state, float partialTick) {
-        super.extractRenderState(entity, state, partialTick);
-        this.getModel().setCitadelYoung(entity.isBaby());
-    }
-
-    @Override
     public Identifier getTextureLocation(LivingEntityRenderState state) {
         EntityTerrapin entity = AlexsMobsClientKeys.getLiving(state) instanceof EntityTerrapin t ? t : null;
         if (entity == null) {

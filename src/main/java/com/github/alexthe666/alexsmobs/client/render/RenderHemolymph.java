@@ -50,9 +50,8 @@ public class RenderHemolymph extends EntityRenderer<EntityHemolymph, EntityRende
         p_225623_4_.translate(-4.0D, 0.0D, 0.0D);
         int p_225623_6_ = state.lightCoords;
         collector.submitCustomGeometry(p_225623_4_, RenderTypes.entityCutout(this.getTextureLocation(state)), (pose, lvt_18_2_) -> {
-            PoseStack.Pose lvt_19_1_ = p_225623_4_.last();
-            Matrix4f lvt_20_1_ = lvt_19_1_.pose();
-            Matrix3f lvt_21_1_ = lvt_19_1_.normal();
+            Matrix4f lvt_20_1_ = pose.pose();
+            Matrix3f lvt_21_1_ = pose.normal();
             this.drawVertex(lvt_20_1_, lvt_21_1_, lvt_18_2_, -7, -2, -2, 0.0F, 0.15625F, -1, 0, 0, 240);
             this.drawVertex(lvt_20_1_, lvt_21_1_, lvt_18_2_, -7, -2, 2, 0.15625F, 0.15625F, -1, 0, 0, 240);
             this.drawVertex(lvt_20_1_, lvt_21_1_, lvt_18_2_, -7, 2, 2, 0.15625F, 0.3125F, -1, 0, 0, 240);

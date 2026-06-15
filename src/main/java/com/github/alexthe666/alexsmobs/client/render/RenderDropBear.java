@@ -51,7 +51,13 @@ public class RenderDropBear extends MobRenderer<EntityDropBear, LivingEntityRend
             this.getParentModel().setupAnim(state);
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             collector.submitCustomGeometry(matrixStackIn, RenderTypes.eyes(TEXTURE_EYES), (pose, ivertexbuilder) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, overlay, -1)
+                    {
+                        PoseStack stackPose = new PoseStack();
+                        stackPose.pushPose();
+                        stackPose.last().set(pose);
+                        this.getParentModel().renderCitadelToBuffer(stackPose, ivertexbuilder, packedLightIn, overlay, -1);
+                        stackPose.popPose();
+                    }
             );
         }
     }

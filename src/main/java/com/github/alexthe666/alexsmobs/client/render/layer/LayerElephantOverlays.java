@@ -39,8 +39,13 @@ public class LayerElephantOverlays extends RenderLayer<LivingEntityRenderState, 
         if (elephant.isChested()) {
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             this.getParentModel().setupAnim(state);
-            collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityCutout(TEXTURE_CHEST), (pose, consumer) ->
-                    this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, overlay, -1));
+            collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityCutout(TEXTURE_CHEST), (pose, consumer) -> {
+                PoseStack stackPose = new PoseStack();
+                stackPose.pushPose();
+                stackPose.last().set(pose);
+                this.getParentModel().renderCitadelToBuffer(stackPose, consumer, packedLightIn, overlay, -1);
+                stackPose.popPose();
+            });
         }
         DyeColor lvt_11_1_ = elephant.getColor();
         if (lvt_11_1_ != null || elephant.isTrader()) {
@@ -53,8 +58,13 @@ public class LayerElephantOverlays extends RenderLayer<LivingEntityRenderState, 
 
             ((ModelElephant) this.getParentModel().citadel()).copyPropertiesTo(this.model);
             this.model.setupAnim(elephant, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
-            collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityCutout(lvt_12_3_), (pose, consumer) ->
-                    this.model.renderToBuffer(matrixStackIn, consumer, packedLightIn, OverlayTexture.NO_OVERLAY, -1));
+            collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityCutout(lvt_12_3_), (pose, consumer) -> {
+                PoseStack stackPose = new PoseStack();
+                stackPose.pushPose();
+                stackPose.last().set(pose);
+                this.model.renderToBuffer(stackPose, consumer, packedLightIn, OverlayTexture.NO_OVERLAY, -1);
+                stackPose.popPose();
+            });
         }
     }
 }

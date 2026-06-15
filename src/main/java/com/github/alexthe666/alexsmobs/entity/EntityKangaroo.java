@@ -853,6 +853,12 @@ public class EntityKangaroo extends TamableAnimal implements IAnimatedEntity, IF
                     }
                     Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
                     if (equippable != null && !this.isBaby()) {
+                        if (equippable.slot() == EquipmentSlot.HEAD && helmetIndex == -1) {
+                            helmetIndex = i;
+                        }
+                        if (equippable.slot() == EquipmentSlot.CHEST && chestplateIndex == -1) {
+                            chestplateIndex = i;
+                        }
                         if (equippable.slot() == EquipmentSlot.HEAD) {
                             double prot = getProtectionForItem(stack, EquipmentSlot.HEAD);
                             if (prot > 0 && prot > helmetArmor) {

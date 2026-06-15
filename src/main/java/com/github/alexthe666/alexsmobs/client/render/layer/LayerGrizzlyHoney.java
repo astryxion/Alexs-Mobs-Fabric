@@ -1,7 +1,6 @@
 package com.github.alexthe666.alexsmobs.client.render.layer;
 
 import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
-import com.github.alexthe666.alexsmobs.client.model.AlexAdvancedEntityModel;
 import com.github.alexthe666.alexsmobs.client.render.CitadelEntityModelBridge;
 import com.github.alexthe666.alexsmobs.client.render.RenderGrizzlyBear;
 import com.github.alexthe666.alexsmobs.entity.EntityGrizzlyBear;
@@ -27,10 +26,13 @@ public class LayerGrizzlyHoney extends RenderLayer<LivingEntityRenderState, Cita
             return;
         }
         int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
-        this.getParentModel().setupAnim(state);
-        PoseStack scratch = new PoseStack();
-        collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucent(TEXTURE), (pose, consumer) ->
-                AlexAdvancedEntityModel.withCitadelSubmitPose(pose, scratch,
-                        stack -> this.getParentModel().renderCitadelToBuffer(stack, consumer, packedLightIn, overlay, -1)));
+        collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucent(TEXTURE), (pose, consumer) -> {
+            this.getParentModel().setupAnim(state);
+            PoseStack stackPose = new PoseStack();
+            stackPose.pushPose();
+            stackPose.last().set(pose);
+            this.getParentModel().renderCitadelToBuffer(stackPose, consumer, packedLightIn, overlay, -1);
+            stackPose.popPose();
+        });
     }
 }

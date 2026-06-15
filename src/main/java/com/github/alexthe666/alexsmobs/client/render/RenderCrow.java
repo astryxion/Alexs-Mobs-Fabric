@@ -3,10 +3,14 @@ package com.github.alexthe666.alexsmobs.client.render;
 import com.github.alexthe666.alexsmobs.client.model.ModelCrow;
 import com.github.alexthe666.alexsmobs.client.render.layer.LayerCrowItem;
 import com.github.alexthe666.alexsmobs.entity.EntityCrow;
+import net.minecraft.client.CameraType;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.Player;
 
 public class RenderCrow extends MobRenderer<EntityCrow, LivingEntityRenderState, CitadelEntityModelBridge<EntityCrow>> {
     private static final Identifier TEXTURE = Identifier.parse("alexsmobs:textures/entity/crow.png");
@@ -19,6 +23,16 @@ public class RenderCrow extends MobRenderer<EntityCrow, LivingEntityRenderState,
     @Override
     public LivingEntityRenderState createRenderState() {
         return new LivingEntityRenderState();
+    }
+
+    @Override
+    public boolean shouldRender(EntityCrow crow, Frustum frustum, double camX, double camY, double camZ) {
+        if (crow.isPassenger() && crow.getVehicle() instanceof Player player
+                && Minecraft.getInstance().player == player
+                && Minecraft.getInstance().options.getCameraType() == CameraType.FIRST_PERSON) {
+            return false;
+        }
+        return super.shouldRender(crow, frustum, camX, camY, camZ);
     }
 
     @Override

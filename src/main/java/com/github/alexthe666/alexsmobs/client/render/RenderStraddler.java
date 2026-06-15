@@ -58,7 +58,7 @@ public class RenderStraddler extends MobRenderer<EntityStraddler, LivingEntityRe
                 matrixStackIn.translate(0F, -2.5F + back * 0.5F, 0.35F + back);
                 int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
                 collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucent(RenderStradpole.TEXTURE), (pose, ivertexbuilder) ->
-                    STRADPOLE_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, overlay, -1)
+                    STRADPOLE_MODEL.renderToBuffer(DeferredPoseStacks.fromCaptured(pose), ivertexbuilder, packedLightIn, overlay, -1)
                 );
                 matrixStackIn.popPose();
             }

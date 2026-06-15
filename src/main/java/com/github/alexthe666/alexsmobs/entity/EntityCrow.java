@@ -72,6 +72,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
     private static final EntityDataAccessor<Boolean> SITTING = SynchedEntityData.defineId(EntityCrow.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(EntityCrow.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Optional<BlockPos>> PERCH_POS = SynchedEntityData.defineId(EntityCrow.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
+    private static final EntityDataAccessor<Integer> REMOUNT_COOLDOWN = SynchedEntityData.defineId(EntityCrow.class, EntityDataSerializers.INT);
     public float prevFlyProgress;
     public float flyProgress;
     public float prevAttackProgress;
@@ -87,6 +88,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
     private UUID seedThrowerID;
     private int heldItemTime = 0;
     private int checkPerchCooldown = 0;
+    private int boardingCooldown = 0;
     private final boolean gatheringClockwise = false;
 
     private static ItemStack insertIntoContainer(Container container, Direction side, ItemStack stack, boolean simulate) {
@@ -250,29 +252,60 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
         final Entity entity = this.getVehicle();
         if (this.isPassenger() && !entity.isAlive()) {
             this.stopRiding();
-        } else if (isTame() && entity instanceof LivingEntity && isOwnedBy((LivingEntity) entity)) {
+        } else if (isTame() && entity instanceof Player player) {
             this.setDeltaMovement(0, 0, 0);
             this.tick();
             final Entity riding = this.getVehicle();
-            if (this.isPassenger()) {
-                final int i = riding.getPassengers().indexOf(this);
+            if (this.isPassenger() && riding instanceof Player mount) {
+                final int i = mount.getPassengers().indexOf(this);
                 final float radius = 0.43F;
-                final float angle = (Maths.STARTING_ANGLE * (((Player) riding).yBodyRot + (i == 0 ? -90 : 90)));
+                final float angle = (Maths.STARTING_ANGLE * (mount.yBodyRot + (i == 0 ? -90 : 90)));
                 final double extraX = radius * Mth.sin(Mth.PI + angle);
                 final double extraZ = radius * Mth.cos(angle);
-                final double extraY = (riding.isShiftKeyDown() ? 1.25D : 1.45D);
-                this.yHeadRot = ((Player) riding).yHeadRot;
-                this.yRotO = ((Player) riding).yHeadRot;
-                this.setPos(riding.getX() + extraX, riding.getY() + extraY, riding.getZ() + extraZ);
-                if (!riding.isAlive() || boardingCooldown == 0 && riding.isShiftKeyDown() || ((Player) riding).isFallFlying() || this.getTarget() != null && this.getTarget().isAlive()) {
-                    this.removeVehicle();
-                    if (!this.level().isClientSide()) {
-                        AlexsMobs.sendMSGToAll(new MessageCrowDismount(this.getId(), riding.getId()));
+                final double extraY = (mount.isShiftKeyDown() || mount.isCrouching() ? 1.25D : 1.45D);
+                this.yHeadRot = mount.yHeadRot;
+                this.yRotO = mount.yHeadRot;
+                this.setPos(mount.getX() + extraX, mount.getY() + extraY, mount.getZ() + extraZ);
+                if (this.shouldDismountFromShoulder(mount)) {
+                    if (this.level().isClientSide()) {
+                        AlexsMobs.sendMSGToServer(new MessageCrowDismount(this.getId(), mount.getId()));
                     }
+                    this.tryDismountFromShoulder(mount);
                 }
             }
         } else {
             super.rideTick();
+        }
+    }
+
+    public boolean shouldDismountFromShoulder(Entity riding) {
+        if (!riding.isAlive()) {
+            return true;
+        }
+        if (!(riding instanceof Player player)) {
+            return false;
+        }
+        return player.isShiftKeyDown()
+                || player.isCrouching()
+                || player.isInWater()
+                || this.isInWater()
+                || player.isFallFlying()
+                || this.getTarget() != null && this.getTarget().isAlive();
+    }
+
+    public void tryDismountFromShoulder(Player player) {
+        if (!this.isPassenger() || this.getVehicle() != player) {
+            return;
+        }
+        this.removeVehicle();
+        this.setFlying(true);
+        if (!this.level().isClientSide()) {
+            this.setRemountCooldown(200);
+            final float angle = Maths.STARTING_ANGLE * (player.yBodyRot + 180F);
+            final double extraX = 5.0D * Mth.sin(Mth.PI + angle);
+            final double extraZ = 5.0D * Mth.cos(angle);
+            this.setPos(player.getX() + extraX, player.getY() + 2.0D, player.getZ() + extraZ);
+            AlexsMobs.sendMSGToAll(new MessageCrowDismount(this.getId(), player.getId()));
         }
     }
 
@@ -287,6 +320,22 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
         return crowCount;
     }
 
+    public int getBoardingCooldown() {
+        return boardingCooldown;
+    }
+
+    public int getRemountCooldown() {
+        return this.entityData.get(REMOUNT_COOLDOWN);
+    }
+
+    public void setRemountCooldown(int remountCooldown) {
+        this.entityData.set(REMOUNT_COOLDOWN, remountCooldown);
+    }
+
+    public void setBoardingCooldown(int boardingCooldown) {
+        this.boardingCooldown = boardingCooldown;
+    }
+
     public boolean isFood(ItemStack stack) {
         return stack.is(AMTagRegistry.CROW_BREEDABLES) && this.isTame();
     }
@@ -295,7 +344,9 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
         final ItemStack itemstack = player.getItemInHand(hand);
         final InteractionResult type = super.mobInteract(player, hand);
         if (!this.getMainHandItem().isEmpty() && type != InteractionResult.SUCCESS) {
-            this.spawnAtLocation((ServerLevel) this.level(), this.getMainHandItem().copy());
+            if (!this.level().isClientSide() && this.level() instanceof ServerLevel serverLevel) {
+                this.spawnAtLocation(serverLevel, this.getMainHandItem().copy());
+            }
             this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
             return InteractionResult.SUCCESS;
         } else {
@@ -408,6 +459,9 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
         }
         if (boardingCooldown > 0) {
             boardingCooldown--;
+        }
+        if (!this.level().isClientSide() && this.getRemountCooldown() > 0) {
+            this.setRemountCooldown(this.getRemountCooldown() - 1);
         }
         if (this.entityData.get(ATTACK_TICK) > 0) {
             this.entityData.set(ATTACK_TICK, this.entityData.get(ATTACK_TICK) - 1);
@@ -538,6 +592,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
         builder.define(COMMAND, 0);
         builder.define(SITTING, false);
         builder.define(PERCH_POS, Optional.empty());
+        builder.define(REMOUNT_COOLDOWN, 0);
     }
 
     @Override

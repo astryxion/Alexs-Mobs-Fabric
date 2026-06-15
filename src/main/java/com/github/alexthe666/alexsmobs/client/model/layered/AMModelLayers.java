@@ -20,6 +20,7 @@ public class AMModelLayers {
     public static final ModelLayerLocation SOMBRERO = createLocation("sombrero", "main");
     public static final ModelLayerLocation SOMBRERO_GOOFY_FASHION = createLocation("sombrero_goofy_fashion", "main");
     public static final ModelLayerLocation FROSTSTALKER_HELMET = createLocation("froststalker_helmet", "main");
+    public static final ModelLayerLocation CROCODILE_CHESTPLATE = createLocation("crocodile_chestplate", "main");
     public static final ModelLayerLocation ROCKY_CHESTPLATE = createLocation("rocky_chestplate", "main");
     public static final ModelLayerLocation FLYING_FISH_BOOTS = createLocation("flying_fish_boots", "main");
     public static final ModelLayerLocation NOVELTY_HAT = createLocation("novelty_hat", "main");
@@ -41,6 +42,7 @@ public class AMModelLayers {
         ModelLayerRegistry.registerModelLayer(SOMBRERO, () -> ModelSombrero.createArmorLayer(new CubeDeformation(0.5F)));
         ModelLayerRegistry.registerModelLayer(SOMBRERO_GOOFY_FASHION, () -> ModelSombrero.createArmorLayerAprilFools(new CubeDeformation(0.5F)));
         ModelLayerRegistry.registerModelLayer(FROSTSTALKER_HELMET, () -> ModelFroststalkerHelmet.createArmorLayer(new CubeDeformation(0.5F)));
+        ModelLayerRegistry.registerModelLayer(CROCODILE_CHESTPLATE, () -> ModelCrocodileChestplate.createArmorLayer(new CubeDeformation(0.35F)));
         ModelLayerRegistry.registerModelLayer(ROCKY_CHESTPLATE, () -> ModelRockyChestplate.createArmorLayer(new CubeDeformation(0.7F)));
         ModelLayerRegistry.registerModelLayer(FLYING_FISH_BOOTS, () -> ModelFlyingFishBoots.createArmorLayer(new CubeDeformation(0.5F)));
         ModelLayerRegistry.registerModelLayer(NOVELTY_HAT, () -> ModelNoveltyHat.createArmorLayer(new CubeDeformation(0.5F)));

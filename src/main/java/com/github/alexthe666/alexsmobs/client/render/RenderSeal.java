@@ -105,7 +105,13 @@ public class RenderSeal extends MobRenderer<EntitySeal, LivingEntityRenderState,
             this.getParentModel().setupAnim(state);
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(TEXTURE_TEARS), (pose, lead) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, lead, packedLightIn, overlay, -1)
+                    {
+                        PoseStack stackPose = new PoseStack();
+                        stackPose.pushPose();
+                        stackPose.last().set(pose);
+                        this.getParentModel().renderCitadelToBuffer(stackPose, lead, packedLightIn, overlay, -1);
+                        stackPose.popPose();
+                    }
             );
         }
     }

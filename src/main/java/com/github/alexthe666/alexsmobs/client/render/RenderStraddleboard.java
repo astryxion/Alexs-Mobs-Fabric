@@ -66,13 +66,21 @@ public class RenderStraddleboard extends EntityRenderer<EntityStraddleboard, Ent
         matrixStackIn.mulPose(Axis.XP.rotationDegrees(180));
         matrixStackIn.translate(0, -1.5F - Math.abs(boardRot * 0.007F) - (lava ? 0 : 0.25F), 0);
         BOARD_MODEL.animateBoard(entityIn, entityIn.tickCount + partialTicks);
-        collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(TEXTURE_OVERLAY), (pose, ivertexbuilder2) ->
-            BOARD_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder2, packedLightIn, NO_OVERLAY, -1)
-        );
+        collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(TEXTURE_OVERLAY), (pose, ivertexbuilder2) -> {
+            PoseStack stackPose = new PoseStack();
+            stackPose.pushPose();
+            stackPose.last().set(pose);
+            BOARD_MODEL.renderToBuffer(stackPose, ivertexbuilder2, packedLightIn, NO_OVERLAY, -1);
+            stackPose.popPose();
+        });
         int color = (255 << 24) | ((int) (r * 255) << 16) | ((int) (g * 255) << 8) | (int) (b * 255);
-        collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucentCullItemTarget(TEXTURE), (pose, ivertexbuilder) ->
-            BOARD_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, NO_OVERLAY, color)
-        );
+        collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucentCullItemTarget(TEXTURE), (pose, ivertexbuilder) -> {
+            PoseStack stackPose = new PoseStack();
+            stackPose.pushPose();
+            stackPose.last().set(pose);
+            BOARD_MODEL.renderToBuffer(stackPose, ivertexbuilder, packedLightIn, NO_OVERLAY, color);
+            stackPose.popPose();
+        });
         matrixStackIn.popPose();
         matrixStackIn.popPose();
 

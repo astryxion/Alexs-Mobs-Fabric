@@ -56,6 +56,20 @@ tasks.named('build') {
 	dependsOn 'copyCitadelJarToLibs'
 }
 
+tasks.register('copyProductionJars', Copy) {
+	dependsOn 'build', ':citadel:build'
+	from(layout.buildDirectory.dir('libs')) {
+		include "alexsmobsfabric-${mod_version}.jar"
+	}
+	from(project(':citadel').layout.buildDirectory.dir('libs')) {
+		include "citadelfabric-${citadel_version}.jar"
+	}
+	into layout.projectDirectory.dir('production jars')
+	doFirst {
+		delete fileTree(dir: 'production jars', include: '*.jar')
+	}
+}
+
 processResources {
 	inputs.property "version", project.version
 

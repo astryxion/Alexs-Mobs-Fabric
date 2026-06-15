@@ -253,7 +253,11 @@ public class EntityStraddleboard extends Entity implements PlayerRideableJumping
                     this.fallDistance = 1.0F;
                 }
 
-                float slow = player.zza < 0 ? 0 : player.zza * 0.115F;
+                float forwardInput = player.zza;
+                if (this.level().isClientSide() && player.isLocalPlayer()) {
+                    forwardInput = net.minecraft.client.Minecraft.getInstance().options.keyUp.isDown() ? 1.0F : 0.0F;
+                }
+                float slow = forwardInput < 0 ? 0 : forwardInput * 0.115F;
 
                 float threshold = 3F;
                 boolean flag = false;
@@ -346,7 +350,8 @@ public class EntityStraddleboard extends Entity implements PlayerRideableJumping
     }
 
     public boolean isControlledByLocalInstance() {
-        return false;
+        Entity controller = this.getControllingPassenger();
+        return controller instanceof Player player && player.isLocalPlayer();
     }
 
     @Nullable

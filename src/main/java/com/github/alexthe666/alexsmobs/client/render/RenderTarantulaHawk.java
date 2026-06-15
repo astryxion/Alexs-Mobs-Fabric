@@ -130,13 +130,13 @@ public class RenderTarantulaHawk extends MobRenderer<
             int finalTint = tint;
             int finalOverlay = overlay;
             boolean baby = entityFix != null && entityFix.isBaby();
-            collector.submitCustomGeometry(poseStack, renderType, (pose, consumer) -> {
-                if (baby) {
-                    MODEL_BABY.renderToBuffer(poseStack, consumer, state.lightCoords, finalOverlay, finalTint);
-                } else {
-                    MODEL.renderToBuffer(poseStack, consumer, state.lightCoords, finalOverlay, finalTint);
-                }
-            });
+            AlexAdvancedEntityModel<EntityTarantulaHawk> renderModel = baby ? MODEL_BABY : MODEL;
+            PoseStack citadelPoseStack = new PoseStack();
+            collector.submitCustomGeometry(poseStack, renderType, (pose, consumer) ->
+                AlexAdvancedEntityModel.withCitadelSubmitPose(pose, citadelPoseStack, scratch ->
+                    renderModel.renderToBuffer(scratch, consumer, state.lightCoords, finalOverlay, finalTint)
+                )
+            );
         }
         if (this.shouldRenderLayers(state) && !this.layers.isEmpty()) {
             this.model.setupAnim(state);

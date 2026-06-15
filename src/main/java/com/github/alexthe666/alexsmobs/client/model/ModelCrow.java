@@ -93,7 +93,7 @@ public class ModelCrow extends AlexAdvancedEntityModel<EntityCrow> {
 		float idleSpeed = 0.1F;
 		float idleDegree = 0.1F;
 		float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
-		float flyProgress = entity.prevFlyProgress + (entity.flyProgress - entity.prevFlyProgress) * partialTick;
+		float flyProgress = entity.isPassenger() ? 0F : entity.prevFlyProgress + (entity.flyProgress - entity.prevFlyProgress) * partialTick;
 		float sitProgress = entity.prevSitProgress + (entity.sitProgress - entity.prevSitProgress) * partialTick;
 		float runProgress = Math.max(0, (limbSwingAmount * 5F) - flyProgress);
 		float biteProgress = entity.prevAttackProgress + (entity.attackProgress - entity.prevAttackProgress) * partialTick;
@@ -115,7 +115,7 @@ public class ModelCrow extends AlexAdvancedEntityModel<EntityCrow> {
 		progressRotationPrev(head, runProgress, Maths.rad(-20), 0, 0, 5F);
 		progressRotationPrev(leg_left, runProgress, Maths.rad(-15), 0, 0, 5F);
 		progressRotationPrev(leg_right, runProgress, Maths.rad(-15), 0, 0, 5F);
-		if(flyProgress > 0) {
+		if(flyProgress > 0 && !entity.isPassenger()) {
 			this.swing(wing_right, flapSpeed, flapDegree * 5, true, 0F, 0F, ageInTicks, 1);
 			this.swing(wing_left, flapSpeed, flapDegree * 5, false, 0F, 0F, ageInTicks, 1);
 			this.bob(body, flapSpeed * 0.5F, flapDegree * 4, true, ageInTicks, 1);

@@ -13,7 +13,8 @@ import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 
-public class RenderWarpedMosco extends MobRenderer<EntityWarpedMosco, LivingEntityRenderState, CitadelEntityModelBridge<EntityWarpedMosco>> {
+public class
+RenderWarpedMosco extends MobRenderer<EntityWarpedMosco, LivingEntityRenderState, CitadelEntityModelBridge<EntityWarpedMosco>> {
     private static final Identifier TEXTURE = Identifier.parse("alexsmobs:textures/entity/warped_mosco.png");
     private static final Identifier TEXTURE_EYES = Identifier.parse("alexsmobs:textures/entity/warped_mosco_glow.png");
 
@@ -49,9 +50,13 @@ public class RenderWarpedMosco extends MobRenderer<EntityWarpedMosco, LivingEnti
             this.getParentModel().setupAnim(state);
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             int packedColor = AMColorUtil.packColor(0.5F, 1.0F, 1.0F, alpha);
-            collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getEyesFlickering(TEXTURE_EYES, 0), (pose, ivertexbuilder) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, ivertexbuilder, 240, overlay, packedColor)
-            );
+            collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getEyesFlickering(TEXTURE_EYES, 0), (pose, ivertexbuilder) -> {
+                PoseStack stackPose = new PoseStack();
+                stackPose.pushPose();
+                stackPose.last().set(pose);
+                this.getParentModel().renderCitadelToBuffer(stackPose, ivertexbuilder, 240, overlay, packedColor);
+                stackPose.popPose();
+            });
         }
     }
 }

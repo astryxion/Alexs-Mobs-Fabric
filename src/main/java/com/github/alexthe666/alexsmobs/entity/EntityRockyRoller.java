@@ -317,9 +317,6 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
         return !(blockstate.getBlock() instanceof PointedDripstoneBlock) && super.isColliding(pos, blockstate);
     }
 
-    public Vec3 collide(Vec3 vec3) {
-        return ICustomCollisions.getAllowedMovementForEntity(this, vec3);
-    }
 
     @Override
     public boolean hurtServer(net.minecraft.server.level.ServerLevel level, DamageSource dmg, float amount) {

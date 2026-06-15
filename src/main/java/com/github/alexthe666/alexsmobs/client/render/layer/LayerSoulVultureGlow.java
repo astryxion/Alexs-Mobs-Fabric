@@ -30,13 +30,21 @@ public class LayerSoulVultureGlow extends RenderLayer<LivingEntityRenderState, C
         }
         this.getParentModel().setupAnim(state);
         int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
-        collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getGhost(TEXTURE_GLOW), (pose, consumer) ->
-            this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, 240, overlay, -1)
-        );
+        collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getGhost(TEXTURE_GLOW), (pose, consumer) -> {
+            PoseStack stackPose = new PoseStack();
+            stackPose.pushPose();
+            stackPose.last().set(pose);
+            this.getParentModel().renderCitadelToBuffer(stackPose, consumer, 240, overlay, -1);
+            stackPose.popPose();
+        });
         if (entitylivingbaseIn.hasSoulHeart()) {
-            collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getGhost(getFlames(entitylivingbaseIn.tickCount)), (pose, consumer) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, 240, overlay, -1)
-            );
+            collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getGhost(getFlames(entitylivingbaseIn.tickCount)), (pose, consumer) -> {
+                PoseStack stackPose = new PoseStack();
+                stackPose.pushPose();
+                stackPose.last().set(pose);
+                this.getParentModel().renderCitadelToBuffer(stackPose, consumer, 240, overlay, -1);
+                stackPose.popPose();
+            });
         }
     }
 

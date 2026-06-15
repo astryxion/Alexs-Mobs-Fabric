@@ -82,7 +82,13 @@ public class RenderGiantSquid extends MobRenderer<EntityGiantSquid, LivingEntity
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             this.getParentModel().setupAnim(state);
             collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucent(TEXTURE_DEPRESSURIZED), (pose, consumer) ->
-                    this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, overlay, AMColorUtil.packColor(1.0F, 1.0F, 1.0F, alpha)));
+            {
+                PoseStack stackPose = new PoseStack();
+                stackPose.pushPose();
+                stackPose.last().set(pose);
+                this.getParentModel().renderCitadelToBuffer(stackPose, consumer, packedLightIn, overlay, AMColorUtil.packColor(1.0F, 1.0F, 1.0F, alpha));
+                stackPose.popPose();
+            });
         }
     }
 }

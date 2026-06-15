@@ -2,6 +2,7 @@ package com.github.alexthe666.alexsmobs.entity;
 
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
+import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import com.github.alexthe666.citadel.animation.Animation;
@@ -118,6 +119,25 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
 
     protected SoundEvent getDeathSound() {
         return AMSoundRegistry.ANTEATER_HURT;
+    }
+
+    public void positionRider(Entity passenger, Entity.MoveFunction moveFunc) {
+        if (this.hasPassenger(passenger) && passenger instanceof EntityAnteater baby && baby.isBaby()) {
+            baby.setYRot(this.yBodyRot);
+            baby.yHeadRot = this.yBodyRot;
+            baby.yBodyRot = this.yBodyRot;
+            float standAdd = -0.03F * this.standProgress;
+            float angle = Maths.STARTING_ANGLE * this.yBodyRot;
+            double extraX = standAdd * Mth.sin(Mth.PI + angle);
+            double extraZ = standAdd * Mth.cos(angle);
+            moveFunc.accept(passenger, this.getX() + extraX, this.getY() + this.getBbHeight() * 0.85, this.getZ() + extraZ);
+        } else {
+            super.positionRider(passenger, moveFunc);
+        }
+    }
+
+    public double getPassengersRidingOffset() {
+        return this.getBbHeight() * 0.65;
     }
 
     @Override

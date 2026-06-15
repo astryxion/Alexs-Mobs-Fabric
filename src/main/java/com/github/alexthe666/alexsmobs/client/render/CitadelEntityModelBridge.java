@@ -49,6 +49,8 @@ public final class CitadelEntityModelBridge<E extends LivingEntity> extends Enti
         }
         @SuppressWarnings("unchecked")
         E entity = (E) raw;
+        // Shared Citadel model instance — must be set per draw, not in extractRenderState (last entity wins).
+        this.setCitadelYoung(entity.isBaby());
         float limbSwing = state.walkAnimationPos;
         float limbSwingAmount = Math.min(1.0F, state.walkAnimationSpeed);
         float ageInTicks = state.ageInTicks;

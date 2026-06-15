@@ -57,7 +57,9 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.client.color.item.ItemTintSources;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.fabricmc.fabric.api.client.rendering.v1.ArmorRenderer;
 import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
@@ -66,6 +68,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.renderer.entity.ArmorModelSet;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -82,6 +85,29 @@ import java.util.UUID;
 import java.lang.reflect.Field;
 // @Mod.EventBusSubscriber removed - register client listeners from client setup / proxy instead
 public class ClientProxy extends CommonProxy {
+    /** Vanilla inner leggings shell — same model HumanoidArmorLayer uses for the leggings slot. */
+    private static HumanoidModel<?> vanillaLeggingsArmorModel;
+
+    private static HumanoidModel<?> getVanillaLeggingsArmorModel() {
+        if (vanillaLeggingsArmorModel == null) {
+            vanillaLeggingsArmorModel = ArmorModelSet.bake(
+                    net.minecraft.client.model.geom.ModelLayers.PLAYER_ARMOR,
+                    Minecraft.getInstance().getEntityModels(),
+                    HumanoidModel::new
+            ).legs();
+        }
+        return vanillaLeggingsArmorModel;
+    }
+
+    private static void copyHumanoidPose(HumanoidModel<?> from, HumanoidModel<?> to) {
+        to.head.loadPose(from.head.storePose());
+        to.hat.loadPose(from.hat.storePose());
+        to.body.loadPose(from.body.storePose());
+        to.rightArm.loadPose(from.rightArm.storePose());
+        to.leftArm.loadPose(from.leftArm.storePose());
+        to.rightLeg.loadPose(from.rightLeg.storePose());
+        to.leftLeg.loadPose(from.leftLeg.storePose());
+    }
 
     public static final Int2ObjectMap<SoundBearMusicBox> BEAR_MUSIC_BOX_SOUND_MAP = new Int2ObjectOpenHashMap<>();
     public static final Int2ObjectMap<SoundLaCucaracha> COCKROACH_SOUND_MAP = new Int2ObjectOpenHashMap<>();
@@ -105,7 +131,7 @@ public class ClientProxy extends CommonProxy {
         ClientPlayNetworking.send(message);
     }
 
-    
+
     @Override
     public void init() {
     }
@@ -120,11 +146,11 @@ public class ClientProxy extends CommonProxy {
     public static <E extends Entity> void submitEntityInWorld(E entityIn, double x, double y, double z, float yaw, float partialTicks, PoseStack matrixStack, SubmitNodeCollector collector) {
         EntityRenderer<? super E, ?> render = null;
         EntityRenderDispatcher manager = Minecraft.getInstance().getEntityRenderDispatcher();
-        net.minecraft.client.renderer.state.level.CameraRenderState camera = lastCameraRenderState;
+        net.minecraft.client.renderer.state.level.CameraRenderState camera = lastCameraRenderState != null ? lastCameraRenderState : new net.minecraft.client.renderer.state.level.CameraRenderState();
         try {
             render = manager.getRenderer(entityIn);
 
-            if (render != null && camera != null) {
+            if (render != null) {
                 try {
                     @SuppressWarnings("unchecked")
                     EntityRenderState state = manager.extractEntity(entityIn, partialTicks);
@@ -274,13 +300,14 @@ public class ClientProxy extends CommonProxy {
 
     public void clientInit() {
         registerClientModelCodecs();
+        registerItemModelWrappers();
         AMModelLayers.register();
         registerRenderers();
         registerArmorRenderers();
         registerMenuScreens();
         setupParticles();
         ClientLayerRegistry.register();
-        new ClientEvents().registerFabricHandlers();
+        ClientEvents.getInstance().registerFabricHandlers();
         initRainbowBuffers();
     }
 
@@ -295,20 +322,27 @@ public class ClientProxy extends CommonProxy {
             }
             CustomArmorRenderProperties props = new CustomArmorRenderProperties();
             EquipmentClientInfo.LayerType layerType = slot == EquipmentSlot.LEGS ? EquipmentClientInfo.LayerType.HUMANOID_LEGGINGS : EquipmentClientInfo.LayerType.HUMANOID;
-            net.minecraft.client.model.Model model = props.getGenericArmorModel(stack, layerType, baseModel);
-            if (!(model instanceof net.minecraft.client.model.HumanoidModel<?> humanoidModel)) {
-                return;
+            HumanoidModel<?> humanoidModel;
+            if (slot == EquipmentSlot.LEGS && (stack.is(AMItemRegistry.CENTIPEDE_LEGGINGS) || stack.is(AMItemRegistry.EMU_LEGGINGS))
+                    && baseModel instanceof HumanoidModel<?> posedBase) {
+                humanoidModel = getVanillaLeggingsArmorModel();
+                copyHumanoidPose(posedBase, humanoidModel);
+            } else {
+                net.minecraft.client.model.Model model = props.getGenericArmorModel(stack, layerType, baseModel);
+                if (!(model instanceof HumanoidModel<?> resolved)) {
+                    return;
+                }
+                humanoidModel = resolved;
             }
             Identifier texture = modArmor.getArmorTexture(stack, null, slot, null, slot == EquipmentSlot.LEGS);
             if (texture == null) {
                 return;
             }
-            boolean noveltyHat = stack.is(AMItemRegistry.NOVELTY_HAT);
             vertexConsumers.submitCustomGeometry(matrices, RenderTypes.armorCutoutNoCull(texture), (pose, vc) -> {
                 PoseStack stackPose = new PoseStack();
                 stackPose.pushPose();
                 stackPose.last().set(pose);
-                renderHumanoidArmorPart(stackPose, vc, light, humanoidModel, slot, noveltyHat);
+                renderHumanoidArmorPart(stackPose, vc, light, humanoidModel, slot, stack);
                 stackPose.popPose();
             });
             if (stack.hasFoil()) {
@@ -316,7 +350,7 @@ public class ClientProxy extends CommonProxy {
                     PoseStack stackPose = new PoseStack();
                     stackPose.pushPose();
                     stackPose.last().set(pose);
-                    renderHumanoidArmorPart(stackPose, vc, light, humanoidModel, slot, noveltyHat);
+                    renderHumanoidArmorPart(stackPose, vc, light, humanoidModel, slot, stack);
                     stackPose.popPose();
                 });
             }
@@ -336,7 +370,7 @@ public class ClientProxy extends CommonProxy {
                 AMItemRegistry.UNSETTLING_KIMONO);
     }
 
-    private static void renderHumanoidArmorPart(PoseStack poseStack, com.mojang.blaze3d.vertex.VertexConsumer consumer, int light, HumanoidModel<?> model, EquipmentSlot slot, boolean noveltyHat) {
+    private static void renderHumanoidArmorPart(PoseStack poseStack, com.mojang.blaze3d.vertex.VertexConsumer consumer, int light, HumanoidModel<?> model, EquipmentSlot slot, net.minecraft.world.item.ItemStack armorStack) {
         boolean head = model.head.visible;
         boolean hat = model.hat.visible;
         boolean body = model.body.visible;
@@ -344,13 +378,7 @@ public class ClientProxy extends CommonProxy {
         boolean leftArm = model.leftArm.visible;
         boolean rightLeg = model.rightLeg.visible;
         boolean leftLeg = model.leftLeg.visible;
-        float oldHeadY = model.head.y;
-        float oldHatY = model.hat.y;
-        applyArmorSlotVisibility(model, slot);
-        if (noveltyHat) {
-            model.head.y = oldHeadY - 1.0F;
-            model.hat.y = oldHatY - 1.0F;
-        }
+        applyArmorSlotVisibility(model, slot, armorStack);
         model.renderToBuffer(poseStack, consumer, light, OverlayTexture.NO_OVERLAY, -1);
         model.head.visible = head;
         model.hat.visible = hat;
@@ -359,11 +387,9 @@ public class ClientProxy extends CommonProxy {
         model.leftArm.visible = leftArm;
         model.rightLeg.visible = rightLeg;
         model.leftLeg.visible = leftLeg;
-        model.head.y = oldHeadY;
-        model.hat.y = oldHatY;
     }
 
-    private static void applyArmorSlotVisibility(HumanoidModel<?> model, EquipmentSlot slot) {
+    private static void applyArmorSlotVisibility(HumanoidModel<?> model, EquipmentSlot slot, net.minecraft.world.item.ItemStack armorStack) {
         model.head.visible = false;
         model.hat.visible = false;
         model.body.visible = false;
@@ -374,7 +400,7 @@ public class ClientProxy extends CommonProxy {
         switch (slot) {
             case HEAD -> {
                 model.head.visible = true;
-                model.hat.visible = true;
+                model.hat.visible = !armorStack.is(AMItemRegistry.NOVELTY_HAT);
             }
             case CHEST -> {
                 model.body.visible = true;
@@ -393,6 +419,16 @@ public class ClientProxy extends CommonProxy {
             default -> {
             }
         }
+    }
+
+    private static void registerItemModelWrappers() {
+        Identifier ghostlyPickaxeItem = BuiltInRegistries.ITEM.getKey(AMItemRegistry.GHOSTLY_PICKAXE);
+        ModelLoadingPlugin.register(pluginContext -> pluginContext.modifyItemModelAfterBake().register((model, context) -> {
+            if (ghostlyPickaxeItem.equals(context.itemId())) {
+                return new GhostlyPickaxeItemModel(model);
+            }
+            return model;
+        }));
     }
 
     private static void registerClientModelCodecs() {
@@ -541,6 +577,16 @@ public class ClientProxy extends CommonProxy {
         registry.register(AMParticleRegistry.BIRD_SONG, ParticleBirdSong.Factory::new);
     }
 
+    /** Preload standalone particle textures outside the framegraph so 26.1 does not upload mid-render-pass. */
+    public static void preloadRenderTextures() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft == null) {
+            return;
+        }
+        minecraft.getTextureManager().getTexture(ParticleSkulkBoom.TEXTURE);
+        AMRenderTypes.getSkulkBoom();
+    }
+
 
     public void setRenderViewEntity(Entity entity) {
         prevPOV = Minecraft.getInstance().options.getCameraType();
@@ -565,7 +611,7 @@ public class ClientProxy extends CommonProxy {
 
     }
 
-    
+
     @Override
     public Object getISTERProperties() {
         return new AMItemRenderProperties();

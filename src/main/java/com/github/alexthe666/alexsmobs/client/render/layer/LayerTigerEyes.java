@@ -2,6 +2,7 @@ package com.github.alexthe666.alexsmobs.client.render.layer;
 
 import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
 import com.github.alexthe666.alexsmobs.client.render.CitadelEntityModelBridge;
+import com.github.alexthe666.alexsmobs.client.render.DeferredPoseStacks;
 import com.github.alexthe666.alexsmobs.client.render.RenderTiger;
 import com.github.alexthe666.alexsmobs.entity.EntityTiger;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -45,7 +46,7 @@ public class LayerTigerEyes extends RenderLayer<LivingEntityRenderState, Citadel
             this.getParentModel().setupAnim(state);
             int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
             collector.submitCustomGeometry(matrixStackIn, RenderTypes.eyes(texture), (pose, consumer) ->
-                this.getParentModel().renderCitadelToBuffer(matrixStackIn, consumer, packedLightIn, overlay, -1)
+                this.getParentModel().renderCitadelToBuffer(DeferredPoseStacks.fromCaptured(pose), consumer, packedLightIn, overlay, -1)
             );
         }
     }

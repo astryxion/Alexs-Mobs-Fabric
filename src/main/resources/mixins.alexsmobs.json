@@ -6,9 +6,13 @@
     "client.CitadelItemstackDrawSpriteQuadMixin",
     "client.ModelCitadelBridgeRenderMixin",
     "client.ItemModelResolverSpecialItemMixin",
-    "client.EntityRenderDispatcherStateCaptureMixin"
+    "client.EntityRenderDispatcherStateCaptureMixin",
+    "client.LivingEntityRendererMixin"
   ],
   "mixins": [
+    "LivingEntityMixin",
+    "MobTargetMixin",
+    "LivingEntityBreathingMixin",
     "LivingEntityVineLassoTickMixin"
   ],
   "injectors": {

@@ -1361,7 +1361,7 @@ public abstract class AbstractPathJob implements Callable<Path> {
 
     protected boolean isPassableBB(final BlockPos parentPos, final BlockPos pos, MNode parent) {
         Direction facingDir = getXZFacing(parentPos, pos);
-        if (facingDir == Direction.DOWN || facingDir == Direction.UP)
+        if (facingDir == null || facingDir == Direction.DOWN || facingDir == Direction.UP)
             return false;
         facingDir = facingDir.getClockWise();
         for (int i = entitySizeXZStart; i <= entitySizeXZEnd; i++) {
@@ -1379,7 +1379,7 @@ public abstract class AbstractPathJob implements Callable<Path> {
      */
     protected boolean isPassableBBDown(final BlockPos parentPos, final BlockPos pos, MNode parent) {
         Direction facingDir = getXZFacing(parentPos, pos);
-        if (facingDir == Direction.DOWN || facingDir == Direction.UP)
+        if (facingDir == null || facingDir == Direction.DOWN || facingDir == Direction.UP)
             return false;
         facingDir = facingDir.getClockWise();
         for (int i = entitySizeXZStart; i <= entitySizeXZEnd; i++) {

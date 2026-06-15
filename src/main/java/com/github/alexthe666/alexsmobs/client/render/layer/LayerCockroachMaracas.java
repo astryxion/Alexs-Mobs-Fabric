@@ -31,7 +31,6 @@ public class LayerCockroachMaracas extends RenderLayer<LivingEntityRenderState, 
     public LayerCockroachMaracas(RenderCockroach render, EntityRendererProvider.Context renderManagerIn) {
         super(render);
         this.sombrero = new ModelSombrero(renderManagerIn.bakeLayer(AMModelLayers.SOMBRERO));
-
     }
 
     @Override
@@ -43,6 +42,7 @@ public class LayerCockroachMaracas extends RenderLayer<LivingEntityRenderState, 
         if (this.stack == null) {
             this.stack = new ItemStack(AMItemRegistry.MARACA);
         }
+        this.getParentModel().setupAnim(state);
         int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
         ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
         matrixStackIn.pushPose();
@@ -50,49 +50,50 @@ public class LayerCockroachMaracas extends RenderLayer<LivingEntityRenderState, 
             matrixStackIn.scale(0.65F, 0.65F, 0.65F);
             matrixStackIn.translate(0.0D, 0.815D, 0.125D);
         }
-        matrixStackIn.pushPose();
-        translateToHand(0, matrixStackIn);
-        matrixStackIn.translate(-0.25F, 0.0F, 0);
-        matrixStackIn.scale(1.4F, 1.4F, 1.4F);
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
-        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(60F));
-        renderer.renderItem(entitylivingbaseIn, stack, ItemDisplayContext.GROUND, matrixStackIn, bufferIn, packedLightIn);
-        matrixStackIn.popPose();
-        matrixStackIn.pushPose();
-        translateToHand(1, matrixStackIn);
-        matrixStackIn.translate(0.25F, 0.0F, 0);
-        matrixStackIn.scale(1.4F, 1.4F, 1.4F);
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(90F));
-        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(-120F));
-        renderer.renderItem(entitylivingbaseIn, stack, ItemDisplayContext.GROUND, matrixStackIn, bufferIn, packedLightIn);
-        matrixStackIn.popPose();
-        matrixStackIn.pushPose();
-        translateToHand(2, matrixStackIn);
-        matrixStackIn.translate(-0.35F, 0.0F, 0);
-        matrixStackIn.scale(1.4F, 1.4F, 1.4F);
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
-        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(60F));
-        renderer.renderItem(entitylivingbaseIn, stack, ItemDisplayContext.GROUND, matrixStackIn, bufferIn, packedLightIn);
-        matrixStackIn.popPose();
-        matrixStackIn.pushPose();
-        translateToHand(3, matrixStackIn);
-        matrixStackIn.translate(0.35F, 0.0F, 0);
-        matrixStackIn.scale(1.4F, 1.4F, 1.4F);
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(90F));
-        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(-120F));
-        renderer.renderItem(entitylivingbaseIn, stack, ItemDisplayContext.GROUND, matrixStackIn, bufferIn, packedLightIn);
-        matrixStackIn.popPose();
+        renderMaraca(renderer, entitylivingbaseIn, matrixStackIn, bufferIn, packedLightIn, 0, -0.25F, -90F, 60F);
+        renderMaraca(renderer, entitylivingbaseIn, matrixStackIn, bufferIn, packedLightIn, 1, 0.25F, 90F, -120F);
+        renderMaraca(renderer, entitylivingbaseIn, matrixStackIn, bufferIn, packedLightIn, 2, -0.35F, -90F, 60F);
+        renderMaraca(renderer, entitylivingbaseIn, matrixStackIn, bufferIn, packedLightIn, 3, 0.35F, 90F, -120F);
         if (!entitylivingbaseIn.isHeadless()) {
             matrixStackIn.pushPose();
             translateToHand(4, matrixStackIn);
             matrixStackIn.translate(0F, -0.4F, -0.01F);
             matrixStackIn.translate(0F, entitylivingbaseIn.danceProgress * 0.045F, entitylivingbaseIn.danceProgress * -0.09F);
-            matrixStackIn.scale(0.8F, 0.8F, 0.8F);
+            matrixStackIn.scale(0.5F, 0.5F, 0.5F);
             matrixStackIn.mulPose(Axis.XP.rotationDegrees(60F * entitylivingbaseIn.danceProgress * 0.2F));
-            bufferIn.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(SOMBRERO_TEX), (pose, consumer) ->
-                    sombrero.renderToBuffer(matrixStackIn, consumer, packedLightIn, overlay, -1));
+            bufferIn.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(SOMBRERO_TEX), (pose, consumer) -> {
+                PoseStack modelStack = new PoseStack();
+                modelStack.last().set(pose);
+                // Sombrero cubes are modeled above the humanoid head pivot; drop them onto the cockroach head.
+                modelStack.translate(0.0F, 11.0F / 16.0F, 0.0F);
+                sombrero.head.getChild("sombrero").render(modelStack, consumer, packedLightIn, overlay, -1);
+                sombrero.head.getChild("sombrero2").render(modelStack, consumer, packedLightIn, overlay, -1);
+            });
             matrixStackIn.popPose();
         }
+        matrixStackIn.popPose();
+    }
+
+    private void renderMaraca(
+            ItemInHandRenderer renderer,
+            EntityCockroach entity,
+            PoseStack matrixStackIn,
+            SubmitNodeCollector bufferIn,
+            int packedLightIn,
+            int hand,
+            float xOffset,
+            float xRot,
+            float zRot
+    ) {
+        matrixStackIn.pushPose();
+        translateToHand(hand, matrixStackIn);
+        matrixStackIn.translate(xOffset, 0.0F, 0.0F);
+        matrixStackIn.scale(1.4F, 1.4F, 1.4F);
+        matrixStackIn.mulPose(Axis.XP.rotationDegrees(xRot));
+        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(zRot));
+        PoseStack itemPose = new PoseStack();
+        itemPose.last().set(matrixStackIn.last());
+        renderer.renderItem(entity, stack, ItemDisplayContext.GROUND, itemPose, bufferIn, packedLightIn);
         matrixStackIn.popPose();
     }
 

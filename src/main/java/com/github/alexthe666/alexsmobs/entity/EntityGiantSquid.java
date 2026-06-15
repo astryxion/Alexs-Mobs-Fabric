@@ -10,6 +10,7 @@ import com.github.alexthe666.alexsmobs.entity.ai.EntityAINearestTarget3D;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
+import com.github.alexthe666.citadel.server.entity.collision.ICustomCollisions;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -58,7 +59,7 @@ import javax.annotation.Nullable;
 import java.util.EnumSet;
 import java.util.List;
 
-public class EntityGiantSquid extends WaterAnimal {
+public class EntityGiantSquid extends WaterAnimal implements ICustomCollisions {
 
     private static final EntityDataAccessor<Float> SQUID_PITCH = SynchedEntityData.defineId(EntityGiantSquid.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DEPRESSURIZATION = SynchedEntityData.defineId(EntityGiantSquid.class, EntityDataSerializers.FLOAT);
@@ -510,9 +511,15 @@ public class EntityGiantSquid extends WaterAnimal {
         return this.isAlive();
     }
 
-    public Vec3 collide(Vec3 movement) {
+    @Override
+    public boolean canPassThrough(BlockPos pos, BlockState state, VoxelShape shape) {
+        return false;
+    }
+
+    @Override
+    public Vec3 getCustomAllowedMovement(Vec3 movement) {
         if (touchingUnloadedChunk() || !AMEntityRegistry.isInWaterOrBubble(this)) {
-            return movement; // TODO 1.21: collide method changed
+            return movement;
         } else {
             AABB aabb = this.mantleCollisionPart.getBoundingBox();
             List<VoxelShape> list = this.level().getEntityCollisions(this, aabb.expandTowards(movement));

@@ -3,6 +3,7 @@ package com.github.alexthe666.alexsmobs.client.render.layer;
 import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
 import com.github.alexthe666.alexsmobs.client.model.ModelWarpedToad;
 import com.github.alexthe666.alexsmobs.client.render.AMRenderTypes;
+import com.github.alexthe666.alexsmobs.client.model.AlexAdvancedEntityModel;
 import com.github.alexthe666.alexsmobs.client.render.CitadelEntityModelBridge;
 import com.github.alexthe666.alexsmobs.client.render.RenderWarpedToad;
 import com.github.alexthe666.alexsmobs.entity.EntityWarpedToad;
@@ -32,8 +33,11 @@ public class LayerWarpedToadGlow extends RenderLayer<LivingEntityRenderState, Ci
         ModelWarpedToad model = (ModelWarpedToad) this.getParentModel().citadel();
         final float alpha = 0.75F + (Mth.cos(state.ageInTicks * 0.2F) + 1F) * 0.125F;
         int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
+        PoseStack citadelPoseStack = new PoseStack();
         collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.getEyesFlickering(entitylivingbaseIn.isBlinking() ? TEXTURE_BLINKING : TEXTURE, 0), (pose, ivertexbuilder) ->
-            model.renderToBuffer(matrixStackIn, ivertexbuilder, 240, overlay, -1)
+                AlexAdvancedEntityModel.withCitadelSubmitPose(pose, citadelPoseStack, scratch ->
+                        model.renderToBuffer(scratch, ivertexbuilder, 240, overlay, -1)
+                )
         );
     }
 }

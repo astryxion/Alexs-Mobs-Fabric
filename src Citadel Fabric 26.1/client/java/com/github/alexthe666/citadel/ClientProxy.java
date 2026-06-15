@@ -124,7 +124,7 @@ public class ClientProxy extends ServerProxy {
             return;
         }
         if (Citadel.PATREONS.contains(username)) {
-            CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(Minecraft.getInstance().player);
+            CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(player);
             String rendererName = tag.getStringOr("CitadelFollowerType", "citadel");
             if (!rendererName.equals("none") && !hideFollower) {
                 CitadelPatreonRenderer renderer = CitadelPatreonRenderer.get(rendererName);
