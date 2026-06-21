@@ -2,15 +2,15 @@ package com.github.alexthe666.alexsmobs.entity;
 
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
+import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import com.github.alexthe666.citadel.animation.Animation;
 import com.github.alexthe666.citadel.animation.AnimationHandler;
 import com.github.alexthe666.citadel.animation.IAnimatedEntity;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -18,6 +18,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
+import net.minecraft.util.Util;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
@@ -34,12 +35,13 @@ import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.gameevent.GameEvent;
 
@@ -72,22 +74,22 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
     private int standingTime = 0;
     private int antsEatenRecently = 0;
     private int heldItemTime;
-    private UUID lastHurtBy;
+    private EntityReference<LivingEntity> persistentAngerTarget = EntityReference.of(Util.NIL_UUID);
     private static final UniformInt ANGRY_TIMER = TimeUtil.rangeOfSeconds(30, 60);
 
-    protected EntityAnteater(EntityType<? extends EntityAnteater> type, Level world) {
+    protected EntityAnteater(EntityType type, Level world) {
         super(type, world);
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 20.0D).add(Attributes.ATTACK_DAMAGE, 6D).add(Attributes.MOVEMENT_SPEED, 0.25F).add(Attributes.STEP_HEIGHT, 1.0D);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 20.0D).add(Attributes.ATTACK_DAMAGE, 6D).add(Attributes.MOVEMENT_SPEED, 0.25F);
     }
 
-    public static boolean canAnteaterSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean canAnteaterSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         return worldIn.getRawBrightness(pos, 0) > 8;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.anteaterSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -97,7 +99,7 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
         this.goalSelector.addGoal(3, new AnteaterAIRaidNest(this));
         this.goalSelector.addGoal(4, new BreedGoal(this, 1D));
         this.goalSelector.addGoal(5, new AnimalAIRideParent(this, 1.25D));
-        this.goalSelector.addGoal(6, new TemptGoal(this, 1.2D, Ingredient.of(AMTagRegistry.ANTEATER_FOODSTUFFS), false));
+        this.goalSelector.addGoal(6, new TemptGoal(this, 1.2D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.ANTEATER_FOODSTUFFS)), false));
         this.goalSelector.addGoal(7, new AnimalAIWanderRanged(this, 110, 1.0D, 10, 7));
         this.goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 10.0F));
         this.goalSelector.addGoal(9, new RandomLookAroundGoal(this));
@@ -107,8 +109,8 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return super.isInvulnerableTo(source) || source.getDirectEntity() != null && source.getDirectEntity() instanceof EntityLeafcutterAnt;
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return super.isInvulnerableTo(level, source) || source.getDirectEntity() != null && source.getDirectEntity() instanceof EntityLeafcutterAnt;
     }
 
     protected SoundEvent getHurtSound(DamageSource damageSourceIn) {
@@ -119,16 +121,37 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
         return AMSoundRegistry.ANTEATER_HURT;
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
-        super.addAdditionalSaveData(compound);
-        compound.putBoolean("Standing", this.isStanding());
-        compound.putInt("AntCooldown", this.eatAntCooldown);
+    public void positionRider(Entity passenger, Entity.MoveFunction moveFunc) {
+        if (this.hasPassenger(passenger) && passenger instanceof EntityAnteater baby && baby.isBaby()) {
+            baby.setYRot(this.yBodyRot);
+            baby.yHeadRot = this.yBodyRot;
+            baby.yBodyRot = this.yBodyRot;
+            float standAdd = -0.03F * this.standProgress;
+            float angle = Maths.STARTING_ANGLE * this.yBodyRot;
+            double extraX = standAdd * Mth.sin(Mth.PI + angle);
+            double extraZ = standAdd * Mth.cos(angle);
+            moveFunc.accept(passenger, this.getX() + extraX, this.getY() + this.getBbHeight() * 0.85, this.getZ() + extraZ);
+        } else {
+            super.positionRider(passenger, moveFunc);
+        }
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
-        super.readAdditionalSaveData(compound);
-        this.setStanding(compound.getBoolean("Standing"));
-        this.eatAntCooldown = compound.getInt("AntCooldown");
+    public double getPassengersRidingOffset() {
+        return this.getBbHeight() * 0.65;
+    }
+
+    @Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.putBoolean("Standing", this.isStanding());
+        output.putInt("AntCooldown", this.eatAntCooldown);
+    }
+
+    @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        this.setStanding(input.getBooleanOr("Standing", false));
+        this.eatAntCooldown = input.getIntOr("AntCooldown", 0);
     }
 
     public boolean isFood(ItemStack stack) {
@@ -152,12 +175,29 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
         this.entityData.set(ANGER_TIME, time);
     }
 
-    public UUID getPersistentAngerTarget() {
-        return this.lastHurtBy;
+    @Override
+    public long getPersistentAngerEndTime() {
+        int remaining = this.entityData.get(ANGER_TIME);
+        return remaining <= 0 ? NeutralMob.NO_ANGER_END_TIME : this.level().getGameTime() + (long) remaining;
     }
 
-    public void setPersistentAngerTarget(@Nullable UUID target) {
-        this.lastHurtBy = target;
+    @Override
+    public void setPersistentAngerEndTime(long endTime) {
+        if (endTime == NeutralMob.NO_ANGER_END_TIME) {
+            this.entityData.set(ANGER_TIME, 0);
+        } else {
+            this.entityData.set(ANGER_TIME, (int) Math.max(0L, endTime - this.level().getGameTime()));
+        }
+    }
+
+    @Override
+    public EntityReference<LivingEntity> getPersistentAngerTarget() {
+        return this.persistentAngerTarget;
+    }
+
+    @Override
+    public void setPersistentAngerTarget(EntityReference<LivingEntity> target) {
+        this.persistentAngerTarget = target != null ? target : EntityReference.of(Util.NIL_UUID);
     }
 
     public void startPersistentAngerTimer() {
@@ -203,7 +243,7 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
     }
 
     protected void customServerAiStep() {
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.updatePersistentAnger((ServerLevel) this.level(), false);
         }
     }
@@ -266,9 +306,7 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
         }
 
         if (this.isPassenger() && this.getVehicle() instanceof final EntityAnteater mount) {
-            if (!mount.isAlive()) {
-                this.stopRiding();
-            } else if (this.isBaby()) {
+            if (this.isBaby()) {
                 this.setYRot(mount.yBodyRot);
                 this.yHeadRot = mount.yBodyRot;
                 this.yBodyRot = mount.yBodyRot;
@@ -286,7 +324,7 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
         if (ticksAntOnTongue > 10 && this.hasAntOnTongue()) {
             this.heal(6);
             this.gameEvent(GameEvent.EAT);
-            this.playSound(SoundEvents.GENERIC_EAT, this.getSoundVolume(), this.getVoicePitch());
+            this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
             this.setAntOnTongue(false);
         }
         if (this.hasAntOnTongue()) {
@@ -294,7 +332,7 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
         } else {
             ticksAntOnTongue = 0;
         }
-        if (!this.level().isClientSide && getTongueStickOut() > 0.6F && !this.hasAntOnTongue() && antsEatenRecently < 3) {
+        if (!this.level().isClientSide() && getTongueStickOut() > 0.6F && !this.hasAntOnTongue() && antsEatenRecently < 3) {
             EntityLeafcutterAnt closestAnt = null;
             for (EntityLeafcutterAnt entity : this.level().getEntitiesOfClass(EntityLeafcutterAnt.class, this.getBoundingBox().inflate(2.6F))) {
                 if (closestAnt == null || entity.distanceTo(this) < closestAnt.distanceTo(this) && this.hasLineOfSight(entity)) {
@@ -313,11 +351,14 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
             if (heldItemTime > 10 && getTongueStickOut() < 0.3F && canTargetItem(this.getMainHandItem())) {
                 heldItemTime = 0;
                 this.heal(4);
-                this.playSound(SoundEvents.GENERIC_EAT, this.getSoundVolume(), this.getVoicePitch());
+                this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
                 this.gameEvent(GameEvent.EAT);
-                Item remainderItem = this.getMainHandItem().getItem().getCraftingRemainingItem();
-                if (remainderItem != null && remainderItem != Items.AIR) {
-                    this.spawnAtLocation(new ItemStack(remainderItem, 1));
+                ItemStackTemplate remainderTemplate = this.getMainHandItem().getItem().getCraftingRemainder();
+                if (remainderTemplate != null) {
+                    ItemStack remainder = remainderTemplate.create();
+                    if (!remainder.isEmpty()) {
+                        this.spawnAtLocation((ServerLevel) this.level(), remainder);
+                    }
                 }
                 this.stopBeingAngry();
                 this.getMainHandItem().shrink(1);
@@ -326,7 +367,7 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
             heldItemTime = 0;
         }
 
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (getRandom().nextInt(300) == 0)
                 this.setAnimation(ANIMATION_TOUNGE_IDLE);
 
@@ -335,13 +376,13 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
                 if (distanceTo(attackTarget) < attackTarget.getBbWidth() + this.getBbWidth() + 2) {
                     if (this.getAnimationTick() == 7) {
                         if (this.getAnimation() == ANIMATION_SLASH_L) {
-                            doHurtTarget(attackTarget);
+                            doHurtTarget((ServerLevel) this.level(), attackTarget);
                             final float rot = getYRot() + 90;
-                            attackTarget.knockback(0.5F, Mth.sin(rot * Mth.DEG_TO_RAD), -Mth.cos(rot * Mth.DEG_TO_RAD));
+                            attackTarget.knockback(0.5, Mth.sin(rot * Mth.DEG_TO_RAD), -Mth.cos(rot * Mth.DEG_TO_RAD), this.damageSources().mobAttack(this), 0.0F);
                         } else if (this.getAnimation() == ANIMATION_SLASH_R) {
-                            doHurtTarget(attackTarget);
+                            doHurtTarget((ServerLevel) this.level(), attackTarget);
                             final float rot = getYRot() - 90;
-                            attackTarget.knockback(0.5F, Mth.sin(rot * Mth.DEG_TO_RAD), -Mth.cos(rot * Mth.DEG_TO_RAD));
+                            attackTarget.knockback(0.5, Mth.sin(rot * Mth.DEG_TO_RAD), -Mth.cos(rot * Mth.DEG_TO_RAD), this.damageSources().mobAttack(this), 0.0F);
                         }
                     }
                 }
@@ -372,7 +413,7 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel level, AgeableMob parent) {
-        return AMEntityRegistry.ANTEATER.create(level());
+        return AMEntityRegistry.ANTEATER.create(level, EntitySpawnReason.BREEDING);
     }
 
     @Override
@@ -404,8 +445,8 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
     public void onGetItem(ItemEntity e) {
         final ItemStack duplicate = e.getItem().copy();
         duplicate.setCount(1);
-        if (!this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !this.level().isClientSide) {
-            this.spawnAtLocation(this.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
+        if (!this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !this.level().isClientSide()) {
+            this.spawnAtLocation((ServerLevel) this.level(), this.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
         }
         this.setAnimation(ANIMATION_TOUNGE_IDLE);
         this.setItemInHand(InteractionHand.MAIN_HAND, duplicate);
@@ -429,7 +470,7 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
         return lowercaseName.contains("peter") || lowercaseName.contains("petr") || lowercaseName.contains("zot");
     }
 
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag, HolderLookup.Provider registries) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
         if (spawnDataIn == null)
             spawnDataIn = new AgeableMob.AgeableMobGroupData(0.5F);
 
@@ -440,7 +481,7 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
         private static final Predicate<EntityLeafcutterAnt> QUEEN_ANT = (entity) -> !entity.isQueen();
 
         public AITargetAnts() {
-            super(EntityAnteater.this, EntityLeafcutterAnt.class, 30, true, false, QUEEN_ANT);
+            super(EntityAnteater.this, EntityLeafcutterAnt.class, 30, true, false, AMEntityRegistry.toSelector((e) -> e instanceof EntityLeafcutterAnt ant && QUEEN_ANT.test(ant)));
         }
 
         @Override

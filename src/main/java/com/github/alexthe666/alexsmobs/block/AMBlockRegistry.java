@@ -6,101 +6,88 @@ import com.github.alexthe666.alexsmobs.item.AMBlockItem;
 import com.github.alexthe666.alexsmobs.item.BlockItemAMRender;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
-import net.minecraft.util.ColorRGBA;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.ColoredFallingBlock;
+import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.core.registries.Registries;
+
+import java.util.function.Function;
 
 public class AMBlockRegistry {
-    public static final BlockBehaviour.Properties PURPUR_PLANKS_PROPERTIES = BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PINK).strength(0.5F, 1.0F).sound(SoundType.WOOD);
 
-    private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, path);
+    private static BlockBehaviour.Properties withBlockId(Identifier id, BlockBehaviour.Properties props) {
+        return props.setId(ResourceKey.create(Registries.BLOCK, id));
     }
 
-    public static Block BANANA_PEEL;
-    public static Block HUMMINGBIRD_FEEDER;
-    public static Block CROCODILE_EGG;
-    public static Block GUSTMAKER;
-    public static Block STRADDLITE_BLOCK;
-    public static Block PLATYPUS_EGG;
-    public static Block LEAFCUTTER_ANTHILL;
-    public static Block LEAFCUTTER_ANT_CHAMBER;
-    public static Block CAPSID;
-    public static Block VOID_WORM_BEAK;
-    public static Block VOID_WORM_EFFIGY;
-    public static Block TERRAPIN_EGG;
-    public static Block RAINBOW_GLASS;
-    public static Block BISON_FUR_BLOCK;
-    public static Block BISON_CARPET;
-    public static Block SAND_CIRCLE;
-    public static Block RED_SAND_CIRCLE;
-    public static Block ENDER_RESIDUE;
-    public static Block TRANSMUTATION_TABLE;
-    public static Block SCULK_BOOMER;
-    public static Block SKUNK_SPRAY;
-    public static Block BANANA_SLUG_SLIME_BLOCK;
-    public static Block CRYSTALIZED_BANANA_SLUG_MUCUS;
-    public static Block CAIMAN_EGG;
-    public static Block TRIOPS_EGGS;
+    public static final Block BANANA_PEEL = registerBlockAndItem("banana_peel", key -> new BlockBananaPeel(withBlockId(key, BlockBananaPeel.defaultProperties())));
+    public static final Block HUMMINGBIRD_FEEDER = registerBlockAndItem("hummingbird_feeder", key -> new BlockHummingbirdFeeder(withBlockId(key, BlockHummingbirdFeeder.defaultProperties())));
+    public static final Block CROCODILE_EGG = registerBlockAndItem("crocodile_egg", key -> new BlockReptileEgg(AMEntityRegistry.CROCODILE, withBlockId(key, BlockReptileEgg.defaultProperties())));
+    public static final Block GUSTMAKER = registerBlockAndItem("gustmaker", key -> new BlockGustmaker(withBlockId(key, BlockGustmaker.defaultProperties())));
+    public static final Block STRADDLITE_BLOCK = registerBlockAndItem("straddlite_block", key -> new Block(withBlockId(key, BlockBehaviour.Properties.of().mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(1.0F, 1200.0F).sound(SoundType.ANCIENT_DEBRIS))), new Item.Properties().fireResistant(), false);
+    public static final Block PLATYPUS_EGG = registerBlockAndItem("platypus_egg", key -> new BlockReptileEgg(AMEntityRegistry.PLATYPUS, withBlockId(key, BlockReptileEgg.defaultProperties())));
+    public static final Block LEAFCUTTER_ANTHILL = registerBlockAndItem("leafcutter_anthill", key -> new BlockLeafcutterAnthill(withBlockId(key, BlockLeafcutterAnthill.defaultProperties())));
+    public static final Block LEAFCUTTER_ANT_CHAMBER = registerBlockAndItem("leafcutter_ant_chamber", key -> new BlockLeafcutterAntChamber(withBlockId(key, BlockLeafcutterAntChamber.defaultProperties())));
+    public static final Block CAPSID = registerBlockAndItem("capsid", key -> new BlockCapsid(withBlockId(key, BlockCapsid.defaultProperties())));
+    public static final Block VOID_WORM_BEAK = registerBlockAndItem("void_worm_beak", key -> new BlockVoidWormBeak(withBlockId(key, BlockVoidWormBeak.defaultProperties())));
+    public static final Block VOID_WORM_EFFIGY = registerBlockAndItem("void_worm_effigy", key -> new BlockVoidWormEffigy(withBlockId(key, BlockVoidWormEffigy.defaultProperties())));
+    public static final Block TERRAPIN_EGG = registerBlockAndItem("terrapin_egg", key -> new BlockTerrapinEgg(withBlockId(key, BlockTerrapinEgg.defaultProperties())));
+    public static final Block RAINBOW_GLASS = registerBlockAndItem("rainbow_glass", key -> new BlockRainbowGlass(withBlockId(key, BlockRainbowGlass.defaultProperties())));
+    public static final Block BISON_FUR_BLOCK = registerBlockAndItem("bison_fur_block", key -> new Block(withBlockId(key, BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BROWN).strength(0.6F, 1.0F).sound(SoundType.WOOL))));
+    public static final Block BISON_CARPET = registerBlockAndItem("bison_carpet", key -> new BlockBisonCarpet(withBlockId(key, BlockBisonCarpet.defaultProperties())));
+    public static final Block SAND_CIRCLE = registerBlockAndItem("sand_circle", key -> new BlockSandCircle(withBlockId(key, BlockBehaviour.Properties.ofFullCopy(Blocks.SAND).mapColor(MapColor.SAND))), new Item.Properties(), false);
+    public static final Block RED_SAND_CIRCLE = registerBlockAndItem("red_sand_circle", key -> new BlockRedSandCircle(withBlockId(key, BlockBehaviour.Properties.ofFullCopy(Blocks.RED_SAND).mapColor(MapColor.COLOR_ORANGE))), new Item.Properties(), false);
+    public static final Block ENDER_RESIDUE = registerBlockAndItem("ender_residue", key -> new BlockEnderResidue(withBlockId(key, BlockEnderResidue.defaultProperties())));
+    public static final Block TRANSMUTATION_TABLE = registerBlockAndItem("transmutation_table", key -> new BlockTransmutationTable(withBlockId(key, BlockTransmutationTable.defaultProperties())), new Item.Properties().rarity(Rarity.EPIC).fireResistant(), true);
+    public static final Block SCULK_BOOMER = registerBlockAndItem("sculk_boomer", key -> new BlockSculkBoomer(withBlockId(key, BlockSculkBoomer.defaultProperties())));
+    public static final Block SKUNK_SPRAY = registerBlock("skunk_spray", key -> new BlockSkunkSpray(withBlockId(key, BlockSkunkSpray.defaultProperties())));
+    public static final Block BANANA_SLUG_SLIME_BLOCK = registerBlockAndItem("banana_slug_slime_block", key -> new BlockBananaSlugSlime(withBlockId(key, BlockBananaSlugSlime.defaultProperties())));
+    public static final Block CRYSTALIZED_BANANA_SLUG_MUCUS = registerBlockAndItem("crystalized_banana_slug_mucus", key -> new BlockCrystalizedMucus(withBlockId(key, BlockCrystalizedMucus.defaultProperties())));
+    public static final Block CAIMAN_EGG = registerBlockAndItem("caiman_egg", key -> new BlockReptileEgg(AMEntityRegistry.CAIMAN, withBlockId(key, BlockReptileEgg.defaultProperties())));
+    public static final Block TRIOPS_EGGS = registerBlockAndItem("triops_eggs", key -> new BlockTriopsEggs(withBlockId(key, BlockTriopsEggs.defaultProperties())));
     /*
-        public static final RegistryObject<Block> PURPUR_PLANKS = registerBlockAndItem("purpur_planks", () -> new Block(PURPUR_PLANKS_PROPERTIES));;
-    public static final RegistryObject<Block> PURPUR_PLANKS_STAIRS = registerBlockAndItem("purpur_planks_stairs", () -> new StairBlock(PURPUR_PLANKS.get().defaultBlockState(), PURPUR_PLANKS_PROPERTIES));;
-    public static final RegistryObject<Block> PURPUR_PLANKS_SLAB = registerBlockAndItem("purpur_planks_slab", () -> new SlabBlock(PURPUR_PLANKS_PROPERTIES));;
-    public static final RegistryObject<Block> PURPUR_PLANKS_WALL = registerBlockAndItem("purpur_planks_wall", () -> new WallBlock(PURPUR_PLANKS_PROPERTIES));;
-    public static final RegistryObject<Block> END_PIRATE_DOOR = registerBlockAndItem("end_pirate_door", () -> new BlockEndPirateDoor());
-    public static final RegistryObject<Block> END_PIRATE_TRAPDOOR = registerBlockAndItem("end_pirate_trapdoor", () -> new TrapDoorBlock(BlockBehaviour.Properties.of(Material.GLASS, MaterialColor.TERRACOTTA_PURPLE).lightLevel((state) -> 3).strength(3.0F).sound(SoundType.GLASS).noOcclusion()));;
-    public static final RegistryObject<Block> END_PIRATE_ANCHOR = registerBlockAndItem("end_pirate_anchor", () -> new BlockEndPirateAnchor());
-    public static final RegistryObject<Block> END_PIRATE_ANCHOR_WINCH = registerBlockAndItem("end_pirate_anchor_winch", () -> new BlockEndPirateAnchorWinch());
-    public static final RegistryObject<Block> END_PIRATE_SHIP_WHEEL = registerBlockAndItem("end_pirate_ship_wheel", () -> new BlockEndPirateShipWheel());
-    public static final RegistryObject<Block> END_PIRATE_FLAG = registerBlockAndItem("end_pirate_flag", () -> new BlockEndPirateFlag());
-    public static final RegistryObject<Block> PHANTOM_SAIL = registerBlockAndItem("phantom_sail", () -> new BlockEndPirateSail(false));
-    public static final RegistryObject<Block> SPECTRE_SAIL = registerBlockAndItem("spectre_sail", () -> new BlockEndPirateSail(true));
+    public static final DeferredHolder<Block, Block> PURPUR_PLANKS = registerBlockAndItem("purpur_planks", key -> new Block(withBlockId(key, purpurPlanksProperties())));
+    public static final DeferredHolder<Block, Block> PURPUR_PLANKS_STAIRS = registerBlockAndItem("purpur_planks_stairs", key -> new StairBlock(PURPUR_PLANKS.get().defaultBlockState(), withBlockId(key, purpurPlanksProperties())));
+    public static final DeferredHolder<Block, Block> PURPUR_PLANKS_SLAB = registerBlockAndItem("purpur_planks_slab", key -> new SlabBlock(withBlockId(key, purpurPlanksProperties())));
+    public static final DeferredHolder<Block, Block> PURPUR_PLANKS_WALL = registerBlockAndItem("purpur_planks_wall", key -> new WallBlock(withBlockId(key, purpurPlanksProperties())));
+    public static final DeferredHolder<Block, Block> END_PIRATE_DOOR = registerBlockAndItem("end_pirate_door", key -> new BlockEndPirateDoor(withBlockId(key, BlockEndPirateDoor.defaultProperties())));
+    public static final DeferredHolder<Block, Block> END_PIRATE_TRAPDOOR = registerBlockAndItem("end_pirate_trapdoor", key -> new TrapDoorBlock(BlockSetType.OAK, withBlockId(key, BlockBehaviour.Properties.of().mapColor(MapColor.TERRACOTTA_PURPLE).lightLevel(state -> 3).strength(3.0F).sound(SoundType.GLASS).noOcclusion())));
+    public static final DeferredHolder<Block, Block> END_PIRATE_ANCHOR = registerBlockAndItem("end_pirate_anchor", key -> new BlockEndPirateAnchor(withBlockId(key, BlockEndPirateAnchor.defaultProperties())));
+    public static final DeferredHolder<Block, Block> END_PIRATE_ANCHOR_WINCH = registerBlockAndItem("end_pirate_anchor_winch", key -> new BlockEndPirateAnchorWinch(withBlockId(key, BlockEndPirateAnchorWinch.defaultProperties())));
+    public static final DeferredHolder<Block, Block> END_PIRATE_SHIP_WHEEL = registerBlockAndItem("end_pirate_ship_wheel", key -> new BlockEndPirateShipWheel(withBlockId(key, BlockEndPirateShipWheel.defaultProperties())));
+    public static final DeferredHolder<Block, Block> END_PIRATE_FLAG = registerBlockAndItem("end_pirate_flag", key -> new BlockEndPirateFlag(withBlockId(key, BlockEndPirateFlag.defaultProperties())));
+    public static final DeferredHolder<Block, Block> PHANTOM_SAIL = registerBlockAndItem("phantom_sail", key -> new BlockEndPirateSail(false, withBlockId(key, BlockEndPirateSail.defaultProperties())));
+    public static final DeferredHolder<Block, Block> SPECTRE_SAIL = registerBlockAndItem("spectre_sail", key -> new BlockEndPirateSail(true, withBlockId(key, BlockEndPirateSail.defaultProperties())));
 
      */
 
-    public static void init() {
-        BANANA_PEEL = registerBlockAndItem("banana_peel", new BlockBananaPeel(BlockBehaviour.Properties.of().dynamicShape().sound(SoundType.WET_GRASS).noCollission().requiresCorrectToolForDrops().strength(0.2F).friction(0.9999999999F)));
-        HUMMINGBIRD_FEEDER = registerBlockAndItem("hummingbird_feeder", new BlockHummingbirdFeeder());
-        CROCODILE_EGG = registerBlockAndItem("crocodile_egg", new BlockReptileEgg(AMEntityRegistry.CROCODILE));
-        GUSTMAKER = registerBlockAndItem("gustmaker", new BlockGustmaker());
-        STRADDLITE_BLOCK = registerBlockAndItem("straddlite_block", new Block(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(1.0F, 1200.0F).sound(SoundType.ANCIENT_DEBRIS)), new Item.Properties().fireResistant(), false);
-        PLATYPUS_EGG = registerBlockAndItem("platypus_egg", new BlockReptileEgg(AMEntityRegistry.PLATYPUS));
-        LEAFCUTTER_ANTHILL = registerBlockAndItem("leafcutter_anthill", new BlockLeafcutterAnthill(BlockBehaviour.Properties.of().sound(SoundType.GRAVEL).strength(0.75F)));
-        LEAFCUTTER_ANT_CHAMBER = registerBlockAndItem("leafcutter_ant_chamber", new BlockLeafcutterAntChamber());
-        CAPSID = registerBlockAndItem("capsid", new BlockCapsid(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).noOcclusion().isValidSpawn((state, reader, pos, entityType) -> Boolean.TRUE.equals(BlockCapsid.spawnOption(state, reader, pos, entityType))).isRedstoneConductor(BlockCapsid::isntSolid).sound(SoundType.GLASS).lightLevel((state) -> 5).requiresCorrectToolForDrops().strength(1.5F)));
-        VOID_WORM_BEAK = registerBlockAndItem("void_worm_beak", new BlockVoidWormBeak(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).noOcclusion().sound(SoundType.ANCIENT_DEBRIS).strength(1F).noCollission().requiresCorrectToolForDrops()));
-        VOID_WORM_EFFIGY = registerBlockAndItem("void_worm_effigy", new BlockVoidWormEffigy());
-        TERRAPIN_EGG = registerBlockAndItem("terrapin_egg", new BlockTerrapinEgg(BlockBehaviour.Properties.of().mapColor(MapColor.SAND).strength(0.5F).sound(SoundType.METAL).randomTicks().noOcclusion()));
-        RAINBOW_GLASS = registerBlockAndItem("rainbow_glass", new BlockRainbowGlass());
-        BISON_FUR_BLOCK = registerBlockAndItem("bison_fur_block", new Block(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BROWN).strength(0.6F, 1.0F).sound(SoundType.WOOL)));
-        BISON_CARPET = registerBlockAndItem("bison_carpet", new BlockBisonCarpet());
-        SAND_CIRCLE = registerBlockAndItem("sand_circle", new ColoredFallingBlock(new ColorRGBA(14406560), BlockBehaviour.Properties.ofFullCopy(Blocks.SAND)), new Item.Properties(), false);
-        RED_SAND_CIRCLE = registerBlockAndItem("red_sand_circle", new ColoredFallingBlock(new ColorRGBA(11098145), BlockBehaviour.Properties.ofFullCopy(Blocks.RED_SAND)), new Item.Properties(), false);
-        ENDER_RESIDUE = registerBlockAndItem("ender_residue", new BlockEnderResidue());
-        TRANSMUTATION_TABLE = registerBlockAndItem("transmutation_table", new BlockTransmutationTable(BlockBehaviour.Properties.of().pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK).mapColor(MapColor.COLOR_BLACK).noOcclusion().lightLevel((block) -> 2).emissiveRendering((block, world, pos) -> true).sound(SoundType.STONE).strength(1F).requiresCorrectToolForDrops()), new Item.Properties().rarity(Rarity.EPIC).fireResistant(), true);
-        SCULK_BOOMER = registerBlockAndItem("sculk_boomer", new BlockSculkBoomer(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLUE).strength(3.0F, 12.0F).sound(SoundType.SCULK_CATALYST)));
-        SKUNK_SPRAY = Registry.register(BuiltInRegistries.BLOCK, id("skunk_spray"), new BlockSkunkSpray(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_LIGHT_GREEN).noOcclusion().randomTicks().noCollission().instabreak().sound(SoundType.FROGSPAWN)));
-        BANANA_SLUG_SLIME_BLOCK = registerBlockAndItem("banana_slug_slime_block", new BlockBananaSlugSlime());
-        CRYSTALIZED_BANANA_SLUG_MUCUS = registerBlockAndItem("crystalized_banana_slug_mucus", new BlockCrystalizedMucus());
-        CAIMAN_EGG = registerBlockAndItem("caiman_egg", new BlockReptileEgg(AMEntityRegistry.CAIMAN));
-        TRIOPS_EGGS = registerBlockAndItem("triops_eggs", new BlockTriopsEggs());
-    }
-
-    private static Block registerBlockAndItem(String name, Block block) {
+    public static Block registerBlockAndItem(String name, Function<Identifier, Block> block) {
         return registerBlockAndItem(name, block, new Item.Properties(), false);
     }
 
-    private static Block registerBlockAndItem(String name, Block block, Item.Properties blockItemProps, boolean specialRender) {
-        Block registered = Registry.register(BuiltInRegistries.BLOCK, id(name), block);
-        Item item = specialRender ? new BlockItemAMRender(registered, blockItemProps) : new AMBlockItem(registered, blockItemProps);
-        Registry.register(BuiltInRegistries.ITEM, id(name), item);
-        return registered;
+    public static Block registerBlockAndItem(String name, Function<Identifier, Block> blockFactory, Item.Properties blockItemProps, boolean specialRender) {
+        Block block = registerBlock(name, blockFactory);
+        Identifier itemId = id(name);
+        Item.Properties props = blockItemProps.useBlockDescriptionPrefix().setId(ResourceKey.create(Registries.ITEM, itemId));
+        Item item = specialRender ? new BlockItemAMRender(block, props) : new AMBlockItem(block, props);
+        Registry.register(BuiltInRegistries.ITEM, itemId, item);
+        return block;
+    }
+
+    public static Block registerBlock(String name, Function<Identifier, Block> blockFactory) {
+        return Registry.register(BuiltInRegistries.BLOCK, id(name), blockFactory.apply(id(name)));
+    }
+
+    public static void bootstrap() {
+    }
+
+    private static Identifier id(String name) {
+        return Identifier.fromNamespaceAndPath(AlexsMobs.MODID, name);
     }
 }

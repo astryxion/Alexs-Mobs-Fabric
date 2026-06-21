@@ -3,9 +3,7 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 import com.github.alexthe666.alexsmobs.entity.EntityPlatypus;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.tags.FluidTags;
@@ -27,8 +25,8 @@ import java.util.List;
 
 public class PlatypusAIDigForItems extends Goal {
 
-    public static final ResourceLocation PLATYPUS_REWARD = ResourceLocation.fromNamespaceAndPath("alexsmobs", "gameplay/platypus_reward");
-    public static final ResourceLocation PLATYPUS_REWARD_CHARGED = ResourceLocation.fromNamespaceAndPath("alexsmobs", "gameplay/platypus_supercharged_reward");
+    public static final Identifier PLATYPUS_REWARD = Identifier.fromNamespaceAndPath("alexsmobs", "gameplay/platypus_reward");
+    public static final Identifier PLATYPUS_REWARD_CHARGED = Identifier.fromNamespaceAndPath("alexsmobs", "gameplay/platypus_supercharged_reward");
     private EntityPlatypus platypus;
     private BlockPos digPos;
     private int generatePosCooldown = 0;
@@ -40,8 +38,7 @@ public class PlatypusAIDigForItems extends Goal {
     }
 
     private static List<ItemStack> getItemStacks(EntityPlatypus platypus) {
-        ResourceKey<net.minecraft.world.level.storage.loot.LootTable> key = ResourceKey.create(Registries.LOOT_TABLE, platypus.superCharged ? PLATYPUS_REWARD_CHARGED : PLATYPUS_REWARD);
-        LootTable loottable = platypus.level().getServer().reloadableRegistries().getLootTable(key);
+        LootTable loottable = platypus.level().getServer().reloadableRegistries().getLootTable(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, platypus.superCharged ? PLATYPUS_REWARD_CHARGED : PLATYPUS_REWARD));
         return loottable.getRandomItems((new LootParams.Builder((ServerLevel) platypus.level())).withParameter(LootContextParams.THIS_ENTITY, platypus).create(LootContextParamSets.PIGLIN_BARTER));
     }
 
@@ -86,8 +83,8 @@ public class PlatypusAIDigForItems extends Goal {
                 List<ItemStack> lootList = getItemStacks(platypus);
                 if (lootList.size() > 0) {
                     for (ItemStack stack : lootList) {
-                        ItemEntity e = this.platypus.spawnAtLocation(stack.copy());
-                        e.hasImpulse = true;
+                        ItemEntity e = this.platypus.spawnAtLocation((net.minecraft.server.level.ServerLevel) this.platypus.level(), stack.copy());
+                        e.needsSync = true;
                         e.setDeltaMovement(e.getDeltaMovement().multiply(0.2, 0.2, 0.2));
                     }
                 }

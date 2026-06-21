@@ -24,7 +24,6 @@ public class EntityMudBall extends EntityMobProjectile {
         Vec3 vec3 = mudskipper.position().add(calcOffsetVec(new Vec3(0, 0, 0.2F * mudskipper.getScale()), 0F, mudskipper.getYRot()));
         this.setPos(vec3.x, vec3.y, vec3.z);
     }
-
     public void doBehavior() {
         this.setDeltaMovement(this.getDeltaMovement().scale((double)0.9F));
         if (!this.isNoGravity()) {
@@ -47,7 +46,7 @@ public class EntityMudBall extends EntityMobProjectile {
     protected void onEntityHit(EntityHitResult result) {
         super.onEntityHit(result);
         if(result.getEntity() instanceof LivingEntity hurt){
-            hurt.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60));
+            hurt.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 60));
         }
     }
 
@@ -67,7 +66,7 @@ public class EntityMudBall extends EntityMobProjectile {
 
     @Override
     protected void onImpact(HitResult result) {
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.level().broadcastEntityEvent(this, (byte)3);
         }
         super.onImpact(result);

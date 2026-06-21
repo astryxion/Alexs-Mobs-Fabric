@@ -11,7 +11,7 @@ import com.github.alexthe666.citadel.animation.Animation;
 import com.github.alexthe666.citadel.animation.AnimationHandler;
 import com.github.alexthe666.citadel.animation.IAnimatedEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -37,22 +37,23 @@ import net.minecraft.world.entity.ai.goal.target.OwnerHurtTargetGoal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
+import com.github.alexthe666.alexsmobs.misc.IngredientOr;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.pathfinder.PathType;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEntity, IFollower, ITargetsDroppedItems {
@@ -88,17 +89,12 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 10.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.MOVEMENT_SPEED, 0.4F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 10.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.MOVEMENT_SPEED, 0.4F);
     }
 
-    public static <T extends Mob> boolean canCapuchinSpawn(EntityType<EntityCapuchinMonkey> gorilla, LevelAccessor worldIn, MobSpawnType reason, BlockPos p_223317_3_, RandomSource random) {
-        return canCapuchinSpawn(worldIn, p_223317_3_, gorilla);
-    }
-
-    /** Vanilla 1.20.1 SpawnPlacements.SpawnPredicate signature (LevelReader, BlockPos, EntityType). */
-    public static boolean canCapuchinSpawn(LevelReader level, BlockPos pos, EntityType<?> type) {
-        BlockState blockstate = level.getBlockState(pos.below());
-        return (blockstate.is(AMTagRegistry.CAPUCHIN_MONKEY_SPAWNS) || blockstate.is(Blocks.AIR)) && level.getRawBrightness(pos, 0) > 8;
+    public static <T extends Mob> boolean canCapuchinSpawn(EntityType<EntityCapuchinMonkey> gorilla, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos p_223317_3_, RandomSource random) {
+        BlockState blockstate = worldIn.getBlockState(p_223317_3_.below());
+        return (blockstate.is(AMTagRegistry.CAPUCHIN_MONKEY_SPAWNS) || blockstate.is(Blocks.AIR)) && worldIn.getRawBrightness(p_223317_3_, 0) > 8;
     }
 
     public int getMaxSpawnClusterSize() {
@@ -109,29 +105,29 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
         return false;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.capuchinMonkeySpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
     public Ingredient getAllFoods(){
         if(temptItems == null){
-            java.util.List<ItemStack> stacks = new java.util.ArrayList<>();
-            net.minecraft.core.registries.BuiltInRegistries.ITEM.getTag(AMTagRegistry.CAPUCHIN_MONKEY_BREEDABLES).ifPresent(holders -> holders.stream().forEach(h -> stacks.add(new ItemStack(h.value()))));
-            net.minecraft.core.registries.BuiltInRegistries.ITEM.getTag(AMTagRegistry.CAPUCHIN_MONKEY_FOODSTUFFS).ifPresent(holders -> holders.stream().forEach(h -> stacks.add(new ItemStack(h.value()))));
-            temptItems = Ingredient.of(stacks.toArray(new ItemStack[0]));
+            temptItems = IngredientOr.of(
+                    Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.CAPUCHIN_MONKEY_BREEDABLES)),
+                    Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.CAPUCHIN_MONKEY_FOODSTUFFS)));
         }
         return temptItems;
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        if (this.isInvulnerableTo(source)) {
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        if (this.isInvulnerableTo(level, source)) {
             return false;
         } else {
             Entity entity = source.getEntity();
             if (entity != null && this.isTame() && !(entity instanceof Player) && !(entity instanceof AbstractArrow)) {
                 amount = (amount + 1.0F) / 4.0F;
             }
-            return super.hurt(source, amount);
+            return super.hurtServer(level, source, amount);
         }
     }
 
@@ -141,7 +137,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
         this.goalSelector.addGoal(3, new CapuchinAIMelee(this, 1, true));
         this.goalSelector.addGoal(3, new CapuchinAIRangedAttack(this, 1, 20, 15));
         this.goalSelector.addGoal(6, new TameableAIFollowOwner(this, 1.0D, 10.0F, 2.0F, false));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.CAPUCHIN_MONKEY_TAMEABLES), true) {
+        this.goalSelector.addGoal(4, new TemptGoal(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.CAPUCHIN_MONKEY_TAMEABLES)), true) {
             public void tick() {
                 super.tick();
                 if (this.mob.distanceToSqr(this.player) < 6.25D && this.mob.getRandom().nextInt(14) == 0) {
@@ -172,7 +168,8 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
         return AMSoundRegistry.CAPUCHIN_MONKEY_HURT;
     }
 
-    public boolean isAlliedTo(Entity entityIn) {
+    @Override
+    protected boolean considersEntityAsAlly(Entity entityIn) {
         if (this.isTame()) {
             LivingEntity livingentity = this.getOwner();
             if (entityIn == livingentity) {
@@ -186,10 +183,11 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
             }
         }
 
-        return super.isAlliedTo(entityIn);
+        return super.considersEntityAsAlly(entityIn);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("MonkeySitting", this.isSitting());
         compound.putBoolean("HasDart", this.hasDart());
@@ -198,13 +196,14 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
         compound.putInt("Variant", this.getVariant());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setOrderedToSit(compound.getBoolean("MonkeySitting"));
-        this.forcedSit = compound.getBoolean("ForcedToSit");
-        this.setCommand(compound.getInt("Command"));
-        this.setDart(compound.getBoolean("HasDart"));
-        this.setVariant(compound.getInt("Variant"));
+        this.setOrderedToSit(compound.getBooleanOr("MonkeySitting", false));
+        this.forcedSit = compound.getBooleanOr("ForcedToSit", false);
+        this.setCommand(compound.getIntOr("Command", this.getCommand()));
+        this.setDart(compound.getBooleanOr("HasDart", false));
+        this.setVariant(compound.getIntOr("Variant", this.getVariant()));
     }
 
     public void tick() {
@@ -221,23 +220,23 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
         if (!forcedSit && isSitting() && ++sittingTime > maxSitTime) {
             this.setOrderedToSit(false);
             sittingTime = 0;
-            maxSitTime = 75 + random.nextInt(50);
+            maxSitTime = 75 + this.getRandom().nextInt(50);
         }
-        if (!this.level().isClientSide && this.getAnimation() == NO_ANIMATION && !this.isSitting() && this.getCommand() != 1 && random.nextInt(1500) == 0) {
+        if (!this.level().isClientSide() && this.getAnimation() == NO_ANIMATION && !this.isSitting() && this.getCommand() != 1 && this.getRandom().nextInt(1500) == 0) {
             maxSitTime = 300 + random.nextInt(250);
             this.setOrderedToSit(true);
         }
-        this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(2.0);
+        // setMaxUpStep removed in 1.21
         if (!forcedSit && this.isSitting() && (this.getDartTarget() != null || this.getCommand() == 1)) {
             this.setOrderedToSit(false);
         }
 
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (this.getTarget() != null && this.getAnimation() == ANIMATION_SCRATCH && this.getAnimationTick() == 10) {
                 float f1 = this.getYRot() * Mth.DEG_TO_RAD;
                 this.setDeltaMovement(this.getDeltaMovement().add(-Mth.sin(f1) * 0.3F, 0.0D, Mth.cos(f1) * 0.3F));
-                getTarget().knockback(1F, getTarget().getX() - this.getX(), getTarget().getZ() - this.getZ());
-                this.getTarget().hurt(this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue());
+                getTarget().knockback(1, getTarget().getX() - this.getX(), getTarget().getZ() - this.getZ(), this.damageSources().mobAttack(this), 0.0F);
+                this.getTarget().hurtServer((ServerLevel) this.level(), this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue());
                 this.setAttackDecision(this.getTarget());
             }
             if (this.getDartTarget() != null && this.getDartTarget().isAlive() && this.getAnimation() == ANIMATION_THROW && this.getAnimationTick() == 5) {
@@ -251,7 +250,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
                 tossedItem.setXRot(tossedItem.getXRot() - 20F);
                 tossedItem.shoot(d0, d1 + (double) (f * 0.2F), d2, hasDart() ? 1.15F : 0.75F, 8.0F);
                 if (!this.isSilent()) {
-                    this.level().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.WITCH_THROW, this.getSoundSource(), 1.0F, 0.8F + this.random.nextFloat() * 0.4F);
+                    this.level().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.WITCH_THROW, this.getSoundSource(), 1.0F, 0.8F + this.getRandom().nextFloat() * 0.4F);
                     this.gameEvent(GameEvent.PROJECTILE_SHOOT);
                 }
                 this.level().addFreshEntity(tossedItem);
@@ -261,10 +260,10 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
         if (rideCooldown > 0) {
             rideCooldown--;
         }
-        if (!this.level().isClientSide && getAnimation() == NO_ANIMATION && this.getRandom().nextInt(300) == 0) {
+        if (!this.level().isClientSide() && getAnimation() == NO_ANIMATION && this.getRandom().nextInt(300) == 0) {
             setAnimation(ANIMATION_HEADTILT);
         }
-        if (!this.level().isClientSide && this.isSitting()) {
+        if (!this.level().isClientSide() && this.isSitting()) {
             this.getNavigation().stop();
         }
         AnimationHandler.INSTANCE.updateAnimations(this);
@@ -277,7 +276,8 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
     protected void checkFallDamage(double y, boolean onGroundIn, BlockState state, BlockPos pos) {
     }
 
-    public boolean doHurtTarget(Entity entityIn) {
+    @Override
+    public boolean doHurtTarget(ServerLevel level, Entity entityIn) {
         if (this.getAnimation() == NO_ANIMATION) {
             this.setAnimation(ANIMATION_SCRATCH);
         }
@@ -294,10 +294,11 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
         super.travel(vec3d);
     }
 
-    protected void dropEquipment() {
-        super.dropEquipment();
+    @Override
+    protected void dropEquipment(ServerLevel level) {
+        super.dropEquipment(level);
         if (hasDart()) {
-            this.spawnAtLocation(AMItemRegistry.ANCIENT_DART);
+            this.spawnAtLocation(level, AMItemRegistry.ANCIENT_DART);
         }
     }
 
@@ -413,7 +414,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel p_241840_1_, AgeableMob p_241840_2_) {
-        EntityCapuchinMonkey monkey = AMEntityRegistry.CAPUCHIN_MONKEY.create(p_241840_1_);
+        EntityCapuchinMonkey monkey = AMEntityRegistry.CAPUCHIN_MONKEY.create(p_241840_1_, EntitySpawnReason.BREEDING);
         monkey.setVariant(this.getVariant());
         return monkey;
     }
@@ -439,8 +440,8 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return source.is(DamageTypes.IN_WALL)  || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.IN_WALL) || super.isInvulnerableTo(level, source);
     }
 
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
@@ -459,7 +460,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
             if (isTame() && (getAllFoods().test(itemstack) && !isFood(itemstack)) && this.getHealth() < this.getMaxHealth()) {
                 this.usePlayerItem(player, hand, itemstack);
                 this.gameEvent(GameEvent.EAT);
-                this.playSound(SoundEvents.CAT_EAT, this.getSoundVolume(), this.getVoicePitch());
+                this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
                 this.heal(5);
                 return InteractionResult.SUCCESS;
             }
@@ -473,9 +474,9 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
                 this.usePlayerItem(player, hand, itemstack);
                 return InteractionResult.CONSUME;
             }
-            if (this.hasDart() && itemstack.is(Items.SHEARS)) {
+            if (this.hasDart() && itemstack.getItem() instanceof net.minecraft.world.item.ShearsItem) {
                 this.setDart(false);
-                itemstack.hurtAndBreak(1, this, net.minecraft.world.entity.EquipmentSlot.MAINHAND);
+                itemstack.hurtAndBreak(1, this, EquipmentSlot.MAINHAND);
                 return InteractionResult.SUCCESS;
             }
             if (player.isShiftKeyDown() && player.getPassengers().isEmpty()) {
@@ -487,7 +488,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
                 if (this.getCommand() == 3) {
                     this.setCommand(0);
                 }
-                player.displayClientMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()), true);
+                player.sendOverlayMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()));
                 final boolean sit = this.getCommand() == 2;
                 if (sit) {
                     this.forcedSit = true;
@@ -526,10 +527,10 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
     public void onGetItem(ItemEntity e) {
         this.heal(5);
         this.gameEvent(GameEvent.EAT);
-        this.playSound(SoundEvents.CAT_EAT, this.getSoundVolume(), this.getVoicePitch());
+        this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
         if (e.getItem().is(AMTagRegistry.BANANAS)) {
             if (getRandom().nextInt(4) == 0) {
-                this.spawnAtLocation(new ItemStack(AMBlockRegistry.BANANA_PEEL));
+                this.spawnAtLocation((ServerLevel) this.level(), new ItemStack(AMBlockRegistry.BANANA_PEEL));
             }
         }
 
@@ -537,7 +538,9 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
         if (e.getItem().is(AMTagRegistry.CAPUCHIN_MONKEY_TAMEABLES) && itemThrower != null && !this.isTame()) {
             if (getRandom().nextInt(5) == 0) {
                 this.setTame(true, true);
-                this.setOwnerUUID(itemThrower.getUUID());
+                if (itemThrower instanceof LivingEntity livingOwner) {
+                    this.setOwner(livingOwner);
+                }
                 this.level().broadcastEntityEvent(this, (byte) 7);
             } else {
                 this.level().broadcastEntityEvent(this, (byte) 6);
@@ -546,12 +549,12 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance diff, MobSpawnType spawnType, @Nullable SpawnGroupData data, @Nullable CompoundTag tag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance diff, EntitySpawnReason spawnType, @Nullable SpawnGroupData data) {
         int i;
         if (data instanceof CapuchinGroupData) {
             i = ((CapuchinGroupData)data).variant;
         } else {
-            i = this.random.nextInt(4);
+            i = this.getRandom().nextInt(4);
             data = new CapuchinGroupData(i);
         }
 

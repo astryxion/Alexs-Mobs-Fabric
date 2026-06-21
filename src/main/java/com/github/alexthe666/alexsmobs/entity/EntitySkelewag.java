@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIRandomSwimming;
 import com.github.alexthe666.alexsmobs.entity.ai.AquaticMoveController;
@@ -20,7 +23,9 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.DifficultyInstance;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -28,8 +33,8 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.TryFindWaterGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
-import net.minecraft.world.entity.animal.Dolphin;
-import net.minecraft.world.entity.monster.Drowned;
+import net.minecraft.world.entity.animal.dolphin.Dolphin;
+import net.minecraft.world.entity.monster.zombie.Drowned;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -38,11 +43,10 @@ import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.level.material.Fluid;
 
 import javax.annotation.Nullable;
 
-public class EntitySkelewag extends Monster implements IAnimatedEntity {
+public class EntitySkelewag extends Monster implements IAnimatedEntity, IAMUnderwaterBreather {
 
     public static final Animation ANIMATION_STAB = Animation.create(10);
     public static final Animation ANIMATION_SLASH = Animation.create(25);
@@ -64,15 +68,15 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
         return new SemiAquaticPathNavigator(this, worldIn);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.skelewagSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static boolean canSkelewagSpawn(EntityType<EntitySkelewag> type, ServerLevelAccessor levelAccessor, MobSpawnType p_32352_, BlockPos below, RandomSource random) {
+    public static boolean canSkelewagSpawn(EntityType<EntitySkelewag> type, ServerLevelAccessor levelAccessor, EntitySpawnReason p_32352_, BlockPos below, RandomSource random) {
         if (!levelAccessor.getFluidState(below.below()).is(FluidTags.WATER)) {
             return false;
         } else {
-            return levelAccessor.getDifficulty() != Difficulty.PEACEFUL && isDarkEnoughToSpawn(levelAccessor, below, random) && (p_32352_ == MobSpawnType.SPAWNER || random.nextInt(40) == 0 && levelAccessor.getFluidState(below).is(FluidTags.WATER));
+            return levelAccessor.getDifficulty() != Difficulty.PEACEFUL && isDarkEnoughToSpawn(levelAccessor, below, random) && (p_32352_ == EntitySpawnReason.SPAWNER || random.nextInt(40) == 0 && levelAccessor.getFluidState(below).is(FluidTags.WATER));
         }
     }
 
@@ -102,7 +106,6 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
 
     }
 
-    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(VARIANT, Integer.valueOf(0));
@@ -119,7 +122,7 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
     public void tick(){
         super.tick();
         this.prevOnLandProgress = onLandProgress;
-        boolean onLand = !this.isInWaterOrBubble() && this.onGround();
+        boolean onLand = !AMEntityRegistry.isInWaterOrBubble(this) && this.onGround();
         if (onLand && onLandProgress < 5F) {
             onLandProgress++;
         }
@@ -137,12 +140,12 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
             targetXRot = this.getXRot() + 5;
         }
         this.setXRot(targetXRot);
-        if (!this.level().isClientSide && this.getTarget() != null && this.distanceTo(this.getTarget()) < 2.0F + this.getTarget().getBbWidth()) {
+        if (!this.level().isClientSide() && this.getTarget() != null && this.distanceTo(this.getTarget()) < 2.0F + this.getTarget().getBbWidth()) {
             this.lookAt(this.getTarget(), 350, 200);
             if(this.getAnimation() == ANIMATION_STAB && this.getAnimationTick() == 7 && this.hasLineOfSight(this.getTarget())){
                 float f1 = this.getYRot() * Mth.DEG_TO_RAD;
                 this.setDeltaMovement(this.getDeltaMovement().add(-Mth.sin(f1) * 0.02F, 0.0D, Mth.cos(f1) * 0.02F));
-                getTarget().knockback(1F, getTarget().getX() - this.getX(), getTarget().getZ() - this.getZ());
+                getTarget().knockback(1, getTarget().getX() - this.getX(), getTarget().getZ() - this.getZ(), this.damageSources().mobAttack(this), 0.0F);
                 this.getTarget().hurt(this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue());
             }
             if(this.getAnimation() == ANIMATION_SLASH && this.getAnimationTick() % 5 == 0 && this.getAnimationTick() > 0 && this.getAnimationTick() < 25 && this.hasLineOfSight(this.getTarget())){
@@ -156,7 +159,7 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
         if(onLandProgress >= 5.0F && this.isVehicle()){
             this.ejectPassengers();
         }
-        if(!isInWaterOrBubble()){
+        if(!AMEntityRegistry.isInWaterOrBubble(this)){
             if (this.onGround() && random.nextFloat() < 0.2F) {
                 this.setDeltaMovement(this.getDeltaMovement().add((this.random.nextFloat() * 2.0F - 1.0F) * 0.2F, 0.5D, (this.random.nextFloat() * 2.0F - 1.0F) * 0.2F));
                 this.setYRot(this.random.nextFloat() * 360.0F);
@@ -174,14 +177,14 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
         this.entityData.set(VARIANT, Integer.valueOf(command));
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putInt("Variant", this.getVariant());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setVariant(compound.getInt("Variant"));
+        this.setVariant(compound.getIntOr("Variant", 0));
     }
 
     public boolean isPushedByFluid() {
@@ -209,29 +212,34 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
         if (this.hasPassenger(passenger)) {
             passenger.setYBodyRot(this.yBodyRot);
             Vec3 vec = new Vec3(0, this.getBbHeight() * 0.4F, this.getBbWidth() * -0.2F).xRot(-this.getXRot() * Mth.DEG_TO_RAD).yRot(-this.getYRot() * Mth.DEG_TO_RAD);
-            passenger.setPos(this.getX() + vec.x, this.getY() + vec.y, this.getZ() + vec.z);
+            passenger.setPos(this.getX() + vec.x, this.getY() + vec.y + passenger.getBbHeight() * 0.5, this.getZ() + vec.z);
         }
     }
 
-    public boolean canBeRiddenUnderFluidType(Fluid fluid, Entity rider) {
-        return true;
-    }
-
     @Nullable
-    @Override
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
         this.setVariant(this.getRandom().nextFloat() < 0.3F ? 1 : 0);
         if (this.random.nextFloat() < 0.2F) {
-            Drowned drowned = EntityType.DROWNED.create(level());
+            Drowned drowned = EntityTypes.DROWNED.create(level(), EntitySpawnReason.MOB_SUMMONED);
             drowned.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
             drowned.copyPosition(this);
             drowned.startRiding(this);
             worldIn.addFreshEntityWithPassengers(drowned);
         }
         if (AMConfig.restrictSkelewagSpawns) {
-            this.restrictTo(this.blockPosition(), 15);
+            this.setHomeTo(this.blockPosition(), 15);
         }
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
+    }
+
+    @Override
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.DROWN) || super.isInvulnerableTo(level, source);
+    }
+
+    @Override
+    public boolean canBreatheUnderwaterAM() {
+        return true;
     }
 
     @Override

@@ -1,17 +1,23 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.CosmicCodAIFollowLeader;
 import com.github.alexthe666.alexsmobs.entity.ai.FlightMoveController;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
-import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancements.triggers.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -25,7 +31,7 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.animal.Bucketable;
+import net.minecraft.world.entity.Bucketable;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -33,8 +39,11 @@ import net.minecraft.world.item.ItemUtils;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.pathfinder.PathType;
@@ -66,7 +75,7 @@ public class EntityCosmicCod extends Mob implements Bucketable {
         this.moveControl = new FlightMoveController(this, 1F, false, true);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.cosmicCodSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -125,21 +134,24 @@ public class EntityCosmicCod extends Mob implements Bucketable {
     @Override
     public void saveToBucketTag(@Nonnull ItemStack bucket) {
         if (this.hasCustomName()) {
-            bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, this.getCustomName());
+            bucket.set(DataComponents.CUSTOM_NAME, this.getCustomName());
         }
-        CompoundTag platTag = new CompoundTag();
-        this.addAdditionalSaveData(platTag);
-        net.minecraft.world.item.component.CustomData customData = bucket.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY);
-        CompoundTag compound = customData.copyTag();
+        Bucketable.saveDefaultDataToBucketTag(this, bucket);
+        TagValueOutput out = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, this.level().registryAccess());
+        this.addAdditionalSaveData(out);
+        CompoundTag platTag = out.buildResult();
+        CompoundTag compound = bucket.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         compound.put("CosmicCodData", platTag);
-        bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(compound));
+        bucket.set(DataComponents.CUSTOM_DATA, CustomData.of(compound));
     }
 
     @Override
     public void loadFromBucketTag(@Nonnull CompoundTag compound) {
-        if (compound.contains("CosmicCodData")) {
-            this.readAdditionalSaveData(compound.getCompound("CosmicCodData"));
-        }
+        Bucketable.loadDefaultDataFromBucketTag(this, compound);
+        compound.getCompound("CosmicCodData").ifPresent(sub -> {
+            ValueInput input = TagValueInput.create(ProblemReporter.DISCARDING, this.level().registryAccess(), sub);
+            this.readAdditionalSaveData(input);
+        });
     }
 
     public boolean requiresCustomPersistence() {
@@ -150,14 +162,16 @@ public class EntityCosmicCod extends Mob implements Bucketable {
         return !this.fromBucket() && !this.hasCustomName();
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("FromBucket", this.fromBucket());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setFromBucket(compound.getBoolean("FromBucket"));
+        this.setFromBucket(compound.getBooleanOr("FromBucket", false));
     }
 
     public boolean isSensitiveToWater() {
@@ -187,7 +201,7 @@ public class EntityCosmicCod extends Mob implements Bucketable {
     public void tick() {
         super.tick();
         this.prevFishPitch = this.getFishPitch();
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             final double ydist = (this.yo - this.getY());//down 0.4 up -0.38
             final float fishDist = (float) ((Math.abs(this.getDeltaMovement().x) + Math.abs(this.getDeltaMovement().z)) * 6F) / getPitchSensitivity();
             this.incrementFishPitch((float) (ydist) * 10 * getPitchSensitivity());
@@ -209,7 +223,7 @@ public class EntityCosmicCod extends Mob implements Bucketable {
         }
         if(teleportIn > 0){
             teleportIn--;
-            if(teleportIn == 0 && !this.level().isClientSide){
+            if(teleportIn == 0 && !this.level().isClientSide()){
                 final double range = 8;
                 final AABB bb = new AABB(this.getX() - range, this.getY() - range, this.getZ() - range, this.getX() + range, this.getY() + range, this.getZ() + range);
                 final List<EntityCosmicCod> list = this.level().getEntitiesOfClass(EntityCosmicCod.class, bb);
@@ -239,13 +253,13 @@ public class EntityCosmicCod extends Mob implements Bucketable {
         baitballCooldown = 120 + random.nextInt(100);
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        boolean prev = super.hurt(source, amount);
-        if(prev){
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        if (super.hurtServer(level, source, amount)) {
             teleportIn = 5;
-
+            return true;
         }
-        return prev;
+        return false;
     }
 
     private float getPitchSensitivity() {
@@ -256,9 +270,8 @@ public class EntityCosmicCod extends Mob implements Bucketable {
         return true;
     }
 
-    @Override
-    public boolean isInvulnerableTo(net.minecraft.world.damagesource.DamageSource source) {
-        return source.is(net.minecraft.world.damagesource.DamageTypes.DROWN) || super.isInvulnerableTo(source);
+    public boolean canBreatheUnderwaterAM() {
+        return true;
     }
 
     public boolean isPushedByWater() {
@@ -394,13 +407,13 @@ public class EntityCosmicCod extends Mob implements Bucketable {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
         if (spawnDataIn == null) {
             spawnDataIn = new EntityCosmicCod.GroupData(this);
         } else {
             this.createAndSetLeader(((EntityCosmicCod.GroupData) spawnDataIn).groupLeader);
         }
-        if (reason == MobSpawnType.NATURAL && spawnDataIn instanceof EntityCosmicCod.GroupData) {
+        if (reason == EntitySpawnReason.NATURAL && spawnDataIn instanceof EntityCosmicCod.GroupData) {
             doInitialPosing(worldIn, (GroupData) spawnDataIn);
         }
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
@@ -422,12 +435,12 @@ public class EntityCosmicCod extends Mob implements Bucketable {
             final ItemStack itemstack2 = ItemUtils.createFilledResult(itemstack, player, itemstack1, false);
             player.setItemInHand(hand, itemstack2);
             final Level level = this.level();
-            if (!this.level().isClientSide) {
+            if (!this.level().isClientSide()) {
                 CriteriaTriggers.FILLED_BUCKET.trigger((ServerPlayer)player, itemstack1);
             }
 
             this.discard();
-            return InteractionResult.sidedSuccess(this.level().isClientSide);
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
         }
         return super.mobInteract(player, hand);
     }

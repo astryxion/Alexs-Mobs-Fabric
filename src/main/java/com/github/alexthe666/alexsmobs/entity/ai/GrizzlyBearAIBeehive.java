@@ -8,10 +8,11 @@ import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.ai.goal.MoveToBlockGoal;
-import net.minecraft.world.entity.animal.Bee;
+import net.minecraft.world.entity.animal.bee.Bee;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.BeehiveBlock;
 import net.minecraft.world.level.block.entity.BeehiveBlockEntity;
@@ -86,7 +87,7 @@ public class GrizzlyBearAIBeehive extends MoveToBlockGoal {
     }
 
     private void eatHive() {
-        if (bear.level().getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING)) {
+        if (this.bear.level() instanceof ServerLevel serverLevel && serverLevel.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
             BlockState blockstate = bear.level().getBlockState(this.blockPos);
             if (blockstate.is(AMTagRegistry.GRIZZLY_BEEHIVE)) {
                 if (bear.level().getBlockEntity(this.blockPos) instanceof BeehiveBlockEntity) {
@@ -110,7 +111,7 @@ public class GrizzlyBearAIBeehive extends MoveToBlockGoal {
                     }
                     double d0 = 15;
                     for (Bee bee : bear.level().getEntitiesOfClass(Bee.class, new AABB((double) blockPos.getX() - d0, (double) blockPos.getY() - d0, (double) blockPos.getZ() - d0, (double) blockPos.getX() + d0, (double) blockPos.getY() + d0, (double) blockPos.getZ() + d0))) {
-                        bee.setRemainingPersistentAngerTime(100);
+                        bee.setPersistentAngerEndTime(bear.level().getGameTime() + 100L);
                         bee.setTarget(bear);
                         bee.setStayOutOfHiveCountdown(400);
                     }

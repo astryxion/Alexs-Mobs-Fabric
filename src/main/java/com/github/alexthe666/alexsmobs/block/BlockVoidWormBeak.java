@@ -1,8 +1,9 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
+
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityVoidWormBeak;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -19,28 +20,35 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 
-public class BlockVoidWormBeak extends BaseEntityBlock {
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
-    public static final MapCodec<BlockVoidWormBeak> CODEC = BlockBehaviour.simpleCodec(BlockVoidWormBeak::new);
-    public static final DirectionProperty FACING = DirectionalBlock.FACING;
+public class BlockVoidWormBeak extends BaseEntityBlock {
+    public static final MapCodec<BlockVoidWormBeak> CODEC = simpleCodec(BlockVoidWormBeak::new);
+
+    public static final EnumProperty<Direction> FACING = DirectionalBlock.FACING;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     private static final VoxelShape AABB = Block.box(0, 4, 0, 16, 12, 16);
     private static final VoxelShape AABB_VERTICAL = Block.box(0, 0, 4, 16, 16, 12);
 
-    public BlockVoidWormBeak(BlockBehaviour.Properties properties) {
-        super(properties);
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).noOcclusion().sound(SoundType.ANCIENT_DEBRIS).strength(1F).noCollision().requiresCorrectToolForDrops();
+    }
+
+    public BlockVoidWormBeak(BlockBehaviour.Properties props) {
+        super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(POWERED, false));
     }
 
     @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
+    public MapCodec<? extends BaseEntityBlock> codec() {
         return CODEC;
     }
 
@@ -48,14 +56,16 @@ public class BlockVoidWormBeak extends BaseEntityBlock {
         return state.getValue(FACING).getAxis() == Direction.Axis.Y ? AABB_VERTICAL : AABB;
     }
 
-    public void neighborChanged(BlockState state, Level worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
-        if(!worldIn.isClientSide){
+    @Override
+    public void neighborChanged(BlockState state, Level worldIn, BlockPos pos, Block blockIn, @Nullable Orientation orientation, boolean isMoving) {
+        if (!worldIn.isClientSide()) {
             this.updateState(state, worldIn, pos, blockIn);
         }
+        super.neighborChanged(state, worldIn, pos, blockIn, orientation, isMoving);
     }
 
     public void randomTick(BlockState state, ServerLevel worldIn, BlockPos pos, RandomSource random) {
-        if(!worldIn.isClientSide){
+        if (!worldIn.isClientSide()) {
             this.updateState(state, worldIn, pos, state.getBlock());
         }
     }
@@ -66,7 +76,7 @@ public class BlockVoidWormBeak extends BaseEntityBlock {
 
         if (flag1 != flag) {
             worldIn.setBlock(pos, state.setValue(POWERED, Boolean.valueOf(flag1)), 3);
-            worldIn.updateNeighborsAt(pos.below(), this);
+            worldIn.updateNeighborsAt(pos.below(), this, (Orientation) null);
         }
     }
 

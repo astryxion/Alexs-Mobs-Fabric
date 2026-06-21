@@ -1,7 +1,0 @@
-{
-  "__comment": "Pacifies all nearby ants, heals them, and makes new ants if given to the queen",
-  "replace": false,
-  "values": [
-    "alexsmobs:gongylidia"
-  ]
-}

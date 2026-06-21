@@ -7,14 +7,16 @@ import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityLeafcutterAnt;
 import com.google.common.collect.Lists;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.FireBlock;
@@ -22,6 +24,10 @@ import net.minecraft.world.level.block.entity.BeehiveBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -46,13 +52,13 @@ public class TileEntityLeafcutterAnthill extends BlockEntity {
     @Nullable
     public static Entity loadEntityAndExecute(CompoundTag compound, Level worldIn, Function<Entity, Entity> p_220335_2_) {
         return loadEntity(compound, worldIn).map(p_220335_2_).map((p_220346_3_) -> {
-            if (compound.contains("Passengers", 9)) {
-                ListTag listnbt = compound.getList("Passengers", 10);
+            if (compound.contains("Passengers")) {
+                ListTag listnbt = compound.getListOrEmpty("Passengers");
 
                 for (int i = 0; i < listnbt.size(); ++i) {
-                    Entity entity = loadEntityAndExecute(listnbt.getCompound(i), worldIn, p_220335_2_);
+                    Entity entity = loadEntityAndExecute(listnbt.getCompoundOrEmpty(i), worldIn, p_220335_2_);
                     if (entity != null) {
-                        entity.startRiding(p_220346_3_, true);
+                        entity.startRiding(p_220346_3_, true, true);
                     }
                 }
             }
@@ -70,8 +76,11 @@ public class TileEntityLeafcutterAnthill extends BlockEntity {
     }
 
     public static Optional<Entity> loadEntityUnchecked(CompoundTag compound, Level worldIn) {
-        EntityLeafcutterAnt leafcutterAnt = AMEntityRegistry.LEAFCUTTER_ANT.create(worldIn);
-        leafcutterAnt.load(compound);
+        if (!(worldIn instanceof ServerLevel serverLevel)) {
+            return Optional.empty();
+        }
+        EntityLeafcutterAnt leafcutterAnt = AMEntityRegistry.LEAFCUTTER_ANT.create(serverLevel, EntitySpawnReason.LOAD);
+        leafcutterAnt.load(TagValueInput.create(ProblemReporter.DISCARDING, serverLevel.registryAccess(), compound));
         return Optional.of(leafcutterAnt);
     }
 
@@ -166,7 +175,7 @@ public class TileEntityLeafcutterAnthill extends BlockEntity {
                     double d0 = (double) blockpos.getX() + 0.5D;
                     double d1 = (double) blockpos.getY() + 1.0D;
                     double d2 = (double) blockpos.getZ() + 0.5D;
-                    entity.moveTo(d0, d1, d2, entity.getYRot(), entity.getXRot());
+                    entity.snapTo(d0, d1, d2, entity.getYRot(), entity.getXRot());
                     if (((EntityLeafcutterAnt) entity).isQueen()) {
                         entityLeafcutterAnt.setStayOutOfHiveCountdown(400);
                     }
@@ -187,14 +196,19 @@ public class TileEntityLeafcutterAnthill extends BlockEntity {
         if (this.ants.size() < AMConfig.leafcutterAntColonySize) {
             p_226962_1_.stopRiding();
             p_226962_1_.ejectPassengers();
-            CompoundTag compoundnbt = new CompoundTag();
-            p_226962_1_.save(compoundnbt);
+            Level registryLevel = this.level != null ? this.level : p_226962_1_.level();
+            if (registryLevel == null) {
+                return;
+            }
+            TagValueOutput entityOut = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registryLevel.registryAccess());
+            p_226962_1_.saveWithoutId(entityOut);
+            CompoundTag compoundnbt = entityOut.buildResult();
             if (p_226962_2_) {
-                if (!level.isClientSide && p_226962_1_.getRandom().nextFloat() < AMConfig.leafcutterAntFungusGrowChance) {
+                if (this.level != null && !this.level.isClientSide() && p_226962_1_.getRandom().nextFloat() < AMConfig.leafcutterAntFungusGrowChance) {
                     growFungus();
                 }
                 leafFeedings++;
-                if (leafFeedings >= AMConfig.leafcutterAntRepopulateFeedings && this.getAntsInAreaCount(32D) < Mth.ceil(AMConfig.leafcutterAntColonySize * 0.5F) && hasQueen()) {
+                if (leafFeedings >= AMConfig.leafcutterAntRepopulateFeedings && this.getAntsInAreaCount(32D, registryLevel) < Mth.ceil(AMConfig.leafcutterAntColonySize * 0.5F) && hasQueen()) {
                     leafFeedings = 0;
                     this.ants.add(new Ant(new CompoundTag(), 0, 100, false));
                 }
@@ -211,11 +225,11 @@ public class TileEntityLeafcutterAnthill extends BlockEntity {
         }
     }
 
-    private int getAntsInAreaCount(double size) {
+    private int getAntsInAreaCount(double size, Level levelForQuery) {
         int ants = this.getAntCount();
         Vec3 vec = Vec3.atCenterOf(this.getBlockPos());
         AABB box = new AABB(vec.add(-size, -size, -size), vec.add(size, size, size));
-        ants += level.getEntitiesOfClass(EntityLeafcutterAnt.class, box).size();
+        ants += levelForQuery.getEntitiesOfClass(EntityLeafcutterAnt.class, box).size();
         return ants;
     }
 
@@ -362,7 +376,7 @@ public class TileEntityLeafcutterAnthill extends BlockEntity {
         for (BlockState blockstate = this.getBlockState(); iterator.hasNext(); ant.ticksInHive++) {
             ant = iterator.next();
             if (ant.ticksInHive > ant.minOccupationTicks && !ant.queen) {
-                BeehiveBlockEntity.BeeReleaseStatus beehivetileentity$state = ant.entityData.getBoolean("HasNectar") ? BeehiveBlockEntity.BeeReleaseStatus.HONEY_DELIVERED : BeehiveBlockEntity.BeeReleaseStatus.BEE_RELEASED;
+                BeehiveBlockEntity.BeeReleaseStatus beehivetileentity$state = ant.entityData.getBooleanOr("HasNectar", false) ? BeehiveBlockEntity.BeeReleaseStatus.HONEY_DELIVERED : BeehiveBlockEntity.BeeReleaseStatus.BEE_RELEASED;
                 if (this.addAntToWorld(blockstate, ant, null, beehivetileentity$state)) {
                     iterator.remove();
                 }
@@ -371,17 +385,17 @@ public class TileEntityLeafcutterAnthill extends BlockEntity {
 
     }
 
-    public void loadAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
-        super.loadAdditional(nbt, registries);
+    @Override
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
         this.ants.clear();
-        this.leafFeedings = nbt.getInt("LeafFeedings");
-        ListTag listnbt = nbt.getList("Ants", 10);
-
-        for (int i = 0; i < listnbt.size(); ++i) {
-            CompoundTag compoundnbt = listnbt.getCompound(i);
-            Ant beehiveTileEntity$ant = new Ant(compoundnbt.getCompound("EntityData"), compoundnbt.getInt("TicksInHive"), compoundnbt.getInt("MinOccupationTicks"), compoundnbt.getBoolean("Queen"));
-            this.ants.add(beehiveTileEntity$ant);
-        }
+        this.leafFeedings = input.getIntOr("LeafFeedings", 0);
+        input.read("Ants", CompoundTag.CODEC.listOf()).ifPresent(list -> {
+            for (CompoundTag compoundnbt : list) {
+                Ant beehiveTileEntity$ant = new Ant(compoundnbt.getCompoundOrEmpty("EntityData"), compoundnbt.getIntOr("TicksInHive", 0), compoundnbt.getIntOr("MinOccupationTicks", 0), compoundnbt.getBooleanOr("Queen", false));
+                this.ants.add(beehiveTileEntity$ant);
+            }
+        });
     }
 
     public ListTag getAnts() {
@@ -400,10 +414,19 @@ public class TileEntityLeafcutterAnthill extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag compound, HolderLookup.Provider registries) {
-        super.saveAdditional(compound, registries);
-        compound.put("Ants", this.getAnts());
-        compound.putInt("LeafFeedings", leafFeedings);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        java.util.ArrayList<CompoundTag> antTags = new java.util.ArrayList<>();
+        for (Ant beehiveTileEntity$ant : this.ants) {
+            beehiveTileEntity$ant.entityData.remove("UUID");
+            CompoundTag compoundnbt = new CompoundTag();
+            compoundnbt.put("EntityData", beehiveTileEntity$ant.entityData);
+            compoundnbt.putInt("TicksInHive", beehiveTileEntity$ant.ticksInHive);
+            compoundnbt.putInt("MinOccupationTicks", beehiveTileEntity$ant.minOccupationTicks);
+            antTags.add(compoundnbt);
+        }
+        output.store("Ants", CompoundTag.CODEC.listOf(), antTags);
+        output.putInt("LeafFeedings", leafFeedings);
     }
 
     static class Ant {

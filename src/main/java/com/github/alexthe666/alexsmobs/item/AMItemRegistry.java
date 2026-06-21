@@ -1,549 +1,467 @@
 package com.github.alexthe666.alexsmobs.item;
 
+import static com.github.alexthe666.alexsmobs.item.AMArmorMaterials.*;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.entity.*;
+import com.github.alexthe666.alexsmobs.misc.AMJukeboxSongs;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.citadel.server.block.LecternBooks;
+import net.minecraft.core.Holder;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Registry;
 import net.minecraft.core.dispenser.BlockSource;
+import net.minecraft.core.Position;
+import net.minecraft.world.level.block.DispenserBlock;
+import net.minecraft.core.dispenser.ProjectileDispenseBehavior;
 import net.minecraft.core.dispenser.DefaultDispenseItemBehavior;
 import net.minecraft.core.dispenser.DispenseItemBehavior;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.RangedAttribute;
+import net.minecraft.world.item.component.Consumable;
+import net.minecraft.world.item.consume_effects.ApplyStatusEffectsConsumeEffect;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.*;
+import net.minecraft.world.item.equipment.ArmorType;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.ComposterBlock;
-import net.minecraft.world.level.block.DispenserBlock;
-import net.minecraft.world.level.block.entity.BannerPattern;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.HolderSet;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.component.BlocksAttacks;
+import net.minecraft.world.item.enchantment.Repairable;
+import net.minecraft.core.Registry;
+
+import java.util.List;
+import java.util.Optional;
 
 public class AMItemRegistry {
-    private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, path);
+    // TODO 1.21: Migrate AMArmorMaterial to new Holder<ArmorMaterial> system
+    // public static final AMArmorMaterial ROADRUNNER_ARMOR_MATERIAL = new AMArmorMaterial("roadrunner", 18, new int[]{3, 3, 3, 3}, 20, SoundEvents.ARMOR_EQUIP_TURTLE.value(), 0);
+    // public static final AMArmorMaterial CROCODILE_ARMOR_MATERIAL = new AMArmorMaterial("crocodile", 22, new int[]{2, 5, 7, 3}, 25, SoundEvents.ARMOR_EQUIP_TURTLE.value(), 1);
+    // public static final AMArmorMaterial CENTIPEDE_ARMOR_MATERIAL = new AMArmorMaterial("centipede", 20, new int[]{6, 6, 6, 6}, 22, SoundEvents.ARMOR_EQUIP_TURTLE.value(), 0.5F);
+    // public static final AMArmorMaterial MOOSE_ARMOR_MATERIAL = new AMArmorMaterial("moose", 19, new int[]{3, 3, 3, 3}, 21, SoundEvents.ARMOR_EQUIP_TURTLE.value(), 0.5F);
+    // public static final AMArmorMaterial RACCOON_ARMOR_MATERIAL = new AMArmorMaterial("raccoon", 17, new int[]{3, 3, 3, 3}, 21, SoundEvents.ARMOR_EQUIP_LEATHER.value(), 2.5F);
+    // public static final AMArmorMaterial SOMBRERO_ARMOR_MATERIAL = new AMArmorMaterial("sombrero", 14, new int[]{2, 2, 2, 2}, 30, SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0.5F);
+    // public static final AMArmorMaterial SPIKED_TURTLE_SHELL_ARMOR_MATERIAL = new AMArmorMaterial("spiked_turtle_shell", 35, new int[]{3, 3, 3, 3}, 30, SoundEvents.ARMOR_EQUIP_TURTLE.value(), 1F, 0.2F);
+    // public static final AMArmorMaterial FEDORA_ARMOR_MATERIAL = new AMArmorMaterial("fedora", 10, new int[]{2, 2, 2, 2}, 30, SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0.5F);
+    // public static final AMArmorMaterial EMU_ARMOR_MATERIAL = new AMArmorMaterial("emu", 9, new int[]{4, 4, 4, 4}, 20, SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0.5F);
+    // public static final AMArmorMaterial TARANTULA_HAWK_ELYTRA_MATERIAL = new AMArmorMaterial("tarantula_hawk_elytra", 9, new int[]{3, 3, 3, 3}, 5, SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0);
+    // public static final AMArmorMaterial FROSTSTALKER_ARMOR_MATERIAL = new AMArmorMaterial("froststalker", 9, new int[]{3, 3, 3, 3}, 15, SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0.5F);
+    // public static final AMArmorMaterial ROCKY_ARMOR_MATERIAL = new AMArmorMaterial("rocky_roller", 20, new int[]{2, 5, 7, 3}, 10, SoundEvents.ARMOR_EQUIP_TURTLE.value(), 0.5F);
+    // public static final AMArmorMaterial FLYING_FISH_MATERIAL = new AMArmorMaterial("flying_fish", 9, new int[]{1, 1, 1, 1}, 8, SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0F);
+    // public static final AMArmorMaterial NOVELTY_HAT_MATERIAL = new AMArmorMaterial("novelty_hat", 10, new int[]{2, 2, 2, 2}, 30, SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0F);
+    // public static final AMArmorMaterial KIMONO_MATERIAL = new AMArmorMaterial("kimono", 8, new int[]{3, 3, 3, 3}, 15, SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0F);
+
+    static {
+        initSpawnEggs();
     }
 
-    private static Item register(String name, Item item) {
-        return Registry.register(BuiltInRegistries.ITEM, id(name), item);
-    }
+    public static final Item TAB_ICON = registerItem("tab_icon", ItemTabIcon::new, Item.Properties::new);
+    public static final Item ANIMAL_DICTIONARY = registerItem("animal_dictionary", ItemAnimalDictionary::new, () -> new Item.Properties().stacksTo(1));
+    public static final Item BEAR_FUR = registerItem("bear_fur", Item::new, Item.Properties::new);
+    public static final Item BEAR_DUST = registerItem("bear_dust", ItemBearDust::new, () -> new Item.Properties().rarity(Rarity.EPIC));
+    public static final Item ROADRUNNER_FEATHER = registerItem("roadrunner_feather", Item::new, Item.Properties::new);
+    public static final Item ROADDRUNNER_BOOTS = registerItem("roadrunner_boots", props -> new ItemModArmor(ROADRUNNER_ARMOR_MATERIAL, ArmorType.BOOTS, props), Item.Properties::new);
+    public static final Item LAVA_BOTTLE = registerItem("lava_bottle", Item::new, () -> new Item.Properties().stacksTo(1));
+    public static final Item BONE_SERPENT_TOOTH = registerItem("bone_serpent_tooth", Item::new, () -> new Item.Properties().fireResistant());
+    public static final Item GAZELLE_HORN = registerItem("gazelle_horn", Item::new, () -> new Item.Properties().fireResistant());
+    public static final Item CROCODILE_SCUTE = registerItem("crocodile_scute", Item::new, Item.Properties::new);
+    public static final Item CROCODILE_CHESTPLATE = registerItem("crocodile_chestplate", props -> new ItemModArmor(CROCODILE_ARMOR_MATERIAL, ArmorType.CHESTPLATE, props), Item.Properties::new);
+    public static final Item MAGGOT = registerItem("maggot", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(1).saturationModifier(0.2F).build()));
+    public static final Item BANANA = registerItem("banana", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(4).saturationModifier(0.3F).build()));
+    public static final Item ANCIENT_DART = registerItem("ancient_dart", Item::new, () -> new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
+    public static final Item HALO = registerItem("halo", ItemInventoryOnly::new, Item.Properties::new);
+    public static final Item BLOOD_SAC = registerItem("blood_sac", Item::new, Item.Properties::new);
 
-    /** Fabric: 1:1 replacements for ForgeMod attributes (registered in init()). */
-    public static Attribute SWIM_SPEED_ATTRIBUTE;
-    public static Attribute BLOCK_REACH_ATTRIBUTE;
-    public static Attribute ENTITY_REACH_ATTRIBUTE;
+    public static final Item MOSQUITO_PROBOSCIS = registerItem("mosquito_proboscis", Item::new, Item.Properties::new);
+    public static final Item BLOOD_SPRAYER = registerItem("blood_sprayer", ItemBloodSprayer::new, () -> new Item.Properties().durability(100));
+    public static final Item RATTLESNAKE_RATTLE = registerItem("rattlesnake_rattle", Item::new, Item.Properties::new);
+    public static final Item CHORUS_ON_A_STICK = registerItem("chorus_on_a_stick", Item::new, () -> new Item.Properties().stacksTo(1));
+    public static final Item SHARK_TOOTH = registerItem("shark_tooth", Item::new, Item.Properties::new);
+    public static final Item SHARK_TOOTH_ARROW = registerItem("shark_tooth_arrow", ItemModArrow::new, () -> new Item.Properties());
+    public static final Item LOBSTER_TAIL = registerItem("lobster_tail", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(2).saturationModifier(0.4F).build()));
+    public static final Item COOKED_LOBSTER_TAIL = registerItem("cooked_lobster_tail", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(6).saturationModifier(0.65F).build()));
+    public static final Item LOBSTER_BUCKET = registerItem("lobster_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.LOBSTER, Fluids.WATER, props), Item.Properties::new);
+    public static final Item KOMODO_SPIT = registerItem("komodo_spit", Item::new, Item.Properties::new);
+    public static final Item KOMODO_SPIT_BOTTLE = registerItem("komodo_spit_bottle", Item::new, Item.Properties::new);
+    public static final Item POISON_BOTTLE = registerItem("poison_bottle", Item::new, Item.Properties::new);
+    public static final Item SOPA_DE_MACACO = registerItem("sopa_de_macaco", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(5).saturationModifier(0.4F).build()).stacksTo(1));
+    public static final Item CENTIPEDE_LEG = registerItem("centipede_leg", Item::new, Item.Properties::new);
+    public static final Item CENTIPEDE_LEGGINGS = registerItem("centipede_leggings", props -> new ItemModArmor(CENTIPEDE_ARMOR_MATERIAL, ArmorType.LEGGINGS, props), Item.Properties::new);
+    public static final Item MOSQUITO_LARVA = registerItem("mosquito_larva", Item::new, Item.Properties::new);
+    public static final Item MOOSE_ANTLER = registerItem("moose_antler", Item::new, Item.Properties::new);
+    public static final Item MOOSE_HEADGEAR = registerItem("moose_headgear", props -> new ItemModArmor(MOOSE_ARMOR_MATERIAL, ArmorType.HELMET, props), Item.Properties::new);
+    public static final Item MOOSE_RIBS = registerItem("moose_ribs", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(0.6F).build()));
+    public static final Item COOKED_MOOSE_RIBS = registerItem("cooked_moose_ribs", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(7).saturationModifier(0.85F).build()));
+    public static final Item MIMICREAM = registerItem("mimicream", Item::new, Item.Properties::new);
+    public static final Item RACCOON_TAIL = registerItem("raccoon_tail", Item::new, Item.Properties::new);
+    public static final Item FRONTIER_CAP = registerItem("frontier_cap", props -> new ItemModArmor(RACCOON_ARMOR_MATERIAL, ArmorType.HELMET, props), Item.Properties::new);
+    public static final Item BLOBFISH = registerItem("blobfish", Item::new, () -> foodWithChanceEffect(new FoodProperties.Builder().nutrition(3).saturationModifier(0.4F).build(), MobEffects.POISON, 120, 0, 1.0F));
+    public static final Item BLOBFISH_BUCKET = registerItem("blobfish_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.BLOBFISH, Fluids.WATER, props), Item.Properties::new);
+    public static final Item FISH_OIL = registerItem("fish_oil", ItemFishOil::new, () -> new Item.Properties().craftRemainder(Items.GLASS_BOTTLE).food(new FoodProperties.Builder().nutrition(0).saturationModifier(0.2F).build()));
+    public static final Item MARACA = registerItem("maraca", ItemMaraca::new, () -> new Item.Properties());
+    public static final Item SOMBRERO = registerItem("sombrero", props -> new ItemModArmor(SOMBRERO_ARMOR_MATERIAL, ArmorType.HELMET, props), Item.Properties::new);
+    public static final Item COCKROACH_WING_FRAGMENT = registerItem("cockroach_wing_fragment", Item::new, Item.Properties::new);
+    public static final Item COCKROACH_WING = registerItem("cockroach_wing", Item::new, Item.Properties::new);
+    public static final Item COCKROACH_OOTHECA = registerItem("cockroach_ootheca", ItemAnimalEgg::new, () -> new Item.Properties());
+    public static final Item ACACIA_BLOSSOM = registerItem("acacia_blossom", Item::new, Item.Properties::new);
+    public static final Item SOUL_HEART = registerItem("soul_heart", Item::new, Item.Properties::new);
+    public static final Item SPIKED_SCUTE = registerItem("spiked_scute", Item::new, Item.Properties::new);
+    public static final Item SPIKED_TURTLE_SHELL = registerItem("spiked_turtle_shell", props -> new ItemModArmor(SPIKED_TURTLE_SHELL_ARMOR_MATERIAL, ArmorType.HELMET, props), Item.Properties::new);
+    public static final Item SHRIMP_FRIED_RICE = registerItem("shrimp_fried_rice", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(12).saturationModifier(1F).build()));
+    public static final Item GUSTER_EYE = registerItem("guster_eye", Item::new, Item.Properties::new);
+    public static final Item POCKET_SAND = registerItem("pocket_sand", ItemPocketSand::new, () -> new Item.Properties().durability(220));
+    public static final Item WARPED_MUSCLE = registerItem("warped_muscle", Item::new, Item.Properties::new);
+    public static final Item HEMOLYMPH_SAC = registerItem("hemolymph_sac", Item::new, Item.Properties::new);
+    public static final Item HEMOLYMPH_BLASTER = registerItem("hemolymph_blaster", ItemHemolymphBlaster::new, () -> new Item.Properties().durability(150));
+    public static final Item WARPED_MIXTURE = registerItem("warped_mixture", Item::new, () -> new Item.Properties().rarity(Rarity.RARE).stacksTo(1).craftRemainder(Items.GLASS_BOTTLE));
+    public static final Item STRADDLITE = registerItem("straddlite", Item::new, () -> new Item.Properties().fireResistant());
+    public static final Item STRADPOLE_BUCKET = registerItem("stradpole_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.STRADPOLE, Fluids.LAVA, props), Item.Properties::new);
+    public static final Item STRADDLEBOARD = registerItem("straddleboard", ItemStraddleboard::new, () -> new Item.Properties().fireResistant().durability(220));
+    public static final Item EMU_EGG = registerItem("emu_egg", ItemAnimalEgg::new, () -> new Item.Properties().stacksTo(8));
+    public static final Item BOILED_EMU_EGG = registerItem("boiled_emu_egg", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(4).saturationModifier(1F).build()));
+    public static final Item EMU_FEATHER = registerItem("emu_feather", Item::new, () -> new Item.Properties().fireResistant());
+    public static final Item EMU_LEGGINGS = registerItem("emu_leggings", props -> new ItemModArmor(EMU_ARMOR_MATERIAL, ArmorType.LEGGINGS, props), Item.Properties::new);
+    public static final Item PLATYPUS_BUCKET = registerItem("platypus_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.PLATYPUS, Fluids.WATER, props), Item.Properties::new);
+    public static final Item FEDORA = registerItem("fedora", props -> new ItemModArmor(FEDORA_ARMOR_MATERIAL, ArmorType.HELMET, props), Item.Properties::new);
+    public static final Item DROPBEAR_CLAW = registerItem("dropbear_claw", Item::new, Item.Properties::new);
+    public static final Item KANGAROO_MEAT = registerItem("kangaroo_meat", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(4).saturationModifier(0.6F).build()));
+    public static final Item COOKED_KANGAROO_MEAT = registerItem("cooked_kangaroo_meat", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(8).saturationModifier(0.85F).build()));
+    public static final Item KANGAROO_HIDE = registerItem("kangaroo_hide", Item::new, Item.Properties::new);
+    public static final Item KANGAROO_BURGER = registerItem("kangaroo_burger", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(12).saturationModifier(1F).build()));
+    public static final Item AMBERGRIS = registerItem("ambergris", props -> new ItemFuel(props, 12800), Item.Properties::new);
+    public static final Item CACHALOT_WHALE_TOOTH = registerItem("cachalot_whale_tooth", Item::new, Item.Properties::new);
+    public static final Item ECHOLOCATOR = registerItem("echolocator", props -> new ItemEcholocator(props, ItemEcholocator.EchoType.ECHOLOCATION), () -> new Item.Properties().durability(100));
+    public static final Item ENDOLOCATOR = registerItem("endolocator", props -> new ItemEcholocator(props, ItemEcholocator.EchoType.ENDER), () -> new Item.Properties().durability(25));
+    public static final Item GONGYLIDIA = registerItem("gongylidia", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(1.2F).build()));
+    public static final Item LEAFCUTTER_ANT_PUPA = registerItem("leafcutter_ant_pupa", ItemLeafcutterPupa::new, () -> new Item.Properties());
+    public static final Item ENDERIOPHAGE_ROCKET = registerItem("enderiophage_rocket", ItemEnderiophageRocket::new, () -> new Item.Properties());
+    public static final Item FALCONRY_GLOVE_INVENTORY = registerItem("falconry_glove_inventory", ItemInventoryOnly::new, Item.Properties::new);
+    public static final Item FALCONRY_GLOVE_HAND = registerItem("falconry_glove_hand", ItemInventoryOnly::new, Item.Properties::new);
+    public static final Item FALCONRY_GLOVE = registerItem("falconry_glove", ItemFalconryGlove::new, () -> new Item.Properties().stacksTo(1));
+    public static final Item FALCONRY_HOOD = registerItem("falconry_hood", Item::new, Item.Properties::new);
+    public static final Item TARANTULA_HAWK_WING_FRAGMENT = registerItem("tarantula_hawk_wing_fragment", Item::new, Item.Properties::new);
+    public static final Item TARANTULA_HAWK_WING = registerItem("tarantula_hawk_wing", Item::new, Item.Properties::new);
+    public static final Item TARANTULA_HAWK_ELYTRA = registerItem("tarantula_hawk_elytra", ItemTarantulaHawkElytra::new, () -> new Item.Properties().rarity(Rarity.UNCOMMON));
+    public static final Item MYSTERIOUS_WORM = registerItem("mysterious_worm", ItemMysteriousWorm::new, () -> new Item.Properties().rarity(Rarity.RARE));
+    public static final Item VOID_WORM_MANDIBLE = registerItem("void_worm_mandible", Item::new, Item.Properties::new);
+    public static final Item VOID_WORM_EYE = registerItem("void_worm_eye", Item::new, () -> new Item.Properties().rarity(Rarity.RARE));
+    public static final Item DIMENSIONAL_CARVER = registerItem("dimensional_carver", ItemDimensionalCarver::new, () -> new Item.Properties().durability(20).rarity(Rarity.EPIC));
+    public static final Item SHATTERED_DIMENSIONAL_CARVER = registerItem("shattered_dimensional_carver", ItemShatteredDimensionalCarver::new, () -> new Item.Properties().durability(4).rarity(Rarity.RARE));
+    public static final Item SERRATED_SHARK_TOOTH = registerItem("serrated_shark_tooth", Item::new, Item.Properties::new);
+    public static final Item FRILLED_SHARK_BUCKET = registerItem("frilled_shark_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.FRILLED_SHARK, Fluids.WATER, props), Item.Properties::new);
+    public static final Item SHIELD_OF_THE_DEEP = registerItem("shield_of_the_deep", ItemShieldOfTheDeep::new, () -> new Item.Properties()
+        .durability(400)
+        .rarity(Rarity.UNCOMMON)
+        .component(DataComponents.REPAIRABLE, new Repairable(HolderSet.direct(BuiltInRegistries.ITEM.wrapAsHolder(SERRATED_SHARK_TOOTH))))
+        .delayedComponent(DataComponents.BLOCKS_ATTACKS, context -> new BlocksAttacks(
+            0.25F,
+            1.0F,
+            List.of(new BlocksAttacks.DamageReduction(90.0F, Optional.empty(), 0.0F, 1.0F)),
+            new BlocksAttacks.ItemDamageFunction(3.0F, 1.0F, 1.0F),
+            Optional.of(context.getOrThrow(DamageTypeTags.BYPASSES_SHIELD)),
+            Optional.of(SoundEvents.SHIELD_BLOCK),
+            Optional.of(SoundEvents.SHIELD_BREAK))));
+    public static final Item MIMIC_OCTOPUS_BUCKET = registerItem("mimic_octopus_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.MIMIC_OCTOPUS, Fluids.WATER, props), Item.Properties::new);
+    public static final Item FROSTSTALKER_HORN = registerItem("froststalker_horn", Item::new, Item.Properties::new);
+    public static final Item FROSTSTALKER_HELMET = registerItem("froststalker_helmet", props -> new ItemModArmor(FROSTSTALKER_ARMOR_MATERIAL, ArmorType.HELMET, props), Item.Properties::new);
+    public static final Item PIGSHOES = registerItem("pigshoes", ItemPigshoes::new, () -> new Item.Properties().stacksTo(1));
+    public static final Item STRADDLE_HELMET = registerItem("straddle_helmet", Item::new, () -> new Item.Properties().fireResistant());
+    public static final Item STRADDLE_SADDLE = registerItem("straddle_saddle", Item::new, () -> new Item.Properties().fireResistant());
+    public static final Item COSMIC_COD = registerItem("cosmic_cod", Item::new, () -> foodWithChanceEffect(new FoodProperties.Builder().nutrition(6).saturationModifier(0.3F).build(), Holder.direct(AMEffectRegistry.ENDER_FLU), 12000, 0, 0.15F));
+    public static final Item SHED_SNAKE_SKIN = registerItem("shed_snake_skin", Item::new, Item.Properties::new);
+    public static final Item VINE_LASSO_INVENTORY = registerItem("vine_lasso_inventory", ItemInventoryOnly::new, Item.Properties::new);
+    public static final Item VINE_LASSO_HAND = registerItem("vine_lasso_hand", ItemInventoryOnly::new, Item.Properties::new);
+    public static final Item VINE_LASSO = registerItem("vine_lasso", ItemVineLasso::new, () -> new Item.Properties().stacksTo(1));
+    public static final Item ROCKY_SHELL = registerItem("rocky_shell", Item::new, Item.Properties::new);
+    public static final Item ROCKY_CHESTPLATE = registerItem("rocky_chestplate", props -> new ItemModArmor(ROCKY_ARMOR_MATERIAL, ArmorType.CHESTPLATE, props), Item.Properties::new);
+    public static final Item POTTED_FLUTTER = registerItem("potted_flutter", ItemFlutterPot::new, () -> new Item.Properties());
+    public static final Item TERRAPIN_BUCKET = registerItem("terrapin_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.TERRAPIN, Fluids.WATER, props), Item.Properties::new);
+    public static final Item COMB_JELLY_BUCKET = registerItem("comb_jelly_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.COMB_JELLY, Fluids.WATER, props), Item.Properties::new);
+    public static final Item RAINBOW_JELLY = registerItem("rainbow_jelly", ItemRainbowJelly::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(1).saturationModifier(0.2F).build()));
+    public static final Item COSMIC_COD_BUCKET = registerItem("cosmic_cod_bucket", ItemCosmicCodBucket::new, () -> new Item.Properties());
+    public static final Item MUNGAL_SPORES = registerItem("mungal_spores", Item::new, Item.Properties::new);
+    public static final Item BISON_FUR = registerItem("bison_fur", Item::new, Item.Properties::new);
+    public static final Item LOST_TENTACLE = registerItem("lost_tentacle", Item::new, Item.Properties::new);
+    public static final Item SQUID_GRAPPLE = registerItem("squid_grapple", ItemSquidGrapple::new, () -> new Item.Properties().durability(450));
+    public static final Item DEVILS_HOLE_PUPFISH_BUCKET = registerItem("devils_hole_pupfish_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.DEVILS_HOLE_PUPFISH, Fluids.WATER, props), Item.Properties::new);
+    public static final Item PUPFISH_LOCATOR = registerItem("pupfish_locator", props -> new ItemEcholocator(props, ItemEcholocator.EchoType.PUPFISH), () -> new Item.Properties().durability(200));
+    public static final Item SMALL_CATFISH_BUCKET = registerItem("small_catfish_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.CATFISH, Fluids.WATER, props), Item.Properties::new);
+    public static final Item MEDIUM_CATFISH_BUCKET = registerItem("medium_catfish_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.CATFISH, Fluids.WATER, props), Item.Properties::new);
+    public static final Item LARGE_CATFISH_BUCKET = registerItem("large_catfish_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.CATFISH, Fluids.WATER, props), Item.Properties::new);
+    public static final Item RAW_CATFISH = registerItem("raw_catfish", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(2).saturationModifier(0.3F).build()));
+    public static final Item COOKED_CATFISH = registerItem("cooked_catfish", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(5).saturationModifier(0.5F).build()));
+    public static final Item FLYING_FISH = registerItem("flying_fish", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(0.4F).build()));
+    public static final Item FLYING_FISH_BOOTS = registerItem("flying_fish_boots", props -> new ItemModArmor(FLYING_FISH_MATERIAL, ArmorType.BOOTS, props), Item.Properties::new);
+    public static final Item FLYING_FISH_BUCKET = registerItem("flying_fish_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.FLYING_FISH, Fluids.WATER, props), Item.Properties::new);
+    public static final Item FISH_BONES = registerItem("fish_bones", Item::new, Item.Properties::new);
+    public static final Item SKELEWAG_SWORD_INVENTORY = registerItem("skelewag_sword_inventory", ItemInventoryOnly::new, Item.Properties::new);
+    public static final Item SKELEWAG_SWORD_HAND = registerItem("skelewag_sword_hand", ItemInventoryOnly::new, Item.Properties::new);
+    public static final Item SKELEWAG_SWORD = registerItem("skelewag_sword", ItemSkelewagSword::new, () -> new Item.Properties().stacksTo(1).durability(430));
+    public static final Item NOVELTY_HAT = registerItem("novelty_hat", props -> new ItemModArmor(NOVELTY_HAT_MATERIAL, ArmorType.HELMET, props), Item.Properties::new);
+    public static final Item MUDSKIPPER_BUCKET = registerItem("mudskipper_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.MUDSKIPPER, Fluids.WATER, props), Item.Properties::new);
+    public static final Item FARSEER_ARM = registerItem("farseer_arm", Item::new, () -> new Item.Properties().rarity(Rarity.RARE));
+    public static final Item SKREECHER_SOUL = registerItem("skreecher_soul", Item::new, Item.Properties::new);
+    public static final Item GHOSTLY_PICKAXE = registerItem("ghostly_pickaxe", ItemGhostlyPickaxe::new, () -> new Item.Properties());
+    public static final Item ELASTIC_TENDON = registerItem("elastic_tendon", Item::new, Item.Properties::new);
+    public static final Item TENDON_WHIP = registerItem("tendon_whip", ItemTendonWhip::new, () -> new Item.Properties());
+    public static final Item UNSETTLING_KIMONO = registerItem("unsettling_kimono", props -> new ItemModArmor(KIMONO_MATERIAL, ArmorType.CHESTPLATE, props), Item.Properties::new);
+    public static final Item STINK_BOTTLE = registerItem("stink_bottle", props -> new ItemStinkBottle(AMBlockRegistry.SKUNK_SPRAY, props), () -> new Item.Properties().stacksTo(16));
 
-    /** Fabric: 1:1 replacement for ItemStack.canPerformAction(ToolActions.SHIELD_BLOCK). True for vanilla shield and mod shield-like items. */
-    public static boolean isShieldBlocking(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return false;
-        Item i = stack.getItem();
-        return i instanceof ShieldItem || i == SKELEWAG_SWORD;
-    }
+    public static final Item STINK_RAY_HAND = registerItem("stink_ray_hand", ItemInventoryOnly::new, Item.Properties::new);
 
-    public static final AMArmorMaterial ROADRUNNER_ARMOR_MATERIAL = new AMArmorMaterial("roadrunner", 18, new int[]{3, 3, 3, 3}, 20, SoundEvents.ARMOR_EQUIP_TURTLE, 0);
-    public static final AMArmorMaterial CROCODILE_ARMOR_MATERIAL = new AMArmorMaterial("crocodile", 22, new int[]{2, 5, 7, 3}, 25, SoundEvents.ARMOR_EQUIP_TURTLE, 1);
-    public static final AMArmorMaterial CENTIPEDE_ARMOR_MATERIAL = new AMArmorMaterial("centipede", 20, new int[]{6, 6, 6, 6}, 22, SoundEvents.ARMOR_EQUIP_TURTLE, 0.5F);
-    public static final AMArmorMaterial MOOSE_ARMOR_MATERIAL = new AMArmorMaterial("moose", 19, new int[]{3, 3, 3, 3}, 21, SoundEvents.ARMOR_EQUIP_TURTLE, 0.5F);
-    public static final AMArmorMaterial RACCOON_ARMOR_MATERIAL = new AMArmorMaterial("raccoon", 17, new int[]{3, 3, 3, 3}, 21, SoundEvents.ARMOR_EQUIP_LEATHER, 2.5F);
-    public static final AMArmorMaterial SOMBRERO_ARMOR_MATERIAL = new AMArmorMaterial("sombrero", 14, new int[]{2, 2, 2, 2}, 30, SoundEvents.ARMOR_EQUIP_LEATHER, 0.5F);
-    public static final AMArmorMaterial SPIKED_TURTLE_SHELL_ARMOR_MATERIAL = new AMArmorMaterial("spiked_turtle_shell", 35, new int[]{3, 3, 3, 3}, 30, SoundEvents.ARMOR_EQUIP_TURTLE, 1F, 0.2F);
-    public static final AMArmorMaterial FEDORA_ARMOR_MATERIAL = new AMArmorMaterial("fedora", 10, new int[]{2, 2, 2, 2}, 30, SoundEvents.ARMOR_EQUIP_LEATHER, 0.5F);
-    public static final AMArmorMaterial EMU_ARMOR_MATERIAL = new AMArmorMaterial("emu", 9, new int[]{4, 4, 4, 4}, 20, SoundEvents.ARMOR_EQUIP_LEATHER, 0.5F);
-    public static final AMArmorMaterial TARANTULA_HAWK_ELYTRA_MATERIAL = new AMArmorMaterial("tarantula_hawk_elytra", 9, new int[]{3, 3, 3, 3}, 5, SoundEvents.ARMOR_EQUIP_LEATHER, 0);
-    public static final AMArmorMaterial FROSTSTALKER_ARMOR_MATERIAL = new AMArmorMaterial("froststalker", 9, new int[]{3, 3, 3, 3}, 15, SoundEvents.ARMOR_EQUIP_LEATHER, 0.5F);
-    public static final AMArmorMaterial ROCKY_ARMOR_MATERIAL = new AMArmorMaterial("rocky_roller", 20, new int[]{2, 5, 7, 3}, 10, SoundEvents.ARMOR_EQUIP_TURTLE, 0.5F);
-    public static final AMArmorMaterial FLYING_FISH_MATERIAL = new AMArmorMaterial("flying_fish", 9, new int[]{1, 1, 1, 1}, 8, SoundEvents.ARMOR_EQUIP_LEATHER, 0F);
-    public static final AMArmorMaterial NOVELTY_HAT_MATERIAL = new AMArmorMaterial("novelty_hat", 10, new int[]{2, 2, 2, 2}, 30, SoundEvents.ARMOR_EQUIP_LEATHER, 0F);
-    public static final AMArmorMaterial KIMONO_MATERIAL = new AMArmorMaterial("kimono", 8, new int[]{3, 3, 3, 3}, 15, SoundEvents.ARMOR_EQUIP_LEATHER, 0F);
+    public static final Item STINK_RAY_INVENTORY = registerItem("stink_ray_inventory", ItemInventoryOnly::new, Item.Properties::new);
 
-    public static Item TAB_ICON;
-    public static Item ANIMAL_DICTIONARY;
-    public static Item BEAR_FUR;
-    public static Item BEAR_DUST;
-    public static Item ROADRUNNER_FEATHER;
-    public static Item ROADDRUNNER_BOOTS;
-    public static Item LAVA_BOTTLE;
-    public static Item BONE_SERPENT_TOOTH;
-    public static Item GAZELLE_HORN;
-    public static Item CROCODILE_SCUTE;
-    public static Item CROCODILE_CHESTPLATE;
-    public static Item MAGGOT;
-    public static Item BANANA;
-    public static Item ANCIENT_DART;
-    public static Item HALO;
-    public static Item BLOOD_SAC;
-    public static Item MOSQUITO_PROBOSCIS;
-    public static Item BLOOD_SPRAYER;
-    public static Item RATTLESNAKE_RATTLE;
-    public static Item CHORUS_ON_A_STICK;
-    public static Item SHARK_TOOTH;
-    public static Item SHARK_TOOTH_ARROW;
-    public static Item LOBSTER_TAIL;
-    public static Item COOKED_LOBSTER_TAIL;
-    public static Item LOBSTER_BUCKET;
-    public static Item KOMODO_SPIT;
-    public static Item KOMODO_SPIT_BOTTLE;
-    public static Item POISON_BOTTLE;
-    public static Item SOPA_DE_MACACO;
-    public static Item CENTIPEDE_LEG;
-    public static Item CENTIPEDE_LEGGINGS;
-    public static Item MOSQUITO_LARVA;
-    public static Item MOOSE_ANTLER;
-    public static Item MOOSE_HEADGEAR;
-    public static Item MOOSE_RIBS;
-    public static Item COOKED_MOOSE_RIBS;
-    public static Item MIMICREAM;
-    public static Item RACCOON_TAIL;
-    public static Item FRONTIER_CAP;
-    public static Item BLOBFISH;
-    public static Item BLOBFISH_BUCKET;
-    public static Item FISH_OIL;
-    public static Item MARACA;
-    public static Item SOMBRERO;
-    public static Item COCKROACH_WING_FRAGMENT;
-    public static Item COCKROACH_WING;
-    public static Item COCKROACH_OOTHECA;
-    public static Item ACACIA_BLOSSOM;
-    public static Item SOUL_HEART;
-    public static Item SPIKED_SCUTE;
-    public static Item SPIKED_TURTLE_SHELL;
-    public static Item SHRIMP_FRIED_RICE;
-    public static Item GUSTER_EYE;
-    public static Item POCKET_SAND;
-    public static Item WARPED_MUSCLE;
-    public static Item HEMOLYMPH_SAC;
-    public static Item HEMOLYMPH_BLASTER;
-    public static Item WARPED_MIXTURE;
-    public static Item STRADDLITE;
-    public static Item STRADPOLE_BUCKET;
-    public static Item STRADDLEBOARD;
-    public static Item EMU_EGG;
-    public static Item BOILED_EMU_EGG;
-    public static Item EMU_FEATHER;
-    public static Item EMU_LEGGINGS;
-    public static Item PLATYPUS_BUCKET;
-    public static Item FEDORA;
-    public static Item DROPBEAR_CLAW;
-    public static Item KANGAROO_MEAT;
-    public static Item COOKED_KANGAROO_MEAT;
-    public static Item KANGAROO_HIDE;
-    public static Item KANGAROO_BURGER;
-    public static Item AMBERGRIS;
-    public static Item CACHALOT_WHALE_TOOTH;
-    public static Item ECHOLOCATOR;
-    public static Item ENDOLOCATOR;
-    public static Item GONGYLIDIA;
-    public static Item LEAFCUTTER_ANT_PUPA;
-    public static Item ENDERIOPHAGE_ROCKET;
-    public static Item FALCONRY_GLOVE_INVENTORY;
-    public static Item FALCONRY_GLOVE_HAND;
-    public static Item FALCONRY_GLOVE;
-    public static Item FALCONRY_HOOD;
-    public static Item TARANTULA_HAWK_WING_FRAGMENT;
-    public static Item TARANTULA_HAWK_WING;
-    public static Item TARANTULA_HAWK_ELYTRA;
-    public static Item MYSTERIOUS_WORM;
-    public static Item VOID_WORM_MANDIBLE;
-    public static Item VOID_WORM_EYE;
-    public static Item DIMENSIONAL_CARVER;
-    public static Item SHATTERED_DIMENSIONAL_CARVER;
-    public static Item SERRATED_SHARK_TOOTH;
-    public static Item FRILLED_SHARK_BUCKET;
-    public static Item SHIELD_OF_THE_DEEP;
-    public static Item MIMIC_OCTOPUS_BUCKET;
-    public static Item FROSTSTALKER_HORN;
-    public static Item FROSTSTALKER_HELMET;
-    public static Item PIGSHOES;
-    public static Item STRADDLE_HELMET;
-    public static Item STRADDLE_SADDLE;
-    public static Item COSMIC_COD;
-    public static Item SHED_SNAKE_SKIN;
-    public static Item VINE_LASSO_INVENTORY;
-    public static Item VINE_LASSO_HAND;
-    public static Item VINE_LASSO;
-    public static Item ROCKY_SHELL;
-    public static Item ROCKY_CHESTPLATE;
-    public static Item POTTED_FLUTTER;
-    public static Item TERRAPIN_BUCKET;
-    public static Item COMB_JELLY_BUCKET;
-    public static Item RAINBOW_JELLY;
-    public static Item COSMIC_COD_BUCKET;
-    public static Item MUNGAL_SPORES;
-    public static Item BISON_FUR;
-    public static Item LOST_TENTACLE;
-    public static Item SQUID_GRAPPLE;
-    public static Item DEVILS_HOLE_PUPFISH_BUCKET;
-    public static Item PUPFISH_LOCATOR;
-    public static Item SMALL_CATFISH_BUCKET;
-    public static Item MEDIUM_CATFISH_BUCKET;
-    public static Item LARGE_CATFISH_BUCKET;
-    public static Item RAW_CATFISH;
-    public static Item COOKED_CATFISH;
-    public static Item FLYING_FISH;
-    public static Item FLYING_FISH_BOOTS;
-    public static Item FLYING_FISH_BUCKET;
-    public static Item FISH_BONES;
-    public static Item SKELEWAG_SWORD_INVENTORY;
-    public static Item SKELEWAG_SWORD_HAND;
-    public static Item SKELEWAG_SWORD;
-    public static Item NOVELTY_HAT;
-    public static Item MUDSKIPPER_BUCKET;
-    public static Item FARSEER_ARM;
-    public static Item SKREECHER_SOUL;
-    public static Item GHOSTLY_PICKAXE;
-    public static Item ELASTIC_TENDON;
-    public static Item TENDON_WHIP;
-    public static Item UNSETTLING_KIMONO;
-    public static Item STINK_BOTTLE;
-    public static Item STINK_RAY_HAND;
-    public static Item STINK_RAY_INVENTORY;
-    public static Item STINK_RAY_EMPTY_HAND;
-    public static Item STINK_RAY_EMPTY_INVENTORY;
-    public static Item STINK_RAY;
-    public static Item BANANA_SLUG_SLIME;
-    public static Item MOSQUITO_REPELLENT_STEW;
-    public static Item TRIOPS_BUCKET;
-    public static Item MUSIC_DISC_THIME;
-    public static Item MUSIC_DISC_DAZE;
+    public static final Item STINK_RAY_EMPTY_HAND = registerItem("stink_ray_empty_hand", ItemInventoryOnly::new, Item.Properties::new);
 
-    private static void initSpawnEggs() {
-        register("spawn_egg_grizzly_bear", new SpawnEggItem(AMEntityRegistry.GRIZZLY_BEAR, 0x693A2C, 0x976144, new Item.Properties()));
-        register("spawn_egg_roadrunner", new SpawnEggItem(AMEntityRegistry.ROADRUNNER, 0x3A2E26, 0xFBE9CE, new Item.Properties()));
-        register("spawn_egg_bone_serpent", new SpawnEggItem(AMEntityRegistry.BONE_SERPENT, 0xE5D9C4, 0xFF6038, new Item.Properties()));
-        register("spawn_egg_gazelle", new SpawnEggItem(AMEntityRegistry.GAZELLE, 0xDDA675, 0x2C2925, new Item.Properties()));
-        register("spawn_egg_crocodile", new SpawnEggItem(AMEntityRegistry.CROCODILE, 0x738940, 0xA6A15E, new Item.Properties()));
-        register("spawn_egg_fly", new SpawnEggItem(AMEntityRegistry.FLY, 0x464241, 0x892E2E, new Item.Properties()));
-        register("spawn_egg_hummingbird", new SpawnEggItem(AMEntityRegistry.HUMMINGBIRD, 0x325E7F, 0x44A75F, new Item.Properties()));
-        register("spawn_egg_orca", new SpawnEggItem(AMEntityRegistry.ORCA, 0x2C2C2C, 0xD6D8E4, new Item.Properties()));
-        register("spawn_egg_sunbird", new SpawnEggItem(AMEntityRegistry.SUNBIRD, 0xF6694F, 0xFFDDA0, new Item.Properties()));
-        register("spawn_egg_gorilla", new SpawnEggItem(AMEntityRegistry.GORILLA, 0x595B5D, 0x1C1C21, new Item.Properties()));
-        register("spawn_egg_crimson_mosquito", new SpawnEggItem(AMEntityRegistry.CRIMSON_MOSQUITO, 0x53403F, 0xC11A1A, new Item.Properties()));
-        register("spawn_egg_rattlesnake", new SpawnEggItem(AMEntityRegistry.RATTLESNAKE, 0xCEB994, 0x937A5B, new Item.Properties()));
-        register("spawn_egg_endergrade", new SpawnEggItem(AMEntityRegistry.ENDERGRADE, 0x7862B3, 0x81BDEB, new Item.Properties()));
-        register("spawn_egg_hammerhead_shark", new SpawnEggItem(AMEntityRegistry.HAMMERHEAD_SHARK, 0x8A92B5, 0xB9BED8, new Item.Properties()));
-        register("spawn_egg_lobster", new SpawnEggItem(AMEntityRegistry.LOBSTER, 0xC43123, 0xDD5F38, new Item.Properties()));
-        register("spawn_egg_komodo_dragon", new SpawnEggItem(AMEntityRegistry.KOMODO_DRAGON, 0x746C4F, 0x564231, new Item.Properties()));
-        register("spawn_egg_capuchin_monkey", new SpawnEggItem(AMEntityRegistry.CAPUCHIN_MONKEY, 0x25211F, 0xF1DAB3, new Item.Properties()));
-        register("spawn_egg_centipede", new SpawnEggItem(AMEntityRegistry.CENTIPEDE_HEAD, 0x342B2E, 0x733449, new Item.Properties()));
-        register("spawn_egg_warped_toad", new SpawnEggItem(AMEntityRegistry.WARPED_TOAD, 0x1F968E, 0xFEAC6D, new Item.Properties()));
-        register("spawn_egg_moose", new SpawnEggItem(AMEntityRegistry.MOOSE, 0x36302A, 0xD4B183, new Item.Properties()));
-        register("spawn_egg_mimicube", new SpawnEggItem(AMEntityRegistry.MIMICUBE, 0x8A80C1, 0x5E4F6F, new Item.Properties()));
-        register("spawn_egg_raccoon", new SpawnEggItem(AMEntityRegistry.RACCOON, 0x85827E, 0x2A2726, new Item.Properties()));
-        register("spawn_egg_blobfish", new SpawnEggItem(AMEntityRegistry.BLOBFISH, 0xDBC6BD, 0x9E7A7F, new Item.Properties()));
-        register("spawn_egg_seal", new SpawnEggItem(AMEntityRegistry.SEAL, 0x483C32, 0x66594C, new Item.Properties()));
-        register("spawn_egg_cockroach", new SpawnEggItem(AMEntityRegistry.COCKROACH, 0x0D0909, 0x42241E, new Item.Properties()));
-        register("spawn_egg_shoebill", new SpawnEggItem(AMEntityRegistry.SHOEBILL, 0x828282, 0xD5B48A, new Item.Properties()));
-        register("spawn_egg_elephant", new SpawnEggItem(AMEntityRegistry.ELEPHANT, 0x8D8987, 0xEDE5D1, new Item.Properties()));
-        register("spawn_egg_soul_vulture", new SpawnEggItem(AMEntityRegistry.SOUL_VULTURE, 0x23262D, 0x57F4FF, new Item.Properties()));
-        register("spawn_egg_snow_leopard", new SpawnEggItem(AMEntityRegistry.SNOW_LEOPARD, 0xACA293, 0x26201D, new Item.Properties()));
-        register("spawn_egg_spectre", new SpawnEggItem(AMEntityRegistry.SPECTRE, 0xC8D0EF, 0x8791EF, new Item.Properties()));
-        register("spawn_egg_crow", new SpawnEggItem(AMEntityRegistry.CROW, 0x0D111C, 0x1C2030, new Item.Properties()));
-        register("spawn_egg_alligator_snapping_turtle", new SpawnEggItem(AMEntityRegistry.ALLIGATOR_SNAPPING_TURTLE, 0x6C5C52, 0x456926, new Item.Properties()));
-        register("spawn_egg_mungus", new SpawnEggItem(AMEntityRegistry.MUNGUS, 0x836A8D, 0x45454C, new Item.Properties()));
-        register("spawn_egg_mantis_shrimp", new SpawnEggItem(AMEntityRegistry.MANTIS_SHRIMP, 0xDB4858, 0x15991E, new Item.Properties()));
-        register("spawn_egg_guster", new SpawnEggItem(AMEntityRegistry.GUSTER, 0xF8D49A, 0xFF720A, new Item.Properties()));
-        register("spawn_egg_warped_mosco", new SpawnEggItem(AMEntityRegistry.WARPED_MOSCO, 0x322F58, 0x5B5EF1, new Item.Properties()));
-        register("spawn_egg_straddler", new SpawnEggItem(AMEntityRegistry.STRADDLER, 0x5D5F6E, 0xCDA886, new Item.Properties()));
-        register("spawn_egg_stradpole", new SpawnEggItem(AMEntityRegistry.STRADPOLE, 0x5D5F6E, 0x576A8B, new Item.Properties()));
-        register("spawn_egg_emu", new SpawnEggItem(AMEntityRegistry.EMU, 0x665346, 0x3B3938, new Item.Properties()));
-        register("spawn_egg_platypus", new SpawnEggItem(AMEntityRegistry.PLATYPUS, 0x7D503E, 0x363B43, new Item.Properties()));
-        register("spawn_egg_dropbear", new SpawnEggItem(AMEntityRegistry.DROPBEAR, 0x8A2D35, 0x60A3A3, new Item.Properties()));
-        register("spawn_egg_tasmanian_devil", new SpawnEggItem(AMEntityRegistry.TASMANIAN_DEVIL, 0x252426, 0xA8B4BF, new Item.Properties()));
-        register("spawn_egg_kangaroo", new SpawnEggItem(AMEntityRegistry.KANGAROO, 0xCE9D65, 0xDEBDA0, new Item.Properties()));
-        register("spawn_egg_cachalot_whale", new SpawnEggItem(AMEntityRegistry.CACHALOT_WHALE, 0x949899, 0x5F666E, new Item.Properties()));
-        register("spawn_egg_leafcutter_ant", new SpawnEggItem(AMEntityRegistry.LEAFCUTTER_ANT, 0x964023, 0xA65930, new Item.Properties()));
-        register("spawn_egg_enderiophage", new SpawnEggItem(AMEntityRegistry.ENDERIOPHAGE, 0x872D83, 0xF6E2CD, new Item.Properties()));
-        register("spawn_egg_bald_eagle", new SpawnEggItem(AMEntityRegistry.BALD_EAGLE, 0x321F18, 0xF4F4F4, new Item.Properties()));
-        register("spawn_egg_tiger", new SpawnEggItem(AMEntityRegistry.TIGER, 0xC7612E, 0x2A3233, new Item.Properties()));
-        register("spawn_egg_tarantula_hawk", new SpawnEggItem(AMEntityRegistry.TARANTULA_HAWK, 0x234763, 0xE37B38, new Item.Properties()));
-        register("spawn_egg_void_worm", new SpawnEggItem(AMEntityRegistry.VOID_WORM, 0x0F1026, 0x1699AB, new Item.Properties()));
-        register("spawn_egg_frilled_shark", new SpawnEggItem(AMEntityRegistry.FRILLED_SHARK, 0x726B6B, 0x873D3D, new Item.Properties()));
-        register("spawn_egg_mimic_octopus", new SpawnEggItem(AMEntityRegistry.MIMIC_OCTOPUS, 0xFFEBDC, 0x1D1C1F, new Item.Properties()));
-        register("spawn_egg_seagull", new SpawnEggItem(AMEntityRegistry.SEAGULL, 0xC9D2DC, 0xFFD850, new Item.Properties()));
-        register("spawn_egg_froststalker", new SpawnEggItem(AMEntityRegistry.FROSTSTALKER, 0x788AC1, 0xA1C3FF, new Item.Properties()));
-        register("spawn_egg_tusklin", new SpawnEggItem(AMEntityRegistry.TUSKLIN, 0x735841, 0xE8E2D5, new Item.Properties()));
-        register("spawn_egg_laviathan", new SpawnEggItem(AMEntityRegistry.LAVIATHAN, 0xD68356, 0x3C3947, new Item.Properties()));
-        register("spawn_egg_cosmaw", new SpawnEggItem(AMEntityRegistry.COSMAW, 0x746DBD, 0xD6BFE3, new Item.Properties()));
-        register("spawn_egg_toucan", new SpawnEggItem(AMEntityRegistry.TOUCAN, 0xF58F33, 0x1E2133, new Item.Properties()));
-        register("spawn_egg_maned_wolf", new SpawnEggItem(AMEntityRegistry.MANED_WOLF, 0xBB7A47, 0x40271A, new Item.Properties()));
-        register("spawn_egg_anaconda", new SpawnEggItem(AMEntityRegistry.ANACONDA, 0x565C22, 0xD3763F, new Item.Properties()));
-        register("spawn_egg_anteater", new SpawnEggItem(AMEntityRegistry.ANTEATER, 0x4C3F3A, 0xCCBCB4, new Item.Properties()));
-        register("spawn_egg_rocky_roller", new SpawnEggItem(AMEntityRegistry.ROCKY_ROLLER, 0xB0856F, 0x999184, new Item.Properties()));
-        register("spawn_egg_flutter", new SpawnEggItem(AMEntityRegistry.FLUTTER, 0x70922D, 0xD07BE3, new Item.Properties()));
-        register("spawn_egg_gelada_monkey", new SpawnEggItem(AMEntityRegistry.GELADA_MONKEY, 0xB08C64, 0xFF4F53, new Item.Properties()));
-        register("spawn_egg_jerboa", new SpawnEggItem(AMEntityRegistry.JERBOA, 0xDEC58A, 0xDE9D90, new Item.Properties()));
-        register("spawn_egg_terrapin", new SpawnEggItem(AMEntityRegistry.TERRAPIN, 0x6E6E30, 0x929647, new Item.Properties()));
-        register("spawn_egg_comb_jelly", new SpawnEggItem(AMEntityRegistry.COMB_JELLY, 0xCFE9FE, 0x6EFF8B, new Item.Properties()));
-        register("spawn_egg_cosmic_cod", new SpawnEggItem(AMEntityRegistry.COSMIC_COD, 0x6985C7, 0xE2D1FF, new Item.Properties()));
-        register("spawn_egg_bunfungus", new SpawnEggItem(AMEntityRegistry.BUNFUNGUS, 0x6F6D91, 0xC92B29, new Item.Properties()));
-        register("spawn_egg_bison", new SpawnEggItem(AMEntityRegistry.BISON, 0x4C3A2E, 0x7A6546, new Item.Properties()));
-        register("spawn_egg_giant_squid", new SpawnEggItem(AMEntityRegistry.GIANT_SQUID, 0xAB4B4D, 0xD67D6B, new Item.Properties()));
-        register("spawn_egg_devils_hole_pupfish", new SpawnEggItem(AMEntityRegistry.DEVILS_HOLE_PUPFISH, 0x567BC4, 0x6C4475, new Item.Properties()));
-        register("spawn_egg_catfish", new SpawnEggItem(AMEntityRegistry.CATFISH, 0x807757, 0x8A7466, new Item.Properties()));
-        register("spawn_egg_flying_fish", new SpawnEggItem(AMEntityRegistry.FLYING_FISH, 0x7BBCED, 0x6881B3, new Item.Properties()));
-        register("spawn_egg_skelewag", new SpawnEggItem(AMEntityRegistry.SKELEWAG, 0xD9FCB1, 0x3A4F30, new Item.Properties()));
-        register("spawn_egg_rain_frog", new SpawnEggItem(AMEntityRegistry.RAIN_FROG, 0xC0B59B, 0x7B654F, new Item.Properties()));
-        register("spawn_egg_potoo", new SpawnEggItem(AMEntityRegistry.POTOO, 0x8C7753, 0xFFC042, new Item.Properties()));
-        register("spawn_egg_mudskipper", new SpawnEggItem(AMEntityRegistry.MUDSKIPPER, 0x60704A, 0x49806C, new Item.Properties()));
-        register("spawn_egg_rhinoceros", new SpawnEggItem(AMEntityRegistry.RHINOCEROS, 0xA19594, 0x827474, new Item.Properties()));
-        register("spawn_egg_sugar_glider", new SpawnEggItem(AMEntityRegistry.SUGAR_GLIDER, 0x868181, 0xEBEBE0, new Item.Properties()));
-        register("spawn_egg_farseer", new SpawnEggItem(AMEntityRegistry.FARSEER, 0x33374F, 0x91FF59, new Item.Properties()));
-        register("spawn_egg_skreecher", new SpawnEggItem(AMEntityRegistry.SKREECHER, 0x074857, 0x7FF8FF, new Item.Properties()));
-        register("spawn_egg_underminer", new SpawnEggItem(AMEntityRegistry.UNDERMINER, 0xD6E2FF, 0x6C84C4, new Item.Properties()));
-        register("spawn_egg_murmur", new SpawnEggItem(AMEntityRegistry.MURMUR, 0x804448, 0xB5AF9C, new Item.Properties()));
-        register("spawn_egg_skunk", new SpawnEggItem(AMEntityRegistry.SKUNK, 0x222D36, 0xE4E5F2, new Item.Properties()));
-        register("spawn_egg_banana_slug", new SpawnEggItem(AMEntityRegistry.BANANA_SLUG, 0xFFD045, 0xFFF173, new Item.Properties()));
-        register("spawn_egg_blue_jay", new SpawnEggItem(AMEntityRegistry.BLUE_JAY, 0x5FB7FE, 0x293B42, new Item.Properties()));
-        register("spawn_egg_caiman", new SpawnEggItem(AMEntityRegistry.CAIMAN, 0x5C5631, 0xBBC45C, new Item.Properties()));
-        register("spawn_egg_triops", new SpawnEggItem(AMEntityRegistry.TRIOPS, 0x967954, 0xCA7150, new Item.Properties()));
+    public static final Item STINK_RAY_EMPTY_INVENTORY = registerItem("stink_ray_empty_inventory", ItemInventoryOnly::new, Item.Properties::new);
+
+    public static final Item STINK_RAY = registerItem("stink_ray", ItemStinkRay::new, () -> new Item.Properties().durability(5));
+    public static final Item BANANA_SLUG_SLIME = registerItem("banana_slug_slime", Item::new, Item.Properties::new);
+    public static final Item MOSQUITO_REPELLENT_STEW = registerItem("mosquito_repellent_stew", Item::new, () -> foodWithChanceEffect(new FoodProperties.Builder().nutrition(4).alwaysEdible().saturationModifier(0.3F).build(), Holder.direct(AMEffectRegistry.MOSQUITO_REPELLENT), 24000, 0, 1.0F).stacksTo(1));
+    public static final Item TRIOPS_BUCKET = registerItem("triops_bucket", props -> new ItemModFishBucket(() -> AMEntityRegistry.TRIOPS, Fluids.WATER, props), Item.Properties::new);
+
+    public static final Item MUSIC_DISC_THIME = registerItem("music_disc_thime", Item::new, () -> new Item.Properties().stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(AMJukeboxSongs.THIME));
+    public static final Item MUSIC_DISC_DAZE = registerItem("music_disc_daze", Item::new, () -> new Item.Properties().stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(AMJukeboxSongs.DAZE));
+
+    public static void initSpawnEggs() {
+        registerItem("spawn_egg_grizzly_bear", props -> new AMSpawnEggItem(props, 0X693A2C, 0X976144), () -> new Item.Properties().spawnEgg(AMEntityRegistry.GRIZZLY_BEAR));
+        registerItem("spawn_egg_roadrunner", props -> new AMSpawnEggItem(props, 0X3A2E26, 0XFBE9CE), () -> new Item.Properties().spawnEgg(AMEntityRegistry.ROADRUNNER));
+        registerItem("spawn_egg_bone_serpent", props -> new AMSpawnEggItem(props, 0XE5D9C4, 0XFF6038), () -> new Item.Properties().spawnEgg(AMEntityRegistry.BONE_SERPENT));
+        registerItem("spawn_egg_gazelle", props -> new AMSpawnEggItem(props, 0XDDA675, 0X2C2925), () -> new Item.Properties().spawnEgg(AMEntityRegistry.GAZELLE));
+        registerItem("spawn_egg_crocodile", props -> new AMSpawnEggItem(props, 0X738940, 0XA6A15E), () -> new Item.Properties().spawnEgg(AMEntityRegistry.CROCODILE));
+        registerItem("spawn_egg_fly", props -> new AMSpawnEggItem(props, 0X464241, 0X892E2E), () -> new Item.Properties().spawnEgg(AMEntityRegistry.FLY));
+        registerItem("spawn_egg_hummingbird", props -> new AMSpawnEggItem(props, 0X325E7F, 0X44A75F), () -> new Item.Properties().spawnEgg(AMEntityRegistry.HUMMINGBIRD));
+        registerItem("spawn_egg_orca", props -> new AMSpawnEggItem(props, 0X2C2C2C, 0XD6D8E4), () -> new Item.Properties().spawnEgg(AMEntityRegistry.ORCA));
+        registerItem("spawn_egg_sunbird", props -> new AMSpawnEggItem(props, 0XF6694F, 0XFFDDA0), () -> new Item.Properties().spawnEgg(AMEntityRegistry.SUNBIRD));
+        registerItem("spawn_egg_gorilla", props -> new AMSpawnEggItem(props, 0X595B5D, 0X1C1C21), () -> new Item.Properties().spawnEgg(AMEntityRegistry.GORILLA));
+        registerItem("spawn_egg_crimson_mosquito", props -> new AMSpawnEggItem(props, 0X53403F, 0XC11A1A), () -> new Item.Properties().spawnEgg(AMEntityRegistry.CRIMSON_MOSQUITO));
+        registerItem("spawn_egg_rattlesnake", props -> new AMSpawnEggItem(props, 0XCEB994, 0X937A5B), () -> new Item.Properties().spawnEgg(AMEntityRegistry.RATTLESNAKE));
+        registerItem("spawn_egg_endergrade", props -> new AMSpawnEggItem(props, 0X7862B3, 0x81BDEB), () -> new Item.Properties().spawnEgg(AMEntityRegistry.ENDERGRADE));
+        registerItem("spawn_egg_hammerhead_shark", props -> new AMSpawnEggItem(props, 0X8A92B5, 0XB9BED8), () -> new Item.Properties().spawnEgg(AMEntityRegistry.HAMMERHEAD_SHARK));
+        registerItem("spawn_egg_lobster", props -> new AMSpawnEggItem(props, 0XC43123, 0XDD5F38), () -> new Item.Properties().spawnEgg(AMEntityRegistry.LOBSTER));
+        registerItem("spawn_egg_komodo_dragon", props -> new AMSpawnEggItem(props, 0X746C4F, 0X564231), () -> new Item.Properties().spawnEgg(AMEntityRegistry.KOMODO_DRAGON));
+        registerItem("spawn_egg_capuchin_monkey", props -> new AMSpawnEggItem(props, 0X25211F, 0XF1DAB3), () -> new Item.Properties().spawnEgg(AMEntityRegistry.CAPUCHIN_MONKEY));
+        registerItem("spawn_egg_centipede", props -> new AMSpawnEggItem(props, 0X342B2E, 0X733449), () -> new Item.Properties().spawnEgg(AMEntityRegistry.CENTIPEDE_HEAD));
+        registerItem("spawn_egg_warped_toad", props -> new AMSpawnEggItem(props, 0X1F968E, 0XFEAC6D), () -> new Item.Properties().spawnEgg(AMEntityRegistry.WARPED_TOAD));
+        registerItem("spawn_egg_moose", props -> new AMSpawnEggItem(props, 0X36302A, 0XD4B183), () -> new Item.Properties().spawnEgg(AMEntityRegistry.MOOSE));
+        registerItem("spawn_egg_mimicube", props -> new AMSpawnEggItem(props, 0X8A80C1, 0X5E4F6F), () -> new Item.Properties().spawnEgg(AMEntityRegistry.MIMICUBE));
+        registerItem("spawn_egg_raccoon", props -> new AMSpawnEggItem(props, 0X85827E, 0X2A2726), () -> new Item.Properties().spawnEgg(AMEntityRegistry.RACCOON));
+        registerItem("spawn_egg_blobfish", props -> new AMSpawnEggItem(props, 0XDBC6BD, 0X9E7A7F), () -> new Item.Properties().spawnEgg(AMEntityRegistry.BLOBFISH));
+        registerItem("spawn_egg_seal", props -> new AMSpawnEggItem(props, 0X483C32, 0X66594C), () -> new Item.Properties().spawnEgg(AMEntityRegistry.SEAL));
+        registerItem("spawn_egg_cockroach", props -> new AMSpawnEggItem(props, 0X0D0909, 0X42241E), () -> new Item.Properties().spawnEgg(AMEntityRegistry.COCKROACH));
+        registerItem("spawn_egg_shoebill", props -> new AMSpawnEggItem(props, 0X828282, 0XD5B48A), () -> new Item.Properties().spawnEgg(AMEntityRegistry.SHOEBILL));
+        registerItem("spawn_egg_elephant", props -> new AMSpawnEggItem(props, 0X8D8987, 0XEDE5D1), () -> new Item.Properties().spawnEgg(AMEntityRegistry.ELEPHANT));
+        registerItem("spawn_egg_soul_vulture", props -> new AMSpawnEggItem(props, 0X23262D, 0X57F4FF), () -> new Item.Properties().spawnEgg(AMEntityRegistry.SOUL_VULTURE));
+        registerItem("spawn_egg_snow_leopard", props -> new AMSpawnEggItem(props, 0XACA293, 0X26201D), () -> new Item.Properties().spawnEgg(AMEntityRegistry.SNOW_LEOPARD));
+        registerItem("spawn_egg_spectre", props -> new AMSpawnEggItem(props, 0XC8D0EF, 0X8791EF), () -> new Item.Properties().spawnEgg(AMEntityRegistry.SPECTRE));
+        registerItem("spawn_egg_crow", props -> new AMSpawnEggItem(props, 0X0D111C, 0X1C2030), () -> new Item.Properties().spawnEgg(AMEntityRegistry.CROW));
+        registerItem("spawn_egg_alligator_snapping_turtle", props -> new AMSpawnEggItem(props, 0X6C5C52, 0X456926), () -> new Item.Properties().spawnEgg(AMEntityRegistry.ALLIGATOR_SNAPPING_TURTLE));
+        registerItem("spawn_egg_mungus", props -> new AMSpawnEggItem(props, 0X836A8D, 0X45454C), () -> new Item.Properties().spawnEgg(AMEntityRegistry.MUNGUS));
+        registerItem("spawn_egg_mantis_shrimp", props -> new AMSpawnEggItem(props, 0XDB4858, 0X15991E), () -> new Item.Properties().spawnEgg(AMEntityRegistry.MANTIS_SHRIMP));
+        registerItem("spawn_egg_guster", props -> new AMSpawnEggItem(props, 0XF8D49A, 0XFF720A), () -> new Item.Properties().spawnEgg(AMEntityRegistry.GUSTER));
+        registerItem("spawn_egg_warped_mosco", props -> new AMSpawnEggItem(props, 0X322F58, 0X5B5EF1), () -> new Item.Properties().spawnEgg(AMEntityRegistry.WARPED_MOSCO));
+        registerItem("spawn_egg_straddler", props -> new AMSpawnEggItem(props, 0X5D5F6E, 0XCDA886), () -> new Item.Properties().spawnEgg(AMEntityRegistry.STRADDLER));
+        registerItem("spawn_egg_stradpole", props -> new AMSpawnEggItem(props, 0X5D5F6E, 0X576A8B), () -> new Item.Properties().spawnEgg(AMEntityRegistry.STRADPOLE));
+        registerItem("spawn_egg_emu", props -> new AMSpawnEggItem(props, 0X665346, 0X3B3938), () -> new Item.Properties().spawnEgg(AMEntityRegistry.EMU));
+        registerItem("spawn_egg_platypus", props -> new AMSpawnEggItem(props, 0X7D503E, 0X363B43), () -> new Item.Properties().spawnEgg(AMEntityRegistry.PLATYPUS));
+        registerItem("spawn_egg_dropbear", props -> new AMSpawnEggItem(props, 0X8A2D35, 0X60A3A3), () -> new Item.Properties().spawnEgg(AMEntityRegistry.DROPBEAR));
+        registerItem("spawn_egg_tasmanian_devil", props -> new AMSpawnEggItem(props, 0X252426, 0XA8B4BF), () -> new Item.Properties().spawnEgg(AMEntityRegistry.TASMANIAN_DEVIL));
+        registerItem("spawn_egg_kangaroo", props -> new AMSpawnEggItem(props, 0XCE9D65, 0XDEBDA0), () -> new Item.Properties().spawnEgg(AMEntityRegistry.KANGAROO));
+        registerItem("spawn_egg_cachalot_whale", props -> new AMSpawnEggItem(props, 0X949899, 0X5F666E), () -> new Item.Properties().spawnEgg(AMEntityRegistry.CACHALOT_WHALE));
+        registerItem("spawn_egg_leafcutter_ant", props -> new AMSpawnEggItem(props, 0X964023, 0XA65930), () -> new Item.Properties().spawnEgg(AMEntityRegistry.LEAFCUTTER_ANT));
+        registerItem("spawn_egg_enderiophage", props -> new AMSpawnEggItem(props, 0X872D83, 0XF6E2CD), () -> new Item.Properties().spawnEgg(AMEntityRegistry.ENDERIOPHAGE));
+        registerItem("spawn_egg_bald_eagle", props -> new AMSpawnEggItem(props, 0X321F18, 0XF4F4F4), () -> new Item.Properties().spawnEgg(AMEntityRegistry.BALD_EAGLE));
+        registerItem("spawn_egg_tiger", props -> new AMSpawnEggItem(props, 0XC7612E, 0X2A3233), () -> new Item.Properties().spawnEgg(AMEntityRegistry.TIGER));
+        registerItem("spawn_egg_tarantula_hawk", props -> new AMSpawnEggItem(props, 0X234763, 0XE37B38), () -> new Item.Properties().spawnEgg(AMEntityRegistry.TARANTULA_HAWK));
+        registerItem("spawn_egg_void_worm", props -> new AMSpawnEggItem(props, 0X0F1026, 0X1699AB), () -> new Item.Properties().spawnEgg(AMEntityRegistry.VOID_WORM));
+        registerItem("spawn_egg_frilled_shark", props -> new AMSpawnEggItem(props, 0X726B6B, 0X873D3D), () -> new Item.Properties().spawnEgg(AMEntityRegistry.FRILLED_SHARK));
+        registerItem("spawn_egg_mimic_octopus", props -> new AMSpawnEggItem(props, 0XFFEBDC, 0X1D1C1F), () -> new Item.Properties().spawnEgg(AMEntityRegistry.MIMIC_OCTOPUS));
+        registerItem("spawn_egg_seagull", props -> new AMSpawnEggItem(props, 0XC9D2DC, 0XFFD850), () -> new Item.Properties().spawnEgg(AMEntityRegistry.SEAGULL));
+        registerItem("spawn_egg_froststalker", props -> new AMSpawnEggItem(props, 0X788AC1, 0XA1C3FF), () -> new Item.Properties().spawnEgg(AMEntityRegistry.FROSTSTALKER));
+        registerItem("spawn_egg_tusklin", props -> new AMSpawnEggItem(props, 0X735841, 0XE8E2D5), () -> new Item.Properties().spawnEgg(AMEntityRegistry.TUSKLIN));
+        registerItem("spawn_egg_laviathan", props -> new AMSpawnEggItem(props, 0XD68356, 0X3C3947), () -> new Item.Properties().spawnEgg(AMEntityRegistry.LAVIATHAN));
+        registerItem("spawn_egg_cosmaw", props -> new AMSpawnEggItem(props, 0X746DBD, 0XD6BFE3), () -> new Item.Properties().spawnEgg(AMEntityRegistry.COSMAW));
+        registerItem("spawn_egg_toucan", props -> new AMSpawnEggItem(props, 0XF58F33, 0X1E2133), () -> new Item.Properties().spawnEgg(AMEntityRegistry.TOUCAN));
+        registerItem("spawn_egg_maned_wolf", props -> new AMSpawnEggItem(props, 0XBB7A47, 0X40271A), () -> new Item.Properties().spawnEgg(AMEntityRegistry.MANED_WOLF));
+        registerItem("spawn_egg_anaconda", props -> new AMSpawnEggItem(props, 0X565C22, 0XD3763F), () -> new Item.Properties().spawnEgg(AMEntityRegistry.ANACONDA));
+        registerItem("spawn_egg_anteater", props -> new AMSpawnEggItem(props, 0X4C3F3A, 0XCCBCB4), () -> new Item.Properties().spawnEgg(AMEntityRegistry.ANTEATER));
+        registerItem("spawn_egg_rocky_roller", props -> new AMSpawnEggItem(props, 0XB0856F, 0X999184), () -> new Item.Properties().spawnEgg(AMEntityRegistry.ROCKY_ROLLER));
+        registerItem("spawn_egg_flutter", props -> new AMSpawnEggItem(props, 0X70922D, 0XD07BE3), () -> new Item.Properties().spawnEgg(AMEntityRegistry.FLUTTER));
+        registerItem("spawn_egg_gelada_monkey", props -> new AMSpawnEggItem(props, 0XB08C64, 0XFF4F53), () -> new Item.Properties().spawnEgg(AMEntityRegistry.GELADA_MONKEY));
+        registerItem("spawn_egg_jerboa", props -> new AMSpawnEggItem(props, 0XDEC58A, 0XDE9D90), () -> new Item.Properties().spawnEgg(AMEntityRegistry.JERBOA));
+        registerItem("spawn_egg_terrapin", props -> new AMSpawnEggItem(props, 0X6E6E30, 0X929647), () -> new Item.Properties().spawnEgg(AMEntityRegistry.TERRAPIN));
+        registerItem("spawn_egg_comb_jelly", props -> new AMSpawnEggItem(props, 0XCFE9FE, 0X6EFF8B), () -> new Item.Properties().spawnEgg(AMEntityRegistry.COMB_JELLY));
+        registerItem("spawn_egg_cosmic_cod", props -> new AMSpawnEggItem(props, 0X6985C7, 0XE2D1FF), () -> new Item.Properties().spawnEgg(AMEntityRegistry.COSMIC_COD));
+        registerItem("spawn_egg_bunfungus", props -> new AMSpawnEggItem(props, 0X6F6D91, 0XC92B29), () -> new Item.Properties().spawnEgg(AMEntityRegistry.BUNFUNGUS));
+        registerItem("spawn_egg_bison", props -> new AMSpawnEggItem(props, 0X4C3A2E, 0X7A6546), () -> new Item.Properties().spawnEgg(AMEntityRegistry.BISON));
+        registerItem("spawn_egg_giant_squid", props -> new AMSpawnEggItem(props, 0XAB4B4D, 0XD67D6B), () -> new Item.Properties().spawnEgg(AMEntityRegistry.GIANT_SQUID));
+        registerItem("spawn_egg_devils_hole_pupfish", props -> new AMSpawnEggItem(props, 0X567BC4, 0X6C4475), () -> new Item.Properties().spawnEgg(AMEntityRegistry.DEVILS_HOLE_PUPFISH));
+        registerItem("spawn_egg_catfish", props -> new AMSpawnEggItem(props, 0X807757, 0X8A7466), () -> new Item.Properties().spawnEgg(AMEntityRegistry.CATFISH));
+        registerItem("spawn_egg_flying_fish", props -> new AMSpawnEggItem(props, 0X7BBCED, 0X6881B3), () -> new Item.Properties().spawnEgg(AMEntityRegistry.FLYING_FISH));
+        registerItem("spawn_egg_skelewag", props -> new AMSpawnEggItem(props, 0XD9FCB1, 0X3A4F30), () -> new Item.Properties().spawnEgg(AMEntityRegistry.SKELEWAG));
+        registerItem("spawn_egg_rain_frog", props -> new AMSpawnEggItem(props, 0XC0B59B, 0X7B654F), () -> new Item.Properties().spawnEgg(AMEntityRegistry.RAIN_FROG));
+        registerItem("spawn_egg_potoo", props -> new AMSpawnEggItem(props, 0X8C7753, 0XFFC042), () -> new Item.Properties().spawnEgg(AMEntityRegistry.POTOO));
+        registerItem("spawn_egg_mudskipper", props -> new AMSpawnEggItem(props, 0X60704A, 0X49806C), () -> new Item.Properties().spawnEgg(AMEntityRegistry.MUDSKIPPER));
+        registerItem("spawn_egg_rhinoceros", props -> new AMSpawnEggItem(props, 0XA19594, 0X827474), () -> new Item.Properties().spawnEgg(AMEntityRegistry.RHINOCEROS));
+        registerItem("spawn_egg_sugar_glider", props -> new AMSpawnEggItem(props, 0X868181, 0XEBEBE0), () -> new Item.Properties().spawnEgg(AMEntityRegistry.SUGAR_GLIDER));
+        registerItem("spawn_egg_farseer", props -> new AMSpawnEggItem(props, 0X33374F, 0X91FF59), () -> new Item.Properties().spawnEgg(AMEntityRegistry.FARSEER));
+        registerItem("spawn_egg_skreecher", props -> new AMSpawnEggItem(props, 0X074857, 0X7FF8FF), () -> new Item.Properties().spawnEgg(AMEntityRegistry.SKREECHER));
+        registerItem("spawn_egg_underminer", props -> new AMSpawnEggItem(props, 0XD6E2FF, 0X6C84C4), () -> new Item.Properties().spawnEgg(AMEntityRegistry.UNDERMINER));
+        registerItem("spawn_egg_murmur", props -> new AMSpawnEggItem(props, 0X804448, 0XB5AF9C), () -> new Item.Properties().spawnEgg(AMEntityRegistry.MURMUR));
+        registerItem("spawn_egg_skunk", props -> new AMSpawnEggItem(props, 0X222D36, 0XE4E5F2), () -> new Item.Properties().spawnEgg(AMEntityRegistry.SKUNK));
+        registerItem("spawn_egg_banana_slug", props -> new AMSpawnEggItem(props, 0XFFD045, 0XFFF173), () -> new Item.Properties().spawnEgg(AMEntityRegistry.BANANA_SLUG));
+        registerItem("spawn_egg_blue_jay", props -> new AMSpawnEggItem(props, 0X5FB7FE, 0X293B42), () -> new Item.Properties().spawnEgg(AMEntityRegistry.BLUE_JAY));
+        registerItem("spawn_egg_caiman", props -> new AMSpawnEggItem(props, 0X5C5631, 0XBBC45C), () -> new Item.Properties().spawnEgg(AMEntityRegistry.CAIMAN));
+        registerItem("spawn_egg_triops", props -> new AMSpawnEggItem(props, 0X967954, 0XCA7150), () -> new Item.Properties().spawnEgg(AMEntityRegistry.TRIOPS));
         registerPatternItem("bear");
         registerPatternItem("australia_0");
         registerPatternItem("australia_1");
         registerPatternItem("new_mexico");
         registerPatternItem("brazil");
-        for (int i = 0; i <= 10; i++) {
-            register("dimensional_carver_shard_" + i, new ItemInventoryOnly(new Item.Properties()));
+        for(int i = 0; i <= 10; i++){
+            registerItem("dimensional_carver_shard_" + i, ItemInventoryOnly::new, Item.Properties::new);
         }
     }
 
-    private static void registerArmorMaterials() {
-        AMArmorMaterial[] materials = new AMArmorMaterial[]{
-            ROADRUNNER_ARMOR_MATERIAL, CROCODILE_ARMOR_MATERIAL, CENTIPEDE_ARMOR_MATERIAL, MOOSE_ARMOR_MATERIAL,
-            RACCOON_ARMOR_MATERIAL, SOMBRERO_ARMOR_MATERIAL, SPIKED_TURTLE_SHELL_ARMOR_MATERIAL, FEDORA_ARMOR_MATERIAL,
-            EMU_ARMOR_MATERIAL, TARANTULA_HAWK_ELYTRA_MATERIAL, FROSTSTALKER_ARMOR_MATERIAL, ROCKY_ARMOR_MATERIAL,
-            FLYING_FISH_MATERIAL, NOVELTY_HAT_MATERIAL, KIMONO_MATERIAL
-        };
-        for (AMArmorMaterial mat : materials) {
-            ResourceLocation loc = id(mat.getName());
-            Registry.register(BuiltInRegistries.ARMOR_MATERIAL, loc, mat.getMaterial());
-            mat.setHolder(BuiltInRegistries.ARMOR_MATERIAL.getHolderOrThrow(ResourceKey.create(Registries.ARMOR_MATERIAL, loc)));
-        }
+    private static Identifier itemId(String path) {
+        return Identifier.fromNamespaceAndPath(AlexsMobs.MODID, path);
+    }
+
+    private static Item registerItem(String path, java.util.function.Function<Item.Properties, Item> factory, java.util.function.Supplier<Item.Properties> propsSupplier) {
+        Identifier id = itemId(path);
+        Item.Properties props = propsSupplier.get().setId(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ITEM, id));
+        return Registry.register(BuiltInRegistries.ITEM, id, factory.apply(props));
+    }
+
+    private static Item.Properties foodWithChanceEffect(FoodProperties food, Holder<net.minecraft.world.effect.MobEffect> effect, int duration, int amplifier, float probability) {
+        return new Item.Properties().food(food, Consumable.builder()
+                .onConsume(new ApplyStatusEffectsConsumeEffect(new MobEffectInstance(effect, duration, amplifier), probability))
+                .build());
     }
 
     private static void registerPatternItem(String name) {
-        TagKey<BannerPattern> bannerPatternTagKey = TagKey.create(Registries.BANNER_PATTERN, ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, "pattern_for_" + name));
-        register("banner_pattern_" + name, new BannerPatternItem(bannerPatternTagKey, (new Item.Properties()).stacksTo(1)));
+        registerItem("banner_pattern_" + name, Item::new, () -> (new Item.Properties()).stacksTo(1)
+                .component(DataComponents.PROVIDES_BANNER_PATTERNS, HolderSet.empty()));
     }
 
     public static void init() {
-        AMDataComponents.register();
-        registerArmorMaterials();
-        SWIM_SPEED_ATTRIBUTE = Registry.register(BuiltInRegistries.ATTRIBUTE, id("swim_speed"), new RangedAttribute("attribute.name.generic.alexsmobs.swim_speed", 1.0D, 0.0D, Double.MAX_VALUE).setSyncable(true));
-        BLOCK_REACH_ATTRIBUTE = Registry.register(BuiltInRegistries.ATTRIBUTE, id("block_reach"), new RangedAttribute("attribute.name.generic.alexsmobs.block_reach", 4.5D, 0.0D, 1024.0D).setSyncable(true));
-        ENTITY_REACH_ATTRIBUTE = Registry.register(BuiltInRegistries.ATTRIBUTE, id("entity_reach"), new RangedAttribute("attribute.name.generic.alexsmobs.entity_reach", 3.0D, 0.0D, 1024.0D).setSyncable(true));
+        // TODO 1.21: Armor materials are data-driven
 
-        TAB_ICON = register("tab_icon", new ItemTabIcon(new Item.Properties()));
-        ANIMAL_DICTIONARY = register("animal_dictionary", new ItemAnimalDictionary(new Item.Properties().stacksTo(1)));
-        BEAR_FUR = register("bear_fur", new Item(new Item.Properties()));
-        BEAR_DUST = register("bear_dust", new ItemBearDust(new Item.Properties().rarity(Rarity.EPIC)));
-        ROADRUNNER_FEATHER = register("roadrunner_feather", new Item(new Item.Properties()));
-        ROADDRUNNER_BOOTS = register("roadrunner_boots", new ItemModArmor(ROADRUNNER_ARMOR_MATERIAL, ArmorItem.Type.BOOTS));
-        LAVA_BOTTLE = register("lava_bottle", new Item(new Item.Properties().stacksTo(1)));
-        BONE_SERPENT_TOOTH = register("bone_serpent_tooth", new Item(new Item.Properties().fireResistant()));
-        GAZELLE_HORN = register("gazelle_horn", new Item(new Item.Properties().fireResistant()));
-        CROCODILE_SCUTE = register("crocodile_scute", new Item(new Item.Properties()));
-        CROCODILE_CHESTPLATE = register("crocodile_chestplate", new ItemModArmor(CROCODILE_ARMOR_MATERIAL, ArmorItem.Type.CHESTPLATE));
-        MAGGOT = register("maggot", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(1).saturationModifier(0.2F).build())));
-        BANANA = register("banana", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(4).saturationModifier(0.3F).build())));
-        ANCIENT_DART = register("ancient_dart", new Item(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
-        HALO = register("halo", new ItemInventoryOnly(new Item.Properties()));
-        BLOOD_SAC = register("blood_sac", new Item(new Item.Properties()));
-        MOSQUITO_PROBOSCIS = register("mosquito_proboscis", new Item(new Item.Properties()));
-        BLOOD_SPRAYER = register("blood_sprayer", new ItemBloodSprayer(new Item.Properties().durability(100)));
-        RATTLESNAKE_RATTLE = register("rattlesnake_rattle", new Item(new Item.Properties()));
-        CHORUS_ON_A_STICK = register("chorus_on_a_stick", new Item(new Item.Properties().stacksTo(1)));
-        SHARK_TOOTH = register("shark_tooth", new Item(new Item.Properties()));
-        SHARK_TOOTH_ARROW = register("shark_tooth_arrow", new ItemModArrow(new Item.Properties()));
-        LOBSTER_TAIL = register("lobster_tail", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(2).saturationModifier(0.4F).build())));
-        COOKED_LOBSTER_TAIL = register("cooked_lobster_tail", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(6).saturationModifier(0.65F).build())));
-        LOBSTER_BUCKET = register("lobster_bucket", new ItemModFishBucket(() -> AMEntityRegistry.LOBSTER, Fluids.WATER, new Item.Properties()));
-        KOMODO_SPIT = register("komodo_spit", new Item(new Item.Properties()));
-        KOMODO_SPIT_BOTTLE = register("komodo_spit_bottle", new Item(new Item.Properties()));
-        POISON_BOTTLE = register("poison_bottle", new Item(new Item.Properties()));
-        SOPA_DE_MACACO = register("sopa_de_macaco", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(5).saturationModifier(0.4F).usingConvertsTo(Items.BOWL).build()).stacksTo(1)));
-        CENTIPEDE_LEG = register("centipede_leg", new Item(new Item.Properties()));
-        CENTIPEDE_LEGGINGS = register("centipede_leggings", new ItemModArmor(CENTIPEDE_ARMOR_MATERIAL, ArmorItem.Type.LEGGINGS));
-        MOSQUITO_LARVA = register("mosquito_larva", new Item(new Item.Properties()));
-        MOOSE_ANTLER = register("moose_antler", new Item(new Item.Properties()));
-        MOOSE_HEADGEAR = register("moose_headgear", new ItemModArmor(MOOSE_ARMOR_MATERIAL, ArmorItem.Type.HELMET));
-        MOOSE_RIBS = register("moose_ribs", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(0.6F).build())));
-        COOKED_MOOSE_RIBS = register("cooked_moose_ribs", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(7).saturationModifier(0.85F).build())));
-        MIMICREAM = register("mimicream", new Item(new Item.Properties()));
-        RACCOON_TAIL = register("raccoon_tail", new Item(new Item.Properties()));
-        FRONTIER_CAP = register("frontier_cap", new ItemModArmor(RACCOON_ARMOR_MATERIAL, ArmorItem.Type.HELMET));
-        BLOBFISH = register("blobfish", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(0.4F).effect(new MobEffectInstance(MobEffects.POISON, 120, 0), 1.0F).build())));
-        BLOBFISH_BUCKET = register("blobfish_bucket", new ItemModFishBucket(() -> AMEntityRegistry.BLOBFISH, Fluids.WATER, new Item.Properties()));
-        FISH_OIL = register("fish_oil", new ItemFishOil(new Item.Properties().craftRemainder(Items.GLASS_BOTTLE).food(new FoodProperties.Builder().nutrition(0).saturationModifier(0.2F).build())));
-        MARACA = register("maraca", new ItemMaraca(new Item.Properties()));
-        SOMBRERO = register("sombrero", new ItemModArmor(SOMBRERO_ARMOR_MATERIAL, ArmorItem.Type.HELMET));
-        COCKROACH_WING_FRAGMENT = register("cockroach_wing_fragment", new Item(new Item.Properties()));
-        COCKROACH_WING = register("cockroach_wing", new Item(new Item.Properties()));
-        COCKROACH_OOTHECA = register("cockroach_ootheca", new ItemAnimalEgg(new Item.Properties()));
-        ACACIA_BLOSSOM = register("acacia_blossom", new Item(new Item.Properties()));
-        SOUL_HEART = register("soul_heart", new Item(new Item.Properties()));
-        SPIKED_SCUTE = register("spiked_scute", new Item(new Item.Properties()));
-        SPIKED_TURTLE_SHELL = register("spiked_turtle_shell", new ItemModArmor(SPIKED_TURTLE_SHELL_ARMOR_MATERIAL, ArmorItem.Type.HELMET));
-        SHRIMP_FRIED_RICE = register("shrimp_fried_rice", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(12).saturationModifier(1F).build())));
-        GUSTER_EYE = register("guster_eye", new Item(new Item.Properties()));
-        POCKET_SAND = register("pocket_sand", new ItemPocketSand(new Item.Properties().durability(220)));
-        WARPED_MUSCLE = register("warped_muscle", new Item(new Item.Properties()));
-        HEMOLYMPH_SAC = register("hemolymph_sac", new Item(new Item.Properties()));
-        HEMOLYMPH_BLASTER = register("hemolymph_blaster", new ItemHemolymphBlaster(new Item.Properties().durability(150)));
-        WARPED_MIXTURE = register("warped_mixture", new Item(new Item.Properties().rarity(Rarity.RARE).stacksTo(1).craftRemainder(Items.GLASS_BOTTLE)));
-        STRADDLITE = register("straddlite", new Item(new Item.Properties().fireResistant()));
-        STRADPOLE_BUCKET = register("stradpole_bucket", new ItemModFishBucket(() -> AMEntityRegistry.STRADPOLE, Fluids.LAVA, new Item.Properties()));
-        STRADDLEBOARD = register("straddleboard", new ItemStraddleboard(new Item.Properties().fireResistant().durability(220)));
-        EMU_EGG = register("emu_egg", new ItemAnimalEgg(new Item.Properties().stacksTo(8)));
-        BOILED_EMU_EGG = register("boiled_emu_egg", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(4).saturationModifier(1F).build())));
-        EMU_FEATHER = register("emu_feather", new Item(new Item.Properties().fireResistant()));
-        EMU_LEGGINGS = register("emu_leggings", new ItemModArmor(EMU_ARMOR_MATERIAL, ArmorItem.Type.LEGGINGS));
-        PLATYPUS_BUCKET = register("platypus_bucket", new ItemModFishBucket(() -> AMEntityRegistry.PLATYPUS, Fluids.WATER, new Item.Properties()));
-        FEDORA = register("fedora", new ItemModArmor(FEDORA_ARMOR_MATERIAL, ArmorItem.Type.HELMET));
-        DROPBEAR_CLAW = register("dropbear_claw", new Item(new Item.Properties()));
-        KANGAROO_MEAT = register("kangaroo_meat", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(4).saturationModifier(0.6F).build())));
-        COOKED_KANGAROO_MEAT = register("cooked_kangaroo_meat", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(8).saturationModifier(0.85F).build())));
-        KANGAROO_HIDE = register("kangaroo_hide", new Item(new Item.Properties()));
-        KANGAROO_BURGER = register("kangaroo_burger", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(12).saturationModifier(1F).build())));
-        AMBERGRIS = register("ambergris", new ItemFuel(new Item.Properties(), 12800));
-        CACHALOT_WHALE_TOOTH = register("cachalot_whale_tooth", new Item(new Item.Properties()));
-        ECHOLOCATOR = register("echolocator", new ItemEcholocator(new Item.Properties().durability(100), ItemEcholocator.EchoType.ECHOLOCATION));
-        ENDOLOCATOR = register("endolocator", new ItemEcholocator(new Item.Properties().durability(25), ItemEcholocator.EchoType.ENDER));
-        GONGYLIDIA = register("gongylidia", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(1.2F).build())));
-        LEAFCUTTER_ANT_PUPA = register("leafcutter_ant_pupa", new ItemLeafcutterPupa(new Item.Properties()));
-        ENDERIOPHAGE_ROCKET = register("enderiophage_rocket", new ItemEnderiophageRocket(new Item.Properties()));
-        FALCONRY_GLOVE_INVENTORY = register("falconry_glove_inventory", new ItemInventoryOnly(new Item.Properties()));
-        FALCONRY_GLOVE_HAND = register("falconry_glove_hand", new ItemInventoryOnly(new Item.Properties()));
-        FALCONRY_GLOVE = register("falconry_glove", new ItemFalconryGlove(new Item.Properties().stacksTo(1)));
-        FALCONRY_HOOD = register("falconry_hood", new Item(new Item.Properties()));
-        TARANTULA_HAWK_WING_FRAGMENT = register("tarantula_hawk_wing_fragment", new Item(new Item.Properties()));
-        TARANTULA_HAWK_WING = register("tarantula_hawk_wing", new Item(new Item.Properties()));
-        TARANTULA_HAWK_ELYTRA = register("tarantula_hawk_elytra", new ItemTarantulaHawkElytra(new Item.Properties().durability(800).rarity(Rarity.UNCOMMON), TARANTULA_HAWK_ELYTRA_MATERIAL));
-        MYSTERIOUS_WORM = register("mysterious_worm", new ItemMysteriousWorm(new Item.Properties().rarity(Rarity.RARE)));
-        VOID_WORM_MANDIBLE = register("void_worm_mandible", new Item(new Item.Properties()));
-        VOID_WORM_EYE = register("void_worm_eye", new Item(new Item.Properties().rarity(Rarity.RARE)));
-        DIMENSIONAL_CARVER = register("dimensional_carver", new ItemDimensionalCarver(new Item.Properties().durability(20).rarity(Rarity.EPIC)));
-        SHATTERED_DIMENSIONAL_CARVER = register("shattered_dimensional_carver", new ItemShatteredDimensionalCarver(new Item.Properties().durability(4).rarity(Rarity.RARE)));
-        SERRATED_SHARK_TOOTH = register("serrated_shark_tooth", new Item(new Item.Properties()));
-        FRILLED_SHARK_BUCKET = register("frilled_shark_bucket", new ItemModFishBucket(() -> AMEntityRegistry.FRILLED_SHARK, Fluids.WATER, new Item.Properties()));
-        SHIELD_OF_THE_DEEP = register("shield_of_the_deep", new ItemShieldOfTheDeep(new Item.Properties().durability(400).rarity(Rarity.UNCOMMON)));
-        MIMIC_OCTOPUS_BUCKET = register("mimic_octopus_bucket", new ItemModFishBucket(() -> AMEntityRegistry.MIMIC_OCTOPUS, Fluids.WATER, new Item.Properties()));
-        FROSTSTALKER_HORN = register("froststalker_horn", new Item(new Item.Properties()));
-        FROSTSTALKER_HELMET = register("froststalker_helmet", new ItemModArmor(FROSTSTALKER_ARMOR_MATERIAL, ArmorItem.Type.HELMET));
-        PIGSHOES = register("pigshoes", new ItemPigshoes(new Item.Properties().stacksTo(1)));
-        STRADDLE_HELMET = register("straddle_helmet", new Item(new Item.Properties().fireResistant()));
-        STRADDLE_SADDLE = register("straddle_saddle", new Item(new Item.Properties().fireResistant()));
-        COSMIC_COD = register("cosmic_cod", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(6).saturationModifier(0.3F).effect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ENDER_FLU), 12000), 0.15F).build())));
-        SHED_SNAKE_SKIN = register("shed_snake_skin", new Item(new Item.Properties()));
-        VINE_LASSO_INVENTORY = register("vine_lasso_inventory", new ItemInventoryOnly(new Item.Properties()));
-        VINE_LASSO_HAND = register("vine_lasso_hand", new ItemInventoryOnly(new Item.Properties()));
-        VINE_LASSO = register("vine_lasso", new ItemVineLasso(new Item.Properties().stacksTo(1)));
-        ROCKY_SHELL = register("rocky_shell", new Item(new Item.Properties()));
-        ROCKY_CHESTPLATE = register("rocky_chestplate", new ItemModArmor(ROCKY_ARMOR_MATERIAL, ArmorItem.Type.CHESTPLATE));
-        POTTED_FLUTTER = register("potted_flutter", new ItemFlutterPot(new Item.Properties()));
-        TERRAPIN_BUCKET = register("terrapin_bucket", new ItemModFishBucket(() -> AMEntityRegistry.TERRAPIN, Fluids.WATER, new Item.Properties()));
-        COMB_JELLY_BUCKET = register("comb_jelly_bucket", new ItemModFishBucket(() -> AMEntityRegistry.COMB_JELLY, Fluids.WATER, new Item.Properties()));
-        RAINBOW_JELLY = register("rainbow_jelly", new ItemRainbowJelly(new Item.Properties().food(new FoodProperties.Builder().nutrition(1).saturationModifier(0.2F).build())));
-        COSMIC_COD_BUCKET = register("cosmic_cod_bucket", new ItemCosmicCodBucket(new Item.Properties()));
-        MUNGAL_SPORES = register("mungal_spores", new Item(new Item.Properties()));
-        BISON_FUR = register("bison_fur", new Item(new Item.Properties()));
-        LOST_TENTACLE = register("lost_tentacle", new Item(new Item.Properties()));
-        SQUID_GRAPPLE = register("squid_grapple", new ItemSquidGrapple(new Item.Properties().durability(450)));
-        DEVILS_HOLE_PUPFISH_BUCKET = register("devils_hole_pupfish_bucket", new ItemModFishBucket(() -> AMEntityRegistry.DEVILS_HOLE_PUPFISH, Fluids.WATER, new Item.Properties()));
-        PUPFISH_LOCATOR = register("pupfish_locator", new ItemEcholocator(new Item.Properties().durability(200), ItemEcholocator.EchoType.PUPFISH));
-        SMALL_CATFISH_BUCKET = register("small_catfish_bucket", new ItemModFishBucket(() -> AMEntityRegistry.CATFISH, Fluids.WATER, new Item.Properties()));
-        MEDIUM_CATFISH_BUCKET = register("medium_catfish_bucket", new ItemModFishBucket(() -> AMEntityRegistry.CATFISH, Fluids.WATER, new Item.Properties()));
-        LARGE_CATFISH_BUCKET = register("large_catfish_bucket", new ItemModFishBucket(() -> AMEntityRegistry.CATFISH, Fluids.WATER, new Item.Properties()));
-        RAW_CATFISH = register("raw_catfish", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(2).saturationModifier(0.3F).build())));
-        COOKED_CATFISH = register("cooked_catfish", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(5).saturationModifier(0.5F).build())));
-        FLYING_FISH = register("flying_fish", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(0.4F).build())));
-        FLYING_FISH_BOOTS = register("flying_fish_boots", new ItemModArmor(FLYING_FISH_MATERIAL, ArmorItem.Type.BOOTS));
-        FLYING_FISH_BUCKET = register("flying_fish_bucket", new ItemModFishBucket(() -> AMEntityRegistry.FLYING_FISH, Fluids.WATER, new Item.Properties()));
-        FISH_BONES = register("fish_bones", new Item(new Item.Properties()));
-        SKELEWAG_SWORD_INVENTORY = register("skelewag_sword_inventory", new ItemInventoryOnly(new Item.Properties()));
-        SKELEWAG_SWORD_HAND = register("skelewag_sword_hand", new ItemInventoryOnly(new Item.Properties()));
-        SKELEWAG_SWORD = register("skelewag_sword", new ItemSkelewagSword(new Item.Properties().stacksTo(1).durability(430)));
-        NOVELTY_HAT = register("novelty_hat", new ItemModArmor(NOVELTY_HAT_MATERIAL, ArmorItem.Type.HELMET));
-        MUDSKIPPER_BUCKET = register("mudskipper_bucket", new ItemModFishBucket(() -> AMEntityRegistry.MUDSKIPPER, Fluids.WATER, new Item.Properties()));
-        FARSEER_ARM = register("farseer_arm", new Item(new Item.Properties().rarity(Rarity.RARE)));
-        SKREECHER_SOUL = register("skreecher_soul", new Item(new Item.Properties()));
-        GHOSTLY_PICKAXE = register("ghostly_pickaxe", new ItemGhostlyPickaxe(new Item.Properties()));
-        ELASTIC_TENDON = register("elastic_tendon", new Item(new Item.Properties()));
-        TENDON_WHIP = register("tendon_whip", new ItemTendonWhip(new Item.Properties()));
-        UNSETTLING_KIMONO = register("unsettling_kimono", new ItemModArmor(KIMONO_MATERIAL, ArmorItem.Type.CHESTPLATE));
-        STINK_BOTTLE = register("stink_bottle", new ItemStinkBottle(AMBlockRegistry.SKUNK_SPRAY, new Item.Properties().stacksTo(16)));
-        STINK_RAY_HAND = register("stink_ray_hand", new ItemInventoryOnly(new Item.Properties()));
-        STINK_RAY_INVENTORY = register("stink_ray_inventory", new ItemInventoryOnly(new Item.Properties()));
-        STINK_RAY_EMPTY_HAND = register("stink_ray_empty_hand", new ItemInventoryOnly(new Item.Properties()));
-        STINK_RAY_EMPTY_INVENTORY = register("stink_ray_empty_inventory", new ItemInventoryOnly(new Item.Properties()));
-        STINK_RAY = register("stink_ray", new ItemStinkRay(new Item.Properties().durability(5)));
-        BANANA_SLUG_SLIME = register("banana_slug_slime", new Item(new Item.Properties()));
-        MOSQUITO_REPELLENT_STEW = register("mosquito_repellent_stew", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(4).alwaysEdible().saturationModifier(0.3F).effect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.MOSQUITO_REPELLENT), 24000), 1.0F).usingConvertsTo(Items.BOWL).build()).stacksTo(1)));
-        TRIOPS_BUCKET = register("triops_bucket", new ItemModFishBucket(() -> AMEntityRegistry.TRIOPS, Fluids.WATER, new Item.Properties()));
-        MUSIC_DISC_THIME = register("music_disc_thime", new Item(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
-        MUSIC_DISC_DAZE = register("music_disc_daze", new Item(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
+        // // TODO 1.21: Armor materials are data-driven
+ // CROCODILE_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(CROCODILE_SCUTE.get()));
+        // TODO 1.21: Armor materials are data-driven
 
-        initSpawnEggs();
+        // // TODO 1.21: Armor materials are data-driven
+ // ROADRUNNER_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(ROADRUNNER_FEATHER.get()));
+        // TODO 1.21: Armor materials are data-driven
 
-        CROCODILE_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(CROCODILE_SCUTE));
-        ROADRUNNER_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(ROADRUNNER_FEATHER));
-        CENTIPEDE_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(CENTIPEDE_LEG));
-        MOOSE_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(MOOSE_ANTLER));
-        RACCOON_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(RACCOON_TAIL));
-        SOMBRERO_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(Items.HAY_BLOCK));
-        SPIKED_TURTLE_SHELL_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(SPIKED_SCUTE));
-        FEDORA_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(Items.LEATHER));
-        EMU_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(EMU_FEATHER));
-        ROCKY_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(ROCKY_SHELL));
-        FLYING_FISH_MATERIAL.setRepairMaterial(Ingredient.of(FLYING_FISH));
-        NOVELTY_HAT_MATERIAL.setRepairMaterial(Ingredient.of(Items.BONE));
-        KIMONO_MATERIAL.setRepairMaterial(Ingredient.of(ItemTags.WOOL));
-        LecternBooks.BOOKS.put(BuiltInRegistries.ITEM.getKey(ANIMAL_DICTIONARY), new LecternBooks.BookData(0x606B26, 0xFDF8ED));
-        EntitySugarGlider.initLeafToRares();
+        // // TODO 1.21: Armor materials are data-driven
+ // CENTIPEDE_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(CENTIPEDE_LEG.get()));
+        // TODO 1.21: Armor materials are data-driven
+
+        // // TODO 1.21: Armor materials are data-driven
+ // MOOSE_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(MOOSE_ANTLER.get()));
+        // TODO 1.21: Armor materials are data-driven
+
+        // // TODO 1.21: Armor materials are data-driven
+ // RACCOON_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(RACCOON_TAIL.get()));
+        // TODO 1.21: Armor materials are data-driven
+
+        // // TODO 1.21: Armor materials are data-driven
+ // SOMBRERO_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(Items.HAY_BLOCK));
+        // TODO 1.21: Armor materials are data-driven
+
+        // // TODO 1.21: Armor materials are data-driven
+ // SPIKED_TURTLE_SHELL_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(SPIKED_SCUTE.get()));
+        // TODO 1.21: Armor materials are data-driven
+
+        // // TODO 1.21: Armor materials are data-driven
+ // FEDORA_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(Items.LEATHER));
+        // TODO 1.21: Armor materials are data-driven
+
+        // // TODO 1.21: Armor materials are data-driven
+ // EMU_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(EMU_FEATHER.get()));
+        // TODO 1.21: Armor materials are data-driven
+
+        // // TODO 1.21: Armor materials are data-driven
+ // ROCKY_ARMOR_MATERIAL.setRepairMaterial(Ingredient.of(ROCKY_SHELL.get()));
+        // TODO 1.21: Armor materials are data-driven
+
+        // FLYING_FISH_MATERIAL.setRepairMaterial(Ingredient.of(FLYING_FISH.get()));
+        // TODO 1.21: Armor materials are data-driven
+
+        // NOVELTY_HAT_MATERIAL.setRepairMaterial(Ingredient.of(Items.BONE));
+        // TODO 1.21: Armor materials are data-driven
+
+        // KIMONO_MATERIAL.setRepairMaterial(Ingredient.of(ItemTags.WOOL));
+        LecternBooks.BOOKS.put(BuiltInRegistries.ITEM.getKey(ANIMAL_DICTIONARY), new LecternBooks.BookData(0X606B26, 0XFDF8ED));
     }
 
     public static void initDispenser(){
-        DispenserBlock.registerBehavior(SHARK_TOOTH_ARROW, createProjectileDispenseBehavior((level, pos, stack) -> {
-            EntitySharkToothArrow entityarrow = new EntitySharkToothArrow(AMEntityRegistry.SHARK_TOOTH_ARROW, pos.x, pos.y, pos.z, level);
-            entityarrow.pickup = EntitySharkToothArrow.Pickup.ALLOWED;
-            return entityarrow;
-        }));
-        DispenserBlock.registerBehavior(ANCIENT_DART, createProjectileDispenseBehavior((level, pos, stack) -> {
-            EntityTossedItem tossedItem = new EntityTossedItem(level, pos.x, pos.y, pos.z);
-            tossedItem.setDart(true);
-            return tossedItem;
-        }));
-        DispenserBlock.registerBehavior(COCKROACH_OOTHECA, createProjectileDispenseBehavior((level, pos, stack) ->
-            new EntityCockroachEgg(level, pos.x, pos.y, pos.z)));
-        DispenserBlock.registerBehavior(EMU_EGG, createProjectileDispenseBehavior((level, pos, stack) ->
-            new EntityEmuEgg(level, pos.x, pos.y, pos.z)));
-        DispenserBlock.registerBehavior(ENDERIOPHAGE_ROCKET, createProjectileDispenseBehavior((level, pos, stack) ->
-            new EntityEnderiophageRocket(level, pos.x, pos.y, pos.z, stack)));
+        DispenserBlock.registerBehavior(SHARK_TOOTH_ARROW, new net.minecraft.core.dispenser.DefaultDispenseItemBehavior() /* TODO 1.21: ProjectileDispenseBehavior changed */ {
+            /**
+             * Return the projectile entity spawned by this dispense behavior.
+             */
+            protected Projectile getProjectile(Level worldIn, Position position, ItemStack stackIn) {
+                EntitySharkToothArrow entityarrow = new EntitySharkToothArrow(AMEntityRegistry.SHARK_TOOTH_ARROW, position.x(), position.y(), position.z(), worldIn, stackIn, ItemStack.EMPTY);
+                entityarrow.pickup = AbstractArrow.Pickup.ALLOWED;
+                return entityarrow;
+            }
+        });
+        DispenserBlock.registerBehavior(ANCIENT_DART, new net.minecraft.core.dispenser.DefaultDispenseItemBehavior() /* TODO 1.21: ProjectileDispenseBehavior changed */ {
+            protected Projectile getProjectile(Level worldIn, Position position, ItemStack stackIn) {
+                EntityTossedItem tossedItem = new EntityTossedItem(worldIn, position.x(), position.y(), position.z());
+                tossedItem.setDart(true);
+                return tossedItem;
+            }
+        });
+        DispenserBlock.registerBehavior(COCKROACH_OOTHECA, new net.minecraft.core.dispenser.DefaultDispenseItemBehavior() /* TODO 1.21: ProjectileDispenseBehavior changed */ {
+            protected Projectile getProjectile(Level worldIn, Position position, ItemStack stackIn) {
+                EntityCockroachEgg entityarrow = new EntityCockroachEgg(worldIn, position.x(), position.y(), position.z());
+                return entityarrow;
+            }
+        });
+        DispenserBlock.registerBehavior(EMU_EGG, new net.minecraft.core.dispenser.DefaultDispenseItemBehavior() /* TODO 1.21: ProjectileDispenseBehavior changed */ {
+            protected Projectile getProjectile(Level worldIn, Position position, ItemStack stackIn) {
+                EntityEmuEgg entityarrow = new EntityEmuEgg(worldIn, position.x(), position.y(), position.z());
+                return entityarrow;
+            }
+        });
+        DispenserBlock.registerBehavior(ENDERIOPHAGE_ROCKET, new net.minecraft.core.dispenser.DefaultDispenseItemBehavior() /* TODO 1.21: ProjectileDispenseBehavior changed */ {
+            protected Projectile getProjectile(Level worldIn, Position position, ItemStack stackIn) {
+                EntityEnderiophageRocket entityarrow = new EntityEnderiophageRocket(worldIn, position.x(), position.y(), position.z(), stackIn);
+                return entityarrow;
+            }
+        });
         DispenseItemBehavior bucketDispenseBehavior = new DefaultDispenseItemBehavior() {
             private final DefaultDispenseItemBehavior defaultDispenseItemBehavior = new DefaultDispenseItemBehavior();
 
             public ItemStack execute(BlockSource blockSource, ItemStack stack) {
-                DispensibleContainerItem dispensiblecontaineritem = (DispensibleContainerItem)stack.getItem();
+                Item item = stack.getItem();
+                if (!(item instanceof BucketItem bucketItem)) {
+                    return this.defaultDispenseItemBehavior.dispense(blockSource, stack);
+                }
+                DispensibleContainerItem dispensiblecontaineritem = (DispensibleContainerItem) item;
                 BlockPos blockpos = blockSource.pos().relative(blockSource.state().getValue(DispenserBlock.FACING));
                 Level level = blockSource.level();
-                if (dispensiblecontaineritem.emptyContents((Player)null, level, blockpos, (BlockHitResult)null)) {
-                    dispensiblecontaineritem.checkExtraContent((Player)null, level, stack, blockpos);
+                net.minecraft.world.phys.BlockHitResult hitResult = new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(blockpos), blockSource.state().getValue(DispenserBlock.FACING), blockpos, false);
+                if (bucketItem.emptyContents(null, level, blockpos, hitResult)) {
+                    dispensiblecontaineritem.checkExtraContent(null, level, stack, blockpos);
                     return new ItemStack(Items.BUCKET);
                 } else {
                     return this.defaultDispenseItemBehavior.dispense(blockSource, stack);
@@ -569,31 +487,6 @@ public class AMItemRegistry {
         ComposterBlock.COMPOSTABLES.put(AMBlockRegistry.BANANA_PEEL.asItem(), 1F);
         ComposterBlock.COMPOSTABLES.put(ACACIA_BLOSSOM, 0.65F);
         ComposterBlock.COMPOSTABLES.put(GONGYLIDIA, 0.9F);
-    }
-
-    /** Creates a dispense behavior that spawns a custom projectile (1.21.1: AbstractProjectileDispenseBehavior removed). */
-    private static DispenseItemBehavior createProjectileDispenseBehavior(ProjectileFactory factory) {
-        return new DefaultDispenseItemBehavior() {
-            @Override
-            public ItemStack execute(BlockSource source, ItemStack stack) {
-                Level level = source.level();
-                Direction facing = source.state().getValue(DispenserBlock.FACING);
-                BlockPos front = source.pos().relative(facing);
-                Vec3 pos = Vec3.atCenterOf(front);
-                Projectile projectile = factory.create(level, pos, stack);
-                projectile.setPos(pos.x, pos.y, pos.z);
-                Vec3 dir = Vec3.atLowerCornerOf(facing.getNormal());
-                projectile.shoot(dir.x, dir.y, dir.z, 1.0F, 6.0F);
-                level.addFreshEntity(projectile);
-                stack.shrink(1);
-                return stack;
-            }
-        };
-    }
-
-    @FunctionalInterface
-    private interface ProjectileFactory {
-        Projectile create(Level level, Vec3 pos, ItemStack stack);
     }
 
 }

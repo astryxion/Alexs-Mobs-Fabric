@@ -6,9 +6,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrowableItemProjectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -24,11 +24,11 @@ public class ItemAnimalEgg extends Item {
         super(properties);
     }
 
-    public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
+    public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
         ItemStack itemstack = playerIn.getItemInHand(handIn);
         playerIn.gameEvent(GameEvent.ITEM_INTERACT_START);
         worldIn.playSound((Player)null, playerIn.getX(), playerIn.getY(), playerIn.getZ(), SoundEvents.EGG_THROW, SoundSource.PLAYERS, 0.5F, 0.4F / (random.nextFloat() * 0.4F + 0.8F));
-        if (!worldIn.isClientSide) {
+        if (!worldIn.isClientSide()) {
             ThrowableItemProjectile eggentity;
             if(this == AMItemRegistry.EMU_EGG){
                 eggentity = new EntityEmuEgg(worldIn, playerIn);
@@ -45,7 +45,7 @@ public class ItemAnimalEgg extends Item {
             itemstack.shrink(1);
         }
 
-        return InteractionResultHolder.sidedSuccess(itemstack, worldIn.isClientSide());
+        return worldIn.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
     }
 
 

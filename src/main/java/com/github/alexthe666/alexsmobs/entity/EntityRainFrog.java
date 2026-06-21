@@ -1,19 +1,24 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIWanderRanged;
 import com.github.alexthe666.alexsmobs.entity.ai.CreatureAITargetItems;
-import com.github.alexthe666.alexsmobs.message.MessageStartDancing;
+import com.github.alexthe666.alexsmobs.network.MessageStartDancing;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.BlockTags;
@@ -24,7 +29,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -37,7 +41,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -73,12 +77,12 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 6.0D).add(Attributes.MOVEMENT_SPEED, 0.2F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 6.0D).add(Attributes.MOVEMENT_SPEED, 0.2F);
     }
 
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
-        this.goalSelector.addGoal(1, new TemptGoal(this, 1.0D, Ingredient.of(AMTagRegistry.RAIN_FROG_BREEDABLES), false));
+        this.goalSelector.addGoal(1, new TemptGoal(this, 1.0D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.RAIN_FROG_BREEDABLES)), false));
         this.goalSelector.addGoal(2, new BreedGoal(this, 1.0D));
         this.goalSelector.addGoal(3, new AvoidEntityGoal(this, EntityRattlesnake.class, 9, 1.3D, 1.0D));
         this.goalSelector.addGoal(5, new AIBurrow());
@@ -88,12 +92,12 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
         this.targetSelector.addGoal(1, new CreatureAITargetItems(this, false));
     }
 
-    public static boolean canRainFrogSpawn(EntityType animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean canRainFrogSpawn(EntityType animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         boolean spawnBlock = worldIn.getBlockState(pos.below()).is(AMTagRegistry.RAIN_FROG_SPAWNS);
-        return spawnBlock && worldIn.getLevelData() != null && (worldIn.getLevelData().isThundering() || worldIn.getLevelData().isRaining());
+        return spawnBlock && worldIn instanceof Level level && (level.isThundering() || level.isRaining());
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.rainFrogSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -153,7 +157,7 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
     @javax.annotation.Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel p_241840_1_, AgeableMob p_241840_2_) {
-        EntityRainFrog frog = AMEntityRegistry.RAIN_FROG.create(p_241840_1_);
+        EntityRainFrog frog = AMEntityRegistry.RAIN_FROG.create(p_241840_1_, EntitySpawnReason.BREEDING);
         frog.setVariant(this.getVariant());
         frog.setDisturbed(true);
         return frog;
@@ -225,7 +229,7 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
         if (this.getDanceTime() > 0) {
             this.setBurrowed(false);
             this.setDanceTime(this.getDanceTime() - 1);
-            if(this.getDanceTime() == 1 && weatherCooldown <= 0 && level().getGameRules().getBoolean(GameRules.RULE_WEATHER_CYCLE)){
+            if(this.getDanceTime() == 1 && weatherCooldown <= 0 && level().getServer().getGameRules().get(GameRules.ADVANCE_WEATHER)){
                 changeWeather();
             }
         }
@@ -239,8 +243,9 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
         }
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        boolean prev = super.hurt(source, amount);
+    @Override
+    public boolean hurtServer(net.minecraft.server.level.ServerLevel level, DamageSource source, float amount) {
+        boolean prev = super.hurtServer(level, source, amount);
         if (prev && source.getDirectEntity() instanceof LivingEntity) {
             if (this.getStanceTime() <= 0) {
                 this.setStanceTime(30 + random.nextInt(20));
@@ -259,8 +264,8 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return source.is(DamageTypes.IN_WALL)  || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.IN_WALL) || super.isInvulnerableTo(level, source);
     }
 
     public boolean isSleeping() {
@@ -270,24 +275,23 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
     public void calculateEntityAnimation(LivingEntity mob, boolean flying) {
         float f1 = (float)Mth.length(this.getX() - this.xo, 0, this.getZ() - this.zo);
         float f2 = Math.min(f1 * 128.0F, 1.0F);
-        this.walkAnimation.update(f2, 0.4F);
+        this.walkAnimation.update(f2, 0.4F, 1.0F);
     }
 
     @javax.annotation.Nullable
-    @Override
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @javax.annotation.Nullable SpawnGroupData spawnDataIn) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @javax.annotation.Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable CompoundTag dataTag) {
         this.setVariant(random.nextInt(3));
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setDisturbed(compound.getBoolean("Disturbed"));
-        this.setVariant(compound.getInt("Variant"));
-        this.weatherCooldown = compound.getInt("WeatherCooldown");
+        this.setDisturbed(compound.getBooleanOr("Disturbed", false));
+        this.setVariant(compound.getIntOr("Variant", 0));
+        this.weatherCooldown = compound.getIntOr("WeatherCooldown", 0);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("Disturbed", isDisturbed());
         compound.putInt("Variant", getVariant());
@@ -298,10 +302,10 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
         ItemStack itemstack = player.getItemInHand(hand);
         Item item = itemstack.getItem();
         InteractionResult type = super.mobInteract(player, hand);
-        if (item instanceof ShovelItem && (this.isBurrowed() || !this.isDisturbed()) && !this.level().isClientSide) {
+        if (item instanceof ShovelItem && (this.isBurrowed() || !this.isDisturbed()) && !this.level().isClientSide()) {
             this.ambientSoundTime = 1000;
             if (!player.isCreative()) {
-                itemstack.hurtAndBreak(1, player, hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND);
+                if (player instanceof ServerPlayer sp) itemstack.hurtAndBreak(1, sp, EquipmentSlot.MAINHAND);
             }
             this.setStanceTime(20 + random.nextInt(30));
             this.setBurrowed(false);
@@ -354,17 +358,22 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
     }
 
     private void changeWeather(){
-        int time = 24000 + 1200 * random.nextInt(10);
+        int time = 24000 + 1200 * this.getRandom().nextInt(10);
         int type = 0;
         if(!this.level().isRaining()){
-            type = random.nextInt(1) + 1;
+            type = this.getRandom().nextInt(1) + 1;
         }
         if(this.level() instanceof ServerLevel serverLevel){
-            if(type == 0){
-                serverLevel.setWeatherParameters(time, 0, false, false);
-            }else {
-                serverLevel.setWeatherParameters(0, time, true, type == 2);
+            CommandSourceStack source = serverLevel.getServer().createCommandSourceStack().withLevel(serverLevel).withSuppressedOutput();
+            String command;
+            if (type == 0) {
+                command = "weather clear " + time + 't';
+            } else if (type == 1) {
+                command = "weather rain " + time + 't';
+            } else {
+                command = "weather thunder " + time + 't';
             }
+            serverLevel.getServer().getCommands().performPrefixedCommand(source, command);
         }
         weatherCooldown = time + 24000;
     }

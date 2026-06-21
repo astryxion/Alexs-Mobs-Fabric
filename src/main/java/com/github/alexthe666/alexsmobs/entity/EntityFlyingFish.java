@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIRandomSwimming;
 import com.github.alexthe666.alexsmobs.entity.ai.AquaticMoveController;
@@ -24,15 +27,15 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.PanicGoal;
 import net.minecraft.world.entity.ai.goal.TryFindWaterGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
-import net.minecraft.world.entity.animal.Bucketable;
-import net.minecraft.world.entity.animal.FlyingAnimal;
-import net.minecraft.world.entity.animal.WaterAnimal;
+import net.minecraft.world.entity.Bucketable;
+import net.minecraft.world.entity.animal.fish.WaterAnimal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -43,7 +46,7 @@ import javax.annotation.Nullable;
 import java.util.EnumSet;
 import java.util.List;
 
-public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucketable {
+public class EntityFlyingFish extends WaterAnimal implements Bucketable {
 
     private static final EntityDataAccessor<Boolean> GLIDING = SynchedEntityData.defineId(EntityFlyingFish.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> VARIANT = SynchedEntityData.defineId(EntityFlyingFish.class, EntityDataSerializers.INT);
@@ -107,12 +110,13 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 6.0D).add(Attributes.MOVEMENT_SPEED, 0.3F);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.flyingFishSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        boolean prev = super.hurt(source, amount);
+    @Override
+    public boolean hurtServer(ServerLevel serverLevel, DamageSource source, float amount) {
+        boolean prev = super.hurtServer(serverLevel, source, amount);
         if(prev && source.getEntity() != null){
             double range = 15;
             this.glideIn = 0;
@@ -128,7 +132,7 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
         super.tick();
         this.prevOnLandProgress = onLandProgress;
         this.prevFlyProgress = flyProgress;
-        boolean onLand = !this.isInWaterOrBubble() && this.onGround();
+        boolean onLand = !AMEntityRegistry.isInWaterOrBubble(this) && this.onGround();
         if (onLand && onLandProgress < 5F) {
             onLandProgress++;
         }
@@ -140,7 +144,7 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
             if (flyProgress < 5F)
                 flyProgress++;
 
-            if (!this.isInWaterOrBubble() && this.getDeltaMovement().y < 0.0)
+            if (!AMEntityRegistry.isInWaterOrBubble(this) && this.getDeltaMovement().y < 0.0)
                 this.setDeltaMovement(this.getDeltaMovement().multiply(1.0F, 0.5F, 1.0F));
         } else {
             if (flyProgress > 0F)
@@ -156,7 +160,7 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
             f2 = -f2;
         }
         this.setXRot(rotlerp(this.getXRot(), f2, 9));
-        if(!isInWaterOrBubble() && this.isAlive()){
+        if(!AMEntityRegistry.isInWaterOrBubble(this) && this.isAlive()){
             if (this.onGround() && random.nextFloat() < 0.05F) {
                 this.setDeltaMovement(this.getDeltaMovement().add((this.random.nextFloat() * 2.0F - 1.0F) * 0.2F, 0.5D, (this.random.nextFloat() * 2.0F - 1.0F) * 0.2F));
                 this.setYRot(this.random.nextFloat() * 360.0F);
@@ -178,11 +182,13 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
     }
 
     protected void handleAirSupply(int i) {
-        if (this.isAlive() && !this.isInWaterOrBubble()) {
+        if (this.isAlive() && !AMEntityRegistry.isInWaterOrBubble(this)) {
             this.setAirSupply(i - 1);
             if (this.getAirSupply() == -20) {
                 this.setAirSupply(0);
-                this.hurt(damageSources().dryOut(), 2.0F);
+                if (this.level() instanceof ServerLevel serverLevel) {
+                    this.hurtServer(serverLevel, damageSources().dryOut(), 2.0F);
+                }
             }
         } else {
             this.setAirSupply(1000);
@@ -237,7 +243,6 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
         return result.getBlockPos().equals(destinationBlock);
     }
 
-    @Override
     public boolean isFlying() {
         return true;
     }
@@ -258,16 +263,18 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
         return SoundEvents.BUCKET_FILL_FISH;
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("FromBucket", this.fromBucket());
         compound.putInt("Variant", this.getVariant());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setFromBucket(compound.getBoolean("FromBucket"));
-        this.setVariant(compound.getInt("Variant"));
+        this.setFromBucket(compound.getBooleanOr("FromBucket", false));
+        this.setVariant(compound.getIntOr("Variant", 0));
     }
 
     @Nonnull
@@ -285,27 +292,25 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
             bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, this.getCustomName());
         }
         Bucketable.saveDefaultDataToBucketTag(this, bucket);
-        net.minecraft.world.item.component.CustomData existing = bucket.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
-        CompoundTag compound = existing != null ? existing.copyTag() : new CompoundTag();
+        CompoundTag compound = bucket.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
         compound.putInt("Variant", this.getVariant());
-        bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(compound));
     }
 
     @Override
     public void loadFromBucketTag(@Nonnull CompoundTag compound) {
         Bucketable.loadDefaultDataFromBucketTag(this, compound);
         if (compound.contains("Variant")){
-            this.setVariant(compound.getInt("Variant"));
+            this.setVariant(compound.getIntOr("Variant", 0));
         }
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance diff, MobSpawnType spawnType, @Nullable SpawnGroupData data, @Nullable CompoundTag tag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance diff, EntitySpawnReason spawnType, @Nullable SpawnGroupData data) {
         int i;
         if (data instanceof FlyingFishGroupData) {
             i = ((FlyingFishGroupData)data).variant;
         } else {
-            i = this.random.nextInt(3);
+            i = this.getRandom().nextInt(3);
             data = new FlyingFishGroupData(i);
         }
 
@@ -344,7 +349,7 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
 
         @Override
         public boolean canUse() {
-            if(!fish.isInWaterOrBubble()){
+            if(!AMEntityRegistry.isInWaterOrBubble(fish)){
                 return false;
             }else if(fish.glideIn == 0 || fish.getRandom().nextInt(80) == 0){
                 BlockPos found = findSurfacePos();
@@ -364,8 +369,8 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
         private BlockPos findSurfacePos(){
             BlockPos fishPos = fish.blockPosition();
             for(int i = 0; i < 15; i++){
-                BlockPos offset = fishPos.offset(fish.random.nextInt(16) - 8, 0, fish.random.nextInt(16) - 8);
-                while(level.isWaterAt(offset) && offset.getY() < level.getMaxBuildHeight()){
+                BlockPos offset = fishPos.offset(fish.getRandom().nextInt(16) - 8, 0, fish.getRandom().nextInt(16) - 8);
+                while(level.isWaterAt(offset) && offset.getY() < level.getMaxY()){
                     offset = offset.above();
                 }
                 if(!level.isWaterAt(offset) && level.isWaterAt(offset.below()) && fish.canSeeBlock(offset)){
@@ -392,7 +397,7 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
 
         @Override
         public boolean canContinueToUse() {
-            return surface != null && glide != null && (!fish.onGround() || fish.isInWaterOrBubble());
+            return surface != null && glide != null && (!fish.onGround() || AMEntityRegistry.isInWaterOrBubble(fish));
         }
 
         @Override
@@ -409,7 +414,7 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
 
         @Override
         public void tick() {
-            if(fish.isInWaterOrBubble() && fish.distanceToSqr(Vec3.atCenterOf(surface)) > 3F){
+            if(AMEntityRegistry.isInWaterOrBubble(fish) && fish.distanceToSqr(Vec3.atCenterOf(surface)) > 3F){
                 fish.getNavigation().moveTo(surface.getX() + 0.5F, surface.getY() + 1F, surface.getZ() + 0.5F, 1.2F);
                 if(fish.isGliding()){
                     stop();
@@ -424,7 +429,7 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
                 double y = 0;
                 if(!fish.isGliding()){
                     y = 0.4F + random.nextFloat() * 0.2F;
-                }else if(fish.isGliding() && fish.isInWaterOrBubble()){
+                }else if(fish.isGliding() && AMEntityRegistry.isInWaterOrBubble(fish)){
                     stop();
                 }
                 Vec3 move = fish.getDeltaMovement().add(target.x, y, (double) (target.y));

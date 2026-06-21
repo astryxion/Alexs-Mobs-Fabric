@@ -2,6 +2,6 @@
   "__comment": "Heals when dropped on the ground",
   "replace": false,
   "values": [
-    "minecraft:egg","alexsmobs:crocodile_egg","alexsmobs:platypus_egg","alexsmobs:emu_egg","alexsmobs:terrapin_egg","alexsmobs:caiman_egg"
+    "#c:eggs"
   ]
 }

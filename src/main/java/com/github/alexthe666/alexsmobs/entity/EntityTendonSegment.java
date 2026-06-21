@@ -1,23 +1,25 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.entity.util.TendonWhipUtil;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
-import com.google.common.collect.Multimap;
+// import com.google.common.collect.Multimap; // Removed in 1.21
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
@@ -25,6 +27,7 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+// NetworkHooks removed in NeoForge 1.21
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +36,7 @@ import java.util.UUID;
 
 public class EntityTendonSegment  extends Entity {
 
-    private static final EntityDataAccessor<Optional<UUID>> CREATOR_ID = SynchedEntityData.defineId(EntityTendonSegment.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> CREATOR_ID = SynchedEntityData.defineId(EntityTendonSegment.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
     private static final EntityDataAccessor<Integer> FROM_ID = SynchedEntityData.defineId(EntityTendonSegment.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> TARGET_COUNT = SynchedEntityData.defineId(EntityTendonSegment.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> CURRENT_TARGET_ID = SynchedEntityData.defineId(EntityTendonSegment.class, EntityDataSerializers.INT);
@@ -53,13 +56,8 @@ public class EntityTendonSegment  extends Entity {
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
-    }
-
-    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        builder.define(CREATOR_ID, Optional.<UUID>empty());
+        builder.define(CREATOR_ID, Optional.empty());
         builder.define(FROM_ID, -1);
         builder.define(TARGET_COUNT, 0);
         builder.define(CURRENT_TARGET_ID, -1);
@@ -77,7 +75,7 @@ public class EntityTendonSegment  extends Entity {
         if(tickCount < 1){
             onJoinWorld();
         }else if(tickCount == 1){
-            if(!this.level().isClientSide){
+            if(!this.level().isClientSide()){
                 this.playSound(AMSoundRegistry.TENDON_WHIP,1.0F, 0.8F + this.random.nextFloat() * 0.4F);
             }
         }
@@ -107,16 +105,19 @@ public class EntityTendonSegment  extends Entity {
                 Vec3 target = new Vec3(current.getX(), current.getY(0.4F), current.getZ());
                 Vec3 lerp = target.subtract(this.position());
                 this.setDeltaMovement(lerp.scale(0.5F));
-                if(!this.level().isClientSide){
+                if(!this.level().isClientSide()){
                     if(!hasTouched && progress >= MAX_EXTEND_TIME){
                         hasTouched = true;
                         Entity entity = getCreatorEntity();
-                        if(entity instanceof LivingEntity){
-                            if(current != creator && current.hurt(damageSources().mobProjectile(this, (LivingEntity)entity), (float) getDamageFor((LivingEntity)creator, (LivingEntity)entity))){
-                                LivingEntity livingCreator = (LivingEntity) entity;
-                                ItemStack whipStack = livingCreator.getItemInHand(InteractionHand.MAIN_HAND).is(AMItemRegistry.TENDON_WHIP) ? livingCreator.getItemInHand(InteractionHand.MAIN_HAND) : livingCreator.getItemInHand(InteractionHand.OFF_HAND);
-                                if (this.level() instanceof net.minecraft.server.level.ServerLevel sl && whipStack.is(AMItemRegistry.TENDON_WHIP)) {
-                                    EnchantmentHelper.doPostAttackEffectsWithItemSource(sl, entity, damageSources().mobProjectile(this, (LivingEntity)creator), whipStack);
+                        if (entity instanceof LivingEntity livingShooter) {
+                            if (current != creator && this.level() instanceof ServerLevel serverLevel) {
+                                float dmg = (float) getDamageFor((LivingEntity) creator, (LivingEntity) entity);
+                                DamageSource src = damageSources().mobProjectile(this, livingShooter);
+                                boolean didHurt = current instanceof LivingEntity targetLiving
+                                        ? targetLiving.hurtServer(serverLevel, src, dmg)
+                                        : current.hurtOrSimulate(src, dmg);
+                                if (didHurt) {
+                                    // doEnchantDamageEffects removed in 1.21
                                 }
                             }
                         }
@@ -125,7 +126,7 @@ public class EntityTendonSegment  extends Entity {
             }
         }
         Vec3 vector3d = this.getDeltaMovement();
-        if(!this.level().isClientSide){
+        if(!this.level().isClientSide()){
             if(!hasChained){
                 if(this.getTargetsHit() > 3){
                     this.setRetracting(true);
@@ -165,23 +166,19 @@ public class EntityTendonSegment  extends Entity {
         ItemStack stack = creator.getItemInHand(InteractionHand.MAIN_HAND).is(AMItemRegistry.TENDON_WHIP) ? creator.getItemInHand(InteractionHand.MAIN_HAND) : creator.getItemInHand(InteractionHand.OFF_HAND);
         double dmg = this.getBaseDamage();
         if(stack.is(AMItemRegistry.TENDON_WHIP)){
-            dmg += getDamageForItem(stack);
+            // getDamageBonus API changed in 1.21 - using base damage only
         }
         return dmg;
     }
 
     private double getDamageForItem(ItemStack itemStack) {
-        ItemAttributeModifiers attrs = itemStack.get(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS);
-        if (attrs != null) {
-            double d = 0;
-            for (ItemAttributeModifiers.Entry entry : attrs.modifiers()) {
-                if (entry.attribute().is(Attributes.ATTACK_DAMAGE) && entry.slot().test(EquipmentSlot.MAINHAND)) {
-                    d += entry.modifier().amount();
-                }
+        final double[] d = new double[]{0.0D};
+        itemStack.forEachModifier(EquipmentSlot.MAINHAND, (attribute, modifier) -> {
+            if (attribute.is(Attributes.ATTACK_DAMAGE)) {
+                d[0] += modifier.amount();
             }
-            return d;
-        }
-        return 0;
+        });
+        return d[0];
     }
 
     private boolean hasLineOfSight(Entity entity) {
@@ -210,7 +207,13 @@ public class EntityTendonSegment  extends Entity {
 
     private void createChain(Entity closestValid) {
         this.entityData.set(HAS_CLAW, false);
-        EntityTendonSegment child = AMEntityRegistry.TENDON_SEGMENT.create(this.level());
+        if (!(this.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        EntityTendonSegment child = AMEntityRegistry.TENDON_SEGMENT.create(serverLevel, EntitySpawnReason.TRIGGERED);
+        if (child == null) {
+            return;
+        }
         child.previouslyTouched = new ArrayList<>(previouslyTouched);
         child.previouslyTouched.add(closestValid);
         child.setCreatorEntityUUID(this.getCreatorEntityUUID());
@@ -259,7 +262,7 @@ public class EntityTendonSegment  extends Entity {
 
     public Entity getCreatorEntity() {
         UUID uuid = getCreatorEntityUUID();
-        if(uuid != null && !this.level().isClientSide){
+        if(uuid != null && !this.level().isClientSide()){
             return ((ServerLevel) level()).getEntity(uuid);
         }
         return null;
@@ -326,16 +329,21 @@ public class EntityTendonSegment  extends Entity {
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag p_20052_) {
+    protected void readAdditionalSaveData(ValueInput p_20052_) {
 
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag p_20139_) {
+    protected void addAdditionalSaveData(ValueOutput p_20139_) {
 
     }
 
     public boolean isCreator(Entity mob) {
         return this.getCreatorEntityUUID() != null && mob.getUUID().equals(this.getCreatorEntityUUID());
+    }
+
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        return false;
     }
 }

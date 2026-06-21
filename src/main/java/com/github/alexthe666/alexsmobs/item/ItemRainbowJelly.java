@@ -3,6 +3,7 @@ package com.github.alexthe666.alexsmobs.item;
 import com.github.alexthe666.alexsmobs.entity.util.RainbowUtil;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
@@ -30,7 +31,7 @@ public class ItemRainbowJelly extends Item {
                 double d2 = random.nextGaussian() * 0.02D;
                 double d0 = random.nextGaussian() * 0.02D;
                 double d1 = random.nextGaussian() * 0.02D;
-                playerIn.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, stack), target.getX() + (double) (random.nextFloat() * target.getBbWidth()) - (double) target.getBbWidth() * 0.5F, target.getY() + target.getBbHeight() * 0.5F + (double) (random.nextFloat() * target.getBbHeight() * 0.5F), target.getZ() + (double) (random.nextFloat() * target.getBbWidth()) - (double) target.getBbWidth() * 0.5F, d0, d1, d2);
+                playerIn.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, ItemStackTemplate.fromNonEmptyStack(stack)), target.getX() + (double) (random.nextFloat() * target.getBbWidth()) - (double) target.getBbWidth() * 0.5F, target.getY() + target.getBbHeight() * 0.5F + (double) (random.nextFloat() * target.getBbHeight() * 0.5F), target.getZ() + (double) (random.nextFloat() * target.getBbWidth()) - (double) target.getBbWidth() * 0.5F, d0, d1, d2);
             }
             target.gameEvent(GameEvent.ITEM_INTERACT_START);
             target.playSound(SoundEvents.SLIME_SQUISH_SMALL, 1F, target.getVoicePitch());
@@ -44,11 +45,11 @@ public class ItemRainbowJelly extends Item {
 
     public ItemStack finishUsingItem(ItemStack st, Level level, LivingEntity e) {
         RainbowUtil.setRainbowType(e, RainbowUtil.getRainbowTypeFromStack(st));
-        return st.get(net.minecraft.core.component.DataComponents.FOOD) != null ? e.eat(level, st) : st;
+        return st.has(net.minecraft.core.component.DataComponents.FOOD) ? st.finishUsingItem(level, e) : st;
     }
 
     public int getUseDuration(ItemStack stack) {
-        if (stack.get(net.minecraft.core.component.DataComponents.FOOD) != null) {
+        if (stack.has(net.minecraft.core.component.DataComponents.FOOD)) {
             return 64;
         } else {
             return 0;

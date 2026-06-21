@@ -2,13 +2,13 @@ package com.github.alexthe666.alexsmobs.item;
 
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
-import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancements.triggers.CriteriaTriggers;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -23,7 +23,7 @@ public class ItemFishOil extends Item {
     public ItemStack finishUsingItem(ItemStack p_77654_1_, Level p_77654_2_, LivingEntity p_77654_3_) {
         super.finishUsingItem(p_77654_1_, p_77654_2_, p_77654_3_);
         if(AMConfig.fishOilMeme){
-            p_77654_3_.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.OILED), 1200, 0));
+            p_77654_3_.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.OILED), 1200, 0));
         }
         if (p_77654_3_ instanceof ServerPlayer) {
             ServerPlayer lvt_4_1_ = (ServerPlayer)p_77654_3_;
@@ -46,23 +46,23 @@ public class ItemFishOil extends Item {
         }
     }
 
-    public int getUseDuration(ItemStack p_77626_1_) {
+    public int getUseDuration(ItemStack stack, LivingEntity entity) {
         return 40;
     }
 
-    public UseAnim getUseAnimation(ItemStack p_77661_1_) {
-        return UseAnim.DRINK;
+    public ItemUseAnimation getUseAnimation(ItemStack p_77661_1_) {
+        return ItemUseAnimation.DRINK;
     }
 
     public SoundEvent getDrinkingSound() {
-        return SoundEvents.HONEY_DRINK;
+        return SoundEvents.HONEY_DRINK.value();
     }
 
     public SoundEvent getEatingSound() {
-        return SoundEvents.HONEY_DRINK;
+        return SoundEvents.HONEY_DRINK.value();
     }
 
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand interactionHand) {
+    public InteractionResult use(Level level, Player player, InteractionHand interactionHand) {
         return ItemUtils.startUsingInstantly(level, player, interactionHand);
     }
 }

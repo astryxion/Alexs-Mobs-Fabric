@@ -1,10 +1,13 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
+
 import com.github.alexthe666.alexsmobs.entity.EntityGust;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -16,17 +19,31 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nullable;
+
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
+
 public class BlockGustmaker extends Block {
-    public static final DirectionProperty FACING = DirectionalBlock.FACING;
+    public static final MapCodec<BlockGustmaker> CODEC = simpleCodec(BlockGustmaker::new);
+    public static final EnumProperty<Direction> FACING = DirectionalBlock.FACING;
     public static final BooleanProperty TRIGGERED = BlockStateProperties.TRIGGERED;
 
-    public BlockGustmaker() {
-        super(BlockBehaviour.Properties.of().mapColor(MapColor.SAND).requiresCorrectToolForDrops().strength(1.5F));
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.SAND).requiresCorrectToolForDrops().strength(1.5F);
+    }
+
+    public BlockGustmaker(BlockBehaviour.Properties props) {
+        super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(TRIGGERED, Boolean.valueOf(false)));
+    }
+
+    @Override
+    public MapCodec<? extends Block> codec() {
+        return CODEC;
     }
 
     public static Vec3 getDispensePosition(BlockPos coords, Direction dir) {
@@ -36,8 +53,10 @@ public class BlockGustmaker extends Block {
         return new Vec3(d0, d1, d2);
     }
 
-    public void neighborChanged(BlockState state, Level worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
+    @Override
+    public void neighborChanged(BlockState state, Level worldIn, BlockPos pos, Block blockIn, @Nullable Orientation orientation, boolean isMoving) {
         tickGustmaker(state, worldIn, pos, false);
+        super.neighborChanged(state, worldIn, pos, blockIn, orientation, isMoving);
     }
 
     public void tick(BlockState state, ServerLevel worldIn, BlockPos pos, RandomSource rand) {
@@ -50,14 +69,14 @@ public class BlockGustmaker extends Block {
         if (flag && !flag1) {
             if(worldIn.isLoaded(pos)){
                 Vec3 dispensePosition = getDispensePosition(pos, state.getValue(FACING));
-                Vec3 gustDir = Vec3.atLowerCornerOf(state.getValue(FACING).getNormal()).multiply(0.1, 0.1, 0.1);
+                Vec3 gustDir = Vec3.atLowerCornerOf(state.getValue(FACING).getUnitVec3i()).multiply(0.1, 0.1, 0.1);
                 EntityGust gust = new EntityGust(worldIn);
                 gust.setGustDir((float) gustDir.x, (float) gustDir.y, (float) gustDir.z);
                 gust.setPos(dispensePosition.x, dispensePosition.y, dispensePosition.z);
                 if(state.getValue(FACING).getAxis() == Direction.Axis.Y){
                     gust.setVertical(true);
                 }
-                if (!worldIn.isClientSide) {
+                if (!worldIn.isClientSide()) {
                     worldIn.addFreshEntity(gust);
                 }
             }

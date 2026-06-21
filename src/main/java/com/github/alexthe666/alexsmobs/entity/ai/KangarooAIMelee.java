@@ -104,12 +104,12 @@ public class KangarooAIMelee extends MeleeAttackGoal {
     }
 
     protected void checkAndPerformAttack(LivingEntity enemy, double distToEnemySqr) {
-        double d0 = (this.mob.getBbWidth() * 2.0F * this.mob.getBbWidth() * 2.0F) + (double)enemy.getBbWidth() + 5D;
+        double d0 = (this.mob.getBbWidth() * 2.0F * this.mob.getBbWidth() * 2.0F + enemy.getBbWidth()) + 5D;
         if (distToEnemySqr <= d0) {
             if(kangaroo.isInWater()){
                 float f1 = kangaroo.getYRot() * Mth.DEG_TO_RAD;
                 kangaroo.setDeltaMovement(kangaroo.getDeltaMovement().add((double)(-Mth.sin(f1) * 0.3F), 0.0D, (double)(Mth.cos(f1) * 0.3F)));
-                enemy.knockback(1F, enemy.getX() - kangaroo.getX(), enemy.getZ() - kangaroo.getZ());
+                enemy.knockback(1, enemy.getX() - kangaroo.getX(), enemy.getZ() - kangaroo.getZ(), kangaroo.damageSources().mobAttack(kangaroo), 0.0F);
 
             }
             this.resetAttackCooldown();

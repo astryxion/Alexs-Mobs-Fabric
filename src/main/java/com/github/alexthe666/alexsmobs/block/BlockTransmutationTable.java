@@ -1,21 +1,14 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.inventory.MenuTransmutationTable;
-import com.github.alexthe666.alexsmobs.message.MessageUpdateTransmutablesToDisplay;
+import com.github.alexthe666.alexsmobs.network.MessageUpdateTransmutablesToDisplay;
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityTransmutationTable;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.network.chat.Component;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionResult;
@@ -23,6 +16,7 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -34,7 +28,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -42,22 +36,27 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
-import java.util.List;
+
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
 public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecialRenderBlock {
+    public static final MapCodec<BlockTransmutationTable> CODEC = simpleCodec(BlockTransmutationTable::new);
 
-    public static final MapCodec<BlockTransmutationTable> CODEC = BlockBehaviour.simpleCodec(BlockTransmutationTable::new);
 
     private static final Component CONTAINER_TITLE = Component.translatable("alexsmobs.container.transmutation_table");
-    public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+    public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
     private static final VoxelShape BASE_AABB = Block.box(1, 0, 1, 15, 5, 15);
     private static final VoxelShape ARMS_NS = Block.box(1, 5, 5.5F, 15, 16, 10.5F);
     private static final VoxelShape ARMS_EW = Block.box(5.5F, 5, 1, 10.5F, 16, 15);
     private static final VoxelShape NS_AABB = Shapes.or(BASE_AABB, ARMS_NS);
     private static final VoxelShape EW_AABB = Shapes.or(BASE_AABB, ARMS_EW);
 
-    public BlockTransmutationTable(BlockBehaviour.Properties properties) {
-        super(properties);
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().pushReaction(PushReaction.BLOCK).mapColor(DyeColor.BLACK).noOcclusion().lightLevel((block) -> 2).emissiveRendering(block -> true).sound(SoundType.STONE).strength(1F).requiresCorrectToolForDrops();
+    }
+
+    public BlockTransmutationTable(BlockBehaviour.Properties props) {
+        super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
 
@@ -94,14 +93,17 @@ public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecia
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult result) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         } else {
             player.openMenu(state.getMenuProvider(level, pos));
             player.awardStat(Stats.INTERACT_WITH_LOOM);
             BlockEntity te = level.getBlockEntity(pos);
-            if (te instanceof TileEntityTransmutationTable table) {
+            if(te instanceof TileEntityTransmutationTable){
+                TileEntityTransmutationTable table = (TileEntityTransmutationTable)te;
+
                 AlexsMobs.sendMSGToAll(new MessageUpdateTransmutablesToDisplay(player.getId(), table.getPossibility(0), table.getPossibility(1), table.getPossibility(2)));
+
             }
             return InteractionResult.CONSUME;
         }
@@ -120,23 +122,25 @@ public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecia
     }
 
     @Override
-    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
-        ItemStack tool = builder.getOptionalParameter(LootContextParams.TOOL);
-        if (tool != null) {
-            ServerLevel level = builder.getLevel();
-            if (EnchantmentHelper.getItemEnchantmentLevel(level.registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.SILK_TOUCH), tool) > 0) {
-                return List.of(new ItemStack(this));
-            }
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (!level.isClientSide() && player.hasInfiniteMaterials()) {
+            explodeOnBreak(level, pos);
         }
-        return List.of(new ItemStack(Items.NETHER_STAR));
+        return super.playerWillDestroy(level, pos, state, player);
     }
 
     @Override
-    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (!level.isClientSide() && AMConfig.transmutingTableExplodes) {
+    public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity te, ItemStack stack) {
+        super.playerDestroy(level, player, pos, state, te, stack);
+        if (!level.isClientSide() && !player.hasInfiniteMaterials()) {
+            explodeOnBreak(level, pos);
+        }
+    }
+
+    private static void explodeOnBreak(Level level, BlockPos pos) {
+        if (AMConfig.transmutingTableExplodes) {
             level.explode(null, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, 3F, false, Level.ExplosionInteraction.BLOCK);
         }
-        return super.playerWillDestroy(level, pos, state, player);
     }
 }
 

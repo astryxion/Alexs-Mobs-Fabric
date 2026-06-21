@@ -1,8 +1,0 @@
-{
-  "values": [
-    "#minecraft:is_nether"
-  ],
-  "remove": [
-    "#forge:no_default_monsters"
-  ]
-}

@@ -7,20 +7,17 @@ import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import com.google.common.collect.Maps;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -47,8 +44,11 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
+import com.github.alexthe666.alexsmobs.misc.IngredientOr;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
@@ -72,7 +72,7 @@ import java.util.stream.Stream;
 
 public class EntitySugarGlider extends TamableAnimal implements IFollower {
 
-    public static final ResourceKey<LootTable> SUGAR_GLIDER_REWARD = ResourceKey.create(Registries.LOOT_TABLE, ResourceLocation.fromNamespaceAndPath("alexsmobs", "gameplay/sugar_glider_reward"));
+    public static final Identifier SUGAR_GLIDER_REWARD = Identifier.fromNamespaceAndPath("alexsmobs", "gameplay/sugar_glider_reward");
     public static final Map<Block, Item> LEAF_TO_SAPLING = Util.make(Maps.newHashMap(), (map) -> {
         map.put(Blocks.OAK_LEAVES, Items.OAK_SAPLING);
         map.put(Blocks.BIRCH_LEAVES, Items.BIRCH_SAPLING);
@@ -82,19 +82,11 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
         map.put(Blocks.DARK_OAK_LEAVES, Items.DARK_OAK_SAPLING);
         map.put(Blocks.MANGROVE_LEAVES, Items.MANGROVE_PROPAGULE);
     });
-    private static Map<Block, List<Item>> LEAF_TO_RARES;
-
-    /** Call from {@link AMItemRegistry#init()} after mod items are registered. */
-    public static void initLeafToRares() {
-        if (LEAF_TO_RARES != null) {
-            return;
-        }
-        LEAF_TO_RARES = Util.make(Maps.newHashMap(), (map) -> {
-            map.put(Blocks.OAK_LEAVES, List.of(Items.APPLE));
-            map.put(Blocks.JUNGLE_LEAVES, List.of(AMItemRegistry.BANANA, AMItemRegistry.LEAFCUTTER_ANT_PUPA, Items.COCOA_BEANS));
-            map.put(Blocks.ACACIA_LEAVES, List.of(AMItemRegistry.ACACIA_BLOSSOM));
-        });
-    }
+    public static final Map<Block, List<Item>> LEAF_TO_RARES = Util.make(Maps.newHashMap(), (map) -> {
+        map.put(Blocks.OAK_LEAVES, List.of(Items.APPLE));
+        map.put(Blocks.JUNGLE_LEAVES, List.of(AMItemRegistry.BANANA, AMItemRegistry.LEAFCUTTER_ANT_PUPA, Items.COCOA_BEANS));
+        map.put(Blocks.ACACIA_LEAVES, List.of(AMItemRegistry.ACACIA_BLOSSOM));
+    });
 
     private static final EntityDataAccessor<Direction> ATTACHED_FACE = SynchedEntityData.defineId(EntitySugarGlider.class, EntityDataSerializers.DIRECTION);
     private static final EntityDataAccessor<Byte> CLIMBING = SynchedEntityData.defineId(EntitySugarGlider.class, EntityDataSerializers.BYTE);
@@ -126,14 +118,16 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 8.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.MOVEMENT_SPEED, 0.25F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 8.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.MOVEMENT_SPEED, 0.25F);
     }
 
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new SitWhenOrderedToGoal(this));
         this.goalSelector.addGoal(2, new FlyingAIFollowOwner(this, 1.0D, 5.0F, 2.0F, true));
-        this.goalSelector.addGoal(3, new TemptGoal(this, 1.1D, AMTagRegistry.ingredientFromTags(AMTagRegistry.SUGAR_GLIDER_BREEDABLES, AMTagRegistry.SUGAR_GLIDER_TAMEABLES), false){
+        this.goalSelector.addGoal(3, new TemptGoal(this, 1.1D, IngredientOr.of(
+                Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.SUGAR_GLIDER_BREEDABLES)),
+                Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.SUGAR_GLIDER_TAMEABLES))), false){
             public void start(){
                 super.start();
                 EntitySugarGlider.this.entityData.set(ATTACHED_FACE, Direction.DOWN);
@@ -191,13 +185,8 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
         return AMSoundRegistry.SUGAR_GLIDER_HURT;
     }
 
-    public static boolean canSugarGliderSpawn(EntityType type, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource randomIn) {
+    public static boolean canSugarGliderSpawn(EntityType type, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource randomIn) {
         return isBrightEnoughToSpawn(worldIn, pos);
-    }
-
-    /** Vanilla 1.20.1 SpawnPlacements.SpawnPredicate signature (LevelReader, BlockPos, EntityType). */
-    public static boolean canSugarGliderSpawn(LevelReader level, BlockPos pos, EntityType<?> type) {
-        return level instanceof LevelAccessor la && isBrightEnoughToSpawn(la, pos);
     }
 
     public boolean checkSpawnObstruction(LevelReader reader) {
@@ -209,13 +198,13 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
         return false;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.sugarGliderSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
     public void tick() {
         super.tick();
-        this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.0);
+        // setMaxUpStep removed in 1.21
         prevGlideProgress = glideProgress;
         prevAttachChangeProgress = attachChangeProgress;
         prevForageProgress = forageProgress;
@@ -251,9 +240,9 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
             }
         }
         Vec3 vector3d = this.getDeltaMovement();
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.setBesideClimbableBlock(this.horizontalCollision);
-            if (this.onGround() || this.isOrderedToSit() || this.isInWaterOrBubble() || this.isInLava() || this.isGliding() || this.isPassenger()) {
+            if (this.onGround() || this.isOrderedToSit() || this.isInWater() || this.isInLava() || this.isGliding() || this.isPassenger()) {
                 this.entityData.set(ATTACHED_FACE, Direction.DOWN);
             } else {
                 Direction closestDirection = Direction.DOWN;
@@ -273,7 +262,7 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
         boolean flag = false;
         if (this.getAttachmentFacing() != Direction.DOWN) {
             if (!this.horizontalCollision && this.getAttachmentFacing() != Direction.UP) {
-                Vec3 vec = Vec3.atLowerCornerOf(this.getAttachmentFacing().getNormal());
+                Vec3 vec = Vec3.atLowerCornerOf(this.getAttachmentFacing().getUnitVec3i());
                 this.setDeltaMovement(vector3d.add(vec.normalize().multiply(0.1F, 0.1F, 0.1F)));
             }
             if (!this.onGround() && vector3d.y < 0.0D) {
@@ -291,7 +280,7 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
             attachChangeProgress = 1F;
         }
         this.prevAttachDir = this.getAttachmentFacing();
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if ((this.getAttachmentFacing() == Direction.UP || this.isGliding()) && !this.isGlidingNavigator) {
                 switchNavigator(false);
             }
@@ -313,13 +302,13 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
                 }
                 this.setForagingTime(this.getForagingTime() + 1);
             } else {
-                if (!this.level().isClientSide) {
+                if (!this.level().isClientSide()) {
                     List<ItemStack> lootList = getForageLoot(state);
                     if (lootList.size() > 0) {
                         for (ItemStack stack : lootList) {
-                            ItemEntity e = this.spawnAtLocation(stack.copy());
+                            ItemEntity e = this.spawnAtLocation((ServerLevel) this.level(), stack.copy());
                             if(e != null){
-                                e.hasImpulse = true;
+                                e.needsSync = true;
                                 e.setDeltaMovement(e.getDeltaMovement().multiply(0.2, 0.2, 0.2));
                             }
                         }
@@ -372,33 +361,19 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
     }
 
     private List<ItemStack> getForageLoot(BlockState leafState) {
-        if (!(this.level() instanceof ServerLevel serverLevel)) {
-            return List.of();
-        }
-        MinecraftServer server = serverLevel.getServer();
-        if (server == null) {
-            return List.of();
-        }
-        initLeafToRares();
         Item sapling = LEAF_TO_SAPLING.get(leafState.getBlock());
         List<Item> rares = LEAF_TO_RARES.get(leafState.getBlock());
         final float rng = this.getRandom().nextFloat();
-        if (rng < 0.1F && rares != null && !rares.isEmpty()) {
+        if (rng < 0.1F && rares != null) {
             Item item = rares.size() <= 1 ? rares.get(0) : rares.get(this.getRandom().nextInt(rares.size()));
-            if (item != null) {
-                return List.of(new ItemStack(item));
-            }
+            return List.of(new ItemStack(item));
         }
         if (rng < 0.25F && sapling != null) {
             return List.of(new ItemStack(sapling));
         }
-        LootTable loottable = server.reloadableRegistries().getLootTable(SUGAR_GLIDER_REWARD);
-        return loottable.getRandomItems(
-                (new LootParams.Builder(serverLevel))
-                        .withParameter(LootContextParams.THIS_ENTITY, this)
-                        .withParameter(LootContextParams.BLOCK_STATE, leafState)
-                        .create(LootContextParamSets.PIGLIN_BARTER),
-                this.getRandom());
+        LootTable loottable = this.level().getServer().reloadableRegistries().getLootTable(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, SUGAR_GLIDER_REWARD));
+        return loottable.getRandomItems((new LootParams.Builder((ServerLevel) this.level())).withParameter(LootContextParams.THIS_ENTITY, this).withParameter(LootContextParams.BLOCK_STATE, leafState).create(LootContextParamSets.PIGLIN_BARTER));
+
     }
 
     public void travel(Vec3 travelVector) {
@@ -414,18 +389,20 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
         super.travel(travelVector);
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
-        super.readAdditionalSaveData(compound);
-        this.entityData.set(ATTACHED_FACE, Direction.from3DDataValue(compound.getByte("AttachFace")));
-        this.setCommand(compound.getInt("SugarGliderCommand"));
-        this.setOrderedToSit(compound.getBoolean("SugarGliderSitting"));
+    @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        this.entityData.set(ATTACHED_FACE, Direction.from3DDataValue(input.getByteOr("AttachFace", (byte) 0)));
+        this.setCommand(input.getIntOr("SugarGliderCommand", 0));
+        this.setOrderedToSit(input.getBooleanOr("SugarGliderSitting", false));
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
-        super.addAdditionalSaveData(compound);
-        compound.putByte("AttachFace", (byte) this.entityData.get(ATTACHED_FACE).get3DDataValue());
-        compound.putInt("SugarGliderCommand", this.getCommand());
-        compound.putBoolean("SugarGliderSitting", this.isOrderedToSit());
+    @Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.putByte("AttachFace", (byte) this.entityData.get(ATTACHED_FACE).get3DDataValue());
+        output.putInt("SugarGliderCommand", this.getCommand());
+        output.putBoolean("SugarGliderSitting", this.isOrderedToSit());
     }
 
     public boolean canTrample(BlockState state, BlockPos pos, float fallDistance) {
@@ -444,8 +421,8 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return source.is(DamageTypes.IN_WALL) || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.IN_WALL) || super.isInvulnerableTo(level, source);
     }
 
     @Override
@@ -508,26 +485,31 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
         Item item = itemstack.getItem();
-        InteractionResult type = super.mobInteract(player, hand);
+        // Check taming BEFORE calling super to prevent player from eating the item
         if (!isTame() && itemstack.is(AMTagRegistry.SUGAR_GLIDER_TAMEABLES)) {
-            this.usePlayerItem(player, hand, itemstack);
-            this.gameEvent(GameEvent.EAT);
-            this.playSound(SoundEvents.FOX_EAT, this.getSoundVolume(), this.getVoicePitch());
-            if (getRandom().nextInt(2) == 0) {
-                this.tame(player);
-                this.level().broadcastEntityEvent(this, (byte) 7);
-            } else {
-                this.level().broadcastEntityEvent(this, (byte) 6);
-            }
-            return InteractionResult.SUCCESS;
-        }
-        if (isTame() && itemstack.is(AMTagRegistry.INSECT_ITEMS)) {
-            if (this.getHealth() < this.getMaxHealth()) {
+            if (!this.level().isClientSide()) {
                 this.usePlayerItem(player, hand, itemstack);
                 this.gameEvent(GameEvent.EAT);
                 this.playSound(SoundEvents.FOX_EAT, this.getSoundVolume(), this.getVoicePitch());
-                this.heal(5);
-                return InteractionResult.SUCCESS;
+                if (getRandom().nextInt(2) == 0) {
+                    this.tame(player);
+                    this.level().broadcastEntityEvent(this, (byte) 7);
+                } else {
+                    this.level().broadcastEntityEvent(this, (byte) 6);
+                }
+            }
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        }
+        InteractionResult type = super.mobInteract(player, hand);
+        if (isTame() && itemstack.is(AMTagRegistry.INSECT_ITEMS)) {
+            if (this.getHealth() < this.getMaxHealth()) {
+                if (!this.level().isClientSide()) {
+                    this.usePlayerItem(player, hand, itemstack);
+                    this.gameEvent(GameEvent.EAT);
+                    this.playSound(SoundEvents.FOX_EAT, this.getSoundVolume(), this.getVoicePitch());
+                    this.heal(5);
+                }
+                return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
             }
             return InteractionResult.PASS;
 
@@ -543,7 +525,7 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
                 if (this.getCommand() == 3) {
                     this.setCommand(0);
                 }
-                player.displayClientMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()), true);
+                player.sendOverlayMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()));
                 boolean sit = this.getCommand() == 2;
                 if (sit) {
                     this.setOrderedToSit(true);
@@ -562,13 +544,13 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
     public void calculateEntityAnimation(boolean b) {
         float f1 = (float) Mth.length(this.getX() - this.xo, (this.getY() - this.yo) * 2, this.getZ() - this.zo);
         float f2 = Math.min(f1 * 6.0F, 1.0F);
-        this.walkAnimation.update(f2, 0.4F);
+        this.walkAnimation.update(f2, 0.4F, this.isBaby() ? 3.0F : 1.0F);
     }
 
     protected PathNavigation createNavigation(Level worldIn) {
         return new WallClimberNavigation(this, worldIn) {
             protected boolean canUpdatePath() {
-                return super.canUpdatePath() || ((EntitySugarGlider) mob).isBesideClimbableBlock() || AMEntityRegistry.getLivingJumping(mob);
+                return super.canUpdatePath() || ((EntitySugarGlider) mob).isBesideClimbableBlock() || false /* TODO 1.21: jumping is protected */;
             }
         };
     }
@@ -576,7 +558,7 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverLevel, AgeableMob ageableMob) {
-        return AMEntityRegistry.SUGAR_GLIDER.create(serverLevel);
+        return (AgeableMob) AMEntityRegistry.SUGAR_GLIDER.create(serverLevel, EntitySpawnReason.BREEDING);
     }
 
     private boolean shouldStopGliding() {

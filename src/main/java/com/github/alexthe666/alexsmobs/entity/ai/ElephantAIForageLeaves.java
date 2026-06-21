@@ -11,6 +11,7 @@ import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.MoveToBlockGoal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.state.BlockState;
@@ -105,7 +106,8 @@ public class ElephantAIForageLeaves extends MoveToBlockGoal {
     }
 
     private void breakLeaves() {
-        if (elephant.level().getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING)) {
+        if (this.elephant.level() instanceof ServerLevel serverLevel
+                && serverLevel.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
             BlockState blockstate = elephant.level().getBlockState(this.blockPos);
             if (blockstate.is(AMTagRegistry.ELEPHANT_FOODBLOCKS)) {
                 elephant.level().destroyBlock(blockPos, false);

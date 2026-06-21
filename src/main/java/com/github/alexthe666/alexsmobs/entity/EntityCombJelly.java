@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
@@ -20,8 +23,8 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.animal.Bucketable;
-import net.minecraft.world.entity.animal.WaterAnimal;
+import net.minecraft.world.entity.Bucketable;
+import net.minecraft.world.entity.animal.fish.WaterAnimal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -62,16 +65,16 @@ public class EntityCombJelly extends WaterAnimal implements Bucketable {
         return !this.fromBucket() && !this.hasCustomName();
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.terrapinSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static boolean canCombJellySpawn(EntityType<EntityCombJelly> entityType, ServerLevelAccessor iServerWorld, MobSpawnType reason, BlockPos pos, RandomSource random) {
-        return reason == MobSpawnType.SPAWNER || iServerWorld.isWaterAt(pos) && iServerWorld.isWaterAt(pos.above()) && isLightLevelOk(pos, iServerWorld);
+    public static boolean canCombJellySpawn(EntityType<EntityCombJelly> entityType, ServerLevelAccessor iServerWorld, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
+        return reason == EntitySpawnReason.SPAWNER || iServerWorld.isWaterAt(pos) && iServerWorld.isWaterAt(pos.above()) && isLightLevelOk(pos, iServerWorld);
     }
 
     private static boolean isLightLevelOk(BlockPos pos, ServerLevelAccessor iServerWorld) {
-        float time = iServerWorld.getTimeOfDay(1.0F);
+        float time = Mth.frac(((float)(iServerWorld.getLevel().getDefaultClockTime() + 1L)) / 24000.0F - 0.25F);
         int light = iServerWorld.getMaxLocalRawBrightness(pos);
         return light <= 4 && time > 0.27F && time <= 0.8F;
     }
@@ -159,7 +162,7 @@ public class EntityCombJelly extends WaterAnimal implements Bucketable {
             onLandProgress--;
         }
 
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (this.isInWater()) {
                 this.setNoGravity(true);
                 if(moveTarget == null || this.random.nextInt(120) == 0 || this.distanceToSqr(moveTarget.getX() + 0.5F, moveTarget.getY() + 0.5F, moveTarget.getZ() + 0.5F) < 5 || tickCount % 10 == 0 && !canBlockPosBeSeen(moveTarget)){
@@ -203,18 +206,18 @@ public class EntityCombJelly extends WaterAnimal implements Bucketable {
         }
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("FromBucket", this.fromBucket());
         compound.putFloat("JellyScale", this.getJellyScale());
         compound.putInt("Variant", this.getVariant());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setFromBucket(compound.getBoolean("FromBucket"));
-        this.setJellyScale(compound.getFloat("JellyScale"));
-        this.setVariant(compound.getInt("Variant"));
+        this.setFromBucket(compound.getBooleanOr("FromBucket", false));
+        this.setJellyScale(compound.getFloatOr("JellyScale", 0.0F));
+        this.setVariant(compound.getIntOr("Variant", 0));
     }
 
     public boolean canBlockPosBeSeen(BlockPos pos) {
@@ -249,26 +252,24 @@ public class EntityCombJelly extends WaterAnimal implements Bucketable {
             bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, this.getCustomName());
         }
         Bucketable.saveDefaultDataToBucketTag(this, bucket);
-        net.minecraft.world.item.component.CustomData existing = bucket.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
-        CompoundTag compoundnbt = existing != null ? existing.copyTag() : new CompoundTag();
+        CompoundTag compoundnbt = bucket.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
         compoundnbt.putFloat("BucketScale", this.getJellyScale());
         compoundnbt.putInt("BucketVariantTag", this.getVariant());
-        bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(compoundnbt));
     }
 
     @Override
     public void loadFromBucketTag(@Nonnull CompoundTag compound) {
         Bucketable.loadDefaultDataFromBucketTag(this, compound);
         if (compound.contains("BucketScale")){
-            this.setJellyScale(compound.getFloat("BucketScale"));
+            this.setJellyScale(compound.getFloatOr("BucketScale", 0.0F));
         }
         if (compound.contains("BucketVariantTag")){
-            this.setVariant(compound.getInt("BucketVariantTag"));
+            this.setVariant(compound.getIntOr("BucketVariantTag", 0));
         }
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
         this.setVariant(random.nextInt(3));
         this.setJellyScale(0.8F + random.nextFloat() * 0.4F);
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);

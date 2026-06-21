@@ -4,10 +4,10 @@
       "name": "skreecher",
       "conditions": [
         {
-          "condition": "minecraft:killed_by_player"
+          "condition": "killed_by_player"
         }
       ],
-      "rolls": 1.0,
+      "rolls": 1,
       "entries": [
         {
           "type": "minecraft:item",
@@ -16,6 +16,5 @@
         }
       ]
     }
-  ],
-  "type": "minecraft:entity"
+  ]
 }

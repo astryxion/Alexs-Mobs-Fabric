@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -7,8 +9,9 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.block.HalfTransparentBlock;
+import net.minecraft.world.level.block.TransparentBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -18,15 +21,26 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.MapColor;
 
-public class BlockCrystalizedMucus extends HalfTransparentBlock {
+public class BlockCrystalizedMucus extends TransparentBlock {
+
+    @Override
+    public MapCodec<? extends TransparentBlock> codec() {
+        return CODEC;
+    }
+
+    public static final MapCodec<BlockCrystalizedMucus> CODEC = simpleCodec(BlockCrystalizedMucus::new);
 
     public static final int DECAY_DISTANCE = 7;
     public static final IntegerProperty DISTANCE = BlockStateProperties.DISTANCE;
     public static final BooleanProperty PERSISTENT = BlockStateProperties.PERSISTENT;
     private static final int TICK_DELAY = 1;
 
-    protected BlockCrystalizedMucus() {
-        super(Properties.of().mapColor(MapColor.COLOR_YELLOW).strength(0.1F).sound(SoundType.GLASS).noOcclusion().isSuffocating((s, s1, s2) -> false).isViewBlocking((s, s1, s2) -> false));
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_YELLOW).strength(0.1F).sound(SoundType.GLASS).noOcclusion().isSuffocating((s, s1, s2) -> false).isViewBlocking((s, s1, s2) -> false);
+    }
+
+    public BlockCrystalizedMucus(BlockBehaviour.Properties props) {
+        super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(DISTANCE, Integer.valueOf(7)).setValue(PERSISTENT, Boolean.valueOf(false)));
     }
 

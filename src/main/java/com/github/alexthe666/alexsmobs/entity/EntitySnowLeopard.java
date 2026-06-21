@@ -60,18 +60,18 @@ public class EntitySnowLeopard extends Animal implements IAnimatedEntity, ITarge
 
     protected EntitySnowLeopard(EntityType type, Level worldIn) {
         super(type, worldIn);
-        this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(2.0);
+        // setMaxUpStep removed in 1.21
     }
 
     protected PathNavigation createNavigation(Level worldIn) {
         return new AdvancedPathNavigateNoTeleport(this, worldIn, false);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.snowLeopardSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static <T extends Mob> boolean canSnowLeopardSpawn(EntityType<EntitySnowLeopard> snowleperd, LevelAccessor worldIn, MobSpawnType reason, BlockPos p_223317_3_, RandomSource random) {
+    public static <T extends Mob> boolean canSnowLeopardSpawn(EntityType<EntitySnowLeopard> snowleperd, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos p_223317_3_, RandomSource random) {
         return worldIn.getBlockState(p_223317_3_.below()).is(AMTagRegistry.SNOW_LEOPARD_SPAWNS) && worldIn.getRawBrightness(p_223317_3_, 0) > 8;
     }
 
@@ -96,12 +96,17 @@ public class EntitySnowLeopard extends Animal implements IAnimatedEntity, ITarge
         this.goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 15.0F));
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
         this.targetSelector.addGoal(1, (new AnimalAIHurtByTargetNotBaby(this)));
-        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, false, true, AMEntityRegistry.buildPredicateFromTag(AMTagRegistry.SNOW_LEOPARD_TARGETS)));
+        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, false, true, AMEntityRegistry.buildSelectorFromTag(AMTagRegistry.SNOW_LEOPARD_TARGETS)));
         this.targetSelector.addGoal(3, new CreatureAITargetItems(this, false, 30));
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 30D).add(Attributes.ATTACK_DAMAGE, 6.0D).add(Attributes.MOVEMENT_SPEED, 0.35F).add(Attributes.FOLLOW_RANGE, 64F);
+    }
+
+    @Override
+    public boolean canFreeze() {
+        return false;
     }
 
     protected SoundEvent getAmbientSound() {
@@ -152,7 +157,7 @@ public class EntitySnowLeopard extends Animal implements IAnimatedEntity, ITarge
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverWorld, AgeableMob ageableEntity) {
-        return AMEntityRegistry.SNOW_LEOPARD.create(serverWorld);
+        return AMEntityRegistry.SNOW_LEOPARD.create(serverWorld, EntitySpawnReason.BREEDING);
     }
 
     public void tick(){
@@ -218,42 +223,42 @@ public class EntitySnowLeopard extends Animal implements IAnimatedEntity, ITarge
         if(tackling){
             this.yBodyRot = this.getYRot();
         }
-        if(!this.level().isClientSide) {
+        if(!this.level().isClientSide()) {
             if (this.getTarget() != null && (this.isSitting() || this.isSleeping())) {
                 this.setSitting(false);
                 this.setSleeping(false);
             }
-            if ((isSitting() || isSleeping()) && (++sittingTime > maxSitTime || this.getTarget() != null || this.isInLove() || this.isInWaterOrBubble())) {
+            if ((isSitting() || isSleeping()) && (++sittingTime > maxSitTime || this.getTarget() != null || this.isInLove() || AMEntityRegistry.isInWaterOrBubble(this))) {
                 this.setSitting(false);
                 this.setSleeping(false);
                 sittingTime = 0;
                 maxSitTime = 100 + random.nextInt(50);
             }
-            if (this.getTarget() == null && this.getDeltaMovement().lengthSqr() < 0.03D && this.getAnimation() == NO_ANIMATION && !this.isSleeping() && !this.isSitting() && !this.isInWaterOrBubble() && random.nextInt(340) == 0) {
+            if (this.getTarget() == null && this.getDeltaMovement().lengthSqr() < 0.03D && this.getAnimation() == NO_ANIMATION && !this.isSleeping() && !this.isSitting() && !AMEntityRegistry.isInWaterOrBubble(this) && random.nextInt(340) == 0) {
                 sittingTime = 0;
                 if (this.getRandom().nextInt(2) != 0) {
-                    maxSitTime = 200 + random.nextInt(800);
+                    maxSitTime = 200 + this.getRandom().nextInt(800);
                     this.setSitting(true);
                     this.setSleeping(false);
                 } else {
-                    maxSitTime = 2000 + random.nextInt(2600);
+                    maxSitTime = 2000 + this.getRandom().nextInt(2600);
                     this.setSitting(false);
                     this.setSleeping(true);
                 }
             }
         }
         LivingEntity attackTarget = this.getTarget();
-        if (attackTarget != null) {
+        if (attackTarget != null && this.level() instanceof ServerLevel serverLevel) {
             if (distanceTo(attackTarget) < attackTarget.getBbWidth() + this.getBbWidth() + 0.6D && this.hasLineOfSight(attackTarget)) {
                 if (this.getAnimation() == ANIMATION_ATTACK_L && this.getAnimationTick() == 7) {
-                    doHurtTarget(attackTarget);
+                    doHurtTarget(serverLevel, attackTarget);
                     float rot = getYRot() + 90;
-                    attackTarget.knockback(0.5F, Mth.sin(rot * Mth.DEG_TO_RAD), -Mth.cos(rot * Mth.DEG_TO_RAD));
+                    attackTarget.knockback(0.5, Mth.sin(rot * Mth.DEG_TO_RAD), -Mth.cos(rot * Mth.DEG_TO_RAD), this.damageSources().mobAttack(this), 0.0F);
                 }
                 if (this.getAnimation() == ANIMATION_ATTACK_R && this.getAnimationTick() == 7) {
-                    doHurtTarget(attackTarget);
+                    doHurtTarget(serverLevel, attackTarget);
                     float rot = getYRot() - 90;
-                    attackTarget.knockback(0.5F, Mth.sin(rot * Mth.DEG_TO_RAD), -Mth.cos(rot * Mth.DEG_TO_RAD));
+                    attackTarget.knockback(0.5, Mth.sin(rot * Mth.DEG_TO_RAD), -Mth.cos(rot * Mth.DEG_TO_RAD), this.damageSources().mobAttack(this), 0.0F);
                 }
 
             }
@@ -261,8 +266,9 @@ public class EntitySnowLeopard extends Animal implements IAnimatedEntity, ITarge
         AnimationHandler.INSTANCE.updateAnimations(this);
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        final boolean prev = super.hurt(source, amount);
+    @Override
+    public boolean hurtServer(net.minecraft.server.level.ServerLevel level, DamageSource source, float amount) {
+        final boolean prev = super.hurtServer(level, source, amount);
         if (prev) {
             sittingTime = 0;
             this.setSleeping(false);
@@ -320,7 +326,7 @@ public class EntitySnowLeopard extends Animal implements IAnimatedEntity, ITarge
 
     @Override
     public boolean canTargetItem(ItemStack stack) {
-        return stack.get(net.minecraft.core.component.DataComponents.FOOD) != null && stack.is(net.minecraft.tags.ItemTags.MEAT);
+        return stack.has(net.minecraft.core.component.DataComponents.FOOD) && stack.get(net.minecraft.core.component.DataComponents.FOOD) != null && true /* TODO 1.21: isMeat() check needs food component */;
     }
 
     @Override

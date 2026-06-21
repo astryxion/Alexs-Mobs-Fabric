@@ -24,9 +24,6 @@ public class FroststalkerAIFollowLeader  extends Goal {
     }
 
     public boolean canUse() {
-        if (this.mob.tryFollowPlayerLeader(EntityFroststalker.PLAYER_FOLLOW_RANGE)) {
-            return true;
-        }
         if (this.mob.hasFollowers()) {
             return false;
         } else if (this.mob.isFollower()) {

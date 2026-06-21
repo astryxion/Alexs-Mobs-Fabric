@@ -1,9 +1,0 @@
-{
-  "values": [
-    "#minecraft:is_ocean",
-    {
-      "id": "#forge:is_hot/overworld",
-      "required": false
-    }
-  ]
-}

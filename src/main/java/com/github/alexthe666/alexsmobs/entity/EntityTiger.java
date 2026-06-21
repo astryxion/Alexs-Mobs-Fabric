@@ -1,6 +1,9 @@
 package com.github.alexthe666.alexsmobs.entity;
 
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
@@ -23,6 +26,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
+import net.minecraft.util.Util;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
@@ -42,16 +46,15 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.pathfinder.PathfindingContext;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.level.pathfinder.PathFinder;
+import net.minecraft.world.level.pathfinder.PathfindingContext;
 import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -77,7 +80,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
     private static final EntityDataAccessor<Integer> LAST_SCARED_MOB_ID = SynchedEntityData.defineId(EntityTiger.class, EntityDataSerializers.INT);
     private static final UniformInt ANGRY_TIMER = TimeUtil.rangeOfSeconds(40, 80);
     private static final Predicate<LivingEntity> NO_BLESSING_EFFECT = (mob) -> {
-        return !mob.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.TIGERS_BLESSING));
+        return !mob.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.TIGERS_BLESSING));
     };
     public float prevSitProgress;
     public float sitProgress;
@@ -90,7 +93,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
     private int animationTick;
     private Animation currentAnimation;
     private boolean hasSpedUp = false;
-    private UUID lastHurtBy;
+    private EntityReference<LivingEntity> persistentAngerTarget = EntityReference.of(Util.NIL_UUID);
     private int sittingTime;
     private int maxSitTime;
     private int holdTime = 0;
@@ -104,7 +107,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         this.moveControl = new MovementControllerCustomCollisions(this);
     }
 
-    public static boolean canTigerSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean canTigerSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         return worldIn.getRawBrightness(pos, 0) > 8;
     }
 
@@ -112,7 +115,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 50D).add(Attributes.ATTACK_DAMAGE, 12.0D).add(Attributes.MOVEMENT_SPEED, 0.25F).add(Attributes.FOLLOW_RANGE, 86);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.tigerSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -124,21 +127,20 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         return !worldIn.containsAnyLiquid(this.getBoundingBox());
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("TigerSitting", this.isSitting());
         compound.putBoolean("TigerSleeping", this.isSleeping());
         compound.putBoolean("White", this.isWhite());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setSitting(compound.getBoolean("TigerSitting"));
-        this.setSleeping(compound.getBoolean("TigerSleeping"));
-        this.setWhite(compound.getBoolean("White"));
+        this.setSitting(compound.getBooleanOr("TigerSitting", false));
+        this.setSleeping(compound.getBooleanOr("TigerSleeping", false));
+        this.setWhite(compound.getBooleanOr("White", false));
     }
 
-    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(WHITE, false);
@@ -163,7 +165,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         this.targetSelector.addGoal(1, new CreatureAITargetItems(this, false, 10));
         this.targetSelector.addGoal(2, (new AngerGoal(this)));
         this.targetSelector.addGoal(3, new AttackPlayerGoal());
-        this.targetSelector.addGoal(4, new NearestAttackableTargetGoal(this, LivingEntity.class, 220, false, false, AMEntityRegistry.buildPredicateFromTag(AMTagRegistry.TIGER_TARGETS)) {
+        this.targetSelector.addGoal(4, new NearestAttackableTargetGoal(this, LivingEntity.class, 220, false, false, AMEntityRegistry.buildSelectorFromTag(AMTagRegistry.TIGER_TARGETS)) {
             public boolean canUse() {
                 return !EntityTiger.this.isBaby() && super.canUse();
             }
@@ -209,9 +211,10 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
     }
 
     //killEntity
-    public void awardKillScore(LivingEntity entity, int score, DamageSource src) {
+    @Override
+    public void awardKillScore(Entity entity, DamageSource src) {
         this.heal(5);
-        super.awardKillScore(entity, score, src);
+        super.awardKillScore(entity, src);
     }
 
     public void travel(Vec3 vec3d) {
@@ -284,12 +287,29 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         this.entityData.set(ANGER_TIME, time);
     }
 
-    public UUID getPersistentAngerTarget() {
-        return this.lastHurtBy;
+    @Override
+    public long getPersistentAngerEndTime() {
+        int remaining = this.entityData.get(ANGER_TIME);
+        return remaining <= 0 ? NeutralMob.NO_ANGER_END_TIME : this.level().getGameTime() + (long) remaining;
     }
 
-    public void setPersistentAngerTarget(@Nullable UUID target) {
-        this.lastHurtBy = target;
+    @Override
+    public void setPersistentAngerEndTime(long endTime) {
+        if (endTime == NeutralMob.NO_ANGER_END_TIME) {
+            this.entityData.set(ANGER_TIME, 0);
+        } else {
+            this.entityData.set(ANGER_TIME, (int) Math.max(0L, endTime - this.level().getGameTime()));
+        }
+    }
+
+    @Override
+    public EntityReference<LivingEntity> getPersistentAngerTarget() {
+        return this.persistentAngerTarget;
+    }
+
+    @Override
+    public void setPersistentAngerTarget(EntityReference<LivingEntity> target) {
+        this.persistentAngerTarget = target != null ? target : EntityReference.of(Util.NIL_UUID);
     }
 
     public void startPersistentAngerTimer() {
@@ -297,7 +317,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
     }
 
     protected void customServerAiStep() {
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.updatePersistentAnger((ServerLevel) this.level(), false);
         }
     }
@@ -306,9 +326,6 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         return !(blockstate.getBlock() == Blocks.BAMBOO || blockstate.is(BlockTags.LEAVES)) && super.isColliding(pos, blockstate);
     }
 
-    public Vec3 collide(Vec3 vec3) {
-        return ICustomCollisions.getAllowedMovementForEntity(this, vec3);
-    }
 
     public void tick() {
         super.tick();
@@ -354,26 +371,26 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
                 stealthProgress--;
         }
 
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (isRunning() && !hasSpedUp) {
                 hasSpedUp = true;
-                this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.0);
+                // setMaxUpStep removed in 1.21
                 this.setSprinting(true);
                 this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.4F);
             }
             if (!isRunning() && hasSpedUp) {
                 hasSpedUp = false;
-                this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(0.6);
+                // setMaxUpStep removed in 1.21
                 this.setSprinting(false);
                 this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.25F);
             }
-            if ((isSitting() || isSleeping()) && (++sittingTime > maxSitTime || this.getTarget() != null || this.isInLove() || dontSitFlag || this.isInWaterOrBubble())) {
+            if ((isSitting() || isSleeping()) && (++sittingTime > maxSitTime || this.getTarget() != null || this.isInLove() || dontSitFlag || AMEntityRegistry.isInWaterOrBubble(this))) {
                 this.setSitting(false);
                 this.setSleeping(false);
                 sittingTime = 0;
                 maxSitTime = 100 + random.nextInt(50);
             }
-            if (this.getTarget() == null && !dontSitFlag && this.getDeltaMovement().lengthSqr() < 0.03D && this.getAnimation() == NO_ANIMATION && !this.isSleeping() && !this.isSitting() && !this.isInWaterOrBubble() && random.nextInt(100) == 0) {
+            if (this.getTarget() == null && !dontSitFlag && this.getDeltaMovement().lengthSqr() < 0.03D && this.getAnimation() == NO_ANIMATION && !this.isSleeping() && !this.isSitting() && !AMEntityRegistry.isInWaterOrBubble(this) && random.nextInt(100) == 0) {
                 sittingTime = 0;
                 if (this.getRandom().nextBoolean()) {
                     maxSitTime = 100 + random.nextInt(550);
@@ -393,7 +410,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
             this.setSprinting(false);
             this.setRunning(false);
             Entity target = this.getTarget();
-            if (!this.level().isClientSide && target != null && target.isAlive()) {
+            if (!this.level().isClientSide() && target != null && target.isAlive()) {
                 this.setXRot(0);
                 final float radius = 1.0F + target.getBbWidth() * 0.5F;
                 final float angle = (Maths.STARTING_ANGLE * this.yBodyRot);
@@ -402,7 +419,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
                 final double extraY = -0.5F;
                 Vec3 minus = new Vec3(this.getX() + extraX - target.getX(), this.getY() + extraY - target.getY(), this.getZ() + extraZ - target.getZ());
                 target.setDeltaMovement(minus);
-                target.hasImpulse = true;
+                target.needsSync = true;
                 if (holdTime % 20 == 0) {
                     target.hurt(this.damageSources().mobAttack(this), 5 + this.getRandom().nextInt(2));
                 }
@@ -419,7 +436,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         } else {
             holdTime = 0;
         }
-        if (prevScaredMobId != this.entityData.get(LAST_SCARED_MOB_ID) && this.level().isClientSide) {
+        if (prevScaredMobId != this.entityData.get(LAST_SCARED_MOB_ID) && this.level().isClientSide()) {
             Entity e = level().getEntity(this.entityData.get(LAST_SCARED_MOB_ID));
             if (e != null) {
                 final double d2 = this.random.nextGaussian() * 0.1D;
@@ -428,7 +445,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
                 this.level().addParticle(AMParticleRegistry.SHOCKED, e.getX(), e.getEyeY() + e.getBbHeight() * 0.15F + (double) (this.random.nextFloat() * e.getBbHeight() * 0.15F), e.getZ(), d0, d1, d2);
             }
         }
-        if(this.getTarget() != null && this.getTarget().hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.TIGERS_BLESSING))){
+        if(this.getTarget() != null && this.getTarget().hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.TIGERS_BLESSING))){
             this.setTarget(null);
             this.setLastHurtByMob(null);
         }
@@ -436,14 +453,15 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         AnimationHandler.INSTANCE.updateAnimations(this);
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        final boolean prev = super.hurt(source, amount);
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        final boolean prev = super.hurtServer(level, source, amount);
         if (prev) {
             if (source.getEntity() != null) {
                 if (source.getEntity() instanceof LivingEntity) {
                     LivingEntity hurter = (LivingEntity) source.getEntity();
-                    if (hurter.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.TIGERS_BLESSING))) {
-                        hurter.removeEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.TIGERS_BLESSING));
+                    if (hurter.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.TIGERS_BLESSING))) {
+                        hurter.removeEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.TIGERS_BLESSING));
                     }
                 }
             }
@@ -471,7 +489,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
     @Override
     public AgeableMob getBreedOffspring(ServerLevel p_241840_1_, AgeableMob p_241840_2_) {
         final boolean whiteOther = p_241840_2_ instanceof EntityTiger && ((EntityTiger) p_241840_2_).isWhite();
-        EntityTiger baby = AMEntityRegistry.TIGER.create(p_241840_1_);
+        EntityTiger baby = AMEntityRegistry.TIGER.create(p_241840_1_, EntitySpawnReason.BREEDING);
         double whiteChance = 0.1D;
         if (this.isWhite() && whiteOther) {
             whiteChance = 0.8D;
@@ -528,7 +546,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
 
     @Override
     public boolean canTargetItem(ItemStack stack) {
-        return stack.get(net.minecraft.core.component.DataComponents.FOOD) != null && stack.is(net.minecraft.tags.ItemTags.MEAT) && stack.getItem() != Items.ROTTEN_FLESH;
+        return stack.has(net.minecraft.core.component.DataComponents.FOOD) && stack.get(net.minecraft.core.component.DataComponents.FOOD) != null && true /* TODO 1.21: isMeat() check needs food component */ && stack.getItem() != Items.ROTTEN_FLESH;
     }
 
     public double getMaxDistToItem() {
@@ -539,14 +557,14 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
     public void onGetItem(ItemEntity e) {
         this.dontSitFlag = false;
         ItemStack stack = e.getItem();
-        if (stack.get(net.minecraft.core.component.DataComponents.FOOD) != null && stack.is(net.minecraft.tags.ItemTags.MEAT) && stack.getItem() != Items.ROTTEN_FLESH) {
+        if (stack.has(net.minecraft.core.component.DataComponents.FOOD) && stack.get(net.minecraft.core.component.DataComponents.FOOD) != null && true /* TODO 1.21: isMeat() check needs food component */ && stack.getItem() != Items.ROTTEN_FLESH) {
             this.gameEvent(GameEvent.EAT);
-            this.playSound(SoundEvents.CAT_EAT, this.getVoicePitch(), this.getSoundVolume());
+            this.playSound(AMEntityRegistry.catEatSound(), this.getVoicePitch(), this.getSoundVolume());
             this.heal(5);
             Entity thrower = e.getOwner();
             if (thrower != null && random.nextFloat() < getChanceForEffect(stack) && level().getPlayerByUUID(thrower.getUUID()) != null) {
                 Player player = level().getPlayerByUUID(thrower.getUUID());
-                player.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.TIGERS_BLESSING), 12000));
+                player.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.TIGERS_BLESSING), 12000));
                 this.setTarget(null);
                 this.setLastHurtByMob(null);
             }
@@ -569,11 +587,20 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         return 0.1F;
     }
 
+    public void jumpFromGround() {
+        if (!this.isSleeping() && !this.isSitting()) {
+            super.jumpFromGround();
+        }
+    }
+
     static class TigerNodeEvaluator extends WalkNodeEvaluator {
         @Override
-        public PathType getPathType(PathfindingContext context, int x, int y, int z) {
-            PathType type = super.getPathType(context, x, y, z);
-            return type == PathType.LEAVES || context.getBlockState(new BlockPos(x, y, z)).getBlock() == Blocks.BAMBOO ? PathType.OPEN : type;
+        public PathType getPathTypeOfMob(PathfindingContext context, int x, int y, int z, Mob mob) {
+            PathType base = super.getPathTypeOfMob(context, x, y, z, mob);
+            if (base == PathType.LEAVES || context.getBlockState(new BlockPos(x, y, z)).getBlock() == Blocks.BAMBOO) {
+                return PathType.OPEN;
+            }
+            return base;
         }
     }
 
@@ -623,14 +650,14 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
                     tiger.setRunning(true);
                     if (tiger.entityData.get(LAST_SCARED_MOB_ID) != target.getId()) {
                         tiger.entityData.set(LAST_SCARED_MOB_ID, target.getId());
-                        target.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.FEAR), 100, 0, true, false));
+                        target.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.FEAR), 100, 0, true, false));
                     }
                 }
                 if (dist < 12 && tiger.getAnimation() == NO_ANIMATION && tiger.onGround() && jumpAttemptCooldown == 0 && !tiger.isHolding()) {
                     tiger.setAnimation(ANIMATION_LEAP);
                     jumpAttemptCooldown = 70;
                 }
-                if ((jumpAttemptCooldown > 0 || tiger.isInWaterOrBubble()) && !tiger.isHolding() && tiger.getAnimation() == NO_ANIMATION && dist < 4 + target.getBbWidth()) {
+                if ((jumpAttemptCooldown > 0 || AMEntityRegistry.isInWaterOrBubble(tiger)) && !tiger.isHolding() && tiger.getAnimation() == NO_ANIMATION && dist < 4 + target.getBbWidth()) {
                     tiger.setAnimation(tiger.getRandom().nextBoolean() ? ANIMATION_PAW_L : ANIMATION_PAW_R);
                 }
                 if (dist < 4 + target.getBbWidth() && (tiger.getAnimation() == ANIMATION_PAW_L || tiger.getAnimation() == ANIMATION_PAW_R) && tiger.getAnimationTick() == 8) {
@@ -672,7 +699,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
     class AttackPlayerGoal extends NearestAttackableTargetGoal<Player> {
 
         public AttackPlayerGoal() {
-            super(EntityTiger.this, Player.class, 100, false, true, NO_BLESSING_EFFECT);
+            super(EntityTiger.this, Player.class, 100, false, true, AMEntityRegistry.toSelector(NO_BLESSING_EFFECT));
         }
 
         public boolean canUse() {

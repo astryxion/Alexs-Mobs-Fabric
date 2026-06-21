@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "alexsmobs:item/am_spawn_egg",
+    "layer1": "alexsmobs:item/am_spawn_egg_overlay"
+  }
+}

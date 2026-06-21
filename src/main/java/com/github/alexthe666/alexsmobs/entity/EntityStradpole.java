@@ -1,13 +1,18 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AquaticMoveController;
 import com.github.alexthe666.alexsmobs.entity.ai.BoneSerpentPathNavigator;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
-import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancements.triggers.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -32,12 +37,13 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.util.LandRandomPos;
-import net.minecraft.world.entity.animal.Bucketable;
-import net.minecraft.world.entity.animal.WaterAnimal;
+import net.minecraft.world.entity.Bucketable;
+import net.minecraft.world.entity.animal.fish.WaterAnimal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemUtils;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -52,7 +58,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
+import net.minecraft.world.item.component.Tool;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -64,7 +70,7 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
     private static final EntityDataAccessor<Boolean> FROM_BUCKET = SynchedEntityData.defineId(EntityStradpole.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> DESPAWN_SOON = SynchedEntityData.defineId(EntityStradpole.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> LAUNCHED = SynchedEntityData.defineId(EntityStradpole.class, EntityDataSerializers.BOOLEAN);
-    private static final EntityDataAccessor<Optional<UUID>> PARENT_UUID = SynchedEntityData.defineId(EntityStradpole.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> PARENT_UUID = SynchedEntityData.defineId(EntityStradpole.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
     public float swimPitch = 0;
     public float prevSwimPitch = 0;
     private int despawnTimer = 0;
@@ -120,14 +126,17 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
                 itemstack.shrink(1);
             }
             if(random.nextFloat() < 0.45F){
-                EntityStraddler straddler = AMEntityRegistry.STRADDLER.create(level());
-                straddler.copyPosition(this);
-                if(!this.level().isClientSide && level().addFreshEntity(straddler)){
-                    this.remove(RemovalReason.DISCARDED);
-
+                if (!this.level().isClientSide() && this.level() instanceof ServerLevel serverLevel) {
+                    EntityStraddler straddler = AMEntityRegistry.STRADDLER.create(serverLevel, EntitySpawnReason.CONVERSION);
+                    if (straddler != null) {
+                        straddler.copyPosition(this);
+                        if (serverLevel.addFreshEntity(straddler)) {
+                            this.remove(RemovalReason.DISCARDED);
+                        }
+                    }
                 }
             }
-            return InteractionResult.sidedSuccess(this.level().isClientSide);
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
         }
         if (itemstack.getItem() == Items.LAVA_BUCKET && this.isAlive()) {
             this.gameEvent(GameEvent.ENTITY_INTERACT);
@@ -137,12 +146,12 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
             ItemStack itemstack2 = ItemUtils.createFilledResult(itemstack, player, itemstack1, false);
             player.setItemInHand(hand, itemstack2);
             Level level = this.level();
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 CriteriaTriggers.FILLED_BUCKET.trigger((ServerPlayer)player, itemstack1);
             }
 
             this.discard();
-            return InteractionResult.sidedSuccess(level.isClientSide);
+            return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
         }
         return super.mobInteract(player, hand);
     }
@@ -155,7 +164,7 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
-        builder.define(PARENT_UUID, Optional.<java.util.UUID>empty());
+        builder.define(PARENT_UUID, Optional.empty());
         builder.define(DESPAWN_SOON, false);
         builder.define(LAUNCHED, false);
         builder.define(FROM_BUCKET, false);
@@ -186,11 +195,9 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
         this.entityData.set(PARENT_UUID, Optional.ofNullable(uniqueId));
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
-        if (this.getParentId() != null) {
-            compound.putUUID("ParentUUID", this.getParentId());
-        }
+        compound.storeNullable("ParentUUID", UUIDUtil.CODEC, this.getParentId());
         compound.putBoolean("FromBucket", this.fromBucket());
         compound.putBoolean("DespawnSoon", this.isDespawnSoon());
     }
@@ -203,27 +210,25 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
         return !this.fromBucket() && !this.hasCustomName();
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.stradpoleSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static boolean canStradpoleSpawn(EntityType<EntityStradpole> p_234314_0_, LevelAccessor p_234314_1_, MobSpawnType p_234314_2_, BlockPos p_234314_3_, RandomSource p_234314_4_) {
+    public static boolean canStradpoleSpawn(EntityType<EntityStradpole> p_234314_0_, LevelAccessor p_234314_1_, EntitySpawnReason p_234314_2_, BlockPos p_234314_3_, RandomSource p_234314_4_) {
         if(p_234314_1_.getFluidState(p_234314_3_).is(FluidTags.LAVA)){
             if(!p_234314_1_.getFluidState(p_234314_3_.below()).is(FluidTags.LAVA)){
 
-                return p_234314_1_.isEmptyBlock(p_234314_3_.above());
+                return p_234314_1_.getBlockState(p_234314_3_.above()).isAir();
             }
         }
         return false;
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        if (compound.hasUUID("ParentUUID")) {
-            this.setParentId(compound.getUUID("ParentUUID"));
-        }
-        this.setFromBucket(compound.getBoolean("FromBucket"));
-        this.setDespawnSoon(compound.getBoolean("DespawnSoon"));
+        compound.read("ParentUUID", UUIDUtil.CODEC).ifPresent(this::setParentId);
+        this.setFromBucket(compound.getBooleanOr("FromBucket", false));
+        this.setDespawnSoon(compound.getBooleanOr("DespawnSoon", false));
     }
 
     protected void registerGoals() {
@@ -252,15 +257,6 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
         return new BoneSerpentPathNavigator(this, worldIn);
     }
 
-    @Override
-    public void baseTick() {
-        int i = this.getAirSupply();
-        super.baseTick();
-        if (this.isInWater() || this.isInLava()) {
-            this.setAirSupply(i);
-        }
-    }
-
     public void tick() {
         float f = 1.0F;
         if (entityData.get(LAUNCHED)) {
@@ -280,7 +276,7 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
             this.setDeltaMovement(this.getDeltaMovement().add((this.random.nextFloat() * 2.0F - 1.0F) * 0.2F, 0.5D, (this.random.nextFloat() * 2.0F - 1.0F) * 0.2F));
             this.setYRot( this.random.nextFloat() * 360.0F);
             this.setOnGround(false);
-            this.hasImpulse = true;
+            this.needsSync = true;
         }
         this.setNoGravity(false);
         if (liquid) {
@@ -326,7 +322,7 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
 
     public Entity getParent() {
         UUID id = getParentId();
-        if (id != null && !this.level().isClientSide) {
+        if (id != null && !this.level().isClientSide()) {
             return ((ServerLevel) level()).getEntity(id);
         }
         return null;
@@ -334,10 +330,10 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
 
     private void onEntityHit(EntityHitResult raytraceresult) {
         Entity entity = this.getParent();
-        if (entity instanceof LivingEntity && !this.level().isClientSide && raytraceresult.getEntity() instanceof LivingEntity target) {
+        if (entity instanceof LivingEntity && !this.level().isClientSide() && raytraceresult.getEntity() instanceof LivingEntity target) {
             if(!target.isBlocking()){
                 target.hurt(damageSources().mobProjectile(this, (LivingEntity)entity), 3.0F);
-                target.knockback(0.7F, entity.getX() - this.getX(), entity.getZ() - this.getZ());
+                target.knockback(0.7, entity.getX() - this.getX(), entity.getZ() - this.getZ(), this.damageSources().mobAttack(this), 0.0F);
             }else{
                 if (this.getTarget() instanceof Player) {
                     this.damageShieldFor(((Player) this.getTarget()), 3.0F);
@@ -348,22 +344,22 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
     }
 
     protected void damageShieldFor(Player holder, float damage) {
-        if (AMItemRegistry.isShieldBlocking(holder.getUseItem())) {
-            if (!this.level().isClientSide) {
+        if (holder.getUseItem().has(DataComponents.BLOCKS_ATTACKS)) {
+            if (!this.level().isClientSide()) {
                 holder.awardStat(Stats.ITEM_USED.get(holder.getUseItem().getItem()));
             }
 
             if (damage >= 3.0F) {
                 int i = 1 + Mth.floor(damage);
                 InteractionHand hand = holder.getUsedItemHand();
-                holder.getUseItem().hurtAndBreak(i, holder, hand == InteractionHand.MAIN_HAND ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND);
+                holder.getUseItem().hurtAndBreak(i, holder, EquipmentSlot.MAINHAND);
                 if (holder.getUseItem().isEmpty()) {
                     if (hand == InteractionHand.MAIN_HAND) {
-                        holder.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+                        // holder.setSlot() removed - API changed in 1.21.1
                     } else {
-                        holder.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
+                        // holder.setSlot() removed - API changed in 1.21.1
                     }
-                    holder.playSound(SoundEvents.SHIELD_BREAK, 0.8F, 0.8F + this.level().random.nextFloat() * 0.4F);
+                    holder.playSound(SoundEvents.SHIELD_BREAK.value(), 0.8F, 0.8F + this.getRandom().nextFloat() * 0.4F);
                 }
             }
 
@@ -394,6 +390,10 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
         } else {
             super.travel(travelVector);
         }
+
+    }
+
+    protected void handleAirSupply(int p_209207_1_) {
 
     }
 

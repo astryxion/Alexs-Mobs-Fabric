@@ -3,6 +3,7 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.ai.util.DefaultRandomPos;
@@ -59,8 +60,9 @@ public class AnimalAIRandomSwimming extends RandomStrollGoal {
 
     @Nullable
     protected Vec3 getPosition() {
-        if(this.mob.hasRestriction() && this.mob.distanceToSqr(Vec3.atCenterOf(this.mob.getRestrictCenter())) > this.mob.getRestrictRadius() * this.mob.getRestrictRadius()){
-            return DefaultRandomPos.getPosTowards(this.mob, xzSpread, 3, Vec3.atBottomCenterOf(this.mob.getRestrictCenter()), 3);
+        Mob mob = this.mob;
+        if (mob.hasHome() && mob.distanceToSqr(Vec3.atCenterOf(mob.getHomePosition())) > (double) mob.getHomeRadius() * mob.getHomeRadius()) {
+            return DefaultRandomPos.getPosTowards(this.mob, xzSpread, 3, Vec3.atBottomCenterOf(mob.getHomePosition()), 3);
         }
         if(this.mob.getRandom().nextFloat() < 0.3F){
             Vec3 vector3d = findSurfaceTarget(this.mob, xzSpread, ySpread * 2);

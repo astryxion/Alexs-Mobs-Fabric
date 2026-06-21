@@ -1,6 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
 import com.github.alexthe666.alexsmobs.entity.EntityEndergrade;
+import net.minecraft.server.level.ServerLevel;
 import com.google.common.base.Predicate;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
@@ -108,8 +109,8 @@ public class EndergradeAITargetItems<T extends ItemEntity> extends TargetGoal {
             ItemStack duplicate = this.targetEntity.getItem().copy();
             endergrade.bite();
             duplicate.setCount(1);
-            if (!mob.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !mob.level().isClientSide) {
-                mob.spawnAtLocation(mob.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
+            if (!mob.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !mob.level().isClientSide() && mob.level() instanceof ServerLevel serverLevel) {
+                mob.spawnAtLocation(serverLevel, mob.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
             }
             mob.setItemInHand(InteractionHand.MAIN_HAND, duplicate);
             endergrade.onGetItem(targetEntity);

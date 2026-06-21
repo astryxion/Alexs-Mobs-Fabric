@@ -1,17 +1,20 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -22,6 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+// NetworkHooks removed in NeoForge 1.21
 
 import javax.annotation.Nullable;
 import java.util.Optional;
@@ -29,7 +33,7 @@ import java.util.UUID;
 
 public class EntitySquidGrapple extends Entity {
 
-    private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(EntitySquidGrapple.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(EntitySquidGrapple.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
     private static final EntityDataAccessor<Direction> ATTACHED_FACE = SynchedEntityData.defineId(EntitySquidGrapple.class, EntityDataSerializers.DIRECTION);
     private static final EntityDataAccessor<Boolean> WITHDRAWING = SynchedEntityData.defineId(EntitySquidGrapple.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Optional<BlockPos>> ATTACHED_POS = SynchedEntityData.defineId(EntitySquidGrapple.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
@@ -45,7 +49,6 @@ public class EntitySquidGrapple extends Entity {
         float rot = player.yHeadRot + (rightHand ? 60 : -60);
         this.setPos(player.getX() - (double) (player.getBbWidth()) * 0.5D * (double) Mth.sin(rot * Mth.DEG_TO_RAD), player.getEyeY() - (double) 0.2F, player.getZ() + (double) (player.getBbWidth()) * 0.5D * (double) Mth.cos(rot * Mth.DEG_TO_RAD));
     }
-
     protected static float lerpRotation(float f2, float f3) {
         while (f3 - f2 < -180.0F) {
             f2 -= 360.0F;
@@ -95,22 +98,16 @@ public class EntitySquidGrapple extends Entity {
     }
 
 
-    @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        builder.define(OWNER_UUID, Optional.<UUID>empty());
+        protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(OWNER_UUID, Optional.empty());
         builder.define(ATTACHED_FACE, Direction.DOWN);
-        builder.define(ATTACHED_POS, Optional.<BlockPos>empty());
+        builder.define(ATTACHED_POS, Optional.empty());
         builder.define(WITHDRAWING, false);
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
     }
 
     public Entity getOwner() {
         UUID id = getOwnerId();
-        if (id != null && !this.level().isClientSide) {
+        if (id != null && !this.level().isClientSide()) {
             return ((ServerLevel) level()).getEntity(id);
         }
         return getOwnerId() == null ? null : level().getPlayerByUUID(getOwnerId());
@@ -129,7 +126,7 @@ public class EntitySquidGrapple extends Entity {
         this.xRotO = this.getXRot();
         this.yRotO = this.getYRot();
         Entity entity = this.getOwner();
-        if(!this.level().isClientSide){
+        if(!this.level().isClientSide()){
             if(entity == null || !entity.isAlive()){
                 this.discard();
             }else if (entity.isShiftKeyDown()) {
@@ -149,7 +146,7 @@ public class EntitySquidGrapple extends Entity {
                 double d1 = this.getY() + vector3d.y;
                 double d2 = this.getZ() + vector3d.z;
                 float f = Mth.sqrt((float) (move.x * move.x + move.z * move.z));
-                if(!this.level().isClientSide){
+                if(!this.level().isClientSide()){
                     this.setYRot(Mth.wrapDegrees((float) (-Mth.atan2(move.x, move.z) * (double) Mth.RAD_TO_DEG)) - 180);
                     this.setXRot((float) (Mth.atan2(move.y, f) * (double) Mth.RAD_TO_DEG));
                     this.yRotO = this.getYRot();
@@ -159,7 +156,7 @@ public class EntitySquidGrapple extends Entity {
             }else{
                 this.discard();
             }
-        }else if (this.level().isClientSide || this.level().hasChunkAt(this.blockPosition())) {
+        }else if (this.level().isClientSide() || this.level().hasChunkAt(this.blockPosition())) {
             if(this.getStuckToPos() == null){
                 super.tick();
                 Vec3 vector3d = this.getDeltaMovement();
@@ -167,7 +164,7 @@ public class EntitySquidGrapple extends Entity {
                 if (raytraceresult != null && raytraceresult.getType() != HitResult.Type.MISS) {
                     this.onImpact(raytraceresult);
                 }
-                this.checkInsideBlocks();
+                this.applyEffectsFromBlocks();
                 double d0 = this.getX() + vector3d.x;
                 double d1 = this.getY() + vector3d.y;
                 double d2 = this.getZ() + vector3d.z;
@@ -258,7 +255,7 @@ public class EntitySquidGrapple extends Entity {
 
     protected void onImpact(HitResult result) {
         HitResult.Type raytraceresult$type = result.getType();
-        if (!this.level().isClientSide && raytraceresult$type == HitResult.Type.BLOCK && this.getStuckToPos() == null) {
+        if (!this.level().isClientSide() && raytraceresult$type == HitResult.Type.BLOCK && this.getStuckToPos() == null) {
             this.setDeltaMovement(Vec3.ZERO);
             this.setStuckToPos(((BlockHitResult)result).getBlockPos());
             this.setAttachmentFacing(((BlockHitResult)result).getDirection());
@@ -267,17 +264,21 @@ public class EntitySquidGrapple extends Entity {
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag compound) {
-        if (this.getOwnerId() != null) {
-            compound.putUUID("OwnerUUID", this.getOwnerId());
-        }
+    protected void readAdditionalSaveData(ValueInput compound) {
+        compound.read("OwnerUUID", UUIDUtil.CODEC).ifPresent(this::setOwnerId);
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag compound) {
-        if (compound.hasUUID("OwnerUUID")) {
-            this.setOwnerId(compound.getUUID("OwnerUUID"));
-        }
+    protected void addAdditionalSaveData(ValueOutput compound) {
+        compound.storeNullable("OwnerUUID", UUIDUtil.CODEC, this.getOwnerId());
     }
 
+    // getAddEntityPacket is no longer needed in 1.21
+    // public Packet<ClientGamePacketListener> getAddEntityPacket() {
+
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        return false;
     }
+
+}

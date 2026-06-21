@@ -1,7 +1,10 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.entity.ai.DirectPathNavigator;
@@ -9,8 +12,8 @@ import com.github.alexthe666.alexsmobs.entity.ai.EntityAINearestTarget3D;
 import com.github.alexthe666.alexsmobs.entity.ai.FlightMoveController;
 import com.github.alexthe666.alexsmobs.entity.ai.GroundPathNavigatorWide;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
-import com.github.alexthe666.alexsmobs.message.MessageMosquitoDismount;
-import com.github.alexthe666.alexsmobs.message.MessageMosquitoMountPlayer;
+import com.github.alexthe666.alexsmobs.network.MessageMosquitoDismount;
+import com.github.alexthe666.alexsmobs.network.MessageMosquitoMountPlayer;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import net.minecraft.core.BlockPos;
@@ -33,16 +36,13 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.util.LandRandomPos;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.animal.FlyingAnimal;
 import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -56,12 +56,7 @@ import javax.annotation.Nullable;
 import java.util.EnumSet;
 import java.util.function.Predicate;
 
-public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
-
-    @Override
-    public boolean isFood(ItemStack stack) {
-        return stack.get(net.minecraft.core.component.DataComponents.FOOD) != null;
-    }
+public class EntityEnderiophage extends Animal implements Enemy {
 
     private static final EntityDataAccessor<Float> PHAGE_PITCH = SynchedEntityData.defineId(EntityEnderiophage.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Boolean> FLYING = SynchedEntityData.defineId(EntityEnderiophage.class, EntityDataSerializers.BOOLEAN);
@@ -69,7 +64,7 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
     private static final EntityDataAccessor<Float> PHAGE_SCALE = SynchedEntityData.defineId(EntityEnderiophage.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> VARIANT = SynchedEntityData.defineId(EntityEnderiophage.class, EntityDataSerializers.INT);
     private static final Predicate<LivingEntity> ENDERGRADE_OR_INFECTED = (entity) -> {
-        return entity instanceof EntityEndergrade || entity.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ENDER_FLU));
+        return entity instanceof EntityEndergrade || entity.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.ENDER_FLU));
     };
     public float prevPhagePitch;
     public float tentacleAngle;
@@ -101,11 +96,11 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 20.0D).add(Attributes.FOLLOW_RANGE, 16.0D).add(Attributes.MOVEMENT_SPEED, 0.15F).add(Attributes.ATTACK_DAMAGE, 2F);
     }
 
-    public static boolean canEnderiophageSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean canEnderiophageSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         return true;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.enderiophageSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -115,8 +110,8 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
-        if (reason == MobSpawnType.NATURAL) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
+        if (reason == EntitySpawnReason.NATURAL) {
             doInitialPosing(worldIn);
         }
         setSkinForDimension();
@@ -236,13 +231,14 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
                         this.removeVehicle();
                     }
                     this.setPhagePitch(0F);
-                    if (!this.level().isClientSide && attachTime > 15) {
+                    if (!this.level().isClientSide() && attachTime > 15) {
                         LivingEntity target = (LivingEntity) mount;
                         float dmg = 1F;
                         if (target.getHealth() > target.getMaxHealth() * 0.2F) {
                             dmg = 6F;
                         }
-                        if ((target.getHealth() < 1.5D || mount.hurt(this.damageSources().mobAttack(this), dmg)) && mount instanceof LivingEntity) {
+                        boolean mountDamaged = target.getHealth() >= 1.5D && mount.hurtOrSimulate(this.damageSources().mobAttack(this), dmg);
+                        if ((target.getHealth() < 1.5D || mountDamaged) && mount instanceof LivingEntity) {
                             dismountCooldown = 100;
                             if (mount instanceof EnderMan) {
                                 this.setMissingEye(false);
@@ -256,30 +252,30 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
                             } else {
                                 if (random.nextInt(3) == 0) {
                                     if (!this.isMissingEye()) {
-                                        if (target.getEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ENDER_FLU)) == null) {
-                                            target.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ENDER_FLU), 12000));
+                                        if (target.getEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.ENDER_FLU)) == null) {
+                                            target.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.ENDER_FLU), 12000));
                                         } else {
-                                            MobEffectInstance inst = target.getEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ENDER_FLU));
+                                            MobEffectInstance inst = target.getEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.ENDER_FLU));
                                             int duration = 12000;
                                             int level = 0;
                                             if (inst != null) {
                                                 duration = inst.getDuration();
                                                 level = inst.getAmplifier();
                                             }
-                                            target.removeEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ENDER_FLU));
-                                            target.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.ENDER_FLU), duration, Math.min(level + 1, 4)));
+                                            target.removeEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.ENDER_FLU));
+                                            target.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.ENDER_FLU), duration, Math.min(level + 1, 4)));
                                         }
                                         this.heal(5);
-                                        this.gameEvent(GameEvent.ENTITY_ACTION);
-                                        this.playSound(SoundEvents.ITEM_BREAK, this.getSoundVolume(), this.getVoicePitch());
+                                        this.gameEvent(GameEvent.ENTITY_INTERACT);
+                                        this.playSound(SoundEvents.ITEM_BREAK.value(), this.getSoundVolume(), this.getVoicePitch());
                                         this.setMissingEye(true);
                                     }
-                                    if (!this.level().isClientSide) {
+                                    if (!this.level().isClientSide()) {
                                         this.setTarget(null);
                                         this.setLastHurtMob(null);
                                         this.setLastHurtByMob(null);
-                                        this.goalSelector.getAvailableGoals().forEach(w -> { if (w.isRunning()) w.getGoal().stop(); });
-                                        this.targetSelector.getAvailableGoals().forEach(w -> { if (w.isRunning()) w.getGoal().stop(); });
+                                        this.goalSelector.getAvailableGoals().forEach(w -> w.stop());
+                                        this.targetSelector.getAvailableGoals().forEach(w -> w.stop());
                                     }
                                 }
                             }
@@ -301,6 +297,15 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
 
     public boolean canRiderInteract() {
         return true;
+    }
+
+    @Override
+    public boolean isPickable() {
+        return true;
+    }
+    @Override
+    public float getPickRadius() {
+        return this.isPassenger() ? 0.75F : super.getPickRadius();
     }
 
     public void onSpawnFromEffect() {
@@ -349,7 +354,7 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
         if (squishCooldown > 0) {
             squishCooldown--;
         }
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (!this.isPassenger() && attachTime != 0) {
                 attachTime = 0;
             }
@@ -360,14 +365,8 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
                         if (angryEnderman instanceof NeutralMob) {
                             ((NeutralMob) angryEnderman).stopBeingAngry();
                         }
-                        try {
-                            GoalSelector gs = getMobGoalSelector((Mob) angryEnderman);
-                            GoalSelector ts = getMobTargetSelector((Mob) angryEnderman);
-                            if (gs != null) gs.getAvailableGoals().forEach(w -> { if (w.isRunning()) w.getGoal().stop(); });
-                            if (ts != null) ts.getAvailableGoals().forEach(w -> { if (w.isRunning()) w.getGoal().stop(); });
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        stopGoalsReflective(angryEnderman, false);
+                        stopGoalsReflective(angryEnderman, true);
                         angryEnderman = null;
                     }
                     if (vec != null) {
@@ -382,7 +381,7 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
         this.yHeadRot = this.getYRot();
         this.setPhagePitch(-90F);
         if (this.isAlive() && this.isFlying() && randomMotionSpeed > 0.75F && this.getDeltaMovement().lengthSqr() > 0.02D) {
-            if (this.level().isClientSide) {
+            if (this.level().isClientSide()) {
                 float pitch = -this.getPhagePitch() / 90F;
                 float radius = this.getBbWidth() * 0.2F * -pitch;
                 float angle = (Maths.STARTING_ANGLE * this.getYRot());
@@ -411,7 +410,7 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
         this.lastTentacleAngle = this.tentacleAngle;
         this.phageRotation += this.rotationVelocity;
         if ((double) this.phageRotation > (Math.PI * 2D)) {
-            if (this.level().isClientSide) {
+            if (this.level().isClientSide()) {
                 this.phageRotation = Mth.TWO_PI;
             } else {
                 this.phageRotation = (float) ((double) this.phageRotation - (Math.PI * 2D));
@@ -434,7 +433,7 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
                 randomMotionSpeed = 0.01F;
             }
         }
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (isFlying() && this.isLandNavigator) {
                 switchNavigator(false);
             }
@@ -493,7 +492,7 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
         }
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("Flying", this.isFlying());
         compound.putBoolean("MissingEye", this.isMissingEye());
@@ -501,12 +500,12 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
         compound.putInt("SlowDownTicks", slowDownTicks);
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setFlying(compound.getBoolean("Flying"));
-        this.setMissingEye(compound.getBoolean("MissingEye"));
-        this.setVariant(compound.getInt("Variant"));
-        this.slowDownTicks = compound.getInt("SlowDownTicks");
+        this.setFlying(compound.getBooleanOr("Flying", false));
+        this.setMissingEye(compound.getBooleanOr("MissingEye", false));
+        this.setVariant(compound.getIntOr("Variant", 0));
+        this.slowDownTicks = compound.getIntOr("SlowDownTicks", 0);
     }
 
     public boolean isMissingEye() {
@@ -549,6 +548,10 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverWorld, AgeableMob ageableEntity) {
         return null;
+    }
+
+    public boolean isFood(net.minecraft.world.item.ItemStack stack) {
+        return false;
     }
 
     private boolean isOverWaterOrVoid() {
@@ -617,8 +620,9 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
         return this.level().clip(new ClipContext(Vector3d, target, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this)).getType() != HitResult.Type.MISS;
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        if (this.isInvulnerableTo(source)) {
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        if (this.isInvulnerableTo(level, source)) {
             return false;
         } else {
             Entity entity = source.getEntity();
@@ -626,7 +630,24 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
                 amount = (amount + 1.0F) * 0.35F;
                 angryEnderman = (EnderMan) entity;
             }
-            return super.hurt(source, amount);
+            return super.hurtServer(level, source, amount);
+        }
+    }
+
+    private static void stopGoalsReflective(PathfinderMob mob, boolean targetSelector) {
+        try {
+            java.lang.reflect.Field field = Mob.class.getDeclaredField(targetSelector ? "targetSelector" : "goalSelector");
+            field.setAccessible(true);
+            Object selector = field.get(mob);
+            java.lang.reflect.Method getAvailableGoals = selector.getClass().getMethod("getAvailableGoals");
+            @SuppressWarnings("unchecked")
+            java.util.Set<Object> wrappedGoals = (java.util.Set<Object>) getAvailableGoals.invoke(selector);
+            for (Object wrapped : wrappedGoals) {
+                java.lang.reflect.Method stop = wrapped.getClass().getMethod("stop");
+                stop.invoke(wrapped);
+            }
+        } catch (ReflectiveOperationException ex) {
+            AlexsMobs.LOGGER.warn("Failed to stop {} goals reflectively for {}", targetSelector ? "target" : "normal", mob.getType(), ex);
         }
     }
 
@@ -769,32 +790,12 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
                     parentEntity.setFlying(true);
                 }
                 if (parentEntity.dismountCooldown == 0 && parentEntity.getBoundingBox().inflate(0.3, 0.3, 0.3).intersects(parentEntity.getTarget().getBoundingBox()) && !isBittenByPhage(parentEntity.getTarget())) {
-                    parentEntity.startRiding(parentEntity.getTarget(), true);
-                    if (!parentEntity.level().isClientSide) {
+                    parentEntity.startRiding(parentEntity.getTarget(), true, false);
+                    if (!parentEntity.level().isClientSide()) {
                         AlexsMobs.sendMSGToAll(new MessageMosquitoMountPlayer(parentEntity.getId(), parentEntity.getTarget().getId()));
                     }
                 }
             }
-        }
-    }
-
-    /** Fabric 1.20.1: Mob.goalSelector/targetSelector are protected; use reflection for 1:1 behavior. */
-    private static GoalSelector getMobGoalSelector(Mob mob) {
-        try {
-            java.lang.reflect.Field f = Mob.class.getDeclaredField("goalSelector");
-            f.setAccessible(true);
-            return (GoalSelector) f.get(mob);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-    private static GoalSelector getMobTargetSelector(Mob mob) {
-        try {
-            java.lang.reflect.Field f = Mob.class.getDeclaredField("targetSelector");
-            f.setAccessible(true);
-            return (GoalSelector) f.get(mob);
-        } catch (Exception e) {
-            return null;
         }
     }
 

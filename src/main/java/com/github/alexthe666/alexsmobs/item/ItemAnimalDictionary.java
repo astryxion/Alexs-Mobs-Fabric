@@ -2,14 +2,16 @@ package com.github.alexthe666.alexsmobs.item;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.entity.*;
+import com.github.alexthe666.alexsmobs.misc.AMAdvancementTriggerRegistry;
 import net.minecraft.ChatFormatting;
-import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancements.triggers.CriteriaTriggers;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -34,11 +36,13 @@ public class ItemAnimalDictionary extends Item {
             ServerPlayer serverplayerentity = (ServerPlayer)playerIn;
             CriteriaTriggers.CONSUME_ITEM.trigger(serverplayerentity, itemStackIn);
             serverplayerentity.awardStat(Stats.ITEM_USED.get(this));
+            // Trigger the "Alex's Mobs" root advancement when opening the dictionary
+            AMAdvancementTriggerRegistry.OPEN_ANIMAL_DICTIONARY.trigger(serverplayerentity);
         }
-        String encodeId = AlexsMobs.getEntityEncodeId(target);
-        if (playerIn.level().isClientSide && encodeId != null && encodeId.contains(AlexsMobs.MODID + ":")) {
+        Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
+        if (playerIn.level().isClientSide() && entityId != null && AlexsMobs.MODID.equals(entityId.getNamespace())) {
             usedOnEntity = true;
-            String id = encodeId.replace(AlexsMobs.MODID + ":", "");
+            String id = entityId.getPath();
             if(target instanceof EntityBoneSerpent || target instanceof EntityBoneSerpentPart){
                 id = "bone_serpent";
             }
@@ -59,25 +63,26 @@ public class ItemAnimalDictionary extends Item {
         return InteractionResult.CONSUME;
     }
 
-    public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
+    public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
         ItemStack itemStackIn = playerIn.getItemInHand(handIn);
         if (!usedOnEntity) {
             if (playerIn instanceof ServerPlayer) {
                 ServerPlayer serverplayerentity = (ServerPlayer) playerIn;
                 CriteriaTriggers.CONSUME_ITEM.trigger(serverplayerentity, itemStackIn);
                 serverplayerentity.awardStat(Stats.ITEM_USED.get(this));
+                // Trigger the "Alex's Mobs" root advancement when opening the dictionary
+                AMAdvancementTriggerRegistry.OPEN_ANIMAL_DICTIONARY.trigger(serverplayerentity);
             }
-            if (worldIn.isClientSide) {
+            if (worldIn.isClientSide()) {
                 AlexsMobs.PROXY.openBookGUI(itemStackIn);
             }
         }
         usedOnEntity = false;
 
-        return new InteractionResultHolder(InteractionResult.PASS, itemStackIn);
+        return InteractionResult.PASS;
     }
 
-    @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flagIn) {
+    public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
         tooltip.add(Component.translatable("item.alexsmobs.animal_dictionary.desc").withStyle(ChatFormatting.GRAY));
     }
 }

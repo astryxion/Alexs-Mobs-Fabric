@@ -3,7 +3,7 @@
   "pools": [
     {
       "name": "cosmic_cod",
-      "rolls": 1.0,
+      "rolls": 1,
       "entries": [
         {
           "type": "minecraft:item",
@@ -19,7 +19,7 @@
     },
     {
       "name": "cosmic_cod_bm",
-      "rolls": 1.0,
+      "rolls": 1,
       "entries": [
         {
           "type": "minecraft:item",

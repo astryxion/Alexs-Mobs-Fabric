@@ -1,14 +1,16 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
@@ -17,6 +19,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.Level;
@@ -27,7 +31,10 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.Tool;
+// NetworkHooks removed in NeoForge 1.21
 
 import javax.annotation.Nullable;
 import java.util.UUID;
@@ -61,7 +68,6 @@ public class EntityVoidWormShot extends Entity {
         this.setPos(x, y, z);
         this.setDeltaMovement(p_i47274_8_, p_i47274_10_, p_i47274_12_);
     }
-
     protected static float lerpRotation(float p_234614_0_, float p_234614_1_) {
         while (p_234614_1_ - p_234614_0_ < -180.0F) {
             p_234614_0_ -= 360.0F;
@@ -74,10 +80,8 @@ public class EntityVoidWormShot extends Entity {
         return Mth.lerp(0.2F, p_234614_0_, p_234614_1_);
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
-    }
+    // getAddEntityPacket is no longer needed in 1.21
+    // public Packet<ClientGamePacketListener> getAddEntityPacket() {
 
     public void tick() {
         this.prevStopHomingProgress = this.getStopHomingProgress();
@@ -97,8 +101,10 @@ public class EntityVoidWormShot extends Entity {
             final float homeScale = 1F - (stopHomingProgress / HOME_FOR);
             if (entity instanceof Mob && ((Mob) entity).getTarget() != null && homeScale > 0.0F) {
                 LivingEntity target = ((Mob) entity).getTarget();
-                if(target == null){
-                    this.kill();
+                if (target == null) {
+                    if (this.level() instanceof ServerLevel serverLevel) {
+                        this.kill(serverLevel);
+                    }
                 }
                 final double d0 = target.getX() - this.getX();
                 final double d1 = target.getEyeY() - this.getY();
@@ -122,7 +128,7 @@ public class EntityVoidWormShot extends Entity {
         this.updateRotation();
         if (this.level().getBlockStates(this.getBoundingBox()).noneMatch(BlockBehaviour.BlockStateBase::isAir)) {
             this.remove(RemovalReason.DISCARDED);
-        } else if (this.isInWaterOrBubble()) {
+        } else if (AMEntityRegistry.isInWaterOrBubble(this)) {
             this.remove(RemovalReason.DISCARDED);
         } else {
             this.setDeltaMovement(vector3d.scale(0.99F));
@@ -134,10 +140,18 @@ public class EntityVoidWormShot extends Entity {
         Entity entity = this.getShooter();
         if (entity instanceof LivingEntity && !(p_213868_1_.getEntity() instanceof EntityVoidWorm || p_213868_1_.getEntity() instanceof EntityVoidWormPart)) {
             final boolean b = wormAttack(p_213868_1_.getEntity(), damageSources().mobProjectile(this, (LivingEntity) entity), (float) (AMConfig.voidWormDamageModifier * 4F));
-            if(b && p_213868_1_.getEntity() instanceof Player){
-                Player player = ((Player)p_213868_1_.getEntity());
-                if (AMItemRegistry.isShieldBlocking(player.getUseItem())){
-                    player.disableShield();
+            if (b && p_213868_1_.getEntity() instanceof Player player) {
+                float dmg = (float) (AMConfig.voidWormDamageModifier * 4F);
+                if (dmg >= 3.0F && player.getUseItem().has(DataComponents.BLOCKS_ATTACKS)) {
+                    ItemStack copyBeforeUse = player.getUseItem().copy();
+                    int i = 1 + Mth.floor(dmg);
+                    InteractionHand hand = player.getUsedItemHand();
+                    EquipmentSlot slot = hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND;
+                    player.getUseItem().hurtAndBreak(i, player, slot);
+                    if (player.getUseItem().isEmpty()) {                        player.setItemSlot(slot, ItemStack.EMPTY);
+                        player.stopUsingItem();
+                        this.playSound(SoundEvents.SHIELD_BREAK.value(), 0.8F, 0.8F + this.random.nextFloat() * 0.4F);
+                    }
                 }
             }
         }
@@ -145,14 +159,20 @@ public class EntityVoidWormShot extends Entity {
         this.remove(RemovalReason.DISCARDED);
     }
 
-    private boolean wormAttack(Entity entity, DamageSource source, float dmg){
-        return entity.hurt(source, dmg);
+    private boolean wormAttack(Entity entity, DamageSource source, float dmg) {
+        if (!(this.level() instanceof ServerLevel serverLevel)) {
+            return false;
+        }
+        if (entity instanceof LivingEntity living) {
+            return living.hurtServer(serverLevel, source, dmg);
+        }
+        return false;
     }
 
 
     protected void onHitBlock(BlockHitResult p_230299_1_) {
         BlockState blockstate = this.level().getBlockState(p_230299_1_.getBlockPos());
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.remove(RemovalReason.DISCARDED);
         }
     }
@@ -187,9 +207,9 @@ public class EntityVoidWormShot extends Entity {
         }
     }
 
-    protected void addAdditionalSaveData(CompoundTag compound) {
+    protected void addAdditionalSaveData(ValueOutput compound) {
         if (this.ownerUUID != null) {
-            compound.putUUID("Owner", this.ownerUUID);
+            compound.store("Owner", UUIDUtil.CODEC, this.ownerUUID);
         }
 
         if (this.leftOwner) {
@@ -201,12 +221,10 @@ public class EntityVoidWormShot extends Entity {
     /**
      * (abstract) Protected helper method to read subclass entity data from NBT.
      */
-    protected void readAdditionalSaveData(CompoundTag compound) {
-        if (compound.hasUUID("Owner")) {
-            this.ownerUUID = compound.getUUID("Owner");
-        }
-        this.setStopHomingProgress(compound.getFloat("HomeTime"));
-        this.leftOwner = compound.getBoolean("LeftOwner");
+    protected void readAdditionalSaveData(ValueInput compound) {
+        compound.read("Owner", UUIDUtil.CODEC).ifPresent(u -> this.ownerUUID = u);
+        this.setStopHomingProgress(compound.getFloatOr("HomeTime", 0.0F));
+        this.leftOwner = compound.getBooleanOr("LeftOwner", false);
     }
 
     private boolean checkLeftOwner() {
@@ -257,7 +275,7 @@ public class EntityVoidWormShot extends Entity {
             this.setYRot( (float) (Mth.atan2(x, z) * (double) Mth.RAD_TO_DEG));
             this.xRotO = this.getXRot();
             this.yRotO = this.getYRot();
-            this.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+            this.snapTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
         }
 
     }
@@ -276,5 +294,10 @@ public class EntityVoidWormShot extends Entity {
         final float f = Mth.sqrt((float) vector3d.horizontalDistance());
         this.setXRot(lerpRotation(this.xRotO, (float) (Mth.atan2(vector3d.y, f) * (double) Mth.RAD_TO_DEG)));
         this.setYRot( lerpRotation(this.yRotO, (float) (Mth.atan2(vector3d.x, vector3d.z) * (double) Mth.RAD_TO_DEG)));
+    }
+
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        return false;
     }
 }

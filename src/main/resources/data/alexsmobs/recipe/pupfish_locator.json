@@ -1,23 +1,17 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "SBS",
-    "BAB",
-    "SBS"
-  ],
-  "key": {
-    "A": {
-      "item": "alexsmobs:echolocator"
-    },
-    "S": {
-      "item": "minecraft:slime_ball"
-    },
-    "B": {
-      "item": "alexsmobs:fish_bones"
-    }
-  },
-  "result": {
-    "id": "alexsmobs:pupfish_locator",
-    "count": 1
-  }
+    "type":  "minecraft:crafting_shaped",
+    "pattern":  [
+                    "SBS",
+                    "BAB",
+                    "SBS"
+                ],
+    "key":  {
+                "A":  "alexsmobs:echolocator",
+                "S":  "minecraft:slime_ball",
+                "B":  "alexsmobs:fish_bones"
+            },
+    "result":  {
+                   "id":  "alexsmobs:pupfish_locator",
+                   "count":  1
+               }
 }

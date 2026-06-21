@@ -1,11 +1,11 @@
 package com.github.alexthe666.alexsmobs.entity;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.CreatureAITargetItems;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
-import com.github.alexthe666.alexsmobs.message.MessageStartDancing;
+import com.github.alexthe666.alexsmobs.network.MessageStartDancing;
 import com.github.alexthe666.alexsmobs.misc.AMPointOfInterestRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
@@ -13,6 +13,7 @@ import com.github.alexthe666.alexsmobs.tileentity.TileEntityLeafcutterAnthill;
 import com.google.common.base.Predicates;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleOptions;
@@ -28,7 +29,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -42,11 +43,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import com.github.alexthe666.alexsmobs.misc.IngredientOr;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
-
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -58,7 +59,7 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
     private static final EntityDataAccessor<Float> EAR_YAW = SynchedEntityData.defineId(EntityManedWolf.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Boolean> DANCING = SynchedEntityData.defineId(EntityManedWolf.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> SHAKING_TIME = SynchedEntityData.defineId(EntityManedWolf.class, EntityDataSerializers.INT);
-    private static final Ingredient allFoods = AMTagRegistry.ingredientFromTags(AMTagRegistry.MANED_WOLF_BREEDABLES, AMTagRegistry.MANED_WOLF_STENCH_FOODS);
+    private Ingredient allFoods;
     public float prevEarPitch;
     public float prevEarYaw;
     public float prevDanceProgress;
@@ -77,15 +78,18 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 16.0D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.MOVEMENT_SPEED, 0.3F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 16.0D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.MOVEMENT_SPEED, 0.3F);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.manedWolfSpawnRolls, this.getRandom(), spawnReasonIn) && super.checkSpawnRules(worldIn, spawnReasonIn);
     }
 
     protected void registerGoals() {
         super.registerGoals();
+        this.allFoods = IngredientOr.of(
+                Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.MANED_WOLF_BREEDABLES)),
+                Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.MANED_WOLF_STENCH_FOODS)));
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new PanicGoal(this, 1.5D));
         this.goalSelector.addGoal(2, new BreedGoal(this, 1.0D));
@@ -97,7 +101,6 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
         this.targetSelector.addGoal(1, new CreatureAITargetItems(this, false, 30));
     }
 
-    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(EAR_PITCH, 0F);
@@ -174,7 +177,7 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
     private void findAnthill(){
         if(nearestAnthill == null || !(level().getBlockEntity(nearestAnthill) instanceof TileEntityLeafcutterAnthill)){
             PoiManager pointofinterestmanager = ((ServerLevel) level()).getPoiManager();
-            Stream<BlockPos> stream = pointofinterestmanager.findAll((poiTypeHolder -> poiTypeHolder.is(AMPointOfInterestRegistry.getKey(AMPointOfInterestRegistry.LEAFCUTTER_ANT_HILL))), Predicates.alwaysTrue(), this.blockPosition(), 10, PoiManager.Occupancy.ANY);
+            Stream<BlockPos> stream = pointofinterestmanager.findAll((poiTypeHolder -> poiTypeHolder.is(AMPointOfInterestRegistry.LEAFCUTTER_ANT_HILL)), Predicates.alwaysTrue(), this.blockPosition(), 10, PoiManager.Occupancy.ANY);
             List<BlockPos> listOfHives = stream.collect(Collectors.toList());
             BlockPos nearest = null;
             for (BlockPos pos : listOfHives) {
@@ -208,7 +211,7 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
         if (itemstack.is(AMTagRegistry.MANED_WOLF_STENCH_FOODS) && !this.isShaking() && this.getMainHandItem().isEmpty()) {
             this.usePlayerItem(player, hand, itemstack);
             eatItemEffect(itemstack);
-            this.setShakingTime(100 + random.nextInt(30));
+            this.setShakingTime(100 + this.getRandom().nextInt(30));
             return InteractionResult.SUCCESS;
         } else {
             return type;
@@ -216,15 +219,15 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
     }
 
     private void eatItemEffect(ItemStack heldItemMainhand) {
-        for (int i = 0; i < 2 + random.nextInt(2); i++) {
-            double d2 = this.random.nextGaussian() * 0.02D;
-            double d0 = this.random.nextGaussian() * 0.02D;
-            double d1 = this.random.nextGaussian() * 0.02D;
+        for (int i = 0; i < 2 + this.getRandom().nextInt(2); i++) {
+            double d2 = this.getRandom().nextGaussian() * 0.02D;
+            double d0 = this.getRandom().nextGaussian() * 0.02D;
+            double d1 = this.getRandom().nextGaussian() * 0.02D;
             float radius = this.getBbWidth() * 0.65F;
             float angle = (Maths.STARTING_ANGLE * this.yBodyRot);
             double extraX = radius * Mth.sin(Mth.PI + angle);
             double extraZ = radius * Mth.cos(angle);
-            ParticleOptions data = new ItemParticleOption(ParticleTypes.ITEM, heldItemMainhand);
+            ParticleOptions data = new ItemParticleOption(ParticleTypes.ITEM, net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(heldItemMainhand));
             if (heldItemMainhand.getItem() instanceof BlockItem) {
                 data = new BlockParticleOption(ParticleTypes.BLOCK, ((BlockItem) heldItemMainhand.getItem()).getBlock().defaultBlockState());
             }
@@ -238,7 +241,7 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
         prevEarYaw = this.getEarYaw();
         prevDanceProgress = danceProgress;
         prevShakeProgress = shakeProgress;
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             updateEars();
         }
         boolean dance = isDancing();
@@ -261,10 +264,10 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
         }
         if (this.isShaking()) {
             this.setShakingTime(this.getShakingTime() - 1);
-            if (this.level().isClientSide) {
-                double d0 = this.random.nextGaussian() * 0.02D;
-                double d1 = 0.05F + this.random.nextGaussian() * 0.02D;
-                double d2 = this.random.nextGaussian() * 0.02D;
+            if (this.level().isClientSide()) {
+                double d0 = this.getRandom().nextGaussian() * 0.02D;
+                double d1 = 0.05F + this.getRandom().nextGaussian() * 0.02D;
+                double d2 = this.getRandom().nextGaussian() * 0.02D;
                 this.level().addParticle(AMParticleRegistry.SMELLY, this.getRandomX(0.7F), this.getY(0.6F), this.getRandomZ(0.7F), d0, d1, d2);
             }else{
                 attractAnimals();
@@ -279,10 +282,10 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
     private void updateEars() {
         final float pitchDist = Math.abs(targetPitch - this.getEarPitch());
         final float yawDist = Math.abs(targetYaw - this.getEarYaw());
-        if (earCooldown <= 0 && this.random.nextInt(30) == 0 && pitchDist <= 0.1F && yawDist <= 0.1F) {
-            targetPitch = Mth.clamp(random.nextFloat() * 60F - 30, -30, 30);
-            targetYaw = Mth.clamp(random.nextFloat() * 60F - 30, -30, 30);
-            earCooldown = 8 + random.nextInt(15);
+        if (earCooldown <= 0 && this.getRandom().nextInt(30) == 0 && pitchDist <= 0.1F && yawDist <= 0.1F) {
+            targetPitch = Mth.clamp(this.getRandom().nextFloat() * 60F - 30, -30, 30);
+            targetYaw = Mth.clamp(this.getRandom().nextFloat() * 60F - 30, -30, 30);
+            earCooldown = 8 + this.getRandom().nextInt(15);
         }
 
         if (pitchDist > 0.1F) {
@@ -309,7 +312,7 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
     }
 
     public boolean isFood(ItemStack stack) {
-        return !stack.is(AMTagRegistry.MANED_WOLF_STENCH_FOODS) && allFoods.test(stack);
+        return stack.is(AMTagRegistry.MANED_WOLF_BREEDABLES) && !stack.is(AMTagRegistry.MANED_WOLF_STENCH_FOODS);
     }
 
     public void travel(Vec3 vec3d) {
@@ -324,21 +327,21 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
 
     @Override
     public boolean canTargetItem(ItemStack stack) {
-        return allFoods.test(stack) && !this.isShaking();
+        return (stack.is(AMTagRegistry.MANED_WOLF_BREEDABLES) || stack.is(AMTagRegistry.MANED_WOLF_STENCH_FOODS)) && !this.isShaking();
     }
 
     @Override
     public void onGetItem(ItemEntity e) {
         eatItemEffect(e.getItem());
         if (e.getItem().is(AMTagRegistry.MANED_WOLF_STENCH_FOODS)) {
-            this.setShakingTime(100 + random.nextInt(30));
+            this.setShakingTime(100 + this.getRandom().nextInt(30));
         }
     }
 
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverWorld, AgeableMob ageableEntity) {
-        return AMEntityRegistry.MANED_WOLF.create(serverWorld);
+        return AMEntityRegistry.MANED_WOLF.create(serverWorld, EntitySpawnReason.BREEDING);
     }
     public void setRecordPlayingNearby(BlockPos pos, boolean isPartying) {
         AlexsMobs.sendMSGToServer(new MessageStartDancing(this.getId(), isPartying, pos));

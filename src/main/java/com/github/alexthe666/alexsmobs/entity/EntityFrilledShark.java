@@ -1,6 +1,9 @@
 package com.github.alexthe666.alexsmobs.entity;
 
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAISwimBottom;
@@ -14,6 +17,10 @@ import com.github.alexthe666.citadel.animation.IAnimatedEntity;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -34,21 +41,22 @@ import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WaterBoundPathNavigation;
-import net.minecraft.world.entity.animal.AbstractSchoolingFish;
-import net.minecraft.world.entity.animal.Bucketable;
-import net.minecraft.world.entity.animal.Squid;
-import net.minecraft.world.entity.animal.WaterAnimal;
-import net.minecraft.world.entity.monster.Drowned;
+import net.minecraft.world.entity.animal.fish.AbstractSchoolingFish;
+import net.minecraft.world.entity.Bucketable;
+import net.minecraft.world.entity.animal.squid.Squid;
+import net.minecraft.world.entity.animal.fish.WaterAnimal;
+import net.minecraft.world.entity.monster.zombie.Drowned;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.EnumSet;
@@ -85,7 +93,7 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
         this.goalSelector.addGoal(3, new AnimalAISwimBottom(this, 0.8F, 7));
         this.goalSelector.addGoal(4, new RandomSwimmingGoal(this, 0.8F, 3));
         this.goalSelector.addGoal(5, new RandomLookAroundGoal(this));
-        this.goalSelector.addGoal(6, new FollowBoatGoal(this));
+        this.goalSelector.addGoal(6, new FollowPlayerRiddenEntityGoal(this, Boat.class));
         this.targetSelector.addGoal(1, (new HurtByTargetGoal(this)));
         this.targetSelector.addGoal(2, new EntityAINearestTarget3D(this, Squid.class, 40, false, true, null));
         this.targetSelector.addGoal(2, new EntityAINearestTarget3D(this, EntityMimicOctopus.class, 70, false, true, null));
@@ -94,12 +102,12 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
         this.targetSelector.addGoal(5, new EntityAINearestTarget3D(this, Drowned.class, 4, false, true, null));
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.frilledSharkSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static boolean canFrilledSharkSpawn(EntityType<EntityFrilledShark> entityType, ServerLevelAccessor iServerWorld, MobSpawnType reason, BlockPos pos, RandomSource random) {
-        return reason == MobSpawnType.SPAWNER || iServerWorld.isWaterAt(pos) && iServerWorld.isWaterAt(pos.above());
+    public static boolean canFrilledSharkSpawn(EntityType<EntityFrilledShark> entityType, ServerLevelAccessor iServerWorld, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
+        return reason == EntitySpawnReason.SPAWNER || iServerWorld.isWaterAt(pos) && iServerWorld.isWaterAt(pos.above());
     }
 
     @Override
@@ -118,7 +126,8 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
         return SoundEvents.BUCKET_FILL_FISH;
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("FromBucket", this.fromBucket());
         compound.putBoolean("Depressurized", this.isDepressurized());
@@ -132,10 +141,11 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
         return !this.fromBucket() && !this.hasCustomName();
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    @Override
+    protected void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setFromBucket(compound.getBoolean("FromBucket"));
-        this.setDepressurized(compound.getBoolean("Depressurized"));
+        this.setFromBucket(compound.getBooleanOr("FromBucket", false));
+        this.setDepressurized(compound.getBooleanOr("Depressurized", false));
     }
 
     private void doInitialPosing(LevelAccessor world) {
@@ -147,8 +157,8 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn) {
-        if (reason == MobSpawnType.NATURAL) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
+        if (reason == EntitySpawnReason.NATURAL) {
             doInitialPosing(worldIn);
         }
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
@@ -193,19 +203,22 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
         if (this.hasCustomName()) {
             bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, this.getCustomName());
         }
-        CompoundTag platTag = new CompoundTag();
-        this.addAdditionalSaveData(platTag);
-        net.minecraft.world.item.component.CustomData existing = bucket.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
-        CompoundTag compound = existing != null ? existing.copyTag() : new CompoundTag();
+        Bucketable.saveDefaultDataToBucketTag(this, bucket);
+        TagValueOutput out = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, this.level().registryAccess());
+        this.addAdditionalSaveData(out);
+        CompoundTag platTag = out.buildResult();
+        CompoundTag compound = bucket.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
         compound.put("FrilledSharkData", platTag);
         bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(compound));
     }
 
     @Override
     public void loadFromBucketTag(@Nonnull CompoundTag compound) {
-        if (compound.contains("FrilledSharkData")) {
-            this.readAdditionalSaveData(compound.getCompound("FrilledSharkData"));
-        }
+        Bucketable.loadDefaultDataFromBucketTag(this, compound);
+        compound.getCompound("FrilledSharkData").ifPresent(sub -> {
+            ValueInput input = TagValueInput.create(ProblemReporter.DISCARDING, this.level().registryAccess(), sub);
+            this.readAdditionalSaveData(input);
+        });
     }
 
     @Override
@@ -232,7 +245,7 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
     public void calculateEntityAnimation(boolean flying) {
         float f1 = (float)Mth.length(this.getX() - this.xo, this.getY() - this.yo, this.getZ() - this.zo);
         float f2 = Math.min(f1 * 8.0F, 1.0F);
-        this.walkAnimation.update(f2, 0.4F);
+        this.walkAnimation.update(f2, 0.4F, 1.0F);
     }
 
     public void tick() {
@@ -254,13 +267,14 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
         if (!isDepressurized() && !clear) {
             this.setDepressurized(true);
         }
-        if (!this.level().isClientSide && this.getTarget() != null && this.getAnimation() == ANIMATION_ATTACK && this.getAnimationTick() == 12) {
+        if (!this.level().isClientSide() && this.level() instanceof ServerLevel serverLevel && this.getTarget() != null && this.getAnimation() == ANIMATION_ATTACK && this.getAnimationTick() == 12) {
             float f1 = this.getYRot() * Mth.DEG_TO_RAD;
             this.setDeltaMovement(this.getDeltaMovement().add(-Mth.sin(f1) * 0.06F, 0.0D, Mth.cos(f1) * 0.06F));
-            if (this.getTarget().hurt(this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue())){
-                this.getTarget().addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.EXSANGUINATION), 60, 2));
-                if(random.nextInt(15) == 0 && this.getTarget() instanceof Squid){
-                    this.spawnAtLocation(AMItemRegistry.SERRATED_SHARK_TOOTH);
+            LivingEntity attackTarget = this.getTarget();
+            if (attackTarget.hurtServer(serverLevel, this.damageSources().mobAttack(this), (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue())) {
+                attackTarget.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.EXSANGUINATION), 60, 2));
+                if (this.getRandom().nextInt(15) == 0 && attackTarget instanceof Squid) {
+                    this.spawnAtLocation(serverLevel, new ItemStack(AMItemRegistry.SERRATED_SHARK_TOOTH));
                 }
             }
 
@@ -268,11 +282,12 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
         AnimationHandler.INSTANCE.updateAnimations(this);
     }
 
-    public boolean hurt(DamageSource source, float amount) {
+    @Override
+    public boolean hurtServer(ServerLevel serverLevel, DamageSource source, float amount) {
         if (source.getEntity() instanceof Drowned) {
             amount *= 0.5F;
         }
-        return super.hurt(source, amount);
+        return super.hurtServer(serverLevel, source, amount);
     }
 
     private boolean hasClearance() {
@@ -365,7 +380,8 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
                     if (target instanceof Squid) {
                         Vec3 mouth = EntityFrilledShark.this.position();
                         float squidSpeed = 0.07F;
-                        ((Squid) target).setMovementVector((float) (mouth.x - target.getX()) * squidSpeed, (float) (mouth.y - target.getEyeY()) * squidSpeed, (float) (mouth.z - target.getZ()) * squidSpeed);
+                        Vec3 pull = new Vec3(mouth.x - target.getX(), mouth.y - target.getEyeY(), mouth.z - target.getZ()).multiply(squidSpeed, squidSpeed, squidSpeed);
+                        target.setDeltaMovement(pull);
                         EntityFrilledShark.this.level().broadcastEntityEvent(EntityFrilledShark.this, (byte) 68);
                     }
                 }

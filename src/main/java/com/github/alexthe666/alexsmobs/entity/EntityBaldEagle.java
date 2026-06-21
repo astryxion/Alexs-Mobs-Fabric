@@ -5,14 +5,14 @@ import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
-import com.github.alexthe666.alexsmobs.message.MessageMosquitoDismount;
-import com.github.alexthe666.alexsmobs.message.MessageMosquitoMountPlayer;
+import com.github.alexthe666.alexsmobs.network.MessageMosquitoDismount;
+import com.github.alexthe666.alexsmobs.network.MessageMosquitoMountPlayer;
 import com.github.alexthe666.alexsmobs.misc.AMAdvancementTriggerRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -28,7 +28,6 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
@@ -36,27 +35,32 @@ import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.OwnerHurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.OwnerHurtTargetGoal;
 import net.minecraft.world.entity.ai.util.LandRandomPos;
-import net.minecraft.world.entity.animal.AbstractFish;
+import net.minecraft.world.entity.animal.fish.AbstractFish;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
+import com.github.alexthe666.alexsmobs.misc.IngredientOr;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Stream;
@@ -70,11 +74,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(EntityBaldEagle.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> SITTING = SynchedEntityData.defineId(EntityBaldEagle.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> LAUNCHED = SynchedEntityData.defineId(EntityBaldEagle.class, EntityDataSerializers.BOOLEAN);
-    private static Ingredient TEMPT_ITEMS;
-    private static Ingredient getTemptItems() {
-        if (TEMPT_ITEMS == null) TEMPT_ITEMS = Ingredient.of(Items.ROTTEN_FLESH, AMItemRegistry.FISH_OIL);
-        return TEMPT_ITEMS;
-    }
+    private static final Ingredient TEMPT_ITEMS = Ingredient.of(Items.ROTTEN_FLESH, AMItemRegistry.FISH_OIL);
     public float prevAttackProgress;
     public float attackProgress;
     public float prevFlyProgress;
@@ -102,6 +102,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
     private boolean controlledFlag = false;
     private int chunkLoadCooldown;
     private int stillTicksCounter = 0;
+    private int boardingCooldown = 0;
 
     protected EntityBaldEagle(EntityType<? extends TamableAnimal> type, Level worldIn) {
         super(type, worldIn);
@@ -109,10 +110,10 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 16.0D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.ATTACK_DAMAGE, 5.0D).add(Attributes.MOVEMENT_SPEED, 0.3F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 16.0D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.ATTACK_DAMAGE, 5.0D).add(Attributes.MOVEMENT_SPEED, 0.3F);
     }
 
-    public static boolean canEagleSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean canEagleSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         return worldIn.getRawBrightness(pos, 0) > 8;
     }
 
@@ -120,7 +121,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
         super.registerGoals();
         this.goalSelector.addGoal(0, new FloatGoal(this) {
             public boolean canUse() {
-                return super.canUse() && (EntityBaldEagle.this.getAirSupply() < 30 || EntityBaldEagle.this.getTarget() == null || !EntityBaldEagle.this.getTarget().isInWaterOrBubble() && EntityBaldEagle.this.getY() > EntityBaldEagle.this.getTarget().getY());
+                return super.canUse() && (EntityBaldEagle.this.getAirSupply() < 30 || EntityBaldEagle.this.getTarget() == null || !EntityBaldEagle.this.getTarget().isInWater() && EntityBaldEagle.this.getY() > EntityBaldEagle.this.getTarget().getY());
             }
         });
         this.goalSelector.addGoal(1, new SitWhenOrderedToGoal(this));
@@ -128,7 +129,9 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
         this.goalSelector.addGoal(3, new AITackle());
         this.goalSelector.addGoal(4, new AILandOnGlove());
         this.goalSelector.addGoal(5, new BreedGoal(this, 1.0D));
-        this.goalSelector.addGoal(6, new TemptGoal(this, 1.1D, AMTagRegistry.ingredientFromTags(AMTagRegistry.BALD_EAGLE_TAMEABLES, AMTagRegistry.BALD_EAGLE_FOODSTUFFS), false));
+        this.goalSelector.addGoal(6, new TemptGoal(this, 1.1D, IngredientOr.of(
+                Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.BALD_EAGLE_TAMEABLES)),
+                Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.BALD_EAGLE_FOODSTUFFS))), false));
         this.goalSelector.addGoal(7, new AIWanderIdle());
         this.goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 6.0F) {
             @Override
@@ -165,25 +168,8 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
     }
 
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.baldEagleSpawnRolls, this.getRandom(), spawnReasonIn);
-    }
-
-    public boolean isAlliedTo(Entity entityIn) {
-        if (this.isTame()) {
-            LivingEntity livingentity = this.getOwner();
-            if (entityIn == livingentity) {
-                return true;
-            }
-            if (entityIn instanceof TamableAnimal) {
-                return ((TamableAnimal) entityIn).isOwnedBy(livingentity);
-            }
-            if (livingentity != null) {
-                return livingentity.isAlliedTo(entityIn);
-            }
-        }
-
-        return super.isAlliedTo(entityIn);
     }
 
     public boolean isFood(ItemStack stack) {
@@ -202,40 +188,41 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
         }
     }
 
-    public boolean save(CompoundTag compound) {
-        String s = this.getEncodeId();
-        compound.putString("id", s);
-        super.save(compound);
-        return true;
+    @Override
+    public boolean save(ValueOutput output) {
+        output.putString("id", this.getEncodeId());
+        return super.save(output);
     }
 
-    public boolean saveAsPassenger(CompoundTag compound) {
+    @Override
+    public boolean saveAsPassenger(ValueOutput output) {
         if (!this.isTame()) {
-            return super.saveAsPassenger(compound);
+            return super.saveAsPassenger(output);
         } else {
-            String s = this.getEncodeId();
-            compound.putString("id", s);
-            this.saveWithoutId(compound);
+            output.putString("id", this.getEncodeId());
+            this.saveWithoutId(output);
             return true;
         }
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
-        super.addAdditionalSaveData(compound);
-        compound.putBoolean("BirdSitting", this.isSitting());
-        compound.putBoolean("Launched", this.isLaunched());
-        compound.putBoolean("HasCap", this.hasCap());
-        compound.putInt("EagleCommand", this.getCommand());
-        compound.putInt("LaunchTime", this.launchTime);
+    @Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.putBoolean("BirdSitting", this.isSitting());
+        output.putBoolean("Launched", this.isLaunched());
+        output.putBoolean("HasCap", this.hasCap());
+        output.putInt("EagleCommand", this.getCommand());
+        output.putInt("LaunchTime", this.launchTime);
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
-        super.readAdditionalSaveData(compound);
-        this.setOrderedToSit(compound.getBoolean("BirdSitting"));
-        this.setLaunched(compound.getBoolean("Launched"));
-        this.setCap(compound.getBoolean("HasCap"));
-        this.setCommand(compound.getInt("EagleCommand"));
-        this.launchTime = compound.getInt("LaunchTime");
+    @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        this.setOrderedToSit(input.getBooleanOr("BirdSitting", false));
+        this.setLaunched(input.getBooleanOr("Launched", false));
+        this.setCap(input.getBooleanOr("HasCap", false));
+        this.setCommand(input.getIntOr("EagleCommand", 0));
+        this.launchTime = input.getIntOr("LaunchTime", 0);
     }
 
     public void travel(Vec3 vec3d) {
@@ -246,7 +233,8 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
         super.travel(vec3d);
     }
 
-    public boolean doHurtTarget(Entity entityIn) {
+    @Override
+    public boolean doHurtTarget(ServerLevel level, Entity entityIn) {
         if (this.attackProgress == 0 && this.entityData.get(ATTACK_TICK) == 0 && entityIn.isAlive()) {
             final double dist = this.isSitting() ? entityIn.getBbWidth() + 1 : entityIn.getBbWidth() + 5;
             if (this.distanceTo(entityIn) < dist) {
@@ -339,8 +327,8 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return source.is(DamageTypes.IN_WALL) || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.IN_WALL) || super.isInvulnerableTo(level, source);
     }
 
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
@@ -348,28 +336,37 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
         Item item = itemstack.getItem();
         InteractionResult type = super.mobInteract(player, hand);
         if (itemstack.is(AMTagRegistry.BALD_EAGLE_FOODSTUFFS) && this.getHealth() < this.getMaxHealth()) {
-            this.heal(10);
-            if (!player.isCreative()) {
-                itemstack.shrink(1);
-            }
-            this.level().broadcastEntityEvent(this, (byte) 7);
-            return InteractionResult.CONSUME;
-        } else if (itemstack.is(AMTagRegistry.BALD_EAGLE_TAMEABLES)) {
-            net.minecraft.world.item.Item remItem = itemstack.getItem().getCraftingRemainingItem();
-            if (remItem != null && remItem != net.minecraft.world.item.Items.AIR && !player.getAbilities().instabuild) {
-                this.spawnAtLocation(new ItemStack(remItem, 1));
-            }
-            if (!player.isCreative()) {
-                itemstack.shrink(1);
-            }
-            if (random.nextBoolean()) {
+            if (!this.level().isClientSide()) {
+                this.heal(10);
+                if (!player.isCreative()) {
+                    itemstack.shrink(1);
+                }
                 this.level().broadcastEntityEvent(this, (byte) 7);
-                this.tame(player);
-                this.setCommand(1);
-            } else {
-                this.level().broadcastEntityEvent(this, (byte) 6);
             }
-            return InteractionResult.CONSUME;
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        } else if (itemstack.is(AMTagRegistry.BALD_EAGLE_TAMEABLES)) {
+            if (!this.level().isClientSide()) {
+                if (!player.getAbilities().instabuild) {
+                    ItemStackTemplate remainderTemplate = itemstack.getItem().getCraftingRemainder();
+                    if (remainderTemplate != null) {
+                        ItemStack remainder = remainderTemplate.create();
+                        if (!remainder.isEmpty()) {
+                            this.spawnAtLocation((ServerLevel) this.level(), remainder);
+                        }
+                    }
+                }
+                if (!player.isCreative()) {
+                    itemstack.shrink(1);
+                }
+                if (random.nextBoolean()) {
+                    this.level().broadcastEntityEvent(this, (byte) 7);
+                    this.tame(player);
+                    this.setCommand(1);
+                } else {
+                    this.level().broadcastEntityEvent(this, (byte) 6);
+                }
+            }
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
         } else if (isTame() && !isFood(itemstack)) {
             if (!this.isBaby() && item == AMItemRegistry.FALCONRY_HOOD) {
                 if (!this.hasCap()) {
@@ -381,23 +378,23 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                     this.playSound(SoundEvents.ARMOR_EQUIP_LEATHER.value(), this.getSoundVolume(), this.getVoicePitch());
                     return InteractionResult.SUCCESS;
                 }
-            } else if (itemstack.is(Items.SHEARS) && this.hasCap()) {
+            } else if (itemstack.getItem() instanceof net.minecraft.world.item.ShearsItem && this.hasCap()) {
                 this.gameEvent(GameEvent.ENTITY_INTERACT);
                 this.playSound(SoundEvents.SHEEP_SHEAR, 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
-                if (!this.level().isClientSide) {
+                if (!this.level().isClientSide()) {
                     if (player instanceof ServerPlayer) {
-                        itemstack.hurtAndBreak(1, player, hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND);
+                        itemstack.hurtAndBreak(1, (ServerPlayer) player, EquipmentSlot.MAINHAND);
                     }
                 }
-                this.spawnAtLocation(AMItemRegistry.FALCONRY_HOOD);
+                this.spawnAtLocation((ServerLevel) this.level(), AMItemRegistry.FALCONRY_HOOD);
                 this.setCap(false);
                 return InteractionResult.SUCCESS;
             } else if (!this.isBaby() && getRidingFalcons(player) <= 0 && (player.getItemInHand(InteractionHand.MAIN_HAND).getItem() == AMItemRegistry.FALCONRY_GLOVE || player.getItemInHand(InteractionHand.OFF_HAND).getItem() == AMItemRegistry.FALCONRY_GLOVE)) {
                 boardingCooldown = 30;
                 this.setLaunched(false);
                 this.ejectPassengers();
-                this.startRiding(player, true);
-                if (!this.level().isClientSide) {
+                this.startRiding(player, true, false);
+                if (!this.level().isClientSide()) {
                     AlexsMobs.sendMSGToAll(new MessageMosquitoMountPlayer(this.getId(), player.getId()));
                 }
                 return InteractionResult.SUCCESS;
@@ -409,7 +406,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                     if (this.getCommand() == 3) {
                         this.setCommand(0);
                     }
-                    player.displayClientMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()), true);
+                    player.sendOverlayMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()));
                     boolean sit = this.getCommand() == 2;
                     if (sit) {
                         this.setOrderedToSit(true);
@@ -542,7 +539,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
             flapAmount = Math.min(2, flapAmount + 0.2F);
         }
 
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (isFlying()) {
                 if (this.isLandNavigator)
                     switchNavigator(false);
@@ -571,7 +568,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                 this.setNoGravity(false);
             }
 
-            if (this.isInWaterOrBubble() && this.isVehicle()) {
+            if (this.isInWater() && this.isVehicle()) {
                 this.setDeltaMovement(this.getDeltaMovement().add(0, 0.1F, 0));
             }
 
@@ -579,12 +576,12 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                 this.setDeltaMovement(this.getDeltaMovement().add(0, -0.1F, 0));
             }
 
-            if (this.getTarget() != null && this.isInWaterOrBubble()) {
+            if (this.getTarget() != null && this.isInWater()) {
                 timeFlying = 0;
                 this.setFlying(true);
             }
 
-            if (this.onGround() && this.timeFlying > 30 && isFlying() && !this.isInWaterOrBubble()) {
+            if (this.onGround() && this.timeFlying > 30 && isFlying() && !this.isInWater()) {
                 this.setFlying(false);
             }
         }
@@ -623,7 +620,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel p_241840_1_, AgeableMob p_241840_2_) {
-        return AMEntityRegistry.BALD_EAGLE.create(p_241840_1_);
+        return AMEntityRegistry.BALD_EAGLE.create(p_241840_1_, EntitySpawnReason.BREEDING);
     }
 
     public boolean causeFallDamage(float distance, float damageMultiplier) {
@@ -724,7 +721,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                 living.yBodyRot = this.yBodyRot + 90F;
             }
             float extraY = 0F;
-            if (passenger instanceof AbstractFish && !passenger.isInWaterOrBubble()) {
+            if (passenger instanceof AbstractFish && !passenger.isInWater()) {
                 extraY = 0.1F;
             }
             moveFunc.accept(passenger, this.getX() + extraX, this.getY() - 0.3F + extraY + passenger.getBbHeight() * 0.3F, this.getZ() + extraZ);
@@ -749,19 +746,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                 return true;
             }
         }
-        return !this.isAlive() || isInsidePortalThisTickReflection() || launchTime > 12000 || this.isRemoved();
-    }
-
-    /** 1.21.1: Entity.portalProcess is not public; use reflection to read isInsidePortalThisTick (1:1 behavior). */
-    private boolean isInsidePortalThisTickReflection() {
-        try {
-            java.lang.reflect.Field f = Entity.class.getDeclaredField("portalProcess");
-            f.setAccessible(true);
-            Object proc = f.get(this);
-            return proc != null && (Boolean) proc.getClass().getMethod("isInsidePortalThisTick").invoke(proc);
-        } catch (Exception e) {
-            return false;
-        }
+        return !this.isAlive() || this.portalProcess != null /* TODO: isInsidePortal removed */ || launchTime > 12000 || this.portalProcess != null || this.isRemoved();
     }
 
     public void remove(RemovalReason reason) {
@@ -789,7 +774,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
             stillTicksCounter = 0;
             launchTime = Math.max(launchTime, 12000);
         }
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (returnControlTime > 0 && owner != null) {
                 this.getLookControl().setLookAt(owner, 30, 30);
             } else {
@@ -849,35 +834,36 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
     }
 
     //killEntity
-    public void awardKillScore(LivingEntity entity, int score, DamageSource src) {
+    @Override
+    public void awardKillScore(Entity killed, DamageSource damageSource) {
         if (this.isLaunched() && this.hasCap() && this.isTame() && this.getOwner() != null) {
             if (this.getOwner() instanceof ServerPlayer && this.distanceTo(this.getOwner()) >= 100) {
                 AMAdvancementTriggerRegistry.BALD_EAGLE_CHALLENGE.trigger((ServerPlayer) this.getOwner());
             }
         }
-        super.awardKillScore(entity, score, src);
+        super.awardKillScore(killed, damageSource);
     }
 
-
-    public boolean hurt(DamageSource source, float amount) {
-        if (this.isInvulnerableTo(source)) {
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        if (this.isInvulnerableTo(level, source)) {
             return false;
         } else {
             final Entity entity = source.getEntity();
             if (entity != null && this.isTame() && !(entity instanceof Player) && !(entity instanceof AbstractArrow) && this.isLaunched()) {
                 amount = (amount + 1.0F) / 4.0F;
             }
-            return super.hurt(source, amount);
+            return super.hurtServer(level, source, amount);
         }
     }
 
     public void loadChunkOnServer(BlockPos center) {
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             ServerLevel serverWorld = (ServerLevel) level();
             for (int i = -1; i <= 1; i++) {
                 for (int j = -1; j <= 1; j++) {
-                    ChunkPos pos = new ChunkPos(this.blockPosition().offset(i * 16, 0, j * 16));
-                    serverWorld.setChunkForced(pos.x, pos.z, true);
+                    ChunkPos pos = ChunkPos.containing(this.blockPosition().offset(i * 16, 0, j * 16));
+                    serverWorld.setChunkForced(pos.x(), pos.z(), true);
 
                 }
             }
@@ -892,7 +878,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
         if (this.hasCap()) {
             this.setFlying(true);
             this.getMoveControl().setWantedPosition(this.getX(), this.getY(), this.getZ(), 0.1F);
-            if (this.level().isClientSide) {
+            if (this.level().isClientSide()) {
                 AlexsMobs.sendMSGToServer(new MessageMosquitoDismount(this.getId(), player.getId()));
             }
             AlexsMobs.PROXY.setRenderViewEntity(this);
@@ -979,22 +965,22 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                 }
                 if (this.eagle.isBaby()) {
                     this.flightTarget = false;
-                } else if (this.eagle.isInWaterOrBubble()) {
+                } else if (this.eagle.isInWater()) {
                     this.flightTarget = true;
                 } else if (this.eagle.hasCap()) {
                     this.flightTarget = false;
                 } else if (this.eagle.onGround()) {
-                    this.flightTarget = random.nextBoolean();
+                    this.flightTarget = this.eagle.getRandom().nextBoolean();
                 } else {
-                    if (orbitResetCooldown == 0 && random.nextInt(6) == 0) {
+                    if (orbitResetCooldown == 0 && this.eagle.getRandom().nextInt(6) == 0) {
                         orbitResetCooldown = 400;
                         eagle.orbitPos = eagle.blockPosition();
-                        eagle.orbitDist = 4 + random.nextInt(5);
-                        eagle.orbitClockwise = random.nextBoolean();
+                        eagle.orbitDist = 4 + this.eagle.getRandom().nextInt(5);
+                        eagle.orbitClockwise = this.eagle.getRandom().nextBoolean();
                         orbitTime = 0;
-                        maxOrbitTime = (int) (360 + 360 * random.nextFloat());
+                        maxOrbitTime = (int) (360 + 360 * this.eagle.getRandom().nextFloat());
                     }
-                    this.flightTarget = eagle.isVehicle() || random.nextInt(7) > 0 && eagle.timeFlying < 700;
+                    this.flightTarget = eagle.isVehicle() || this.eagle.getRandom().nextInt(7) > 0 && eagle.timeFlying < 700;
                 }
                 Vec3 lvt_1_1_ = this.getPosition();
                 if (lvt_1_1_ == null) {
@@ -1016,12 +1002,12 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                 orbitResetCooldown++;
             }
             if (orbitResetCooldown > 0 && eagle.orbitPos != null) {
-                if (orbitTime < maxOrbitTime && !eagle.isInWaterOrBubble()) {
+                if (orbitTime < maxOrbitTime && !eagle.isInWater()) {
                     orbitTime++;
                 } else {
                     orbitTime = 0;
                     eagle.orbitPos = null;
-                    orbitResetCooldown = -400 - random.nextInt(400);
+                    orbitResetCooldown = -400 - this.eagle.getRandom().nextInt(400);
                 }
             }
             if (eagle.horizontalCollision && !eagle.onGround()) {
@@ -1031,24 +1017,24 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                 eagle.getMoveControl().setWantedPosition(x, y, z, 1F);
             } else {
                 if (!eagle.onGround() && eagle.isFlying()) {
-                    if (!eagle.isInWaterOrBubble()) {
+                    if (!eagle.isInWater()) {
                         eagle.setDeltaMovement(eagle.getDeltaMovement().multiply(1.2F, 0.6F, 1.2F));
                     }
                 } else {
                     this.eagle.getNavigation().moveTo(this.x, this.y, this.z, 1F);
                 }
             }
-            if (!flightTarget && eagle.onGround() && isFlying()) {
+            if (!flightTarget && eagle.onGround() && eagle.isFlying()) {
                 eagle.setFlying(false);
                 orbitTime = 0;
                 eagle.orbitPos = null;
-                orbitResetCooldown = -400 - random.nextInt(400);
+                orbitResetCooldown = -400 - this.eagle.getRandom().nextInt(400);
             }
-            if (eagle.timeFlying > 30 && isFlying() && (!level().isEmptyBlock(eagle.getBlockPosBelowThatAffectsMyMovement()) || eagle.onGround()) && !eagle.isInWaterOrBubble()) {
+            if (eagle.timeFlying > 30 && eagle.isFlying() && (!eagle.level().isEmptyBlock(eagle.getBlockPosBelowThatAffectsMyMovement()) || eagle.onGround()) && !eagle.isInWater()) {
                 eagle.setFlying(false);
                 orbitTime = 0;
                 eagle.orbitPos = null;
-                orbitResetCooldown = -400 - random.nextInt(400);
+                orbitResetCooldown = -400 - this.eagle.getRandom().nextInt(400);
             }
         }
 
@@ -1060,7 +1046,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                 eagle.orbitPos = eagle.getOwner().blockPosition();
             }
             if (orbitResetCooldown > 0 && eagle.orbitPos != null) {
-                return eagle.getOrbitVec(vector3d, 4 + random.nextInt(2));
+                return eagle.getOrbitVec(vector3d, 4 + this.eagle.getRandom().nextInt(2));
             }
             if (eagle.isVehicle() || eagle.isOverWaterOrVoid()) {
                 flightTarget = true;
@@ -1123,7 +1109,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
 
         public void stop() {
             circleTime = 0;
-            maxCircleTime = 60 + random.nextInt(60);
+            maxCircleTime = 60 + this.eagle.getRandom().nextInt(60);
         }
 
         public void tick() {
@@ -1142,12 +1128,12 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                         eagle.orbitPos = eagle.orbitPos.above();
                     }
                 }
-                final Vec3 vec = eagle.getOrbitVec(Vec3.ZERO, 4 + random.nextInt(2));
+                final Vec3 vec = eagle.getOrbitVec(Vec3.ZERO, 4 + this.eagle.getRandom().nextInt(2));
                 if (vec != null) {
                     eagle.getMoveControl().setWantedPosition(vec.x, vec.y, vec.z, 1.2F);
                 }
             } else if (target != null) {
-                if (eagle.isFlying() || eagle.isInWaterOrBubble()) {
+                if (eagle.isFlying() || eagle.isInWater()) {
                     final double d0 = eagle.getX() - target.getX();
                     final double d2 = eagle.getZ() - target.getZ();
                     final double xzDist = Math.sqrt(d0 * d0 + d2 * d2);
@@ -1156,7 +1142,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                         yAddition = 3D;
                     }
                     eagle.setTackling(true);
-                    eagle.getMoveControl().setWantedPosition(target.getX(), target.getY() + yAddition, target.getZ(), eagle.isInWaterOrBubble() ? 1.3F : 1.0F);
+                    eagle.getMoveControl().setWantedPosition(target.getX(), target.getY() + yAddition, target.getZ(), eagle.isInWater() ? 1.3F : 1.0F);
                 } else {
                     this.eagle.getNavigation().moveTo(target, 1F);
                 }
@@ -1175,18 +1161,18 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                                 living.yBodyRot = eagle.yBodyRot + 90F;
                             }
                             target.setPos(eagle.getX() + extraX, eagle.getY() - 0.4F + target.getBbHeight() * 0.45F, eagle.getZ() + extraZ);
-                            target.startRiding(eagle, true);
+                            target.startRiding(eagle, true, false);
                         } else {
                             target.hurt(eagle.damageSources().mobAttack(eagle), 5);
                             eagle.setFlying(false);
                             eagle.orbitPos = target.blockPosition().above(2);
                             circleTime = 0;
-                            maxCircleTime = 60 + random.nextInt(60);
+                            maxCircleTime = 60 + this.eagle.getRandom().nextInt(60);
                         }
                     } else {
-                        eagle.doHurtTarget(target);
+                        eagle.doHurtTarget((ServerLevel) eagle.level(), target);
                     }
-                } else if (eagle.distanceTo(target) > 12 || target.isInWaterOrBubble()) {
+                } else if (eagle.distanceTo(target) > 12 || target.isInWater()) {
                     eagle.setFlying(true);
                 }
             }
@@ -1229,8 +1215,8 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                 if (this.eagle.distanceTo(owner) < owner.getBbWidth() + 1.4D) {
                     this.eagle.setLaunched(false);
                     if (this.eagle.getRidingFalcons(owner) <= 0) {
-                        this.eagle.startRiding(owner);
-                        if (!eagle.level().isClientSide) {
+                        this.eagle.startRiding(owner, true, false);
+                        if (!eagle.level().isClientSide()) {
                             AlexsMobs.sendMSGToAll(new MessageMosquitoMountPlayer(eagle.getId(), owner.getId()));
                         }
                     } else {

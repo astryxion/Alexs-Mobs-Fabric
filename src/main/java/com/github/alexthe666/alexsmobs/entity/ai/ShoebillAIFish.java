@@ -3,8 +3,6 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 import com.github.alexthe666.alexsmobs.entity.EntityShoebill;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.FluidTags;
@@ -13,11 +11,13 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.storage.loot.BuiltInLootTables;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParamSet;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.EnumSet;
@@ -86,13 +86,15 @@ public class ShoebillAIFish extends Goal {
     public void spawnFishingLoot() {
         double luck = 0D + bird.luckLevel * 0.5F;
         LootParams.Builder lootcontext$builder = new LootParams.Builder((ServerLevel) this.bird.level());
-        lootcontext$builder.withLuck((float) luck); // Forge: add player & looted bird to LootContext
-        LootContextParamSet.Builder lootparameterset$builder = new LootContextParamSet.Builder();
+        lootcontext$builder.withParameter(LootContextParams.ORIGIN, this.bird.position());
+        lootcontext$builder.withParameter(LootContextParams.TOOL, new ItemStack(Items.FISHING_ROD));
+        lootcontext$builder.withParameter(LootContextParams.THIS_ENTITY, this.bird);
+        lootcontext$builder.withLuck((float) luck);
         LootTable loottable = bird.level().getServer().reloadableRegistries().getLootTable(BuiltInLootTables.FISHING);
-        List<ItemStack> result = loottable.getRandomItems(lootcontext$builder.create(lootparameterset$builder.build()));
+        List<ItemStack> result = loottable.getRandomItems(lootcontext$builder.create(LootContextParamSets.FISHING));
         for (ItemStack itemstack : result) {
             ItemEntity item = new ItemEntity(this.bird.level(), this.bird.getX() + 0.5F, this.bird.getY(), this.bird.getZ(), itemstack);
-            if (!this.bird.level().isClientSide) {
+            if (!this.bird.level().isClientSide()) {
                 this.bird.level().addFreshEntity(item);
             }
         }

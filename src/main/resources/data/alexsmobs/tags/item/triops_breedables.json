@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "minecraft:carrot"
+    "minecraft:carrot",
+    "#c:crops/carrot"
   ]
 }

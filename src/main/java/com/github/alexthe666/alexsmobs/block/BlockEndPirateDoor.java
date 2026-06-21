@@ -1,10 +1,12 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
+
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityEndPirateDoor;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -15,15 +17,17 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.*;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -34,10 +38,12 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-public class BlockEndPirateDoor extends BaseEntityBlock {
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
-    public static final MapCodec<BlockEndPirateDoor> CODEC = BlockBehaviour.simpleCodec(BlockEndPirateDoor::new);
-    public static final DirectionProperty HORIZONTAL_FACING = HorizontalDirectionalBlock.FACING;
+public class BlockEndPirateDoor extends BaseEntityBlock {
+    public static final MapCodec<BlockEndPirateDoor> CODEC = simpleCodec(BlockEndPirateDoor::new);
+
+    public static final EnumProperty<Direction> HORIZONTAL_FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty OPEN = BooleanProperty.create("open");
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final EnumProperty<DoorHingeSide> HINGE = BlockStateProperties.DOOR_HINGE;
@@ -48,13 +54,17 @@ public class BlockEndPirateDoor extends BaseEntityBlock {
     protected static final VoxelShape WEST_AABB = Block.box(14.0D, 0.0D, 0.0D, 16.0D, 16.0D, 16.0D);
     protected static final VoxelShape EAST_AABB = Block.box(0.0D, 0.0D, 0.0D, 2.0D, 16.0D, 16.0D);
 
-    public BlockEndPirateDoor(BlockBehaviour.Properties properties) {
-        super(properties);
+    public static BlockBehaviour.Properties defaultProperties() {
+        return Properties.of().mapColor(MapColor.COLOR_PURPLE).noOcclusion().sound(SoundType.GLASS).lightLevel((state) -> 3).requiresCorrectToolForDrops().strength(1.5F);
+    }
+
+    public BlockEndPirateDoor(BlockBehaviour.Properties props) {
+        super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(SEGMENT, 0).setValue(OPEN, false).setValue(HINGE, DoorHingeSide.RIGHT).setValue(HORIZONTAL_FACING, Direction.NORTH));
     }
 
     @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
+    public MapCodec<? extends BaseEntityBlock> codec() {
         return CODEC;
     }
 
@@ -70,12 +80,13 @@ public class BlockEndPirateDoor extends BaseEntityBlock {
         };
     }
 
-    public BlockState updateShape(BlockState state, Direction direction, BlockState state2, LevelAccessor level, BlockPos pos, BlockPos p_52801_) {
-        if(state.getValue(SEGMENT) == 0){
-            return !state.canSurvive(level, pos) || !level.getBlockState(pos.above()).is(this) || !level.getBlockState(pos.above(2)).is(this) ? Blocks.AIR.defaultBlockState() : super.updateShape(state, direction, state2, level, pos, p_52801_);
+    @Override
+    public BlockState updateShape(BlockState state, LevelReader reader, ScheduledTickAccess tickAccess, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, RandomSource random) {
+        if (state.getValue(SEGMENT) == 0) {
+            return !state.canSurvive(reader, pos) || !reader.getBlockState(pos.above()).is(this) || !reader.getBlockState(pos.above(2)).is(this) ? Blocks.AIR.defaultBlockState() : super.updateShape(state, reader, tickAccess, pos, direction, neighborPos, neighborState, random);
 
         }
-        return !state.canSurvive(level, pos) ? Blocks.AIR.defaultBlockState() : super.updateShape(state, direction, state2, level, pos, p_52801_);
+        return !state.canSurvive(reader, pos) ? Blocks.AIR.defaultBlockState() : super.updateShape(state, reader, tickAccess, pos, direction, neighborPos, neighborState, random);
     }
 
     public BlockState rotate(BlockState p_185499_1_, Rotation p_185499_2_) {
@@ -91,7 +102,7 @@ public class BlockEndPirateDoor extends BaseEntityBlock {
     }
 
     public RenderShape getRenderShape(BlockState state) {
-        return state.getValue(SEGMENT) == 0 ? RenderShape.ENTITYBLOCK_ANIMATED : RenderShape.INVISIBLE;
+        return state.getValue(SEGMENT) == 0 ? RenderShape.MODEL : RenderShape.INVISIBLE;
     }
 
     @Nullable
@@ -100,7 +111,8 @@ public class BlockEndPirateDoor extends BaseEntityBlock {
         return state.getValue(SEGMENT) == 0 ? new TileEntityEndPirateDoor(pos, state) : null;
     }
 
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos p_52780_, boolean p_52781_) {
+    @Override
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, @Nullable Orientation orientation, boolean p_52781_) {
 
         boolean flag = level.hasNeighborSignal(pos);
         flag = switch (state.getValue(SEGMENT)) {
@@ -136,7 +148,7 @@ public class BlockEndPirateDoor extends BaseEntityBlock {
             openDoorAt(worldIn, relative, !open, powered);
         }
         openDoorAt(worldIn, pos, !open, powered);
-        return InteractionResult.sidedSuccess(worldIn.isClientSide);
+        return worldIn.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
     }
 
     public static void openDoorAt(Level worldIn, BlockPos pos, boolean open, boolean powered) {
@@ -165,7 +177,7 @@ public class BlockEndPirateDoor extends BaseEntityBlock {
     public BlockState getStateForPlacement(BlockPlaceContext p_52739_) {
         BlockPos blockpos = p_52739_.getClickedPos();
         Level level = p_52739_.getLevel();
-        if (blockpos.getY() < level.getMaxBuildHeight() - 1 && level.getBlockState(blockpos.above()).canBeReplaced(p_52739_) && level.getBlockState(blockpos.above(2)).canBeReplaced(p_52739_)) {
+        if (blockpos.getY() + 2 < level.getMaxY() && level.getBlockState(blockpos.above()).canBeReplaced(p_52739_) && level.getBlockState(blockpos.above(2)).canBeReplaced(p_52739_)) {
             boolean flag = level.hasNeighborSignal(blockpos) || level.hasNeighborSignal(blockpos.above());
             return this.defaultBlockState().setValue(HORIZONTAL_FACING, p_52739_.getHorizontalDirection()).setValue(HINGE, this.getHinge(p_52739_)).setValue(OPEN, Boolean.valueOf(flag)).setValue(SEGMENT, 0);
         } else {
@@ -174,9 +186,8 @@ public class BlockEndPirateDoor extends BaseEntityBlock {
     }
 
     public void setPlacedBy(Level p_52749_, BlockPos p_52750_, BlockState p_52751_, LivingEntity p_52752_, ItemStack p_52753_) {
-        // Set top first, then middle, so updateShape on the bottom block sees both when the middle is set
-        p_52749_.setBlock(p_52750_.above(2), p_52751_.setValue(SEGMENT, 2), 3);
         p_52749_.setBlock(p_52750_.above(), p_52751_.setValue(SEGMENT, 1), 3);
+        p_52749_.setBlock(p_52750_.above(2), p_52751_.setValue(SEGMENT, 2), 3);
     }
 
     private DoorHingeSide getHinge(BlockPlaceContext p_52805_) {

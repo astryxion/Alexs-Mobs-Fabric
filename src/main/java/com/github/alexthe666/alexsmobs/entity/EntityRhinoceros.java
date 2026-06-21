@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
@@ -10,14 +13,18 @@ import com.github.alexthe666.citadel.animation.IAnimatedEntity;
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.ResourceLocation;
+import com.mojang.serialization.Codec;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -39,11 +46,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raider;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.crafting.Ingredient;
+import com.github.alexthe666.alexsmobs.misc.IngredientOr;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
@@ -52,14 +59,15 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 public class EntityRhinoceros extends Animal implements IAnimatedEntity {
 
@@ -71,8 +79,8 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
     private static final EntityDataAccessor<Integer> POTION_LEVEL = SynchedEntityData.defineId(EntityRhinoceros.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> INFLICTED_COUNT = SynchedEntityData.defineId(EntityRhinoceros.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> POTION_DURATION = SynchedEntityData.defineId(EntityRhinoceros.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_0 = SynchedEntityData.defineId(EntityRhinoceros.class, EntityDataSerializers.OPTIONAL_UUID);
-    private static final EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_1 = SynchedEntityData.defineId(EntityRhinoceros.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_0 = SynchedEntityData.defineId(EntityRhinoceros.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
+    private static final EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_1 = SynchedEntityData.defineId(EntityRhinoceros.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
     private static final EntityDataAccessor<Boolean> ANGRY = SynchedEntityData.defineId(EntityRhinoceros.class, EntityDataSerializers.BOOLEAN);
     private static final Object2IntMap<String> potionToColor = new Object2IntOpenHashMap<>();
     private int animationTick;
@@ -80,17 +88,17 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
 
     protected EntityRhinoceros(EntityType type, Level level) {
         super(type, level);
-        this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.1);
+        // setMaxUpStep removed in 1.21
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 60.0D).add(Attributes.ATTACK_DAMAGE, 8.0D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, 0.25F).add(Attributes.ARMOR, 12.0D).add(Attributes.ARMOR_TOUGHNESS, 4.0D).add(Attributes.KNOCKBACK_RESISTANCE, 0.9D).add(Attributes.ATTACK_KNOCKBACK, 2.0D);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 60.0D).add(Attributes.ATTACK_DAMAGE, 8.0D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, 0.25F).add(Attributes.ARMOR, 12.0D).add(Attributes.ARMOR_TOUGHNESS, 4.0D).add(Attributes.KNOCKBACK_RESISTANCE, 0.9D).add(Attributes.ATTACK_KNOCKBACK, 2.0D);
     }
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
-        builder.define(DATA_TRUSTED_ID_0, Optional.<UUID>empty());
-        builder.define(DATA_TRUSTED_ID_1, Optional.<UUID>empty());
+        builder.define(DATA_TRUSTED_ID_0, Optional.empty());
+        builder.define(DATA_TRUSTED_ID_1, Optional.empty());
         builder.define(APPLIED_POTION, "");
         builder.define(POTION_LEVEL, 0);
         builder.define(INFLICTED_COUNT, 0);
@@ -104,7 +112,9 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
         this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.4D, true));
         this.goalSelector.addGoal(2, new AnimalAIPanicBaby(this, 1.25D));
         this.goalSelector.addGoal(3, new BreedGoal(this, 1.0D));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.0D, AMTagRegistry.ingredientFromTags(AMTagRegistry.RHINOCEROS_FOODSTUFFS, AMTagRegistry.RHINOCEROS_BREEDABLES), false));
+        this.goalSelector.addGoal(4, new TemptGoal(this, 1.0D, IngredientOr.of(
+                Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.RHINOCEROS_FOODSTUFFS)),
+                Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.RHINOCEROS_BREEDABLES))), false));
         this.goalSelector.addGoal(5, new FollowParentGoal(this, 1.1D));
         this.goalSelector.addGoal(6, new AnimalAIWanderRanged(this, 90, 1.0D, 18, 7));
         this.goalSelector.addGoal(7, new StrollGoal(200));
@@ -126,7 +136,7 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
         return new AdvancedPathNavigateNoTeleport(this, worldIn, true);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.rhinocerosSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -134,7 +144,7 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
     public void tick() {
         super.tick();
         AnimationHandler.INSTANCE.updateAnimations(this);
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (this.getAnimation() == NO_ANIMATION && (this.getTarget() == null || !this.getTarget().isAlive())) {
                 if (this.getDeltaMovement().lengthSqr() < 0.03D && (getRandom().nextInt(500) == 0 && level().getBlockState(this.blockPosition().below()).is(Blocks.GRASS_BLOCK))) {
                     this.setAnimation(ANIMATION_EAT_GRASS);
@@ -235,7 +245,8 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
             return -1;
         } else {
             if (!potionToColor.containsKey(s)) {
-                MobEffect effect = getPotionEffect();
+                Holder<MobEffect> effectHolder = getPotionEffect();
+                MobEffect effect = effectHolder != null ? effectHolder.value() : null;
                 if (effect != null) {
                     int color = effect.getColor();
                     potionToColor.put(s, color);
@@ -248,8 +259,13 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
         }
     }
 
-    public MobEffect getPotionEffect() {
-        return BuiltInRegistries.MOB_EFFECT.get(ResourceLocation.parse(this.getAppliedPotionId()));
+    public Holder<MobEffect> getPotionEffect() {
+        String s = this.getAppliedPotionId();
+        if (s == null || s.isEmpty()) {
+            return null;
+        }
+        Identifier loc = Identifier.parse(s);
+        return this.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).get(ResourceKey.create(Registries.MOB_EFFECT, loc)).orElse(null);
     }
 
     public int getPotionDuration() {
@@ -300,12 +316,12 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
 
     private void launch(Entity launch, float angle, float scale) {
         final float rot = 180F + angle + this.getYRot();
-        final float hugeScale = 1.0F + random.nextFloat() * 0.5F * scale;
+        final float hugeScale = 1.0F + this.getRandom().nextFloat() * 0.5F * scale;
         final float strength = (float) (hugeScale *  (1.0D - ((LivingEntity) launch).getAttributeValue(Attributes.KNOCKBACK_RESISTANCE)));
         final float rotRad = rot * Mth.DEG_TO_RAD;
         final float x = Mth.sin(rotRad);
         final float z = -Mth.cos(rotRad);
-        launch.hasImpulse = true;
+        launch.needsSync = true;
         Vec3 vec3 = this.getDeltaMovement();
         Vec3 vec31 = vec3.add((new Vec3(x, 0.0D, z)).normalize().scale(strength));
         launch.setDeltaMovement(vec31.x, hugeScale * 0.3F, vec31.z);
@@ -344,7 +360,7 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverLevel, AgeableMob ageableMob) {
-        return AMEntityRegistry.RHINOCEROS.create(serverLevel);
+        return AMEntityRegistry.RHINOCEROS.create(serverLevel, EntitySpawnReason.BREEDING);
     }
 
     public boolean isAngry() {
@@ -356,13 +372,14 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
     }
 
     private void attackWithPotion(LivingEntity target, float dmg) {
-        MobEffect potion = this.getPotionEffect();
+        Holder<MobEffect> potion = this.getPotionEffect();
 
-        target.hurt(this.damageSources().mobAttack(this), dmg);
+        if (target.level() instanceof ServerLevel serverLevel) {
+            target.hurtServer(serverLevel, this.damageSources().mobAttack(this), dmg);
+        }
         if(potion != null){
-            net.minecraft.core.Holder<MobEffect> holder = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(potion);
-            MobEffectInstance instance = new MobEffectInstance(holder, this.getPotionDuration(), this.getPotionLevel());
-            if (!target.hasEffect(holder) && target.addEffect(instance)) {
+            MobEffectInstance instance = new MobEffectInstance(potion, this.getPotionDuration(), this.getPotionLevel());
+            if (!target.hasEffect(potion) && target.addEffect(instance)) {
                 this.setInflictedCount(this.getInflictedCount() + 1);
             }
         }
@@ -372,33 +389,35 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
     }
 
     public boolean doHurtTarget(Entity entity) {
+        // Don't return true here - the actual attack is handled in tick() based on animation frames
+        // Returning true would make MeleeAttackGoal think the attack succeeded and stop approaching
         if(this.getAnimation() == NO_ANIMATION){
             this.setAnimation(random.nextBoolean() ? ANIMATION_SLASH : ANIMATION_FLING);
-            return true;
         }
         return false;
     }
 
-    public boolean isAlliedTo(Entity entityIn) {
-        if (entityIn instanceof TamableAnimal tamableAnimal && tamableAnimal.getOwnerUUID() != null && trusts(tamableAnimal.getOwnerUUID())) {
-            return true;
-        }
-        return super.isAlliedTo(entityIn) || trusts(entityIn.getUUID());
-    }
-    public void addAdditionalSaveData(CompoundTag tag) {
-        super.addAdditionalSaveData(tag);
-        List<UUID> list = this.getTrustedUUIDs();
-        ListTag listtag = new ListTag();
-        Iterator var4 = list.iterator();
-
-        while(var4.hasNext()) {
-            UUID uuid = (UUID)var4.next();
-            if (uuid != null) {
-                listtag.add(NbtUtils.createUUID(uuid));
+    @Override
+    protected boolean considersEntityAsAlly(Entity entityIn) {
+        if (entityIn instanceof TamableAnimal tamableAnimal) {
+            UUID ownerUuid = tamableAnimal.getOwnerReference().getUUID();
+            if (ownerUuid != null && trusts(ownerUuid)) {
+                return true;
             }
         }
-
-        tag.put("Trusted", listtag);
+        return super.considersEntityAsAlly(entityIn) || trusts(entityIn.getUUID());
+    }
+    @Override
+    protected void addAdditionalSaveData(ValueOutput tag) {
+        super.addAdditionalSaveData(tag);
+        List<UUID> list = this.getTrustedUUIDs();
+        ArrayList<UUID> trusted = new ArrayList<>();
+        for (UUID uuid : list) {
+            if (uuid != null) {
+                trusted.add(uuid);
+            }
+        }
+        tag.store("Trusted", Codec.list(UUIDUtil.CODEC), trusted);
         tag.putBoolean("Sleeping", this.isSleeping());
         tag.putString("PotionName", this.getAppliedPotionId());
         tag.putInt("PotionLevel", this.getPotionLevel());
@@ -406,18 +425,17 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
         tag.putInt("InflictedCount", this.getInflictedCount());
     }
 
-    public void readAdditionalSaveData(CompoundTag tag) {
+    @Override
+    protected void readAdditionalSaveData(ValueInput tag) {
         super.readAdditionalSaveData(tag);
-        ListTag listtag = tag.getList("Trusted", 11);
+        List<UUID> trusted = tag.read("Trusted", Codec.list(UUIDUtil.CODEC)).orElse(List.of());
+        this.entityData.set(DATA_TRUSTED_ID_0, trusted.isEmpty() ? Optional.empty() : Optional.of(trusted.get(0)));
+        this.entityData.set(DATA_TRUSTED_ID_1, trusted.size() < 2 ? Optional.empty() : Optional.of(trusted.get(1)));
 
-        for(int i = 0; i < listtag.size(); ++i) {
-            this.addTrustedUUID(NbtUtils.loadUUID(listtag.get(i)));
-        }
-
-        this.setAppliedPotionId(tag.getString("PotionName"));
-        this.setPotionLevel(tag.getInt("PotionLevel"));
-        this.setPotionDuration(tag.getInt("PotionDuration"));
-        this.setInflictedCount(tag.getInt("InflictedCount"));
+        this.setAppliedPotionId(tag.getStringOr("PotionName", ""));
+        this.setPotionLevel(tag.getIntOr("PotionLevel", 0));
+        this.setPotionDuration(tag.getIntOr("PotionDuration", 0));
+        this.setInflictedCount(tag.getIntOr("InflictedCount", 0));
     }
 
 
@@ -425,12 +443,8 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
         ItemStack itemstack = player.getItemInHand(hand);
         InteractionResult type = super.mobInteract(player, hand);
         if(!isBaby() && (itemstack.getItem() == Items.POTION || itemstack.getItem() == Items.SPLASH_POTION || itemstack.getItem() == Items.LINGERING_POTION)){
-            Potion contained = null;
-            PotionContents contents = itemstack.get(DataComponents.POTION_CONTENTS);
-            if (contents != null && contents.potion().isPresent()) {
-                contained = contents.potion().get().value();
-            }
-            if(applyPotion(contained)){
+            PotionContents contents = itemstack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
+            if(applyPotion(contents)){
                 this.gameEvent(GameEvent.ENTITY_INTERACT);
                 this.playSound(SoundEvents.DYE_USE);
                 this.usePlayerItem(player, hand, itemstack);
@@ -450,21 +464,24 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
         return type;
     }
 
-    public boolean applyPotion(Potion potion){
-        if(potion == null || potion.getEffects().isEmpty()){
+    public boolean applyPotion(PotionContents contents){
+        if (contents.is(Potions.WATER) || contents.potion().isEmpty()) {
             resetPotion();
             return true;
-        }else{
-            if(potion.getEffects().size() >= 1){
-                MobEffectInstance first = potion.getEffects().get(0);
-                ResourceLocation loc = first.getEffect().unwrapKey().map(net.minecraft.resources.ResourceKey::location).orElse(null);
-                if(loc != null){
-                    this.setAppliedPotionId(loc.toString());
-                    this.setPotionLevel(first.getAmplifier());
-                    this.setPotionDuration(first.getDuration());
-                    this.setInflictedCount(0);
-                    return true;
-                }
+        }
+        return contents.potion().map(Holder::value).map(this::applyPotionNonWater).orElse(false);
+    }
+
+    private boolean applyPotionNonWater(Potion potion) {
+        if (potion.getEffects().size() >= 1) {
+            MobEffectInstance first = potion.getEffects().get(0);
+            Identifier loc = BuiltInRegistries.MOB_EFFECT.getKey(first.getEffect().value());
+            if (loc != null) {
+                this.setAppliedPotionId(loc.toString());
+                this.setPotionLevel(first.getAmplifier());
+                this.setPotionDuration(first.getDuration());
+                this.setInflictedCount(0);
+                return true;
             }
         }
         return false;
@@ -498,8 +515,8 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
         private LivingEntity trusted;
         private int timestamp;
 
-        public DefendTrustedTargetGoal(Class<LivingEntity> entities, boolean b, @javax.annotation.Nullable boolean b2, Predicate<LivingEntity> pred) {
-            super(EntityRhinoceros.this, entities, 10, b, b2, pred);
+        public DefendTrustedTargetGoal(Class<LivingEntity> entities, boolean b, boolean b2, Predicate<LivingEntity> pred) {
+            super(EntityRhinoceros.this, entities, 10, b, b2, AMEntityRegistry.toSelector(pred));
         }
 
         public boolean canUse() {

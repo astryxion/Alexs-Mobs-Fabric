@@ -9,21 +9,14 @@
     "description": {
       "translate": "advancements.alexsmobs.root.desc"
     },
-    "background": "alexsmobs:textures/advancement_background.png",
+    "background": "minecraft:gui/advancements/backgrounds/adventure",
     "show_toast": true,
-    "announce_to_chat": true,
-    "hidden": false
+    "announce_to_chat": true
   },
   "criteria": {
-    "useitem": {
-      "trigger": "minecraft:consume_item",
-      "conditions": {
-        "item": {
-          "items": [
-            "alexsmobs:animal_dictionary"
-          ]
-        }
-      }
+    "open_dictionary": {
+      "trigger": "alexsmobs:open_animal_dictionary"
     }
-  }
+  },
+  "sends_telemetry_event": false
 }

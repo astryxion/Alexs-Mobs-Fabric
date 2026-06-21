@@ -1,6 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
 import com.github.alexthe666.alexsmobs.entity.EntityJerboa;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
@@ -9,6 +10,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.EnumSet;
 
 public class JerboaAIBeg extends Goal {
+    private static final net.minecraft.tags.TagKey<net.minecraft.world.item.Item> COMMON_SEEDS = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, net.minecraft.resources.Identifier.parse("c:seeds"));
     private static final TargetingConditions ENTITY_PREDICATE = TargetingConditions.forNonCombat().range(32D);
     protected final EntityJerboa jerboa;
     private final double speed;
@@ -27,10 +29,13 @@ public class JerboaAIBeg extends Goal {
             --this.delayTemptCounter;
             return false;
         } else {
-            if(this.jerboa.isInLove()){
+            if (this.jerboa.isInLove()) {
                 return false;
             }
-            this.closestPlayer = this.jerboa.level().getNearestPlayer(ENTITY_PREDICATE, this.jerboa);
+            if (!(this.jerboa.level() instanceof ServerLevel serverLevel)) {
+                return false;
+            }
+            this.closestPlayer = serverLevel.getNearestPlayer(ENTITY_PREDICATE, this.jerboa);
             if (this.closestPlayer == null) {
                 return false;
             } else {
@@ -41,7 +46,7 @@ public class JerboaAIBeg extends Goal {
     }
 
     private boolean isFood(ItemStack stack) {
-        return stack.is(com.github.alexthe666.alexsmobs.misc.AMTagRegistry.JERBOA_BEGS_FOR) || jerboa.isFood(stack);
+        return stack.is(COMMON_SEEDS) || jerboa.isFood(stack);
     }
 
 

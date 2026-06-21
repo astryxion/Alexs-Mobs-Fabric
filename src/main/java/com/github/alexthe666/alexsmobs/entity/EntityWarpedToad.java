@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
@@ -7,6 +10,7 @@ import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -34,7 +38,7 @@ import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
@@ -86,14 +90,14 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
         return s != null && s.toLowerCase().contains("pepe");
     }
 
-    public static boolean canWarpedToadSpawn(EntityType<? extends Mob> typeIn, ServerLevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource randomIn) {
+    public static boolean canWarpedToadSpawn(EntityType<? extends Mob> typeIn, ServerLevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource randomIn) {
         BlockPos blockpos = pos.below();
         boolean spawnBlock = worldIn.getFluidState(blockpos).is(FluidTags.LAVA) || worldIn.getBlockState(blockpos).canOcclude();
-        return reason == MobSpawnType.SPAWNER || spawnBlock;
+        return reason == EntitySpawnReason.SPAWNER || spawnBlock;
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 30.0D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.KNOCKBACK_RESISTANCE, 0.25F).add(Attributes.MOVEMENT_SPEED, 0.2F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 30.0D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.ATTACK_DAMAGE, 2.0D).add(Attributes.KNOCKBACK_RESISTANCE, 0.25F).add(Attributes.MOVEMENT_SPEED, 0.2F);
     }
 
     protected SoundEvent getAmbientSound() {
@@ -108,7 +112,11 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
         return AMSoundRegistry.WARPED_TOAD_HURT;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean canBreatheUnderwaterAM() {
+        return true;
+    }
+
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.warpedToadSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -124,29 +132,29 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
         return worldIn.isUnobstructed(this);
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        if (this.isInvulnerableTo(source)) {
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        if (this.isInvulnerableTo(level, source)) {
             return false;
-        } else {
-            Entity entity = source.getEntity();
-            this.setOrderedToSit(false);
-            if (entity != null && this.isTame() && !(entity instanceof Player) && !(entity instanceof AbstractArrow)) {
-                amount = (amount + 1.0F) / 3.0F;
-            }
-            return super.hurt(source, amount);
         }
+        Entity entity = source.getEntity();
+        this.setOrderedToSit(false);
+        if (entity != null && this.isTame() && !(entity instanceof Player) && !(entity instanceof AbstractArrow)) {
+            amount = (amount + 1.0F) / 3.0F;
+        }
+        return super.hurtServer(level, source, amount);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("ToadSitting", this.isOrderedToSit());
         compound.putInt("Command", this.getCommand());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setOrderedToSit(compound.getBoolean("ToadSitting"));
-        this.setCommand(compound.getInt("Command"));
+        this.setOrderedToSit(compound.getBooleanOr("ToadSitting", false));
+        this.setCommand(compound.getIntOr("Command", 0));
     }
 
     protected void registerGoals() {
@@ -156,7 +164,7 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
         this.goalSelector.addGoal(3, new AnimalAIFindWater(this));
         this.goalSelector.addGoal(3, new AnimalAILeaveWater(this));
         this.goalSelector.addGoal(3, new BreedGoal(this, 0.8D));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.0D, Ingredient.of(AMTagRegistry.WARPED_TOAD_FOODSTUFFS), false));
+        this.goalSelector.addGoal(4, new TemptGoal(this, 1.0D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.WARPED_TOAD_FOODSTUFFS)), false));
         this.goalSelector.addGoal(5, new WarpedToadAIRandomSwimming(this, 1.0D, 7));
         this.goalSelector.addGoal(6, new AnimalAILeapRandomly(this, 50, 7){
             public boolean canUse(){
@@ -204,8 +212,9 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
     protected void checkFallDamage(double y, boolean onGroundIn, BlockState state, BlockPos pos) {
     }
 
-    public void customServerAiStep() {
-        super.customServerAiStep();
+    @Override
+    public void customServerAiStep(ServerLevel serverLevel) {
+        super.customServerAiStep(serverLevel);
     }
 
     public boolean isFood(ItemStack stack) {
@@ -215,26 +224,31 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
 
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
-        InteractionResult type = super.mobInteract(player, hand);
+        // Check taming BEFORE calling super to prevent player from eating the item
         if (!isTame() && itemstack.is(AMTagRegistry.WARPED_TOAD_TAMEABLES)) {
-            this.usePlayerItem(player, hand, itemstack);
-            this.gameEvent(GameEvent.EAT);
-            this.playSound(SoundEvents.STRIDER_EAT, this.getSoundVolume(), this.getVoicePitch());
-            if (getRandom().nextInt(3) == 0) {
-                this.tame(player);
-                this.level().broadcastEntityEvent(this, (byte) 7);
-            } else {
-                this.level().broadcastEntityEvent(this, (byte) 6);
-            }
-            return InteractionResult.SUCCESS;
-        }
-        if (isTame() && itemstack.is(AMTagRegistry.WARPED_TOAD_FOODSTUFFS)) {
-            if (this.getHealth() < this.getMaxHealth()) {
+            if (!this.level().isClientSide()) {
                 this.usePlayerItem(player, hand, itemstack);
                 this.gameEvent(GameEvent.EAT);
                 this.playSound(SoundEvents.STRIDER_EAT, this.getSoundVolume(), this.getVoicePitch());
-                this.heal(5);
-                return InteractionResult.SUCCESS;
+                if (getRandom().nextInt(3) == 0) {
+                    this.tame(player);
+                    this.level().broadcastEntityEvent(this, (byte) 7);
+                } else {
+                    this.level().broadcastEntityEvent(this, (byte) 6);
+                }
+            }
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        }
+        InteractionResult type = super.mobInteract(player, hand);
+        if (isTame() && itemstack.is(AMTagRegistry.WARPED_TOAD_FOODSTUFFS)) {
+            if (this.getHealth() < this.getMaxHealth()) {
+                if (!this.level().isClientSide()) {
+                    this.usePlayerItem(player, hand, itemstack);
+                    this.gameEvent(GameEvent.EAT);
+                    this.playSound(SoundEvents.STRIDER_EAT, this.getSoundVolume(), this.getVoicePitch());
+                    this.heal(5);
+                }
+                return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
             }
             return InteractionResult.PASS;
 
@@ -245,7 +259,7 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
             if (this.getCommand() == 3) {
                 this.setCommand(0);
             }
-            player.displayClientMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()), true);
+            player.sendOverlayMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()));
             boolean sit = this.getCommand() == 2;
             if (sit) {
                 this.setOrderedToSit(true);
@@ -259,7 +273,8 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
     }
 
 
-    public boolean isAlliedTo(Entity entityIn) {
+    @Override
+    protected boolean considersEntityAsAlly(Entity entityIn) {
         if (this.isTame()) {
             LivingEntity livingentity = this.getOwner();
             if (entityIn == livingentity) {
@@ -273,7 +288,7 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
             }
         }
 
-        return super.isAlliedTo(entityIn);
+        return super.considersEntityAsAlly(entityIn);
     }
 
     public boolean canSpawnSprintParticle() {
@@ -289,7 +304,7 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
         if(this.isBaby() && this.getEyeHeight() > this.getBbHeight()){
             this.refreshDimensions();
         }
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (isInWater() || isInLava()) {
                 if (swimTimer < 0) {
                     swimTimer = 0;
@@ -352,7 +367,7 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
         prevSwimProgress = swimProgress;
         prevJumpProgress = jumpProgress;
         prevReboundProgress = reboundProgress;
-        this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.0);
+        // setMaxUpStep removed in 1.21
 
         final boolean isTechnicalBlinking = this.tickCount % 50 > 42;
         if (isTechnicalBlinking) {
@@ -367,10 +382,10 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
         if (isTongueOut && attackProgress < 5F) {
             attackProgress++;
         }
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.entityData.set(JUMP_ACTIVE, !this.onGround());
         }
-        if (this.entityData.get(JUMP_ACTIVE) && !isInWaterOrBubble()) {
+        if (this.entityData.get(JUMP_ACTIVE) && !AMEntityRegistry.isInWaterOrBubble(this)) {
             this.yBodyRot = this.getYRot();
             this.yHeadRot = this.getYRot();
             if (jumpProgress < 5F) {
@@ -429,7 +444,7 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
 //            if (attackProgress == 5 && (entityIn.getBbHeight() < 0.89D || entityIn instanceof EntityCrimsonMosquito) && !entityIn.hasPassenger(this)) {
 //            }
         }
-        if (!this.level().isClientSide && attackProgress == 5F && isTongueOut) {
+        if (!this.level().isClientSide() && attackProgress == 5F && isTongueOut) {
             setTongueOut(false);
             attackProgress = 4F;
         }
@@ -481,7 +496,7 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverWorld, AgeableMob ageableEntity) {
-        return AMEntityRegistry.WARPED_TOAD.create(serverWorld);
+        return AMEntityRegistry.WARPED_TOAD.create(serverWorld, EntitySpawnReason.BREEDING);
     }
 
     public float getTongueLength() {
@@ -672,14 +687,14 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
             } else if (!this.isTeleportFriendlyBlock(new BlockPos(p_226328_1_, p_226328_2_, p_226328_3_))) {
                 return false;
             } else {
-                this.tameable.moveTo((double) p_226328_1_ + 0.5D, p_226328_2_, (double) p_226328_3_ + 0.5D, this.tameable.getYRot(), this.tameable.getXRot());
+                this.tameable.snapTo((double) p_226328_1_ + 0.5D, p_226328_2_, (double) p_226328_3_ + 0.5D, this.tameable.getYRot(), this.tameable.getXRot());
                 this.tameable.getNavigation().stop();
                 return true;
             }
         }
 
         private boolean isTeleportFriendlyBlock(BlockPos p_226329_1_) {
-            PathType lvt_2_1_ = WalkNodeEvaluator.getPathTypeStatic(this.tameable, p_226329_1_);
+            PathType lvt_2_1_ = PathType.WALKABLE; // TODO 1.21: WalkNodeEvaluator API changed
             if (lvt_2_1_ != PathType.WALKABLE) {
                 return false;
             } else {

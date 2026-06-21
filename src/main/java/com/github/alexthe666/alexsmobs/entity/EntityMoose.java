@@ -1,6 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
-import com.github.alexthe666.alexsmobs.AlexsMobs;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIHurtByTargetNotBaby;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIPanicBaby;
@@ -13,6 +15,7 @@ import com.github.alexthe666.citadel.animation.Animation;
 import com.github.alexthe666.citadel.animation.AnimationHandler;
 import com.github.alexthe666.citadel.animation.IAnimatedEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -31,7 +34,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.animal.Wolf;
+import net.minecraft.world.entity.animal.wolf.Wolf;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -46,7 +49,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
-
 import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.UUID;
@@ -59,7 +61,7 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
     private static final EntityDataAccessor<Boolean> ANTLERED = SynchedEntityData.defineId(EntityMoose.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> JOSTLING = SynchedEntityData.defineId(EntityMoose.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Float> JOSTLE_ANGLE = SynchedEntityData.defineId(EntityMoose.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Optional<UUID>> JOSTLER_UUID = SynchedEntityData.defineId(EntityMoose.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> JOSTLER_UUID = SynchedEntityData.defineId(EntityMoose.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
     private static final EntityDataAccessor<Boolean> SNOWY = SynchedEntityData.defineId(EntityMoose.class, EntityDataSerializers.BOOLEAN);
     public float prevJostleAngle;
     public float prevJostleProgress;
@@ -76,22 +78,19 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
 
     protected EntityMoose(EntityType type, Level worldIn) {
         super(type, worldIn);
-        this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.1);
+        // setMaxUpStep removed in 1.21
     }
 
-    public static boolean canMooseSpawn(EntityType<? extends Mob> typeIn, ServerLevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource randomIn) {
-        if (AMConfig.debugSpawningDiagnostic) {
-            AlexsMobs.LOGGER.debug("[SpawnDiag] canMooseSpawn called pos={} dim={}", pos, worldIn instanceof net.minecraft.world.level.Level l ? l.dimension().location() : "?");
-        }
+    public static boolean canMooseSpawn(EntityType<? extends Mob> typeIn, ServerLevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource randomIn) {
         BlockState blockstate = worldIn.getBlockState(pos.below());
-        return blockstate.is(Blocks.GRASS_BLOCK) || blockstate.is(Blocks.SNOW) || blockstate.is(Blocks.SNOW_BLOCK);
+        return (blockstate.is(Blocks.GRASS_BLOCK) || blockstate.is(Blocks.SNOW)) || blockstate.is(Blocks.SNOW_BLOCK) && worldIn.getRawBrightness(pos, 0) > 8;
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 55D).add(Attributes.ATTACK_DAMAGE, 7.5D).add(Attributes.MOVEMENT_SPEED, 0.25F).add(Attributes.KNOCKBACK_RESISTANCE, 0.5F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 55D).add(Attributes.ATTACK_DAMAGE, 7.5D).add(Attributes.MOVEMENT_SPEED, 0.25F).add(Attributes.KNOCKBACK_RESISTANCE, 0.5F);
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.mooseSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -106,7 +105,7 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
         this.goalSelector.addGoal(4, new MeleeAttackGoal(this, 1.1D, true));
         this.goalSelector.addGoal(5, new BreedGoal(this, 1.0D));
         this.goalSelector.addGoal(6, new FollowParentGoal(this, 1.1D));
-        this.goalSelector.addGoal(7, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.MOOSE_BREEDABLES), false));
+        this.goalSelector.addGoal(7, new TemptGoal(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.MOOSE_BREEDABLES)), false));
         this.goalSelector.addGoal(7, new AnimalAIWanderRanged(this, 120, 1.0D, 14, 7));
         this.goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 15.0F));
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
@@ -144,7 +143,8 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
         }
     }
 
-    public boolean doHurtTarget(Entity entityIn) {
+    @Override
+    public boolean doHurtTarget(ServerLevel level, Entity entityIn) {
         if (this.getAnimation() == NO_ANIMATION) {
             this.setAnimation(ANIMATION_ATTACK);
         }
@@ -158,22 +158,20 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
         builder.define(JOSTLING, false);
         builder.define(SNOWY, false);
         builder.define(JOSTLE_ANGLE, 0F);
-        builder.define(JOSTLER_UUID, Optional.<java.util.UUID>empty());
+        builder.define(JOSTLER_UUID, Optional.empty());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setSnowy(compound.getBoolean("Snowy"));
-        if (compound.contains("AntlerTime")) {
-            this.timeUntilAntlerDrop = compound.getInt("AntlerTime");
-        }
-        this.setAntlered(compound.getBoolean("Antlered"));
-        this.jostleCooldown = compound.getInt("JostlingCooldown");
-        this.permSnow = compound.getBoolean("SnowPerm");
+        this.setSnowy(compound.getBooleanOr("Snowy", false));
+        this.timeUntilAntlerDrop = compound.getIntOr("AntlerTime", this.timeUntilAntlerDrop);
+        this.setAntlered(compound.getBooleanOr("Antlered", false));
+        this.jostleCooldown = compound.getIntOr("JostlingCooldown", 0);
+        this.permSnow = compound.getBooleanOr("SnowPerm", false);
 
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("Snowy", this.isSnowy());
         compound.putBoolean("SnowPerm", this.permSnow);
@@ -198,7 +196,7 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
         if (jostleCooldown > 0) {
             jostleCooldown--;
         }
-        if (!this.level().isClientSide && this.getAnimation() == NO_ANIMATION && getRandom().nextInt(120) == 0 && (this.getTarget() == null || !this.getTarget().isAlive()) && !this.isJostling() && this.getJostlingPartnerUUID() == null) {
+        if (!this.level().isClientSide() && this.getAnimation() == NO_ANIMATION && getRandom().nextInt(120) == 0 && (this.getTarget() == null || !this.getTarget().isAlive()) && !this.isJostling() && this.getJostlingPartnerUUID() == null) {
             if (level().getBlockState(this.blockPosition().below()).is(Blocks.GRASS_BLOCK) && getRandom().nextInt(3) == 0) {
                 this.setAnimation(ANIMATION_EAT_GRASS);
             }
@@ -209,7 +207,9 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
         if (timeUntilAntlerDrop == 0) {
             if (this.isAntlered()) {
                 this.setAntlered(false);
-                this.spawnAtLocation(new ItemStack(AMItemRegistry.MOOSE_ANTLER));
+                if (this.level() instanceof ServerLevel serverLevel) {
+                    this.spawnAtLocation(serverLevel, new ItemStack(AMItemRegistry.MOOSE_ANTLER));
+                }
                 timeUntilAntlerDrop = 2 * DAY + this.random.nextInt(3) * DAY;
             } else {
                 this.setAntlered(true);
@@ -220,7 +220,7 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
             if (this.isJostling()) {
                 this.setJostling(false);
             }
-            if (!this.level().isClientSide && this.getAnimation() == ANIMATION_ATTACK && this.getAnimationTick() == 8) {
+            if (!this.level().isClientSide() && this.getAnimation() == ANIMATION_ATTACK && this.getAnimationTick() == 8) {
                 float dmg = (float) this.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue();
                 if (!isAntlered()) {
                     dmg = 3;
@@ -228,23 +228,23 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
                 if (this.getTarget() instanceof Wolf || this.getTarget() instanceof EntityOrca) {
                     dmg = 2;
                 }
-                getTarget().knockback(1F, getTarget().getX() - this.getX(), getTarget().getZ() - this.getZ());
+                getTarget().knockback(1, getTarget().getX() - this.getX(), getTarget().getZ() - this.getZ(), this.damageSources().mobAttack(this), 0.0F);
                 this.getTarget().hurt(this.damageSources().mobAttack(this), dmg);
             }
         }
         if(snowTimer > 0){
             snowTimer--;
         }
-        if (snowTimer == 0 && !this.level().isClientSide) {
+        if (snowTimer == 0 && !this.level().isClientSide()) {
             snowTimer = 200 + random.nextInt(400);
             if(this.isSnowy()){
                 if(!permSnow){
-                    if (!this.level().isClientSide || this.getRemainingFireTicks() > 0 || this.isInWaterOrBubble() || !EntityGrizzlyBear.isSnowingAt(level(), this.blockPosition().above())) {
+                    if (!this.level().isClientSide() || this.getRemainingFireTicks() > 0 || AMEntityRegistry.isInWaterOrBubble(this) || !EntityGrizzlyBear.isSnowingAt(level(), this.blockPosition().above())) {
                         this.setSnowy(false);
                     }
                 }
             }else{
-                if (!this.level().isClientSide && EntityGrizzlyBear.isSnowingAt(level(), this.blockPosition())) {
+                if (!this.level().isClientSide() && EntityGrizzlyBear.isSnowingAt(level(), this.blockPosition())) {
                     this.setSnowy(true);
                 }
             }
@@ -252,16 +252,16 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
         AnimationHandler.INSTANCE.updateAnimations(this);
     }
 
-    public boolean hurt(DamageSource source, float amount) {
-        if (this.isInvulnerableTo(source)) {
+    @Override
+    public boolean hurtServer(net.minecraft.server.level.ServerLevel level, DamageSource source, float amount) {
+        if (this.isInvulnerableTo(level, source)) {
             return false;
-        } else {
-            Entity entity = source.getEntity();
-            if (entity instanceof EntityOrca || entity instanceof Wolf) {
-                amount = (amount + 1.0F) * 3.0F;
-            }
-            return super.hurt(source, amount);
         }
+        Entity entity = source.getEntity();
+        if (entity instanceof EntityOrca || entity instanceof Wolf) {
+            amount = (amount + 1.0F) * 3.0F;
+        }
+        return super.hurtServer(level, source, amount);
     }
 
     protected SoundEvent getAmbientSound() {
@@ -322,7 +322,7 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
         ItemStack itemstack = player.getItemInHand(hand);
         Item item = itemstack.getItem();
         InteractionResult type = super.mobInteract(player, hand);
-        if (item == Items.SNOW && !this.isSnowy() && !this.level().isClientSide) {
+        if (item == Items.SNOW && !this.isSnowy() && !this.level().isClientSide()) {
             this.usePlayerItem(player, hand, itemstack);
             this.permSnow = true;
             this.setSnowy(true);
@@ -330,10 +330,10 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
             this.playSound(SoundEvents.SNOW_PLACE, this.getSoundVolume(), this.getVoicePitch());
             return InteractionResult.SUCCESS;
         }
-        if (item instanceof ShovelItem && this.isSnowy() && !this.level().isClientSide) {
+        if (item instanceof ShovelItem && this.isSnowy() && !this.level().isClientSide()) {
             this.permSnow = false;
             if (!player.isCreative()) {
-                itemstack.hurtAndBreak(1, player, player.getUsedItemHand() == net.minecraft.world.InteractionHand.MAIN_HAND ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND);
+                if (player instanceof ServerPlayer sp) itemstack.hurtAndBreak(1, sp, EquipmentSlot.MAINHAND);
             }
             this.setSnowy(false);
             this.gameEvent(GameEvent.ENTITY_INTERACT);
@@ -346,7 +346,7 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
     @Nullable
     public Entity getJostlingPartner() {
         UUID id = getJostlingPartnerUUID();
-        if (id != null && !this.level().isClientSide) {
+        if (id != null && !this.level().isClientSide()) {
             return ((ServerLevel) level()).getEntity(id);
         }
         return null;
@@ -366,7 +366,7 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
 
     private void applyKnockbackFromMoose(float strength, double ratioX, double ratioZ) {
         if (!(strength <= 0.0F)) {
-            this.hasImpulse = true;
+            this.needsSync = true;
             Vec3 vector3d = this.getDeltaMovement();
             Vec3 vector3d1 = (new Vec3(ratioX, 0.0D, ratioZ)).normalize().scale(strength);
             this.setDeltaMovement(vector3d.x / 2.0D - vector3d1.x, 0.3F, vector3d.z / 2.0D - vector3d1.z);
@@ -402,7 +402,7 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverWorld, AgeableMob ageableEntity) {
-        return AMEntityRegistry.MOOSE.create(serverWorld);
+        return AMEntityRegistry.MOOSE.create(serverWorld, EntitySpawnReason.BREEDING);
     }
 
     public boolean canJostleWith(EntityMoose moose) {

@@ -11,6 +11,7 @@ import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.PathType;
+import net.minecraft.world.level.pathfinder.NodeEvaluator;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class MovementControllerCustomCollisions extends MoveControl {
@@ -82,10 +83,14 @@ public class MovementControllerCustomCollisions extends MoveControl {
     }
 
     private boolean isWalkable(float p_234024_1_, float p_234024_2_) {
-        net.minecraft.core.BlockPos pos = BlockPos.containing(this.mob.getX() + (double)p_234024_1_, this.mob.getY(), this.mob.getZ() + (double)p_234024_2_);
-        if (net.minecraft.world.level.pathfinder.WalkNodeEvaluator.getPathTypeStatic(this.mob, pos) != PathType.WALKABLE) {
-            return false;
+        PathNavigation pathnavigator = this.mob.getNavigation();
+        if (pathnavigator != null) {
+            NodeEvaluator nodeprocessor = pathnavigator.getNodeEvaluator();
+            if (nodeprocessor != null && PathType.WALKABLE /* TODO: getBlockPathType API changed in 1.21 */ != PathType.WALKABLE) {
+                return false;
+            }
         }
+
         return true;
     }
 }

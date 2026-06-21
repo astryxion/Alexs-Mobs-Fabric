@@ -3,70 +3,64 @@ package com.github.alexthe666.alexsmobs.entity;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrowableItemProjectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+// NetworkHooks removed in NeoForge 1.21
 
 public class EntityTossedItem extends ThrowableItemProjectile {
 
     protected static final EntityDataAccessor<Boolean> DART = SynchedEntityData.defineId(EntityTossedItem.class, EntityDataSerializers.BOOLEAN);
 
-    public EntityTossedItem(EntityType p_i50154_1_, Level p_i50154_2_) {
-        super(p_i50154_1_, p_i50154_2_);
+    public EntityTossedItem(EntityType<? extends EntityTossedItem> type, Level level) {
+        super(type, level);
     }
 
     public EntityTossedItem(Level worldIn, LivingEntity throwerIn) {
-        super(AMEntityRegistry.TOSSED_ITEM, throwerIn, worldIn);
+        super(AMEntityRegistry.TOSSED_ITEM, throwerIn, worldIn, new ItemStack(Items.COBBLESTONE));
+        this.setOwner(throwerIn);
+        this.setPos(throwerIn.getX(), throwerIn.getEyeY() - 0.1D, throwerIn.getZ());
     }
 
     public EntityTossedItem(Level worldIn, double x, double y, double z) {
-        super(AMEntityRegistry.TOSSED_ITEM, x, y, z, worldIn);
+        super(AMEntityRegistry.TOSSED_ITEM, x, y, z, worldIn, new ItemStack(Items.COBBLESTONE));
+        this.setPos(x, y, z);
     }
-
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        builder.define(DART, false);
         super.defineSynchedData(builder);
+        builder.define(DART, false);
     }
 
     public boolean isDart() {
-        return this.entityData != null && this.entityData.get(DART);
+        return this.entityData.get(DART);
     }
 
     public void setDart(boolean dart) {
-        if (this.entityData == null) {
-            return;
-        }
         this.entityData.set(DART, dart);
-        this.setItem(new ItemStack(dart ? AMItemRegistry.ANCIENT_DART : Items.COBBLESTONE));
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
-    }
+    // getAddEntityPacket is no longer needed in 1.21
+    // public Packet<ClientGamePacketListener> getAddEntityPacket() {
     public void handleEntityEvent(byte id) {
         if (id == 3) {
             double d0 = 0.08D;
 
             for(int i = 0; i < 8; ++i) {
-                this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, this.getItem()), this.getX(), this.getY(), this.getZ(), ((double)this.random.nextFloat() - 0.5D) * 0.08D, ((double)this.random.nextFloat() - 0.5D) * 0.08D, ((double)this.random.nextFloat() - 0.5D) * 0.08D);
+                this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, this.getItem().getItem()), this.getX(), this.getY(), this.getZ(), ((double)this.random.nextFloat() - 0.5D) * 0.08D, ((double)this.random.nextFloat() - 0.5D) * 0.08D, ((double)this.random.nextFloat() - 0.5D) * 0.08D);
             }
         }
 
@@ -79,7 +73,7 @@ public class EntityTossedItem extends ThrowableItemProjectile {
             this.setYRot( (float)(Mth.atan2(x, z) * (double)Mth.RAD_TO_DEG));
             this.xRotO = this.getXRot();
             this.yRotO = this.getYRot();
-            this.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+            this.snapTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
         }
 
     }
@@ -110,29 +104,31 @@ public class EntityTossedItem extends ThrowableItemProjectile {
         if(this.getOwner() instanceof EntityCapuchinMonkey){
             EntityCapuchinMonkey boss = (EntityCapuchinMonkey) this.getOwner();
             if(!boss.isAlliedTo(p_213868_1_.getEntity()) || !boss.isTame() && !(p_213868_1_.getEntity() instanceof EntityCapuchinMonkey)){
-                p_213868_1_.getEntity().hurt(damageSources().thrown(this, boss), isDart() ? 8 : 4);
+                p_213868_1_.getEntity().hurt(damageSources().thrown(this, boss), isDart() ? 8.0F : 4.0F);
             }
         }
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
+        super.addAdditionalSaveData(compound);
         compound.putBoolean("Dart", this.isDart());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
-        this.setDart(compound.getBoolean("Dart"));
+    public void readAdditionalSaveData(ValueInput compound) {
+        super.readAdditionalSaveData(compound);
+        this.setDart(compound.getBooleanOr("Dart", false));
     }
 
     protected void onHit(HitResult result) {
         super.onHit(result);
-        if (!this.level().isClientSide && (!this.isDart() || result.getType() == HitResult.Type.BLOCK)) {
+        if (!this.level().isClientSide() && (!this.isDart() || result.getType() == HitResult.Type.BLOCK)) {
             this.level().broadcastEntityEvent(this, (byte)3);
             this.remove(RemovalReason.DISCARDED);
         }
     }
 
     protected Item getDefaultItem() {
-        // Parent defineSynchedData calls this before entityData exists on 1.21.1; capuchin setDart() sets the real stack after spawn.
+        // entityData may be null during initialization when parent class calls this
         if (this.entityData != null && isDart()) {
             return AMItemRegistry.ANCIENT_DART;
         }

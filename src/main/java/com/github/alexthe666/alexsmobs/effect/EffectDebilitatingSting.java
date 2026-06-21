@@ -2,11 +2,9 @@ package com.github.alexthe666.alexsmobs.effect;
 
 import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityTarantulaHawk;
-import com.github.alexthe666.alexsmobs.entity.MobType;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
-import com.github.alexthe666.alexsmobs.AlexsMobs;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.*;
@@ -14,8 +12,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeMap;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -30,21 +26,23 @@ public class EffectDebilitatingSting extends MobEffect {
 
     protected EffectDebilitatingSting() {
         super(MobEffectCategory.NEUTRAL, 0XFFF385);
-        this.addAttributeModifier(Attributes.MOVEMENT_SPEED, ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, "debilitating_sting_speed"), -1.0F, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+        this.addAttributeModifier(Attributes.MOVEMENT_SPEED, net.minecraft.resources.Identifier.parse("alexsmobs:debilitating_sting_speed"), -1.0F, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
     }
 
-    @Override
-    public void removeAttributeModifiers(AttributeMap attributeMapIn) {
-        super.removeAttributeModifiers(attributeMapIn);
+    public void removeAttributeModifiers(LivingEntity entityLivingBaseIn, AttributeMap attributeMapIn, int amplifier) {
+        if (entityLivingBaseIn.getType().builtInRegistryHolder().is(net.minecraft.tags.EntityTypeTags.ARTHROPOD)) {
+            super.removeAttributeModifiers(attributeMapIn);
+        }
     }
 
-    @Override
-    public void addAttributeModifiers(AttributeMap attributeMapIn, int amplifier) {
-        super.addAttributeModifiers(attributeMapIn, amplifier);
+    public void addAttributeModifiers(LivingEntity entityLivingBaseIn, AttributeMap attributeMapIn, int amplifier) {
+        if (entityLivingBaseIn.getType().builtInRegistryHolder().is(net.minecraft.tags.EntityTypeTags.ARTHROPOD)) {
+            super.addAttributeModifiers(attributeMapIn, amplifier);
+        }
     }
 
-    public boolean tick(ServerLevel level, LivingEntity entity, int amplifier) {
-        if (MobType.getMobType(entity) != MobType.ARTHROPOD) {
+    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
+        if (!entity.getType().builtInRegistryHolder().is(net.minecraft.tags.EntityTypeTags.ARTHROPOD)) {
             if (entity.getHealth() > entity.getMaxHealth() * 0.5F) {
                 entity.hurt(entity.damageSources().magic(), 1.0F);
             }
@@ -61,18 +59,16 @@ public class EffectDebilitatingSting extends MobEffect {
             }
             if (lastDuration == 1) {
                 entity.hurt(entity.damageSources().magic(), (amplifier + 1) * 30);
-                if (amplifier > 0) {
+                if (amplifier > 0 && entity.level() instanceof ServerLevel serverLevel) {
                     BlockPos surface = entity.blockPosition();
-                    while (!entity.level().isEmptyBlock(surface) && surface.getY() < 256) {
+                    while (!serverLevel.getBlockState(surface).isAir() && surface.getY() < 256) {
                         surface = surface.above();
                     }
-                    EntityTarantulaHawk baby = AMEntityRegistry.TARANTULA_HAWK.create(entity.level());
+                    EntityTarantulaHawk baby = AMEntityRegistry.TARANTULA_HAWK.create(serverLevel, EntitySpawnReason.TRIGGERED);
                     baby.setBaby(true);
                     baby.setPos(entity.getX(), surface.getY() + 0.1F, entity.getZ());
-                    if (!entity.level().isClientSide) {
-                        baby.finalizeSpawn((ServerLevelAccessor) entity.level(), entity.level().getCurrentDifficultyAt(entity.blockPosition()), MobSpawnType.BREEDING, null, null);
-                        entity.level().addFreshEntity(baby);
-                    }
+                    baby.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(entity.blockPosition()), EntitySpawnReason.BREEDING, null);
+                    serverLevel.addFreshEntity(baby);
                 }
                 entity.setNoGravity(false);
                 entity.noPhysics = false;
@@ -91,7 +87,8 @@ public class EffectDebilitatingSting extends MobEffect {
         });
     }
 
-    public boolean isDurationEffectTick(int duration, int amplifier) {
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
         lastDuration = duration;
         return duration > 0;
     }

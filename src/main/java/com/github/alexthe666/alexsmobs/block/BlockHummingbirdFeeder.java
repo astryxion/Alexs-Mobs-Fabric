@@ -1,15 +1,20 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
+
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -35,16 +40,28 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
+
 public class BlockHummingbirdFeeder extends Block {
+    public static final MapCodec<BlockHummingbirdFeeder> CODEC = simpleCodec(BlockHummingbirdFeeder::new);
     public static final IntegerProperty CONTENTS = IntegerProperty.create("contents", 0, 3);
     public static final BooleanProperty HANGING = BlockStateProperties.HANGING;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
     private static final VoxelShape AABB = Block.box(4, 0, 4, 12, 12, 12);
     private static final VoxelShape AABB_HANGING = Block.box(4, 0, 4, 12, 16, 12);
 
-    public BlockHummingbirdFeeder() {
-        super(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_ORANGE).sound(SoundType.LANTERN).strength(0.5F).randomTicks().noOcclusion());
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_ORANGE).sound(SoundType.LANTERN).strength(0.5F).randomTicks().noOcclusion();
+    }
+
+    public BlockHummingbirdFeeder(BlockBehaviour.Properties props) {
+        super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(CONTENTS, 0).setValue(HANGING, false));
+    }
+
+    @Override
+    public MapCodec<? extends Block> codec() {
+        return CODEC;
     }
 
     @Deprecated
@@ -72,10 +89,10 @@ public class BlockHummingbirdFeeder extends Block {
         return state.getValue(HANGING) ? Direction.DOWN : Direction.UP;
     }
 
-    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
+    @Override
+    protected InteractionResult useItemOn(ItemStack itemStack, BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
         int contents = state.getValue(CONTENTS);
-        ItemStack waterBottle = AMEffectRegistry.createPotion(Potions.WATER.value());
-        ItemStack itemStack = player.getItemInHand(handIn);
+        ItemStack waterBottle = PotionContents.createItemStack(Items.POTION, Potions.WATER);
         int setContent = -1;
         if(contents == 0){
             if(itemStack.is(AMTagRegistry.HUMMINGNBIRD_FEEDER_SWEETENERS)){
@@ -100,7 +117,7 @@ public class BlockHummingbirdFeeder extends Block {
             worldIn.setBlockAndUpdate(pos, state.setValue(CONTENTS, setContent));
             return InteractionResult.SUCCESS;
         }
-        return InteractionResult.FAIL;
+        return InteractionResult.PASS;
     }
 
     public void useItem(Player playerEntity, ItemStack stack, boolean dropBottle){
@@ -121,20 +138,20 @@ public class BlockHummingbirdFeeder extends Block {
         return PushReaction.DESTROY;
     }
 
-    public BlockState updateShape(BlockState stateIn, Direction facing, BlockState facingState, LevelAccessor worldIn, BlockPos currentPos, BlockPos facingPos) {
+    @Override
+    protected BlockState updateShape(BlockState stateIn, LevelReader reader, ScheduledTickAccess tickAccess, BlockPos currentPos, Direction facing, BlockPos facingPos, BlockState facingState, RandomSource random) {
         if (stateIn.getValue(WATERLOGGED)) {
-            worldIn.scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(worldIn));
+            tickAccess.scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(reader));
         }
 
-        return getBlockConnected(stateIn).getOpposite() == facing && !stateIn.canSurvive(worldIn, currentPos) ? Blocks.AIR.defaultBlockState() : super.updateShape(stateIn, facing, facingState, worldIn, currentPos, facingPos);
+        return getBlockConnected(stateIn).getOpposite() == facing && !stateIn.canSurvive(reader, currentPos) ? Blocks.AIR.defaultBlockState() : super.updateShape(stateIn, reader, tickAccess, currentPos, facing, facingPos, facingState, random);
     }
 
     public FluidState getFluidState(BlockState state) {
         return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
     }
 
-    @Override
-    public boolean isPathfindable(BlockState state, PathComputationType type) {
+    public boolean isPathfindable(BlockState state, BlockGetter worldIn, BlockPos pos, PathComputationType type) {
         return false;
     }
 

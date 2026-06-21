@@ -1,28 +1,26 @@
 {
-  "display": {
-    "icon": {
-      "id": "alexsmobs:cosmic_cod"
+    "display": {
+        "icon": {
+            "id": "alexsmobs:cosmic_cod"
+        },
+        "title": {
+            "translate": "advancements.alexsmobs.cosmic_cod.title"
+        },
+        "description": {
+            "translate": "advancements.alexsmobs.cosmic_cod.desc"
+        }
     },
-    "title": {
-      "translate": "advancements.alexsmobs.cosmic_cod.title"
-    },
-    "description": {
-      "translate": "advancements.alexsmobs.cosmic_cod.desc"
+    "parent": "alexsmobs:alexsmobs/capsid",
+    "criteria": {
+        "capsid": {
+            "trigger": "minecraft:inventory_changed",
+            "conditions": {
+                "items": [
+                    {
+                        "items": ["alexsmobs:cosmic_cod"]
+                    }
+                ]
+            }
+        }
     }
-  },
-  "parent": "alexsmobs:alexsmobs/capsid",
-  "criteria": {
-    "capsid": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": [
-              "alexsmobs:cosmic_cod"
-            ]
-          }
-        ]
-      }
-    }
-  }
 }

@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.entity.ai.EntityAINearestTarget3D;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
@@ -12,6 +15,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.Mth;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.*;
@@ -24,9 +28,8 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
-import net.minecraft.world.entity.animal.FlyingAnimal;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -38,9 +41,9 @@ import java.util.EnumSet;
 import java.util.Optional;
 import java.util.UUID;
 
-public class EntityMurmurHead extends Monster implements FlyingAnimal {
+public class EntityMurmurHead extends Monster {
 
-    private static final EntityDataAccessor<Optional<UUID>> BODY_UUID = SynchedEntityData.defineId(EntityMurmurHead.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Optional<UUID>> BODY_UUID = SynchedEntityData.defineId(EntityMurmurHead.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
     private static final EntityDataAccessor<Integer> BODY_ID = SynchedEntityData.defineId(EntityMurmurHead.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> PULLED_IN = SynchedEntityData.defineId(EntityMurmurHead.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> ANGRY = SynchedEntityData.defineId(EntityMurmurHead.class, EntityDataSerializers.BOOLEAN);
@@ -69,7 +72,6 @@ public class EntityMurmurHead extends Monster implements FlyingAnimal {
         FlyingPathNavigation flyingpathnavigation = new FlyingPathNavigation(this, level());
         flyingpathnavigation.setCanOpenDoors(false);
         flyingpathnavigation.setCanFloat(true);
-        flyingpathnavigation.setCanPassDoors(true);
         return flyingpathnavigation;
     }
 
@@ -89,7 +91,7 @@ public class EntityMurmurHead extends Monster implements FlyingAnimal {
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
-        builder.define(BODY_UUID, Optional.<UUID>empty());
+        builder.define(BODY_UUID, Optional.empty());
         builder.define(BODY_ID, -1);
         builder.define(PULLED_IN, true);
         builder.define(ANGRY, false);
@@ -169,7 +171,7 @@ public class EntityMurmurHead extends Monster implements FlyingAnimal {
     }
 
     public Entity getBody() {
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             final UUID id = getBodyId();
             return id == null ? null : ((ServerLevel) level()).getEntity(id);
         }else{
@@ -178,24 +180,20 @@ public class EntityMurmurHead extends Monster implements FlyingAnimal {
         }
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        if (compound.hasUUID("BodyUUID")) {
-            this.setBodyId(compound.getUUID("BodyUUID"));
-        }
+        compound.read("BodyUUID", UUIDUtil.CODEC).ifPresent(this::setBodyId);
     }
 
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
-        if (this.getBodyId() != null) {
-            compound.putUUID("BodyUUID", this.getBodyId());
-        }
+        compound.storeNullable("BodyUUID", UUIDUtil.CODEC, this.getBodyId());
     }
 
-    @Override
-    protected EntityDimensions getDefaultDimensions(Pose pose) {
-        return super.getDefaultDimensions(pose).withEyeHeight(super.getDefaultDimensions(pose).height() * 0.35F);
+    // @Override - getStandingEyeHeight signature changed in 1.21
+    protected float getStandingEyeHeight(Pose pose, EntityDimensions dimensions) {
+        return dimensions.height() * 0.35F;
     }
 
     public void tick(){
@@ -210,7 +208,7 @@ public class EntityMurmurHead extends Monster implements FlyingAnimal {
         }
         moveHair();
         Entity body = getBody();
-        if(!this.level().isClientSide) {
+        if(!this.level().isClientSide()) {
             if (body instanceof EntityMurmur) {
                 EntityMurmur murmur = (EntityMurmur) body;
                 this.entityData.set(BODY_ID, body.getId());
@@ -270,19 +268,26 @@ public class EntityMurmurHead extends Monster implements FlyingAnimal {
     }
 
     @Override
-    public boolean hurt(DamageSource source, float damage) {
+    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
         Entity body = this.getBody();
-        if(isInvulnerableTo(source)){
+        if (isInvulnerableTo(level, source)) {
             return false;
         }
-        if(body != null && body.hurt(source, 0.5F * damage)){
-            return true;
+        if (body != null) {
+            float bodyDamage = 0.5F * damage;
+            boolean bodyHit = body instanceof LivingEntity livingBody
+                    ? livingBody.hurtServer(level, source, bodyDamage)
+                    : body.hurtOrSimulate(source, bodyDamage);
+            if (bodyHit) {
+                return true;
+            }
         }
-        return super.hurt(source, damage);
+        return super.hurtServer(level, source, damage);
     }
 
-    public boolean isInvulnerableTo(DamageSource damageSource) {
-        return super.isInvulnerableTo(damageSource) || damageSource.is(DamageTypes.IN_WALL);
+    @Override
+    public boolean isInvulnerableTo(ServerLevel serverLevel, DamageSource damageSource) {
+        return super.isInvulnerableTo(serverLevel, damageSource) || damageSource.is(DamageTypes.IN_WALL);
     }
 
     private void moveHair() {
@@ -328,8 +333,12 @@ public class EntityMurmurHead extends Monster implements FlyingAnimal {
         this.yHair += d1 * 0.25D;
     }
 
-    public boolean isAlliedTo(Entity entity) {
-        return this.getBodyId() != null && entity.getUUID().equals(this.getBodyId()) || super.isAlliedTo(entity);
+    @Override
+    protected boolean considersEntityAsAlly(Entity entity) {
+        if (this.getBodyId() != null && entity.getUUID().equals(this.getBodyId())) {
+            return true;
+        }
+        return super.considersEntityAsAlly(entity);
     }
 
     public void playAmbientSound() {

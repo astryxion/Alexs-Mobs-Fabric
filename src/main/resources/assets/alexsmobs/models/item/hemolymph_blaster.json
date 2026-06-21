@@ -5,14 +5,6 @@
 		"0": "alexsmobs:item/hemolymph_blaster",
 		"particle": "alexsmobs:item/hemolymph_blaster"
 	},
-	"overrides": [
-		{
-			"predicate": {
-				"empty": 1
-			},
-			"model": "alexsmobs:item/hemolymph_blaster_empty"
-		}
-	],
 	"elements": [
 		{
 			"name": "gun",

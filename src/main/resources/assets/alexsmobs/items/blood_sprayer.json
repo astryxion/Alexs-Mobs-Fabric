@@ -1,0 +1,14 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "alexsmobs:blood_sprayer_empty",
+    "on_true": {
+      "type": "minecraft:model",
+      "model": "alexsmobs:item/blood_sprayer_empty"
+    },
+    "on_false": {
+      "type": "minecraft:model",
+      "model": "alexsmobs:item/blood_sprayer"
+    }
+  }
+}

@@ -1,13 +1,23 @@
 package com.github.alexthe666.alexsmobs.item;
 
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.item.ItemUseAnimation;
+import net.minecraft.world.level.Level;
 
-public class ItemShieldOfTheDeep extends ShieldItem {
+public class ItemShieldOfTheDeep extends Item {
 
-    public ItemShieldOfTheDeep(Properties properties) {
-        super(properties);
+    public ItemShieldOfTheDeep(Item.Properties group) {
+        super(group);
+    }
+
+    @Override
+    public ItemUseAnimation getUseAnimation(ItemStack stack) {
+        return ItemUseAnimation.BLOCK;
     }
 
     @Override
@@ -16,7 +26,8 @@ public class ItemShieldOfTheDeep extends ShieldItem {
     }
 
     @Override
-    public boolean isValidRepairItem(ItemStack stack, ItemStack repairCandidate) {
-        return repairCandidate.is(AMItemRegistry.SERRATED_SHARK_TOOTH) || super.isValidRepairItem(stack, repairCandidate);
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
+        player.startUsingItem(hand);
+        return InteractionResult.CONSUME;
     }
 }

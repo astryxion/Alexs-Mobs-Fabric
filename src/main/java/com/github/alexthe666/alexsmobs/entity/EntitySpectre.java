@@ -25,7 +25,6 @@ import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.animal.FlyingAnimal;
 import net.minecraft.world.entity.decoration.LeashFenceKnotEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
@@ -42,7 +41,7 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 import java.util.EnumSet;
 
-public class EntitySpectre extends Animal implements FlyingAnimal {
+public class EntitySpectre extends Animal {
 
     private static final EntityDataAccessor<Integer> CARDINAL_ORDINAL = SynchedEntityData.defineId(EntitySpectre.class, EntityDataSerializers.INT);
     public float birdPitch = 0;
@@ -55,18 +54,13 @@ public class EntitySpectre extends Animal implements FlyingAnimal {
     }
 
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.spectreSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static boolean canSpectreSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean canSpectreSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         BlockState blockstate = worldIn.getBlockState(pos.below());
         return true;
-    }
-
-    @Override
-    public boolean isFood(ItemStack stack) {
-        return false;
     }
 
     protected SoundEvent getAmbientSound() {
@@ -91,6 +85,11 @@ public class EntitySpectre extends Animal implements FlyingAnimal {
         builder.define(CARDINAL_ORDINAL, Integer.valueOf(Direction.NORTH.get3DDataValue()));
     }
 
+    @Override
+    public boolean isFood(net.minecraft.world.item.ItemStack stack) {
+        return false;
+    }
+
     public int getCardinalInt() {
         return this.entityData.get(CARDINAL_ORDINAL);
     }
@@ -113,12 +112,12 @@ public class EntitySpectre extends Animal implements FlyingAnimal {
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return !source.is(DamageTypes.MAGIC) && !source.is(DamageTypes.FELL_OUT_OF_WORLD) && !source.isCreativePlayer() && !source.is(DamageTypeTags.BYPASSES_INVULNERABILITY) || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return !source.is(DamageTypes.MAGIC) && !source.is(DamageTypes.FELL_OUT_OF_WORLD) && !source.isCreativePlayer() && !source.is(DamageTypeTags.BYPASSES_INVULNERABILITY) || super.isInvulnerableTo(level, source);
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
         this.setXRot(0.0F);
         this.randomizeDirection();
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
@@ -163,8 +162,21 @@ public class EntitySpectre extends Animal implements FlyingAnimal {
                 entity.setDeltaMovement(entity.getDeltaMovement().multiply(1, 0.7F, 1));
             }
             if (entity.isShiftKeyDown()) {
-                this.dropLeash(true, true);
+                this.dropLeash();
             }
+        }
+        if (this.getLeashHolder() != null && !this.getLeashHolder().isPassenger() && !(this.getLeashHolder() instanceof LeashFenceKnotEntity)) {
+            float fLeash = this.distanceTo(this.getLeashHolder());
+            if (fLeash > 30) {
+                Entity holder = this.getLeashHolder();
+                double lvt_3_1_ = (holder.getX() - this.getX()) / (double) fLeash;
+                double lvt_5_1_ = (holder.getY() - this.getY()) / (double) fLeash;
+                double lvt_7_1_ = (holder.getZ() - this.getZ()) / (double) fLeash;
+                this.setDeltaMovement(this.getDeltaMovement().add(Math.copySign(lvt_3_1_ * lvt_3_1_ * 0.4D, lvt_3_1_), Math.copySign(lvt_5_1_ * lvt_5_1_ * 0.4D, lvt_5_1_), Math.copySign(lvt_7_1_ * lvt_7_1_ * 0.4D, lvt_7_1_)));
+            }
+        }
+        if (this.getLeashHolder() != null && (!this.isAlive() || !this.getLeashHolder().isAlive())) {
+            this.dropLeash();
         }
     }
 
@@ -174,33 +186,10 @@ public class EntitySpectre extends Animal implements FlyingAnimal {
         return null;
     }
 
-    protected void tickLeash() {
-        if (this.getLeashHolder() != null) {
-            if (this.getLeashHolder().isPassenger() || this.getLeashHolder() instanceof LeashFenceKnotEntity) {
-                return;
-            }
-            float f = this.distanceTo(this.getLeashHolder());
-            if (f > 30) {
-                double lvt_3_1_ = (this.getLeashHolder().getX() - this.getX()) / (double) f;
-                double lvt_5_1_ = (this.getLeashHolder().getY() - this.getY()) / (double) f;
-                double lvt_7_1_ = (this.getLeashHolder().getZ() - this.getZ()) / (double) f;
-                this.setDeltaMovement(this.getDeltaMovement().add(Math.copySign(lvt_3_1_ * lvt_3_1_ * 0.4D, lvt_3_1_), Math.copySign(lvt_5_1_ * lvt_5_1_ * 0.4D, lvt_5_1_), Math.copySign(lvt_7_1_ * lvt_7_1_ * 0.4D, lvt_7_1_)));
-            }
-        }
-
-        if (this.getLeashHolder() != null) {
-            if (!this.isAlive() || !this.getLeashHolder().isAlive()) {
-                this.dropLeash(true, true);
-            }
-
-        }
-    }
-
     private void randomizeDirection() {
         this.setCardinalInt(2 + random.nextInt(3));
     }
 
-    @Override
     public boolean isFlying() {
         return true;
     }
@@ -375,7 +364,10 @@ public class EntitySpectre extends Animal implements FlyingAnimal {
                 --this.delayTemptCounter;
                 return false;
             } else {
-                this.closestPlayer = this.creature.level().getNearestPlayer(ENTITY_PREDICATE, this.creature);
+                if (!(this.creature.level() instanceof ServerLevel serverLevel)) {
+                    return false;
+                }
+                this.closestPlayer = serverLevel.getNearestPlayer(this.ENTITY_PREDICATE, this.creature);
                 if (this.closestPlayer == null || this.creature.getLeashHolder() == closestPlayer) {
                     return false;
                 } else {

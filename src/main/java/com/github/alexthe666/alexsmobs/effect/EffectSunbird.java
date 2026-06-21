@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.effect;
 
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
@@ -15,7 +14,7 @@ public class EffectSunbird extends MobEffect {
         this.curse = curse;
     }
 
-    public boolean tick(ServerLevel level, LivingEntity entity, int amplifier) {
+    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
         if (curse) {
             if (entity.isFallFlying()) {
                 if (entity instanceof Player) {
@@ -50,8 +49,9 @@ public class EffectSunbird extends MobEffect {
         return true;
     }
 
-    public boolean isDurationEffectTick(int duration, int amplifier) {
-        return duration > 0;
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
+        return true;
     }
 
     public String getDescriptionId() {

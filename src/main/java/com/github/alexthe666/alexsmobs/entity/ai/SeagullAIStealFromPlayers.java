@@ -3,7 +3,7 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.EntitySeagull;
 import com.github.alexthe666.alexsmobs.misc.AMAdvancementTriggerRegistry;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntitySelector;
@@ -12,6 +12,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -118,8 +119,8 @@ public class SeagullAIStealFromPlayers extends Goal {
 
     private boolean hasFoods(Player player){
         for(int i = 0; i < 9; i++){
-            ItemStack stackIn = player.getInventory().items.get(i);
-            if(stackIn.get(net.minecraft.core.component.DataComponents.FOOD) != null && !isBlacklisted(stackIn)){
+            ItemStack stackIn = player.getInventory().getItem(i);
+            if(stackIn.has(net.minecraft.core.component.DataComponents.FOOD) && !isBlacklisted(stackIn)){
                 return true;
             }
         }
@@ -127,7 +128,7 @@ public class SeagullAIStealFromPlayers extends Goal {
     }
 
     private boolean isBlacklisted(ItemStack stack){
-        ResourceLocation loc = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier loc = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if(loc != null){
             for(String str : AMConfig.seagullStealingBlacklist){
                 if(loc.toString().equals(str)){
@@ -141,8 +142,8 @@ public class SeagullAIStealFromPlayers extends Goal {
     private ItemStack getFoodItemFrom(Player player){
         List<ItemStack> foods = new ArrayList<>();
         for(int i = 0; i < 9; i++){
-            ItemStack stackIn = player.getInventory().items.get(i);
-            if(stackIn.get(net.minecraft.core.component.DataComponents.FOOD) != null && !isBlacklisted(stackIn)){
+            ItemStack stackIn = player.getInventory().getItem(i);
+            if(stackIn.has(net.minecraft.core.component.DataComponents.FOOD) && !isBlacklisted(stackIn)){
                 foods.add(stackIn);
             }
         }

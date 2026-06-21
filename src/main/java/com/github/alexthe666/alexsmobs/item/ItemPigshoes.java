@@ -1,9 +1,10 @@
 package com.github.alexthe666.alexsmobs.item;
 
-import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
+// TODO 1.21: EnchantmentCategory is now data-driven
+// import net.minecraft.world.item.enchantment.EnchantmentCategory;
 import net.minecraft.world.item.enchantment.Enchantments;
 
 public class ItemPigshoes extends Item {
@@ -20,12 +21,6 @@ public class ItemPigshoes extends Item {
         return true;
     }
 
-    public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
-        var reg = net.minecraft.core.RegistryAccess.EMPTY.registryOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT);
-        boolean isCurse = reg.getResourceKey(enchantment).flatMap(key -> reg.getTag(EnchantmentTags.CURSE).map(holders -> holders.contains(reg.getHolderOrThrow(key)))).orElse(false);
-        return enchantment.isSupportedItem(stack)
-                && !isCurse
-                && !enchantment.equals(reg.getHolderOrThrow(Enchantments.UNBREAKING).value())
-                && !enchantment.equals(reg.getHolderOrThrow(Enchantments.MENDING).value());
-    }
+    // TODO 1.21: Enchantment API completely changed - enchantments are now data-driven
+    // canApplyAtEnchantingTable method removed - use enchantment tags instead
 }

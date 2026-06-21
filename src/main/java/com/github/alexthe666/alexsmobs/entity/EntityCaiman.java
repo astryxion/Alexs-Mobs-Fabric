@@ -6,11 +6,14 @@ import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
-import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancements.triggers.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -20,6 +23,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
@@ -33,22 +37,24 @@ import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.OwnerHurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.OwnerHurtTargetGoal;
 import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
-import net.minecraft.world.entity.animal.WaterAnimal;
+import net.minecraft.world.entity.animal.fish.WaterAnimal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.pathfinder.PathType;
-import net.minecraft.world.level.storage.loot.BuiltInLootTables;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.tags.FluidTags;
 import org.jetbrains.annotations.Nullable;
 
 public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollower {
@@ -96,7 +102,7 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
         this.goalSelector.addGoal(3, new BreathAirGoal(this));
         this.goalSelector.addGoal(4, new TameableAIFollowOwnerWater(this, 1.1D, 4.0F, 2.0F, false));
         this.goalSelector.addGoal(5, new MeleeAttackGoal(this, 1.2F, false));
-        this.goalSelector.addGoal(6, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.CAIMAN_BREEDABLES), false));
+        this.goalSelector.addGoal(6, new TemptGoal(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.CAIMAN_BREEDABLES)), false));
         this.goalSelector.addGoal(7, new AnimalAIFindWater(this));
         this.goalSelector.addGoal(7, new AnimalAILeaveWater(this));
         this.goalSelector.addGoal(8, new CaimanAIBellow(this));
@@ -138,11 +144,11 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
         });
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.caimanSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static <T extends Mob> boolean canCaimanSpawn(EntityType type, LevelAccessor worldIn, MobSpawnType reason, BlockPos p_223317_3_, RandomSource random) {
+    public static <T extends Mob> boolean canCaimanSpawn(EntityType type, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos p_223317_3_, RandomSource random) {
         BlockState blockstate = worldIn.getBlockState(p_223317_3_.below());
         return blockstate.is(Blocks.MUD) || blockstate.is(Blocks.MUDDY_MANGROVE_ROOTS) || blockstate.is(AMTagRegistry.CAIMAN_SPAWNS);
     }
@@ -190,7 +196,7 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
         this.prevSitProgress = sitProgress;
         this.prevVibrateProgress = vibrateProgress;
 
-        final boolean ground = !this.isInWaterOrBubble();
+        final boolean ground = !AMEntityRegistry.isInWaterOrBubble(this);
         final boolean bellowing = this.isBellowing();
         final boolean grabbing = this.getHeldMobId() != -1;
         final boolean sitting = this.isSitting() && ground;
@@ -225,7 +231,7 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
         if (!grabbing && holdProgress > 0F) {
             holdProgress -= 2.5F;
         }
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (isInWater()) {
                 swimTimer++;
             } else {
@@ -236,17 +242,19 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
             }
             if (this.getTarget() instanceof WaterAnimal && !this.isTame()) {
                 WaterAnimal fish = (WaterAnimal) this.getTarget();
-                CompoundTag fishNbt = new CompoundTag();
-                fish.addAdditionalSaveData(fishNbt);
-                fishNbt.putString("DeathLootTable", BuiltInLootTables.EMPTY.location().toString());
-                fish.readAdditionalSaveData(fishNbt);
+                TagValueOutput fishOut = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, this.level().registryAccess());
+                fish.saveWithoutId(fishOut);
+                CompoundTag fishTag = fishOut.buildResult();
+                fishTag.putString("DeathLootTable", Identifier.fromNamespaceAndPath("minecraft", "empty").toString());
+                ValueInput fishIn = TagValueInput.create(ProblemReporter.DISCARDING, this.level().registryAccess(), fishTag);
+                fish.load(fishIn);
             }
         } else {
-            if (this.isInWaterOrBubble() && this.isBellowing()) {
+            if (AMEntityRegistry.isInWaterOrBubble(this) && this.isBellowing()) {
                 int particles = 4 + getRandom().nextInt(3);
                 for (int i = 0; i <= particles; i++) {
                     Vec3 particleVec = new Vec3(0, 0, 1.0F).yRot((i / (float) particles) * (Mth.PI) * 2F).add(this.position());
-                    double particleY = this.getBoundingBox().minY + getFluidHeight(FluidTags.WATER);
+                    double particleY = this.getBoundingBox().minY + this.getFluidHeight(FluidTags.WATER);
                     this.level().addParticle(ParticleTypes.SPLASH, particleVec.x, particleY, particleVec.z, 0, 0.3F, 0);
                 }
             }
@@ -262,7 +270,7 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
         if (isTame() && itemstack.is(AMTagRegistry.CAIMAN_FOODSTUFFS) && this.getHealth() < this.getMaxHealth()) {
             this.usePlayerItem(player, hand, itemstack);
             this.gameEvent(GameEvent.EAT);
-            this.playSound(SoundEvents.CAT_EAT, this.getSoundVolume(), this.getVoicePitch());
+            this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
             this.heal(5);
             return InteractionResult.SUCCESS;
         }
@@ -272,7 +280,7 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
             if (this.getCommand() == 3) {
                 this.setCommand(0);
             }
-            player.displayClientMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()), true);
+            player.sendOverlayMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()));
             boolean sit = this.getCommand() == 2;
             if (sit) {
                 this.setOrderedToSit(true);
@@ -286,7 +294,7 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 20.0D).add(Attributes.ATTACK_DAMAGE, 3.0D).add(Attributes.ARMOR, 8.0D).add(Attributes.MOVEMENT_SPEED, 0.2F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 20.0D).add(Attributes.ATTACK_DAMAGE, 3.0D).add(Attributes.ARMOR, 8.0D).add(Attributes.MOVEMENT_SPEED, 0.2F);
     }
 
     public boolean isPushedByFluid() {
@@ -357,15 +365,15 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
         }
     }
 
-    public void calculateEntityAnimation(LivingEntity living, boolean flying) {
+    @Override
+    public void calculateEntityAnimation(boolean flying) {
         float f1 = (float) Mth.length(this.getX() - this.xo, 0, this.getZ() - this.zo);
         float f2 = Math.min(f1 * 8.0F, 1.0F);
-        this.walkAnimation.update(f2, 0.4F);
+        this.walkAnimation.update(f2, 0.4F, this.isBaby() ? 3.0F : 1.0F);
     }
 
-    @Override
-    public boolean isInvulnerableTo(net.minecraft.world.damagesource.DamageSource source) {
-        return source.is(net.minecraft.world.damagesource.DamageTypes.DROWN) || super.isInvulnerableTo(source);
+    public boolean canBreatheUnderwaterAM() {
+        return true;
     }
 
     @Override
@@ -395,7 +403,7 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverLevel, AgeableMob ageableMob) {
-        return AMEntityRegistry.CAIMAN.create(serverLevel);
+        return AMEntityRegistry.CAIMAN.create(serverLevel, EntitySpawnReason.BREEDING);
     }
 
     public Vec3 getShakePreyPos() {
@@ -410,22 +418,24 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
         }
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
-        super.addAdditionalSaveData(compound);
-        compound.putBoolean("HasEgg", this.hasEgg());
-        compound.putBoolean("Bellowing", this.isBellowing());
-        compound.putInt("CaimanCommand", this.getCommand());
-        compound.putBoolean("CaimanSitting", this.isOrderedToSit());
-        compound.putInt("BellowCooldown", this.bellowCooldown);
+    @Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.putBoolean("HasEgg", this.hasEgg());
+        output.putBoolean("Bellowing", this.isBellowing());
+        output.putInt("CaimanCommand", this.getCommand());
+        output.putBoolean("CaimanSitting", this.isOrderedToSit());
+        output.putInt("BellowCooldown", this.bellowCooldown);
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
-        super.readAdditionalSaveData(compound);
-        this.setHasEgg(compound.getBoolean("HasEgg"));
-        this.setBellowing(compound.getBoolean("Bellowing"));
-        this.bellowCooldown = compound.getInt("BellowCooldown");
-        this.setCommand(compound.getInt("CaimanCommand"));
-        this.setOrderedToSit(compound.getBoolean("CaimanSitting"));
+    @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        this.setHasEgg(input.getBooleanOr("HasEgg", false));
+        this.setBellowing(input.getBooleanOr("Bellowing", false));
+        this.bellowCooldown = input.getIntOr("BellowCooldown", this.bellowCooldown);
+        this.setCommand(input.getIntOr("CaimanCommand", this.getCommand()));
+        this.setOrderedToSit(input.getBooleanOr("CaimanSitting", false));
     }
 
     @Override
@@ -461,7 +471,7 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
             this.animal.setAge(6000);
             this.partner.setAge(6000);
             RandomSource random = this.animal.getRandom();
-            if (this.level.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)) {
+            if (this.level.getServer().getGameRules().get(GameRules.MOB_DROPS)) {
                 this.level.addFreshEntity(new ExperienceOrb(this.level, this.animal.getX(), this.animal.getY(), this.animal.getZ(), random.nextInt(7) + 1));
             }
 
@@ -500,8 +510,8 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
             if (!this.caiman.isInWater() && this.isReachedTarget()) {
                 Level world = this.caiman.level();
                 caiman.gameEvent(GameEvent.BLOCK_PLACE);
-                world.playSound(null, blockpos, SoundEvents.TURTLE_LAY_EGG, SoundSource.BLOCKS, 0.3F, 0.9F + world.random.nextFloat() * 0.2F);
-                world.setBlock(this.blockPos.above(), AMBlockRegistry.CAIMAN_EGG.defaultBlockState().setValue(BlockReptileEgg.EGGS, Integer.valueOf(this.caiman.random.nextInt(1) + 3)), 3);
+                world.playSound(null, blockpos, SoundEvents.TURTLE_LAY_EGG, SoundSource.BLOCKS, 0.3F, 0.9F + world.getRandom().nextFloat() * 0.2F);
+                world.setBlock(this.blockPos.above(), AMBlockRegistry.CAIMAN_EGG.defaultBlockState().setValue(BlockReptileEgg.EGGS, Integer.valueOf(this.caiman.getRandom().nextInt(1) + 3)), 3);
                 this.caiman.setHasEgg(false);
                 this.caiman.setInLoveTime(600);
             }

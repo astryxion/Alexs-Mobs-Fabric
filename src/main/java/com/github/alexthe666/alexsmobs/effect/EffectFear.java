@@ -1,8 +1,6 @@
 package com.github.alexthe666.alexsmobs.effect;
 
-import com.github.alexthe666.alexsmobs.AlexsMobs;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
+import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
@@ -13,18 +11,19 @@ public class EffectFear extends MobEffect {
 
     protected EffectFear() {
         super(MobEffectCategory.NEUTRAL, 0X7474F7);
-        this.addAttributeModifier(Attributes.MOVEMENT_SPEED, ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, "fear_speed_modifier"), (double)-1.0F, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+        this.addAttributeModifier(Attributes.MOVEMENT_SPEED, net.minecraft.resources.Identifier.parse("alexsmobs:fear_speed"), (double)-1.0F, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
     }
 
-    public boolean tick(ServerLevel level, LivingEntity entity, int amplifier) {
-        if(entity.getDeltaMovement().y > 0 && !entity.isInWaterOrBubble()){
+    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
+        if(entity.getDeltaMovement().y > 0 && !AMEntityRegistry.isInWaterOrBubble(entity)){
             entity.setDeltaMovement(entity.getDeltaMovement().multiply(1, 0, 1));
         }
         return true;
     }
 
-    public boolean isDurationEffectTick(int duration, int amplifier) {
-        return duration > 0;
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
+        return true;
     }
 
     public String getDescriptionId() {

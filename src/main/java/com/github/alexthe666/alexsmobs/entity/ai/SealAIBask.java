@@ -1,5 +1,6 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
+import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntitySeal;
 import net.minecraft.world.entity.ai.goal.Goal;
 
@@ -14,11 +15,11 @@ public class SealAIBask extends Goal {
     }
 
     public boolean canContinueToUse() {
-        return this.seal.isBasking() && !this.seal.isInWaterOrBubble();
+        return this.seal.isBasking() && !AMEntityRegistry.isInWaterOrBubble(this.seal);
     }
 
     public boolean canUse() {
-        if (this.seal.isInWaterOrBubble()) {
+        if (AMEntityRegistry.isInWaterOrBubble(this.seal)) {
             return false;
         } else {
             return seal.getLastHurtByMob() == null && seal.getTarget() == null && seal.isBasking();

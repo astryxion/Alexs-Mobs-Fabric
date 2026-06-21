@@ -3,13 +3,13 @@ package com.github.alexthe666.alexsmobs.tileentity;
 import com.github.alexthe666.alexsmobs.block.BlockEndPirateAnchor;
 import com.github.alexthe666.alexsmobs.block.BlockEndPirateAnchorWinch;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-
 public class TileEntityEndPirateAnchorWinch extends BlockEntity {
 
     public float clientRoll;
@@ -40,7 +40,7 @@ public class TileEntityEndPirateAnchorWinch extends BlockEntity {
 
     private int calcChainLength(boolean goBelowAnchor) {
         BlockPos down = this.getBlockPos().below();
-        while (level != null && down.getY() > level.getMinBuildHeight() && !isAnchorTop(level, down) && (isEmptyBlock(down) || isAnchorChain(level, down))) {
+        while (level != null && down.getY() > level.getMinY() && !isAnchorTop(level, down) && (isEmptyBlock(down) || isAnchorChain(level, down))) {
             down = down.below();
         }
         int i = 0;
@@ -59,7 +59,7 @@ public class TileEntityEndPirateAnchorWinch extends BlockEntity {
     }
 
     private int keepMovingBelowAnchor(BlockPos below) {
-        while (below.getY() > level.getMinBuildHeight() && isEmptyBlock(below)) {
+        while (below.getY() > level.getMinY() && isEmptyBlock(below)) {
             below = below.below();
         }
         return below.getY();
@@ -236,18 +236,18 @@ public class TileEntityEndPirateAnchorWinch extends BlockEntity {
 
 
     @Override
-    protected void loadAdditional(CompoundTag compound, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(compound, registries);
-        this.pullingUp = compound.getBoolean("PullingUp");
-        this.draggingAnchor = compound.getBoolean("DraggingAnchor");
-        this.anchorEW = compound.getBoolean("EWAnchor");
-        this.prevChainLength = this.chainLength = compound.getFloat("ChainLength");
-        this.targetChainLength = compound.getInt("TargetChainLength");
+    protected void loadAdditional(ValueInput compound) {
+        super.loadAdditional(compound);
+        this.pullingUp = compound.getBooleanOr("PullingUp", false);
+        this.draggingAnchor = compound.getBooleanOr("DraggingAnchor", false);
+        this.anchorEW = compound.getBooleanOr("EWAnchor", false);
+        this.prevChainLength = this.chainLength = compound.getFloatOr("ChainLength", 0.0F);
+        this.targetChainLength = compound.getIntOr("TargetChainLength", 0);
     }
 
     @Override
-    protected void saveAdditional(CompoundTag compound, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(compound, registries);
+    protected void saveAdditional(ValueOutput compound) {
+        super.saveAdditional(compound);
         compound.putBoolean("PullingUp", pullingUp);
         compound.putBoolean("DraggingAnchor", draggingAnchor);
         compound.putBoolean("EWAnchor", anchorEW);

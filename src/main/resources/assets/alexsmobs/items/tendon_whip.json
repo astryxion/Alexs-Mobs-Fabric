@@ -1,0 +1,14 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "alexsmobs:tendon_whip_active",
+    "on_true": {
+      "type": "minecraft:model",
+      "model": "alexsmobs:item/tendon_whip_active"
+    },
+    "on_false": {
+      "type": "minecraft:model",
+      "model": "alexsmobs:item/tendon_whip"
+    }
+  }
+}

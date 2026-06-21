@@ -1,17 +1,20 @@
 package com.github.alexthe666.alexsmobs.entity;
 
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -26,6 +29,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+// NetworkHooks removed in NeoForge 1.21
 
 import javax.annotation.Nullable;
 import java.util.UUID;
@@ -57,7 +61,6 @@ public class EntitySandShot extends Entity {
         this.setPos(x, y, z);
         this.setDeltaMovement(p_i47274_8_, p_i47274_10_, p_i47274_12_);
     }
-
     protected static float lerpRotation(float p_234614_0_, float p_234614_1_) {
         while (p_234614_1_ - p_234614_0_ < -180.0F) {
             p_234614_0_ -= 360.0F;
@@ -78,10 +81,8 @@ public class EntitySandShot extends Entity {
         this.entityData.set(VARIANT, Integer.valueOf(variant));
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
-    }
+    // getAddEntityPacket is no longer needed in 1.21
+    // public Packet<ClientGamePacketListener> getAddEntityPacket() {
 
     public void tick() {
         if (!this.leftOwner) {
@@ -102,7 +103,7 @@ public class EntitySandShot extends Entity {
         this.updateRotation();
         if (this.level().getBlockStates(this.getBoundingBox()).noneMatch(BlockBehaviour.BlockStateBase::isAir)) {
             this.remove(RemovalReason.DISCARDED);
-        } else if (this.isInWaterOrBubble()) {
+        } else if (AMEntityRegistry.isInWaterOrBubble(this)) {
             this.remove(RemovalReason.DISCARDED);
         } else {
             final double d0 = this.getX() + vector3d.x;
@@ -130,12 +131,11 @@ public class EntitySandShot extends Entity {
 
     protected void onHitBlock(BlockHitResult p_230299_1_) {
         BlockState blockstate = this.level().getBlockState(p_230299_1_.getBlockPos());
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.remove(RemovalReason.DISCARDED);
         }
     }
 
-    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(VARIANT, 0);
     }
@@ -157,9 +157,9 @@ public class EntitySandShot extends Entity {
         }
     }
 
-    protected void addAdditionalSaveData(CompoundTag compound) {
+    protected void addAdditionalSaveData(ValueOutput compound) {
         if (this.ownerUUID != null) {
-            compound.putUUID("Owner", this.ownerUUID);
+            compound.store("Owner", UUIDUtil.CODEC, this.ownerUUID);
         }
 
         if (this.leftOwner) {
@@ -171,12 +171,10 @@ public class EntitySandShot extends Entity {
     /**
      * (abstract) Protected helper method to read subclass entity data from NBT.
      */
-    protected void readAdditionalSaveData(CompoundTag compound) {
-        if (compound.hasUUID("Owner")) {
-            this.ownerUUID = compound.getUUID("Owner");
-        }
+    protected void readAdditionalSaveData(ValueInput compound) {
+        compound.read("Owner", UUIDUtil.CODEC).ifPresent(u -> this.ownerUUID = u);
 
-        this.leftOwner = compound.getBoolean("LeftOwner");
+        this.leftOwner = compound.getBooleanOr("LeftOwner", false);
     }
 
     private boolean checkLeftOwner() {
@@ -233,7 +231,7 @@ public class EntitySandShot extends Entity {
             this.setYRot( (float) (Mth.atan2(x, z) * (double) Mth.RAD_TO_DEG));
             this.xRotO = this.getXRot();
             this.yRotO = this.getYRot();
-            this.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+            this.snapTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
         }
 
     }
@@ -252,5 +250,10 @@ public class EntitySandShot extends Entity {
         float f = Mth.sqrt((float) vector3d.horizontalDistanceSqr());
         this.setXRot(lerpRotation(this.xRotO, (float) (Mth.atan2(vector3d.y, f) * (double) Mth.RAD_TO_DEG)));
         this.setYRot( lerpRotation(this.yRotO, (float) (Mth.atan2(vector3d.x, vector3d.z) * (double) Mth.RAD_TO_DEG)));
+    }
+
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        return false;
     }
 }

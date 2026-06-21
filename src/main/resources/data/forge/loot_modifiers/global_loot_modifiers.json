@@ -1,9 +1,10 @@
 {
+  "type": "neoforge:global_loot_modifiers",
   "replace": false,
   "entries": [
-    "alexsmobs:banana_drop",
-    "alexsmobs:blossom_drop",
-    "alexsmobs:ancient_dart",
-    "alexsmobs:pigshoes"
+    { "type": "alexsmobs:banana_drop" },
+    { "type": "alexsmobs:blossom_drop" },
+    { "type": "alexsmobs:ancient_dart" },
+    { "type": "alexsmobs:pigshoes" }
   ]
 }

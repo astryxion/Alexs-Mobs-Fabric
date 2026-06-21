@@ -1,8 +1,5 @@
 package com.github.alexthe666.alexsmobs.effect;
 
-import com.github.alexthe666.alexsmobs.AlexsMobs;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
@@ -13,15 +10,16 @@ public class EffectKnockbackResistance extends MobEffect {
 
     public EffectKnockbackResistance() {
         super(MobEffectCategory.BENEFICIAL, 0X865337);
-        this.addAttributeModifier(Attributes.KNOCKBACK_RESISTANCE, ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, "knockback_resistance_modifier"), 0.5D, AttributeModifier.Operation.ADD_VALUE);
+        this.addAttributeModifier(Attributes.KNOCKBACK_RESISTANCE, net.minecraft.resources.Identifier.parse("alexsmobs:knockback_resistance"), 0.5D, AttributeModifier.Operation.ADD_VALUE);
     }
 
-    public boolean tick(ServerLevel level, LivingEntity LivingEntityIn, int amplifier) {
+    public boolean applyEffectTick(LivingEntity LivingEntityIn, int amplifier) {
         return true;
     }
 
-    public boolean isDurationEffectTick(int duration, int amplifier) {
-        return duration > 0;
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
+        return true;
     }
 
     public String getDescriptionId() {

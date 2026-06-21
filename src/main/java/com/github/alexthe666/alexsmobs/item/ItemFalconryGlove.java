@@ -2,7 +2,7 @@ package com.github.alexthe666.alexsmobs.item;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.entity.IFalconry;
-import com.github.alexthe666.alexsmobs.message.MessageSyncEntityPos;
+import com.github.alexthe666.alexsmobs.network.MessageSyncEntityPos;
 import com.google.common.base.Predicate;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -12,6 +12,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +52,7 @@ public class ItemFalconryGlove extends Item implements ILeftClick {
                     double d3 = Vector3d.distanceTo(optional.get());
 
                     if (d3 < d1 || d1 == 0.0D) {
-                        if (entity1.getRootVehicle() == playerIn.getRootVehicle() && (playerIn instanceof Player && !getPlayerCanRiderInteract((Player)playerIn))) {
+                        if (entity1.getRootVehicle() == playerIn.getRootVehicle()) {
                             if (d1 == 0.0D) {
                                 pointedEntity = entity1;
                             }
@@ -68,8 +69,8 @@ public class ItemFalconryGlove extends Item implements ILeftClick {
                     if(entity instanceof IFalconry && entity instanceof Animal animal){
                         IFalconry falcon = (IFalconry)entity;
                         animal.removeVehicle();
-                        animal.moveTo(playerIn.getX(), playerIn.getEyeY(), playerIn.getZ(), animal.getYRot(), animal.getXRot());
-                        if(animal.level().isClientSide){
+                        animal.snapTo(playerIn.getX(), playerIn.getEyeY(), playerIn.getZ(), animal.getYRot(), animal.getXRot());
+                        if(animal.level().isClientSide()){
                             AlexsMobs.sendMSGToServer(new MessageSyncEntityPos(animal.getId(), playerIn.getX(), playerIn.getEyeY(), playerIn.getZ()));
                         }else{
                             AlexsMobs.sendMSGToAll(new MessageSyncEntityPos(animal.getId(), playerIn.getX(), playerIn.getEyeY(), playerIn.getZ()));
@@ -85,14 +86,4 @@ public class ItemFalconryGlove extends Item implements ILeftClick {
         return false;
     }
 
-    /** Fabric 1.20.1: Player.canRiderInteract() not in API; use reflection for 1:1 behavior. */
-    private static boolean getPlayerCanRiderInteract(Player player) {
-        try {
-            java.lang.reflect.Method m = Player.class.getDeclaredMethod("canRiderInteract");
-            m.setAccessible(true);
-            return (Boolean) m.invoke(player);
-        } catch (Exception e) {
-            return true;
-        }
-    }
 }

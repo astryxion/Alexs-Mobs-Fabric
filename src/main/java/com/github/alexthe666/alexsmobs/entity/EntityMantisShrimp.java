@@ -1,11 +1,15 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -19,6 +23,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
@@ -34,7 +39,7 @@ import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.OwnerHurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.OwnerHurtTargetGoal;
-import net.minecraft.world.entity.animal.AbstractFish;
+import net.minecraft.world.entity.animal.fish.AbstractFish;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.Shulker;
 import net.minecraft.world.entity.player.Player;
@@ -43,16 +48,19 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
+import com.github.alexthe666.alexsmobs.misc.IngredientOr;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
-import net.minecraft.world.level.storage.loot.BuiltInLootTables;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
@@ -93,7 +101,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         this.setPathfindingMalus(PathType.WATER, 0.0F);
         this.setPathfindingMalus(PathType.WATER_BORDER, 0.0F);
         switchNavigator(false);
-        this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.0);
+        // setMaxUpStep removed in 1.21
     }
 
     protected SoundEvent getHurtSound(DamageSource damageSourceIn) {
@@ -105,33 +113,35 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
     }
 
 
-    public boolean hurt(DamageSource source, float amount) {
-        if (this.isInvulnerableTo(source)) {
+    @Override
+    public boolean hurtServer(net.minecraft.server.level.ServerLevel level, DamageSource source, float amount) {
+        if (this.isInvulnerableTo(level, source)) {
             return false;
-        } else {
-            Entity entity = source.getEntity();
-            if (entity instanceof Shulker || entity instanceof ShulkerBullet) {
-                amount = (amount + 1.0F) * 0.33F;
-            }
-            return super.hurt(source, amount);
         }
+        Entity entity = source.getEntity();
+        if (entity instanceof Shulker || entity instanceof ShulkerBullet) {
+            amount = (amount + 1.0F) * 0.33F;
+        }
+        return super.hurtServer(level, source, amount);
     }
 
     //killEntity
-    public void awardKillScore(Entity entity, int score, DamageSource src) {
+    public void awardKillScore(Entity entity, DamageSource src) {
         if(entity instanceof LivingEntity living){
-            if(living.getType() == EntityType.SHULKER){
-                CompoundTag fishNbt = new CompoundTag();
-                living.addAdditionalSaveData(fishNbt);
-                fishNbt.putString("DeathLootTable", BuiltInLootTables.EMPTY.location().toString());
-                living.readAdditionalSaveData(fishNbt);
-                living.spawnAtLocation(Items.SHULKER_SHELL);
+            if(living.getType() == EntityTypes.SHULKER){
+                TagValueOutput fishOut = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, this.level().registryAccess());
+                living.saveWithoutId(fishOut);
+                CompoundTag fishNbt = fishOut.buildResult();
+                fishNbt.putString("DeathLootTable", "minecraft:empty");
+                ValueInput fishIn = TagValueInput.create(ProblemReporter.DISCARDING, this.level().registryAccess(), fishNbt);
+                living.load(fishIn);
+                living.spawnAtLocation((ServerLevel) this.level(), Items.SHULKER_SHELL);
             }
         }
-        super.awardKillScore(entity, score, src);
+        super.awardKillScore(entity, src);
     }
 
-    public static boolean canMantisShrimpSpawn(EntityType type, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource randomIn) {
+    public static boolean canMantisShrimpSpawn(EntityType type, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource randomIn) {
         BlockPos downPos = pos;
         while (downPos.getY() > 1 && !worldIn.getFluidState(downPos).isEmpty()) {
             downPos = downPos.below();
@@ -145,14 +155,14 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 20.0D).add(Attributes.KNOCKBACK_RESISTANCE, 0.1D).add(Attributes.ARMOR, 8D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.ATTACK_DAMAGE, 3.0D).add(Attributes.MOVEMENT_SPEED, 0.3F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 20.0D).add(Attributes.KNOCKBACK_RESISTANCE, 0.1D).add(Attributes.ARMOR, 8D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.ATTACK_DAMAGE, 3.0D).add(Attributes.MOVEMENT_SPEED, 0.3F);
     }
 
     public boolean removeWhenFarAway(double distanceToClosestPlayer) {
         return !this.isTame();
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.mantisShrimpSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
@@ -165,7 +175,9 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         this.goalSelector.addGoal(4, new AnimalAIFindWater(this));
         this.goalSelector.addGoal(4, new AnimalAILeaveWater(this));
         this.goalSelector.addGoal(5, new BreedGoal(this, 0.8D));
-        this.goalSelector.addGoal(6, new TemptGoal(this, 1.0D, AMTagRegistry.ingredientFromTags(AMTagRegistry.MANTIS_SHRIMP_BREEDABLES, AMTagRegistry.MANTIS_SHRIMP_TAMEABLES), false));
+        this.goalSelector.addGoal(6, new TemptGoal(this, 1.0D, IngredientOr.of(
+                Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.MANTIS_SHRIMP_BREEDABLES)),
+                Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.MANTIS_SHRIMP_TAMEABLES))), false));
         this.goalSelector.addGoal(7, new SemiAquaticAIRandomSwimming(this, 1.0D, 30));
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
         this.goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 6.0F));
@@ -210,11 +222,13 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        return source.is(DamageTypes.DROWN) || source.is(DamageTypes.IN_WALL)  || super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+        return source.is(DamageTypes.DROWN) || source.is(DamageTypes.IN_WALL)  || super.isInvulnerableTo(level, source);
     }
 
-    /** canBreatheUnderwater() is final in 1.21.1; MantisShrimp breathing is preserved via isInvulnerableTo(DROWN) and EntityMantisShrimpBreathingMixin. */
+    public boolean canBreatheUnderwaterAM() {
+        return true;
+    }
 
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
@@ -223,10 +237,10 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         builder.define(LEFT_EYE_PITCH, 0F);
         builder.define(LEFT_EYE_YAW, 0F);
         builder.define(PUNCH_TICK, 0);
-        builder.define(COMMAND, 0);
-        builder.define(VARIANT, 0);
+        builder.define(COMMAND, Integer.valueOf(0));
+        builder.define(VARIANT, Integer.valueOf(0));
         builder.define(SITTING, false);
-        builder.define(MOISTNESS, 60000);
+        builder.define(MOISTNESS, Integer.valueOf(60000));
     }
 
     public boolean isFood(ItemStack stack) {
@@ -234,7 +248,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         return isTame() && stack.is(AMTagRegistry.MANTIS_SHRIMP_BREEDABLES);
     }
 
-    public boolean doHurtTarget(Entity entityIn) {
+    public boolean doHurtTarget(ServerLevel level, Entity entityIn) {
         this.punch();
         return true;
     }
@@ -296,14 +310,16 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         if (this.isNoAi()) {
             this.setAirSupply(this.getMaxAirSupply());
         } else {
-            if (this.isInWaterRainOrBubble() || this.getMainHandItem().getItem() == Items.WATER_BUCKET) {
+            if (this.isInWaterOrRain() || this.level().getBlockState(this.blockPosition()).is(Blocks.BUBBLE_COLUMN) || this.getMainHandItem().getItem() == Items.WATER_BUCKET) {
                 this.setMoistness(60000);
             } else {
                 this.setMoistness(this.getMoistness() - 1);
                 if (this.getMoistness() <= 0 && moistureAttackTime-- <= 0) {
                     this.setCommand(0);
                     this.setOrderedToSit(false);
-                    this.hurt(damageSources().dryOut(), random.nextInt(2) == 0 ? 1.0F : 0F);
+                    if (this.level() instanceof ServerLevel serverLevel) {
+                        this.hurtServer(serverLevel, damageSources().dryOut(), this.getRandom().nextInt(2) == 0 ? 1.0F : 0F);
+                    }
                     moistureAttackTime = 20;
                 }
             }
@@ -315,27 +331,32 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
 
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
-        InteractionResult type = super.mobInteract(player, hand);
+        // Check taming BEFORE calling super to prevent player from eating the item
         if (!isTame() && itemstack.is(AMTagRegistry.MANTIS_SHRIMP_TAMEABLES)) {
-            this.usePlayerItem(player, hand, itemstack);
-            this.gameEvent(GameEvent.EAT);
-            this.playSound(SoundEvents.STRIDER_EAT, this.getSoundVolume(), this.getVoicePitch());
-            fishFeedings++;
-            if (fishFeedings > 10 && getRandom().nextInt(6) == 0 || fishFeedings > 30) {
-                this.tame(player);
-                this.level().broadcastEntityEvent(this, (byte) 7);
-            } else {
-                this.level().broadcastEntityEvent(this, (byte) 6);
-            }
-            return InteractionResult.SUCCESS;
-        }
-        if (isTame() && itemstack.is(ItemTags.FISHES)) {
-            if (this.getHealth() < this.getMaxHealth()) {
+            if (!this.level().isClientSide()) {
                 this.usePlayerItem(player, hand, itemstack);
                 this.gameEvent(GameEvent.EAT);
                 this.playSound(SoundEvents.STRIDER_EAT, this.getSoundVolume(), this.getVoicePitch());
-                this.heal(5);
-                return InteractionResult.SUCCESS;
+                fishFeedings++;
+                if (fishFeedings > 10 && getRandom().nextInt(6) == 0 || fishFeedings > 30) {
+                    this.tame(player);
+                    this.level().broadcastEntityEvent(this, (byte) 7);
+                } else {
+                    this.level().broadcastEntityEvent(this, (byte) 6);
+                }
+            }
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        }
+        InteractionResult type = super.mobInteract(player, hand);
+        if (isTame() && itemstack.is(ItemTags.FISHES)) {
+            if (this.getHealth() < this.getMaxHealth()) {
+                if (!this.level().isClientSide()) {
+                    this.usePlayerItem(player, hand, itemstack);
+                    this.gameEvent(GameEvent.EAT);
+                    this.playSound(SoundEvents.STRIDER_EAT, this.getSoundVolume(), this.getVoicePitch());
+                    this.heal(5);
+                }
+                return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
             }
             return InteractionResult.PASS;
 
@@ -350,7 +371,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
                     itemstack.shrink(1);
                     return InteractionResult.SUCCESS;
                 } else {
-                    this.spawnAtLocation(this.getMainHandItem().copy());
+                    this.spawnAtLocation((ServerLevel) this.level(), this.getMainHandItem().copy());
                     this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
                     return InteractionResult.SUCCESS;
                 }
@@ -360,9 +381,9 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
                     this.setCommand(0);
                 }
                 if (this.getCommand() == 3) {
-                    player.displayClientMessage(Component.translatable("entity.alexsmobs.mantis_shrimp.command_3", this.getName()), true);
+                    player.sendOverlayMessage(Component.translatable("entity.alexsmobs.mantis_shrimp.command_3", this.getName()));
                 } else {
-                    player.displayClientMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()), true);
+                    player.sendOverlayMessage(Component.translatable("entity.alexsmobs.all.command_" + this.getCommand(), this.getName()));
                 }
                 boolean sit = this.getCommand() == 2;
                 if (sit) {
@@ -377,7 +398,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         return type;
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putBoolean("MantisShrimpSitting", this.isSitting());
         compound.putInt("Command", this.getCommand());
@@ -385,12 +406,12 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         compound.putInt("Variant", this.getVariant());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setOrderedToSit(compound.getBoolean("MantisShrimpSitting"));
-        this.setCommand(compound.getInt("Command"));
-        this.setVariant(compound.getInt("Variant"));
-        this.setMoistness(compound.getInt("Moisture"));
+        this.setOrderedToSit(compound.getBooleanOr("MantisShrimpSitting", false));
+        this.setCommand(compound.getIntOr("Command", 0));
+        this.setVariant(compound.getIntOr("Variant", 0));
+        this.setMoistness(compound.getIntOr("Moisture", 0));
     }
 
     public void aiStep() {
@@ -425,35 +446,38 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
 
         if (this.entityData.get(PUNCH_TICK) > 0) {
             if (this.entityData.get(PUNCH_TICK) == 2 && this.getTarget() != null && this.distanceTo(this.getTarget()) < 2.8D) {
-                if (this.getTarget() instanceof AbstractFish && !this.isTame()) {
-                    AbstractFish fish = (AbstractFish) this.getTarget();
-                    CompoundTag fishNbt = new CompoundTag();
-                    fish.addAdditionalSaveData(fishNbt);
-                    fishNbt.putString("DeathLootTable", BuiltInLootTables.EMPTY.location().toString());
-                    fish.readAdditionalSaveData(fishNbt);
+                if (this.getTarget() instanceof AbstractFish fish && !this.isTame()) {
+                    TagValueOutput fishOut = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, this.level().registryAccess());
+                    fish.saveWithoutId(fishOut);
+                    CompoundTag fishNbt = fishOut.buildResult();
+                    fishNbt.putString("DeathLootTable", "minecraft:empty");
+                    ValueInput fishIn = TagValueInput.create(ProblemReporter.DISCARDING, this.level().registryAccess(), fishNbt);
+                    fish.load(fishIn);
                 }
-                this.getTarget().knockback(1.7F, this.getX() - this.getTarget().getX(), this.getZ() - this.getTarget().getZ());
+                this.getTarget().knockback(1.7, this.getX() - this.getTarget().getX(), this.getZ() - this.getTarget().getZ(), this.damageSources().mobAttack(this), 0.0F);
                 float knockbackResist = (float) Mth.clamp((1.0D - this.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE)), 0, 1);
                 this.getTarget().setDeltaMovement(this.getTarget().getDeltaMovement().add(0, knockbackResist * 0.8F, 0));
                 if (!this.getTarget().isInWater()) {
-                    this.getTarget().setRemainingFireTicks(2 * 20);
+                    this.getTarget().igniteForSeconds(2);
                 }
-                this.getTarget().hurt(this.damageSources().mobAttack(this), (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE));
+                if (this.level() instanceof ServerLevel serverLevel && this.getTarget() instanceof LivingEntity livingTarget) {
+                    livingTarget.hurtServer(serverLevel, this.damageSources().mobAttack(this), (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE));
+                }
             }
             if(punchProgress == 1){
                 this.playSound(AMSoundRegistry.MANTIS_SHRIMP_SNAP, this.getVoicePitch(), this.getSoundVolume());
             }
-            if (punchProgress == 2 && this.level().isClientSide && this.isInWater()) {
-                for (int i = 0; i < 10 + random.nextInt(8); i++) {
-                    double d2 = this.random.nextGaussian() * 0.6D;
-                    double d0 = this.random.nextGaussian() * 0.2D;
-                    double d1 = this.random.nextGaussian() * 0.6D;
+            if (punchProgress == 2 && this.level().isClientSide() && this.isInWater()) {
+                for (int i = 0; i < 10 + this.getRandom().nextInt(8); i++) {
+                    double d2 = this.getRandom().nextGaussian() * 0.6D;
+                    double d0 = this.getRandom().nextGaussian() * 0.2D;
+                    double d1 = this.getRandom().nextGaussian() * 0.6D;
                     float radius = this.getBbWidth() * 0.85F;
                     float angle = (Maths.STARTING_ANGLE * this.yBodyRot);
-                    double extraX = radius * Mth.sin(Mth.PI + angle) + random.nextFloat() * 0.5F - 0.25F;
-                    double extraZ = radius * Mth.cos(angle) + random.nextFloat() * 0.5F - 0.25F;
+                    double extraX = radius * Mth.sin(Mth.PI + angle) + this.getRandom().nextFloat() * 0.5F - 0.25F;
+                    double extraZ = radius * Mth.cos(angle) + this.getRandom().nextFloat() * 0.5F - 0.25F;
                     ParticleOptions data = ParticleTypes.BUBBLE;
-                    this.level().addParticle(data, this.getX() + extraX, this.getY() + this.getBbHeight() * 0.3F + random.nextFloat() * 0.15F, this.getZ() + extraZ, d0, d1, d2);
+                    this.level().addParticle(data, this.getX() + extraX, this.getY() + this.getBbHeight() * 0.3F + this.getRandom().nextFloat() * 0.15F, this.getZ() + extraZ, d0, d1, d2);
                 }
             }
             if (punchProgress < 2F) {
@@ -467,7 +491,8 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         }
     }
 
-    public boolean isAlliedTo(Entity entityIn) {
+    @Override
+    protected boolean considersEntityAsAlly(Entity entityIn) {
         if (this.isTame()) {
             LivingEntity livingentity = this.getOwner();
             if (entityIn == livingentity) {
@@ -481,7 +506,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
             }
         }
 
-        return super.isAlliedTo(entityIn);
+        return super.considersEntityAsAlly(entityIn);
     }
 
     private void updateEyes() {
@@ -489,15 +514,15 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         float rightPitchDist = Math.abs(this.getEyePitch(false) - targetRightPitch);
         float leftYawDist = Math.abs(this.getEyeYaw(true) - targetLeftYaw);
         float rightYawDist = Math.abs(this.getEyeYaw(false) - targetRightYaw);
-        if (rightLookCooldown == 0 && this.random.nextInt(20) == 0 && rightPitchDist < 0.5F && rightYawDist < 0.5F) {
-            targetRightPitch = Mth.clamp(random.nextFloat() * 60F - 30, -30, 30);
-            targetRightYaw = Mth.clamp(random.nextFloat() * 60F - 30, -30, 30);
-            rightLookCooldown = 3 + random.nextInt(15);
+        if (rightLookCooldown == 0 && this.getRandom().nextInt(20) == 0 && rightPitchDist < 0.5F && rightYawDist < 0.5F) {
+            targetRightPitch = Mth.clamp(this.getRandom().nextFloat() * 60F - 30, -30, 30);
+            targetRightYaw = Mth.clamp(this.getRandom().nextFloat() * 60F - 30, -30, 30);
+            rightLookCooldown = 3 + this.getRandom().nextInt(15);
         }
-        if (leftLookCooldown == 0 && this.random.nextInt(20) == 0 && leftPitchDist < 0.5F && leftYawDist < 0.5F) {
-            targetLeftPitch = Mth.clamp(random.nextFloat() * 60F - 30, -30, 30);
-            targetLeftYaw = Mth.clamp(random.nextFloat() * 60F - 30, -30, 30);
-            leftLookCooldown = 3 + random.nextInt(15);
+        if (leftLookCooldown == 0 && this.getRandom().nextInt(20) == 0 && leftPitchDist < 0.5F && leftYawDist < 0.5F) {
+            targetLeftPitch = Mth.clamp(this.getRandom().nextFloat() * 60F - 30, -30, 30);
+            targetLeftYaw = Mth.clamp(this.getRandom().nextFloat() * 60F - 30, -30, 30);
+            leftLookCooldown = 3 + this.getRandom().nextInt(15);
         }
 
         if (leftPitchDist > 0.5F) {
@@ -550,9 +575,9 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
         int i;
-        if(reason == MobSpawnType.SPAWN_EGG){
+        if(reason == EntitySpawnReason.SPAWN_ITEM_USE){
             i = this.getRandom().nextInt(4);
         }else if(worldIn.getBiome(this.blockPosition()).is(AMTagRegistry.SPAWNS_WHITE_MANTIS_SHRIMP)){
             i = 3;
@@ -566,7 +591,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel serverWorld, AgeableMob ageableEntity) {
-        EntityMantisShrimp shrimp = AMEntityRegistry.MANTIS_SHRIMP.create(serverWorld);
+        EntityMantisShrimp shrimp = AMEntityRegistry.MANTIS_SHRIMP.create(serverWorld, EntitySpawnReason.BREEDING);
         shrimp.setVariant(getRandom().nextInt(3));
         return shrimp;
     }
@@ -705,14 +730,14 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
             } else if (!this.isTeleportFriendlyBlock(new BlockPos(p_226328_1_, p_226328_2_, p_226328_3_))) {
                 return false;
             } else {
-                this.tameable.moveTo((double) p_226328_1_ + 0.5D, p_226328_2_, (double) p_226328_3_ + 0.5D, this.tameable.getYRot(), this.tameable.getXRot());
+                this.tameable.snapTo((double) p_226328_1_ + 0.5D, p_226328_2_, (double) p_226328_3_ + 0.5D, this.tameable.getYRot(), this.tameable.getXRot());
                 this.tameable.getNavigation().stop();
                 return true;
             }
         }
 
         private boolean isTeleportFriendlyBlock(BlockPos p_226329_1_) {
-            PathType lvt_2_1_ = WalkNodeEvaluator.getPathTypeStatic(this.tameable, p_226329_1_);
+            PathType lvt_2_1_ = PathType.WALKABLE; // TODO 1.21: WalkNodeEvaluator API changed
             if (world.getFluidState(p_226329_1_).is(FluidTags.WATER) || !world.getFluidState(p_226329_1_).is(FluidTags.WATER) && world.getFluidState(p_226329_1_.below()).is(FluidTags.WATER)) {
                 return true;
             }

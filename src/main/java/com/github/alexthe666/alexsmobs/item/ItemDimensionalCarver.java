@@ -1,8 +1,9 @@
 package com.github.alexthe666.alexsmobs.item;
 
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
+import com.github.alexthe666.alexsmobs.block.BlockCapsid;
 import com.github.alexthe666.alexsmobs.entity.EntityVoidPortal;
 import com.github.alexthe666.alexsmobs.item.data.CarverPortalPos;
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
@@ -11,11 +12,12 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -28,7 +30,7 @@ public class ItemDimensionalCarver extends Item {
 
     public static final int MAX_TIME = 200;
 
-    public ItemDimensionalCarver(Properties props) {
+    public ItemDimensionalCarver(Item.Properties props) {
         super(props);
     }
 
@@ -53,35 +55,43 @@ public class ItemDimensionalCarver extends Item {
         return 1;
     }
 
-    public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
-        ItemStack itemstack = playerIn.getItemInHand(handIn);
-        if (itemstack.getDamageValue() >= itemstack.getMaxDamage()) {
-            return InteractionResultHolder.fail(itemstack);
+    public InteractionResult useOn(UseOnContext context) {
+        if (context.getLevel().getBlockState(context.getClickedPos()).getBlock() instanceof BlockCapsid) {
+            return BlockCapsid.tryInsertItem(context.getLevel(), context.getClickedPos(), context.getPlayer(), context.getHand(), context.getLevel().getBlockState(context.getClickedPos()));
         }
-        playerIn.startUsingItem(handIn);
-
-        CarverPortalPos currentPos = itemstack.get(AMDataComponents.CARVER_PORTAL_POS);
-        if (currentPos == null || !currentPos.active()) {
-            HitResult raytraceresult = rayTracePortal(worldIn, playerIn, ClipContext.Fluid.ANY);
-            Direction dir = Direction.orderedByNearest(playerIn)[0];
-
-            double x = raytraceresult.getLocation().x - dir.getNormal().getX() * 0.1F;
-            double y = raytraceresult.getLocation().y - dir.getNormal().getY() * 0.1F;
-            double z = raytraceresult.getLocation().z - dir.getNormal().getZ() * 0.1F;
-
-            itemstack.set(AMDataComponents.CARVER_PORTAL_POS, new CarverPortalPos(x, y, z, true));
-        }
-
-        CarverPortalPos portalPos = itemstack.get(AMDataComponents.CARVER_PORTAL_POS);
-        if (portalPos != null && portalPos.active()) {
-            worldIn.addParticle(AMParticleRegistry.INVERT_DIG, portalPos.x(), portalPos.y(), portalPos.z(), playerIn.getId(), 0, 0);
-        }
-        return InteractionResultHolder.consume(itemstack);
+        return InteractionResult.PASS;
     }
 
-    @Override
+    public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
+        ItemStack itemstack = playerIn.getItemInHand(handIn);
+        if (itemstack.getDamageValue() >= itemstack.getMaxDamage()) {
+            return InteractionResult.FAIL;
+        } else {
+            playerIn.startUsingItem(handIn);
+            
+            // Only set the portal position if not already active
+            CarverPortalPos currentPos = itemstack.get(AMDataComponents.CARVER_PORTAL_POS);
+            if (currentPos == null || !currentPos.active()) {
+                HitResult raytraceresult = rayTracePortal(worldIn, playerIn, ClipContext.Fluid.ANY);
+                Direction dir = Direction.orderedByNearest(playerIn)[0];
+
+                double x = raytraceresult.getLocation().x - (double) dir.getStepX() * 0.1D;
+                double y = raytraceresult.getLocation().y - (double) dir.getStepY() * 0.1D;
+                double z = raytraceresult.getLocation().z - (double) dir.getStepZ() * 0.1D;
+                
+                itemstack.set(AMDataComponents.CARVER_PORTAL_POS, new CarverPortalPos(x, y, z, true));
+            }
+            
+            CarverPortalPos portalPos = itemstack.get(AMDataComponents.CARVER_PORTAL_POS);
+            if (portalPos != null && portalPos.active()) {
+                worldIn.addParticle(AMParticleRegistry.INVERT_DIG, portalPos.x(), portalPos.y(), portalPos.z(), playerIn.getId(), 0, 0);
+            }
+            return InteractionResult.CONSUME;
+        }
+    }
+
     public int getUseDuration(ItemStack stack, LivingEntity entity) {
-        return MAX_TIME;
+        return 200;
     }
 
     public float getXpRepairRatio(ItemStack stack) {
@@ -107,10 +117,10 @@ public class ItemDimensionalCarver extends Item {
             if (player.distanceToSqr(x, y, z) > 9) {
                 flag = true;
                 if (player instanceof Player p) {
-                    p.getCooldowns().addCooldown(this, 40);
+                    p.getCooldowns().addCooldown(itemstack, 40);
                 }
             }
-            if (count == 1 && !player.level().isClientSide) {
+            if (count == 1 && !player.level().isClientSide()) {
                 player.gameEvent(GameEvent.ITEM_INTERACT_START);
                 player.playSound(SoundEvents.GLASS_BREAK, 1, 0.5F);
                 EntityVoidPortal portal = new EntityVoidPortal(player.level(), this);
@@ -122,10 +132,10 @@ public class ItemDimensionalCarver extends Item {
                 portal.setAttachmentFacing(dir);
                 player.level().addFreshEntity(portal);
                 onPortalOpen(player.level(), player, portal, dir);
-                itemstack.hurtAndBreak(1, player, player.getUsedItemHand() == InteractionHand.MAIN_HAND ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND);
+                itemstack.hurtAndBreak(1, player, net.minecraft.world.entity.EquipmentSlot.MAINHAND);
                 flag = true;
                 if (player instanceof Player p) {
-                    p.getCooldowns().addCooldown(this, 200);
+                    p.getCooldowns().addCooldown(itemstack, 200);
                 }
             }
         }
@@ -135,8 +145,9 @@ public class ItemDimensionalCarver extends Item {
         }
     }
 
-    public void releaseUsing(ItemStack stack, Level worldIn, LivingEntity entityLiving, int timeLeft) {
+    public boolean releaseUsing(ItemStack stack, Level worldIn, LivingEntity entityLiving, int timeLeft) {
         stack.set(AMDataComponents.CARVER_PORTAL_POS, CarverPortalPos.EMPTY);
+        return true;
     }
 
     public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
@@ -148,9 +159,13 @@ public class ItemDimensionalCarver extends Item {
         ResourceKey<Level> respawnDimension = Level.OVERWORLD;
         BlockPos respawnPosition = player.getSleepingPos().isPresent() ? player.getSleepingPos().get() : player.level().getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, BlockPos.ZERO);
         if (player instanceof ServerPlayer serverPlayer) {
-            respawnDimension = serverPlayer.getRespawnDimension();
-            if (serverPlayer.getRespawnPosition() != null) {
-                respawnPosition = serverPlayer.getRespawnPosition();
+            ServerPlayer.RespawnConfig respawnConfig = serverPlayer.getRespawnConfig();
+            if (respawnConfig != null) {
+                respawnDimension = respawnConfig.respawnData().dimension();
+                BlockPos spawnPos = respawnConfig.respawnData().pos();
+                if (spawnPos != null) {
+                    respawnPosition = spawnPos;
+                }
             }
         }
         portal.exitDimension = respawnDimension;

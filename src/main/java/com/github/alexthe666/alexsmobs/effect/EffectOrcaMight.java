@@ -1,7 +1,5 @@
 package com.github.alexthe666.alexsmobs.effect;
 
-import com.github.alexthe666.alexsmobs.AlexsMobs;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -11,11 +9,12 @@ public class EffectOrcaMight extends MobEffect {
 
     public EffectOrcaMight() {
         super(MobEffectCategory.BENEFICIAL, 0X4A4A52);
-        this.addAttributeModifier(Attributes.ATTACK_SPEED, ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, "orcas_might_attack_speed"), 3D, AttributeModifier.Operation.ADD_VALUE);
+        this.addAttributeModifier(Attributes.ATTACK_SPEED, net.minecraft.resources.Identifier.parse("alexsmobs:orca_might_attack_speed"), 3D, AttributeModifier.Operation.ADD_VALUE);
     }
 
-    public boolean isDurationEffectTick(int duration, int amplifier) {
-        return duration > 0;
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
+        return true;
     }
 
     public String getDescriptionId() {

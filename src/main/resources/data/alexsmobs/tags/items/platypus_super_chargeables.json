@@ -1,7 +1,0 @@
-{
-  "__comment": "Increases digging rewards",
-  "replace": false,
-  "values": [
-    "minecraft:redstone_block"
-  ]
-}

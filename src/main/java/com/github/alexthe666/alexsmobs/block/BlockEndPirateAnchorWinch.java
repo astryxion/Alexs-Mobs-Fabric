@@ -1,8 +1,8 @@
 package com.github.alexthe666.alexsmobs.block;
 
+import com.mojang.serialization.MapCodec;
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityEndPirateAnchorWinch;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.LivingEntity;
@@ -12,12 +12,12 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -28,26 +28,34 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 
-public class BlockEndPirateAnchorWinch extends BaseEntityBlock implements AMSpecialRenderBlock{
+import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
-    public static final MapCodec<BlockEndPirateAnchorWinch> CODEC = BlockBehaviour.simpleCodec(BlockEndPirateAnchorWinch::new);
+public class BlockEndPirateAnchorWinch extends BaseEntityBlock implements AMSpecialRenderBlock{
+    public static final MapCodec<BlockEndPirateAnchorWinch> CODEC = simpleCodec(BlockEndPirateAnchorWinch::new);
+
+
+
+    @Override
+    public MapCodec<BlockEndPirateAnchorWinch> codec() {
+        return CODEC;
+    }
+
     public static final BooleanProperty EASTORWEST = BooleanProperty.create("eastorwest");
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     protected static final VoxelShape FULL_AABB_EW = Block.box(3.0D, 3.0D, 0.0D, 13.0D, 13.0D, 16.0D);
     protected static final VoxelShape FULL_AABB_NS = Block.box(0.0D, 3.0D, 3.0D, 16.0D, 13.0D, 13.0D);
 
-    public BlockEndPirateAnchorWinch(BlockBehaviour.Properties properties) {
-        super(properties);
+    public static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLACK).friction(0.97F).strength(10.0F).lightLevel((i) -> 6).sound(SoundType.STONE).noOcclusion();
+    }
+
+    protected BlockEndPirateAnchorWinch(BlockBehaviour.Properties props) {
+        super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(EASTORWEST, Boolean.valueOf(false)).setValue(POWERED, Boolean.valueOf(false)));
     }
 
-    @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
-    }
-
     public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
+        return RenderShape.MODEL;
     }
 
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {

@@ -1,8 +1,11 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -23,22 +26,19 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-
 import javax.annotation.Nullable;
 import java.util.OptionalInt;
 
 /**
  * Custom rocket entity for the Enderiophage Rocket item.
- * Reimplemented to avoid accessing private fields in FireworkRocketEntity (NeoForge 1.21.1 port).
+ * Reimplemented to avoid accessing private fields in FireworkRocketEntity.
  */
 public class EntityEnderiophageRocket extends Projectile implements ItemSupplier {
 
     private static final EntityDataAccessor<OptionalInt> DATA_ATTACHED_TO_TARGET = SynchedEntityData.defineId(EntityEnderiophageRocket.class, EntityDataSerializers.OPTIONAL_UNSIGNED_INT);
-
+    
     private int life;
     private int lifetime;
-    @Nullable
-    private LivingEntity attachedToEntity;
 
     public EntityEnderiophageRocket(EntityType<? extends EntityEnderiophageRocket> type, Level level) {
         super(type, level);
@@ -70,6 +70,8 @@ public class EntityEnderiophageRocket extends Projectile implements ItemSupplier
 
     @Override
     public boolean shouldRenderAtSqrDistance(double distance) {
+        // Match vanilla FireworkRocketEntity: do not render the item entity while attached for elytra boost.
+        // Otherwise ThrownItemRenderer lerps behind the (already lerped) player at high speed.
         return distance < 4096.0D && !this.isAttachedToEntity();
     }
 
@@ -81,66 +83,47 @@ public class EntityEnderiophageRocket extends Projectile implements ItemSupplier
     @Override
     public void tick() {
         super.tick();
-
+        
+        // Handle attached entity (elytra boost)
         if (this.isAttachedToEntity()) {
-            if (this.attachedToEntity == null) {
-                this.entityData.get(DATA_ATTACHED_TO_TARGET).ifPresent(id -> {
-                    Entity entity = this.level().getEntity(id);
-                    if (entity instanceof LivingEntity living) {
-                        this.attachedToEntity = living;
-                    }
-                });
-            }
-            LivingEntity attached = this.attachedToEntity;
+            Entity attached = this.getAttachedEntity();
             if (attached != null) {
-                if (attached.isFallFlying()) {
+                if (attached instanceof LivingEntity living && living.isFallFlying()) {
                     Vec3 lookVec = attached.getLookAngle();
                     Vec3 deltaMovement = attached.getDeltaMovement();
                     attached.setDeltaMovement(deltaMovement.add(
-                            lookVec.x * 0.1D + (lookVec.x * 1.5D - deltaMovement.x) * 0.5D,
-                            lookVec.y * 0.1D + (lookVec.y * 1.5D - deltaMovement.y) * 0.5D,
-                            lookVec.z * 0.1D + (lookVec.z * 1.5D - deltaMovement.z) * 0.5D
+                        lookVec.x * 0.1D + (lookVec.x * 1.5D - deltaMovement.x) * 0.5D,
+                        lookVec.y * 0.1D + (lookVec.y * 1.5D - deltaMovement.y) * 0.5D,
+                        lookVec.z * 0.1D + (lookVec.z * 1.5D - deltaMovement.z) * 0.5D
                     ));
                 }
-                Vec3 handOffset = attached.isFallFlying()
-                        ? attached.getHandHoldingItemAngle(AMItemRegistry.ENDERIOPHAGE_ROCKET)
-                        : Vec3.ZERO;
-                this.setPos(
-                        attached.getX() + handOffset.x,
-                        attached.getY() + handOffset.y,
-                        attached.getZ() + handOffset.z
-                );
+                this.setPos(attached.getX(), attached.getY(), attached.getZ());
                 this.setDeltaMovement(attached.getDeltaMovement());
             }
         } else {
+            // Normal projectile movement
             this.setDeltaMovement(this.getDeltaMovement().multiply(1.15D, 1.0D, 1.15D).add(0.0D, 0.04D, 0.0D));
             this.move(MoverType.SELF, this.getDeltaMovement());
         }
 
-        if (!this.isAttachedToEntity() && !this.noPhysics) {
-            HitResult hitresult = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
+        // Check for collision
+        HitResult hitresult = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
+        if (!this.noPhysics) {
             this.onHit(hitresult);
-            this.hasImpulse = true;
+            this.needsSync = true;
         }
 
-        if (this.level().isClientSide) {
-            this.level().addParticle(ParticleTypes.END_ROD, this.getX(), this.getY() - 0.3D, this.getZ(),
-                    this.random.nextGaussian() * 0.05D, -this.getDeltaMovement().y * 0.5D, this.random.nextGaussian() * 0.05D);
+        // Spawn particles
+        if (this.level().isClientSide()) {
+            this.level().addParticle(ParticleTypes.END_ROD, this.getX(), this.getY() - 0.3D, this.getZ(), 
+                this.random.nextGaussian() * 0.05D, -this.getDeltaMovement().y * 0.5D, this.random.nextGaussian() * 0.05D);
         }
 
+        // Check lifetime
         ++this.life;
-        if (!this.level().isClientSide && this.life > this.lifetime) {
+        if (!this.level().isClientSide() && this.life > this.lifetime) {
             this.explode();
         }
-    }
-
-    @Override
-    protected boolean canHitEntity(Entity entity) {
-        if (this.isAttachedToEntity()) {
-            Entity attached = this.getAttachedEntity();
-            return attached == null || entity != attached;
-        }
-        return super.canHitEntity(entity);
     }
 
     private boolean isAttachedToEntity() {
@@ -149,15 +132,15 @@ public class EntityEnderiophageRocket extends Projectile implements ItemSupplier
 
     @Nullable
     private Entity getAttachedEntity() {
-        return this.entityData.get(DATA_ATTACHED_TO_TARGET).isPresent()
-                ? this.level().getEntity(this.entityData.get(DATA_ATTACHED_TO_TARGET).getAsInt())
-                : null;
+        return this.entityData.get(DATA_ATTACHED_TO_TARGET).isPresent() 
+            ? this.level().getEntity(this.entityData.get(DATA_ATTACHED_TO_TARGET).getAsInt()) 
+            : null;
     }
 
     @Override
     protected void onHitEntity(EntityHitResult result) {
         super.onHitEntity(result);
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.explode();
         }
     }
@@ -166,7 +149,7 @@ public class EntityEnderiophageRocket extends Projectile implements ItemSupplier
     protected void onHit(HitResult result) {
         if (result.getType() == HitResult.Type.ENTITY) {
             this.onHitEntity((EntityHitResult) result);
-        } else if (result.getType() == HitResult.Type.BLOCK && !this.level().isClientSide) {
+        } else if (result.getType() == HitResult.Type.BLOCK && !this.level().isClientSide()) {
             this.explode();
         }
     }
@@ -175,22 +158,20 @@ public class EntityEnderiophageRocket extends Projectile implements ItemSupplier
         this.level().broadcastEntityEvent(this, (byte) 17);
         this.discard();
     }
-
-    @Override
     public void handleEntityEvent(byte id) {
-        if (id == 17 && this.level().isClientSide) {
-            this.level().addParticle(ParticleTypes.EXPLOSION, this.getX(), this.getY(), this.getZ(),
-                    this.random.nextGaussian() * 0.05D, 0.005D, this.random.nextGaussian() * 0.05D);
+        if (id == 17) {
+            this.level().addParticle(ParticleTypes.EXPLOSION, this.getX(), this.getY(), this.getZ(), 
+                this.random.nextGaussian() * 0.05D, 0.005D, this.random.nextGaussian() * 0.05D);
             for (int i = 0; i < this.random.nextInt(15) + 30; ++i) {
-                this.level().addParticle(AMParticleRegistry.DNA, this.getX(), this.getY(), this.getZ(),
-                        this.random.nextGaussian() * 0.25D, this.random.nextGaussian() * 0.25D, this.random.nextGaussian() * 0.25D);
+                this.level().addParticle(AMParticleRegistry.DNA, this.getX(), this.getY(), this.getZ(), 
+                    this.random.nextGaussian() * 0.25D, this.random.nextGaussian() * 0.25D, this.random.nextGaussian() * 0.25D);
             }
             for (int i = 0; i < this.random.nextInt(15) + 15; ++i) {
-                this.level().addParticle(ParticleTypes.END_ROD, this.getX(), this.getY(), this.getZ(),
-                        this.random.nextGaussian() * 0.15D, this.random.nextGaussian() * 0.15D, this.random.nextGaussian() * 0.15D);
+                this.level().addParticle(ParticleTypes.END_ROD, this.getX(), this.getY(), this.getZ(), 
+                    this.random.nextGaussian() * 0.15D, this.random.nextGaussian() * 0.15D, this.random.nextGaussian() * 0.15D);
             }
-            SoundEvent soundEvent = AlexsMobs.PROXY.isFarFromCamera(this.getX(), this.getY(), this.getZ())
-                    ? SoundEvents.FIREWORK_ROCKET_BLAST : SoundEvents.FIREWORK_ROCKET_BLAST_FAR;
+            SoundEvent soundEvent = AlexsMobs.PROXY.isFarFromCamera(this.getX(), this.getY(), this.getZ()) 
+                ? SoundEvents.FIREWORK_ROCKET_BLAST : SoundEvents.FIREWORK_ROCKET_BLAST_FAR;
             this.level().playLocalSound(this.getX(), this.getY(), this.getZ(), soundEvent, SoundSource.AMBIENT, 20.0F, 0.95F + this.random.nextFloat() * 0.1F, true);
         } else {
             super.handleEntityEvent(id);
@@ -198,17 +179,17 @@ public class EntityEnderiophageRocket extends Projectile implements ItemSupplier
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag tag) {
+    protected void addAdditionalSaveData(ValueOutput tag) {
         super.addAdditionalSaveData(tag);
         tag.putInt("Life", this.life);
         tag.putInt("LifeTime", this.lifetime);
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag tag) {
+    protected void readAdditionalSaveData(ValueInput tag) {
         super.readAdditionalSaveData(tag);
-        this.life = tag.getInt("Life");
-        this.lifetime = tag.getInt("LifeTime");
+        this.life = tag.getIntOr("Life", 0);
+        this.lifetime = tag.getIntOr("LifeTime", 0);
     }
 
     @Override

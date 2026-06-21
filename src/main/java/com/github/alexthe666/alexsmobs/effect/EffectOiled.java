@@ -1,6 +1,6 @@
 package com.github.alexthe666.alexsmobs.effect;
 
-import net.minecraft.server.level.ServerLevel;
+import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
@@ -12,8 +12,8 @@ public class EffectOiled extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0XFFE89C);
     }
 
-    public boolean tick(ServerLevel level, LivingEntity entity, int amplifier) {
-       if(entity.isInWaterRainOrBubble()){
+    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
+       if(AMEntityRegistry.isInWaterOrBubble(entity)){
            if(!entity.isShiftKeyDown()){
                entity.setDeltaMovement(entity.getDeltaMovement().add(0, 0.1D, 0));
            }else{
@@ -25,11 +25,12 @@ public class EffectOiled extends MobEffect {
 
            }
        }
-       return true;
+        return true;
     }
 
-    public boolean isDurationEffectTick(int duration, int amplifier) {
-        return duration > 0;
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
+        return true;
     }
 
     public String getDescriptionId() {

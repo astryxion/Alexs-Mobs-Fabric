@@ -1,15 +1,19 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+
 import com.github.alexthe666.alexsmobs.entity.util.VineLassoUtil;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -23,11 +27,16 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+// NetworkHooks removed in NeoForge 1.21
 
 import javax.annotation.Nullable;
+import java.util.Optional;
 import java.util.UUID;
 
 public class EntityVineLasso extends Entity {
+    private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID_DATA = SynchedEntityData.defineId(EntityVineLasso.class, AMEntityRegistry.OPTIONAL_UUID_SERIALIZER);
+    private static final EntityDataAccessor<Integer> OWNER_ID_DATA = SynchedEntityData.defineId(EntityVineLasso.class, EntityDataSerializers.INT);
+
     private UUID ownerUUID;
     private int ownerNetworkId;
     private boolean leftOwner;
@@ -46,7 +55,6 @@ public class EntityVineLasso extends Entity {
         this.setPos(x, y, z);
         this.setDeltaMovement(p_i47274_8_, p_i47274_10_, p_i47274_12_);
     }
-
     protected static float lerpRotation(float p_234614_0_, float p_234614_1_) {
         while (p_234614_1_ - p_234614_0_ < -180.0F) {
             p_234614_0_ -= 360.0F;
@@ -59,15 +67,8 @@ public class EntityVineLasso extends Entity {
         return Mth.lerp(0.2F, p_234614_0_, p_234614_1_);
     }
 
-    @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        // Entity subclass: no extra data
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
-    }
+    // getAddEntityPacket is no longer needed in 1.21
+    // public Packet<ClientGamePacketListener> getAddEntityPacket() {
 
     public void tick() {
         if (!this.leftOwner) {
@@ -77,7 +78,9 @@ public class EntityVineLasso extends Entity {
         Vec3 vector3d = this.getDeltaMovement();
         HitResult raytraceresult = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
         if (raytraceresult != null && raytraceresult.getType() != HitResult.Type.MISS) {
-            this.onImpact(raytraceresult);
+            if (!this.level().isClientSide()) {
+                this.onImpact(raytraceresult);
+            }
         }
 
         this.updateRotation();
@@ -100,19 +103,31 @@ public class EntityVineLasso extends Entity {
     }
 
     protected void onEntityHit(EntityHitResult p_213868_1_) {
-        Entity entity = this.getOwner();
-        if (entity instanceof LivingEntity && p_213868_1_.getEntity() != getOwner() && p_213868_1_.getEntity() instanceof LivingEntity && !VineLassoUtil.hasLassoData((LivingEntity) p_213868_1_.getEntity())) {
+        Entity ownerEntity = this.getOwner();
+        LivingEntity lassoer = ownerEntity instanceof LivingEntity ? (LivingEntity) ownerEntity : null;
+        if (lassoer == null && !this.level().isClientSide()) {
+            UUID owner = this.getOwnerUUID();
+            if (owner != null && this.level().getServer() != null) {
+                lassoer = this.level().getServer().getPlayerList().getPlayer(owner);
+            }
+            if (lassoer == null) {
+                lassoer = this.level().getNearestPlayer(this, 64.0D);
+            }
+        }
+        if (lassoer != null && p_213868_1_.getEntity() != lassoer && p_213868_1_.getEntity() instanceof LivingEntity) {
+            VineLassoUtil.lassoTo(lassoer, (LivingEntity)p_213868_1_.getEntity());
             this.remove(RemovalReason.DISCARDED);
-            VineLassoUtil.lassoTo((LivingEntity) entity, (LivingEntity)p_213868_1_.getEntity());
         }
     }
 
     private void removeAndAddToInventory(){
         Entity entity = this.getOwner();
         ItemStack item = new ItemStack(AMItemRegistry.VINE_LASSO);
-        if(!this.isRemoved()){
-            if (!(entity instanceof Player) || !((Player) entity).addItem(item)) {
-                this.spawnAtLocation(item);
+        if (!this.isRemoved()) {
+            if (this.level() instanceof ServerLevel serverLevel) {
+                if (!(entity instanceof Player) || !((Player) entity).addItem(item)) {
+                    this.spawnAtLocation(serverLevel, item);
+                }
             }
         }
         this.remove(RemovalReason.DISCARDED);
@@ -120,30 +135,68 @@ public class EntityVineLasso extends Entity {
 
     protected void onHitBlock(BlockHitResult p_230299_1_) {
         BlockState blockstate = this.level().getBlockState(p_230299_1_.getBlockPos());
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.removeAndAddToInventory();
         }
+    }
+
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(OWNER_UUID_DATA, Optional.empty());
+        builder.define(OWNER_ID_DATA, 0);
     }
 
     public void setShooter(@Nullable Entity entityIn) {
         if (entityIn != null) {
             this.ownerUUID = entityIn.getUUID();
             this.ownerNetworkId = entityIn.getId();
+            this.entityData.set(OWNER_UUID_DATA, Optional.of(this.ownerUUID));
+            this.entityData.set(OWNER_ID_DATA, this.ownerNetworkId);
         }
     }
 
     @Nullable
+    private UUID getOwnerUUID() {
+        if (this.ownerUUID != null) {
+            return this.ownerUUID;
+        }
+        Optional<UUID> synced = this.entityData.get(OWNER_UUID_DATA);
+        if (synced != null && synced.isPresent()) {
+            this.ownerUUID = synced.get();
+            return this.ownerUUID;
+        }
+        return null;
+    }
+
+    private int getOwnerNetworkId() {
+        if (this.ownerNetworkId != 0) {
+            return this.ownerNetworkId;
+        }
+        int syncedId = this.entityData.get(OWNER_ID_DATA);
+        if (syncedId != 0) {
+            this.ownerNetworkId = syncedId;
+        }
+        return this.ownerNetworkId;
+    }
+
+    @Nullable
     public Entity getOwner() {
-        if (this.ownerUUID != null && this.level() instanceof ServerLevel) {
-            return ((ServerLevel) this.level()).getEntity(this.ownerUUID);
+        UUID uuid = this.getOwnerUUID();
+        int networkId = this.getOwnerNetworkId();
+        if (uuid != null && this.level() instanceof ServerLevel) {
+            Entity found = ((ServerLevel) this.level()).getEntity(uuid);
+            if (found != null) {
+                return found;
+            }
+            return networkId != 0 ? this.level().getEntity(networkId) : null;
         } else {
-            return this.ownerNetworkId != 0 ? this.level().getEntity(this.ownerNetworkId) : null;
+            return networkId != 0 ? this.level().getEntity(networkId) : null;
         }
     }
 
-    protected void addAdditionalSaveData(CompoundTag compound) {
-        if (this.ownerUUID != null) {
-            compound.putUUID("Owner", this.ownerUUID);
+    protected void addAdditionalSaveData(ValueOutput compound) {
+        UUID uuid = this.getOwnerUUID();
+        if (uuid != null) {
+            compound.store("Owner", UUIDUtil.CODEC, uuid);
         }
 
         if (this.leftOwner) {
@@ -155,12 +208,16 @@ public class EntityVineLasso extends Entity {
     /**
      * (abstract) Protected helper method to read subclass entity data from NBT.
      */
-    protected void readAdditionalSaveData(CompoundTag compound) {
-        if (compound.hasUUID("Owner")) {
-            this.ownerUUID = compound.getUUID("Owner");
-        }
+    protected void readAdditionalSaveData(ValueInput compound) {
+        compound.read("Owner", UUIDUtil.CODEC).ifPresentOrElse(uuid -> {
+            this.ownerUUID = uuid;
+            this.entityData.set(OWNER_UUID_DATA, Optional.of(this.ownerUUID));
+        }, () -> {
+            this.ownerUUID = null;
+            this.entityData.set(OWNER_UUID_DATA, Optional.empty());
+        });
 
-        this.leftOwner = compound.getBoolean("LeftOwner");
+        this.leftOwner = compound.getBooleanOr("LeftOwner", false);
     }
 
     private boolean checkLeftOwner() {
@@ -217,7 +274,7 @@ public class EntityVineLasso extends Entity {
             this.setYRot( (float) (Mth.atan2(x, z) * (double) Mth.RAD_TO_DEG));
             this.xRotO = this.getXRot();
             this.yRotO = this.getYRot();
-            this.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+            this.snapTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
         }
 
     }
@@ -236,5 +293,10 @@ public class EntityVineLasso extends Entity {
         float f = Mth.sqrt((float)(vector3d.x * vector3d.x + vector3d.z * vector3d.z));
         this.setXRot(lerpRotation(this.xRotO, (float) (Mth.atan2(vector3d.y, f) * (double) Mth.RAD_TO_DEG)));
         this.setYRot(this.getYRot() + 20);
+    }
+
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        return false;
     }
 }

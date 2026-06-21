@@ -1,16 +1,19 @@
 package com.github.alexthe666.alexsmobs.entity;
 
-import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerEntity;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
@@ -19,6 +22,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+// NetworkHooks removed in NeoForge 1.21
 
 import java.util.List;
 
@@ -36,7 +40,6 @@ public class EntityGust extends Entity {
     public EntityGust(Level worldIn) {
         this(AMEntityRegistry.GUST, worldIn);
     }
-
     public void push(Entity entityIn) {
 
     }
@@ -51,11 +54,6 @@ public class EntityGust extends Entity {
         }
 
         return Mth.lerp(0.2F, p_234614_0_, p_234614_1_);
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
-        return new ClientboundAddEntityPacket(this, serverEntity);
     }
 
     public void tick() {
@@ -79,11 +77,11 @@ public class EntityGust extends Entity {
         double d0 = this.getX() + vector3d.x;
         double d1 = this.getY() + vector3d.y;
         double d2 = this.getZ() + vector3d.z;
-        if(this.getY() > this.level().getMaxBuildHeight()){
+        if (this.getY() > (double) (this.level().dimensionType().minY() + this.level().dimensionType().height())) {
             this.remove(RemovalReason.DISCARDED);
         }
         this.updateRotation();
-         if (this.isInWaterOrBubble()) {
+         if (AMEntityRegistry.isInWaterOrBubble(this)) {
             this.remove(RemovalReason.DISCARDED);
         } else {
             this.setDeltaMovement(vector3d);
@@ -138,7 +136,7 @@ public class EntityGust extends Entity {
         if( p_230299_1_.getBlockPos() != null){
             BlockPos pos = p_230299_1_.getBlockPos();
             if(level().isWaterAt(pos)){
-                if (!this.level().isClientSide) {
+                if (!this.level().isClientSide()) {
                     this.remove(RemovalReason.DISCARDED);
 
                 }
@@ -147,7 +145,6 @@ public class EntityGust extends Entity {
 
     }
 
-    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(VERTICAL, false);
         builder.define(X_DIR, 0f);
@@ -155,7 +152,7 @@ public class EntityGust extends Entity {
         builder.define(Z_DIR, 0F);
     }
 
-    protected void addAdditionalSaveData(CompoundTag compound) {
+    protected void addAdditionalSaveData(ValueOutput compound) {
         compound.putBoolean("VerticalTornado", getVertical());
         compound.putFloat("GustDirX", this.entityData.get(X_DIR));
         compound.putFloat("GustDirY", this.entityData.get(Y_DIR));
@@ -165,11 +162,11 @@ public class EntityGust extends Entity {
     /**
      * (abstract) Protected helper method to read subclass entity data from NBT.
      */
-    protected void readAdditionalSaveData(CompoundTag compound) {
-        this.entityData.set(X_DIR, compound.getFloat("GustDirX"));
-        this.entityData.set(Y_DIR, compound.getFloat("GustDirX"));
-        this.entityData.set(Z_DIR, compound.getFloat("GustDirX"));
-        this.setVertical((compound.getBoolean("VerticalTornado")));
+    protected void readAdditionalSaveData(ValueInput compound) {
+        this.entityData.set(X_DIR, compound.getFloatOr("GustDirX", 0.0F));
+        this.entityData.set(Y_DIR, compound.getFloatOr("GustDirY", 0.0F));
+        this.entityData.set(Z_DIR, compound.getFloatOr("GustDirZ", 0.0F));
+        this.setVertical((compound.getBooleanOr("VerticalTornado", false)));
     }
 
     public void setVertical(boolean vertical){
@@ -197,7 +194,7 @@ public class EntityGust extends Entity {
             this.setYRot( (float) (Mth.atan2(x, z) * (double) Mth.RAD_TO_DEG));
             this.xRotO = this.getXRot();
             this.yRotO = this.getYRot();
-            this.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+            this.snapTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
         }
 
     }
@@ -207,5 +204,10 @@ public class EntityGust extends Entity {
         float f = Mth.sqrt((float)(vector3d.x * vector3d.x + vector3d.z * vector3d.z));
         this.setXRot(lerpRotation(this.xRotO, (float) (Mth.atan2(vector3d.y, f) * (double) Mth.RAD_TO_DEG)));
         this.setYRot( lerpRotation(this.yRotO, (float) (Mth.atan2(vector3d.x, vector3d.z) * (double) Mth.RAD_TO_DEG)));
+    }
+
+    @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        return false;
     }
 }

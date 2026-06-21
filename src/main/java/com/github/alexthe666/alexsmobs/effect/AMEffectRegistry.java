@@ -2,149 +2,87 @@ package com.github.alexthe666.alexsmobs.effect;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
-import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistryBuilder;
 
 public class AMEffectRegistry {
-    private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, path);
+    public static final MobEffect KNOCKBACK_RESISTANCE = registerEffect("knockback_resistance", new EffectKnockbackResistance());
+    public static final MobEffect LAVA_VISION = registerEffect("lava_vision", new EffectLavaVision());
+    public static final MobEffect SUNBIRD_BLESSING = registerEffect("sunbird_blessing", new EffectSunbird(false));
+    public static final MobEffect SUNBIRD_CURSE = registerEffect("sunbird_curse", new EffectSunbird(true));
+    public static final MobEffect POISON_RESISTANCE = registerEffect("poison_resistance", new EffectPoisonResistance());
+    public static final MobEffect OILED = registerEffect("oiled", new EffectOiled());
+    public static final MobEffect ORCAS_MIGHT = registerEffect("orcas_might", new EffectOrcaMight());
+    public static final MobEffect BUG_PHEROMONES = registerEffect("bug_pheromones", new EffectBugPheromones());
+    public static final MobEffect SOULSTEAL = registerEffect("soulsteal", new EffectSoulsteal());
+    public static final MobEffect CLINGING = registerEffect("clinging", new EffectClinging());
+    public static final MobEffect ENDER_FLU = registerEffect("ender_flu", new EffectEnderFlu());
+    public static final MobEffect FEAR = registerEffect("fear", new EffectFear());
+    public static final MobEffect TIGERS_BLESSING = registerEffect("tigers_blessing", new EffectTigersBlessing());
+    public static final MobEffect DEBILITATING_STING = registerEffect("debilitating_sting", new EffectDebilitatingSting());
+    public static final MobEffect EXSANGUINATION = registerEffect("exsanguination", new EffectExsanguination());
+    public static final MobEffect EARTHQUAKE = registerEffect("earthquake", new EffectEarthquake());
+    public static final MobEffect FLEET_FOOTED = registerEffect("fleet_footed", new EffectFleetFooted());
+    public static final MobEffect POWER_DOWN = registerEffect("power_down", new EffectPowerDown());
+
+    public static final MobEffect MOSQUITO_REPELLENT = registerEffect("mosquito_repellent", new EffectMosquitoRepellent());
+    public static final Potion KNOCKBACK_RESISTANCE_POTION = registerPotion("knockback_resistance", new Potion("knockback_resistance", new MobEffectInstance(net.minecraft.core.Holder.direct(KNOCKBACK_RESISTANCE), 3600)));
+    public static final Potion LONG_KNOCKBACK_RESISTANCE_POTION = registerPotion("long_knockback_resistance", new Potion("long_knockback_resistance", new MobEffectInstance(net.minecraft.core.Holder.direct(KNOCKBACK_RESISTANCE), 9600)));
+    public static final Potion STRONG_KNOCKBACK_RESISTANCE_POTION = registerPotion("strong_knockback_resistance", new Potion("strong_knockback_resistance", new MobEffectInstance(net.minecraft.core.Holder.direct(KNOCKBACK_RESISTANCE), 1800, 1)));
+    public static final Potion LAVA_VISION_POTION = registerPotion("lava_vision", new Potion("lava_vision", new MobEffectInstance(net.minecraft.core.Holder.direct(LAVA_VISION), 3600)));
+    public static final Potion LONG_LAVA_VISION_POTION = registerPotion("long_lava_vision", new Potion("long_lava_vision", new MobEffectInstance(net.minecraft.core.Holder.direct(LAVA_VISION), 9600)));
+    public static final Potion SPEED_III_POTION = registerPotion("speed_iii", new Potion("speed_iii", new MobEffectInstance(MobEffects.SPEED, 2200, 2)));
+    public static final Potion POISON_RESISTANCE_POTION = registerPotion("poison_resistance", new Potion("poison_resistance", new MobEffectInstance(net.minecraft.core.Holder.direct(POISON_RESISTANCE), 3600)));
+    public static final Potion LONG_POISON_RESISTANCE_POTION = registerPotion("long_poison_resistance", new Potion("long_poison_resistance", new MobEffectInstance(net.minecraft.core.Holder.direct(POISON_RESISTANCE), 9600)));
+    public static final Potion BUG_PHEROMONES_POTION = registerPotion("bug_pheromones", new Potion("bug_pheromones", new MobEffectInstance(net.minecraft.core.Holder.direct(BUG_PHEROMONES), 3600)));
+    public static final Potion LONG_BUG_PHEROMONES_POTION = registerPotion("long_bug_pheromones", new Potion("long_bug_pheromones", new MobEffectInstance(net.minecraft.core.Holder.direct(BUG_PHEROMONES), 9600)));
+    public static final Potion SOULSTEAL_POTION = registerPotion("soulsteal", new Potion("soulsteal", new MobEffectInstance(net.minecraft.core.Holder.direct(SOULSTEAL), 3600)));
+    public static final Potion LONG_SOULSTEAL_POTION = registerPotion("long_soulsteal", new Potion("long_soulsteal", new MobEffectInstance(net.minecraft.core.Holder.direct(SOULSTEAL), 9600)));
+    public static final Potion STRONG_SOULSTEAL_POTION = registerPotion("strong_soulsteal", new Potion("strong_soulsteal", new MobEffectInstance(net.minecraft.core.Holder.direct(SOULSTEAL), 1800, 1)));
+    public static final Potion CLINGING_POTION = registerPotion("clinging", new Potion("clinging", new MobEffectInstance(net.minecraft.core.Holder.direct(CLINGING), 3600)));
+    public static final Potion LONG_CLINGING_POTION = registerPotion("long_clinging", new Potion("long_clinging", new MobEffectInstance(net.minecraft.core.Holder.direct(CLINGING), 9600)));
+
+    public static ItemStack createPotion(Potion potion){
+        return  PotionContents.createItemStack(Items.POTION, net.minecraft.core.Holder.direct(potion));
     }
 
     private static MobEffect registerEffect(String name, MobEffect effect) {
-        return Registry.register(BuiltInRegistries.MOB_EFFECT, id(name), effect);
+        return Registry.register(BuiltInRegistries.MOB_EFFECT, Identifier.fromNamespaceAndPath(AlexsMobs.MODID, name), effect);
     }
 
     private static Potion registerPotion(String name, Potion potion) {
-        return Registry.register(BuiltInRegistries.POTION, id(name), potion);
+        return Registry.register(BuiltInRegistries.POTION, Identifier.fromNamespaceAndPath(AlexsMobs.MODID, name), potion);
     }
 
-    public static MobEffect KNOCKBACK_RESISTANCE;
-    public static MobEffect LAVA_VISION;
-    public static MobEffect SUNBIRD_BLESSING;
-    public static MobEffect SUNBIRD_CURSE;
-    public static MobEffect POISON_RESISTANCE;
-    public static MobEffect OILED;
-    public static MobEffect ORCAS_MIGHT;
-    public static MobEffect BUG_PHEROMONES;
-    public static MobEffect SOULSTEAL;
-    public static MobEffect CLINGING;
-    public static MobEffect ENDER_FLU;
-    public static MobEffect FEAR;
-    public static MobEffect TIGERS_BLESSING;
-    public static MobEffect DEBILITATING_STING;
-    public static MobEffect EXSANGUINATION;
-    public static MobEffect EARTHQUAKE;
-    public static MobEffect FLEET_FOOTED;
-    public static MobEffect POWER_DOWN;
-    public static MobEffect MOSQUITO_REPELLENT;
+    public static void init(){
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(Potions.STRENGTH)), Ingredient.of(AMItemRegistry.BEAR_FUR), createPotion(KNOCKBACK_RESISTANCE_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(KNOCKBACK_RESISTANCE_POTION)), Ingredient.of(Items.REDSTONE), createPotion(LONG_KNOCKBACK_RESISTANCE_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(KNOCKBACK_RESISTANCE_POTION)), Ingredient.of(Items.GLOWSTONE_DUST), createPotion(STRONG_KNOCKBACK_RESISTANCE_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(AMItemRegistry.LAVA_BOTTLE), Ingredient.of(AMItemRegistry.BONE_SERPENT_TOOTH), createPotion(LAVA_VISION_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(LAVA_VISION_POTION)), Ingredient.of(Items.REDSTONE), createPotion(LONG_LAVA_VISION_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(Potions.POISON)), Ingredient.of(AMItemRegistry.RATTLESNAKE_RATTLE), new ItemStack(AMItemRegistry.POISON_BOTTLE)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(AMItemRegistry.POISON_BOTTLE), Ingredient.of(AMItemRegistry.CENTIPEDE_LEG), createPotion(POISON_RESISTANCE_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(AMItemRegistry.KOMODO_SPIT_BOTTLE), Ingredient.of(AMItemRegistry.CENTIPEDE_LEG), createPotion(POISON_RESISTANCE_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(POISON_RESISTANCE_POTION)), Ingredient.of(AMItemRegistry.KOMODO_SPIT), createPotion(LONG_POISON_RESISTANCE_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(Potions.STRONG_SWIFTNESS)), Ingredient.of(AMItemRegistry.GAZELLE_HORN), createPotion(SPEED_III_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(Potions.AWKWARD)), Ingredient.of(AMItemRegistry.COCKROACH_WING), createPotion(BUG_PHEROMONES_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(BUG_PHEROMONES_POTION)), Ingredient.of(Items.REDSTONE), createPotion(LONG_BUG_PHEROMONES_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(Potions.AWKWARD)), Ingredient.of(AMItemRegistry.SOUL_HEART), createPotion(SOULSTEAL_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(SOULSTEAL_POTION)), Ingredient.of(Items.REDSTONE), createPotion(LONG_SOULSTEAL_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(SOULSTEAL_POTION)), Ingredient.of(Items.GLOWSTONE_DUST), createPotion(STRONG_SOULSTEAL_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(Potions.AWKWARD)), Ingredient.of(AMItemRegistry.DROPBEAR_CLAW), createPotion(CLINGING_POTION)));
+        // BrewingRecipeRegistry.addRecipe( // API changed in 1.21.1new ProperBrewingRecipe(Ingredient.of(createPotion(CLINGING_POTION)), Ingredient.of(Items.REDSTONE), createPotion(LONG_CLINGING_POTION)));
 
-    public static Potion KNOCKBACK_RESISTANCE_POTION;
-    public static Potion LONG_KNOCKBACK_RESISTANCE_POTION;
-    public static Potion STRONG_KNOCKBACK_RESISTANCE_POTION;
-    public static Potion LAVA_VISION_POTION;
-    public static Potion LONG_LAVA_VISION_POTION;
-    public static Potion SPEED_III_POTION;
-    public static Potion POISON_RESISTANCE_POTION;
-    public static Potion LONG_POISON_RESISTANCE_POTION;
-    public static Potion BUG_PHEROMONES_POTION;
-    public static Potion LONG_BUG_PHEROMONES_POTION;
-    public static Potion SOULSTEAL_POTION;
-    public static Potion LONG_SOULSTEAL_POTION;
-    public static Potion STRONG_SOULSTEAL_POTION;
-    public static Potion CLINGING_POTION;
-    public static Potion LONG_CLINGING_POTION;
 
-    /** 1.21.1: hasEffect/getEffect require Holder&lt;MobEffect&gt;. Use this for client/server code. */
-    public static Holder<MobEffect> holder(MobEffect effect) {
-        return BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect);
-    }
-
-    public static Holder<Potion> potionHolder(Potion potion) {
-        return BuiltInRegistries.POTION.wrapAsHolder(potion);
-    }
-
-    private static MobEffectInstance effectInstance(MobEffect effect, int duration) {
-        return new MobEffectInstance(holder(effect), duration);
-    }
-
-    private static MobEffectInstance effectInstance(MobEffect effect, int duration, int amplifier) {
-        return new MobEffectInstance(holder(effect), duration, amplifier);
-    }
-
-    public static ItemStack createPotion(Potion potion) {
-        ItemStack stack = new ItemStack(Items.POTION);
-        stack.set(DataComponents.POTION_CONTENTS, new PotionContents(potionHolder(potion)));
-        return stack;
-    }
-
-    public static void init() {
-        KNOCKBACK_RESISTANCE = registerEffect("knockback_resistance", new EffectKnockbackResistance());
-        LAVA_VISION = registerEffect("lava_vision", new EffectLavaVision());
-        SUNBIRD_BLESSING = registerEffect("sunbird_blessing", new EffectSunbird(false));
-        SUNBIRD_CURSE = registerEffect("sunbird_curse", new EffectSunbird(true));
-        POISON_RESISTANCE = registerEffect("poison_resistance", new EffectPoisonResistance());
-        OILED = registerEffect("oiled", new EffectOiled());
-        ORCAS_MIGHT = registerEffect("orcas_might", new EffectOrcaMight());
-        BUG_PHEROMONES = registerEffect("bug_pheromones", new EffectBugPheromones());
-        SOULSTEAL = registerEffect("soulsteal", new EffectSoulsteal());
-        CLINGING = registerEffect("clinging", new EffectClinging());
-        ENDER_FLU = registerEffect("ender_flu", new EffectEnderFlu());
-        FEAR = registerEffect("fear", new EffectFear());
-        TIGERS_BLESSING = registerEffect("tigers_blessing", new EffectTigersBlessing());
-        DEBILITATING_STING = registerEffect("debilitating_sting", new EffectDebilitatingSting());
-        EXSANGUINATION = registerEffect("exsanguination", new EffectExsanguination());
-        EARTHQUAKE = registerEffect("earthquake", new EffectEarthquake());
-        FLEET_FOOTED = registerEffect("fleet_footed", new EffectFleetFooted());
-        POWER_DOWN = registerEffect("power_down", new EffectPowerDown());
-        MOSQUITO_REPELLENT = registerEffect("mosquito_repellent", new EffectMosquitoRepellent());
-
-        KNOCKBACK_RESISTANCE_POTION = registerPotion("knockback_resistance", new Potion(effectInstance(KNOCKBACK_RESISTANCE, 3600)));
-        LONG_KNOCKBACK_RESISTANCE_POTION = registerPotion("long_knockback_resistance", new Potion(effectInstance(KNOCKBACK_RESISTANCE, 9600)));
-        STRONG_KNOCKBACK_RESISTANCE_POTION = registerPotion("strong_knockback_resistance", new Potion(effectInstance(KNOCKBACK_RESISTANCE, 1800, 1)));
-        LAVA_VISION_POTION = registerPotion("lava_vision", new Potion(effectInstance(LAVA_VISION, 3600)));
-        LONG_LAVA_VISION_POTION = registerPotion("long_lava_vision", new Potion(effectInstance(LAVA_VISION, 9600)));
-        SPEED_III_POTION = registerPotion("speed_iii", new Potion(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 2200, 2)));
-        POISON_RESISTANCE_POTION = registerPotion("poison_resistance", new Potion(effectInstance(POISON_RESISTANCE, 3600)));
-        LONG_POISON_RESISTANCE_POTION = registerPotion("long_poison_resistance", new Potion(effectInstance(POISON_RESISTANCE, 9600)));
-        BUG_PHEROMONES_POTION = registerPotion("bug_pheromones", new Potion(effectInstance(BUG_PHEROMONES, 3600)));
-        LONG_BUG_PHEROMONES_POTION = registerPotion("long_bug_pheromones", new Potion(effectInstance(BUG_PHEROMONES, 9600)));
-        SOULSTEAL_POTION = registerPotion("soulsteal", new Potion(effectInstance(SOULSTEAL, 3600)));
-        LONG_SOULSTEAL_POTION = registerPotion("long_soulsteal", new Potion(effectInstance(SOULSTEAL, 9600)));
-        STRONG_SOULSTEAL_POTION = registerPotion("strong_soulsteal", new Potion(effectInstance(SOULSTEAL, 1800, 1)));
-        CLINGING_POTION = registerPotion("clinging", new Potion(effectInstance(CLINGING, 3600)));
-        LONG_CLINGING_POTION = registerPotion("long_clinging", new Potion(effectInstance(CLINGING, 9600)));
-    }
-
-    /** Call after AMItemRegistry.init() so item refs are non-null (1:1 behavior). */
-    public static void registerBrewing() {
-        FabricBrewingRecipeRegistryBuilder.BUILD.register((builder) -> {
-        builder.registerPotionRecipe(Potions.STRENGTH, Ingredient.of(AMItemRegistry.BEAR_FUR), potionHolder(KNOCKBACK_RESISTANCE_POTION));
-        builder.registerPotionRecipe(potionHolder(KNOCKBACK_RESISTANCE_POTION), Ingredient.of(Items.REDSTONE), potionHolder(LONG_KNOCKBACK_RESISTANCE_POTION));
-        builder.registerPotionRecipe(potionHolder(KNOCKBACK_RESISTANCE_POTION), Ingredient.of(Items.GLOWSTONE_DUST), potionHolder(STRONG_KNOCKBACK_RESISTANCE_POTION));
-        builder.registerPotionRecipe(potionHolder(LAVA_VISION_POTION), Ingredient.of(Items.REDSTONE), potionHolder(LONG_LAVA_VISION_POTION));
-        builder.registerPotionRecipe(potionHolder(POISON_RESISTANCE_POTION), Ingredient.of(AMItemRegistry.KOMODO_SPIT), potionHolder(LONG_POISON_RESISTANCE_POTION));
-        builder.registerPotionRecipe(Potions.STRONG_SWIFTNESS, Ingredient.of(AMItemRegistry.GAZELLE_HORN), potionHolder(SPEED_III_POTION));
-        builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(AMItemRegistry.COCKROACH_WING), potionHolder(BUG_PHEROMONES_POTION));
-        builder.registerPotionRecipe(potionHolder(BUG_PHEROMONES_POTION), Ingredient.of(Items.REDSTONE), potionHolder(LONG_BUG_PHEROMONES_POTION));
-        builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(AMItemRegistry.SOUL_HEART), potionHolder(SOULSTEAL_POTION));
-        builder.registerPotionRecipe(potionHolder(SOULSTEAL_POTION), Ingredient.of(Items.REDSTONE), potionHolder(LONG_SOULSTEAL_POTION));
-        builder.registerPotionRecipe(potionHolder(SOULSTEAL_POTION), Ingredient.of(Items.GLOWSTONE_DUST), potionHolder(STRONG_SOULSTEAL_POTION));
-        builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(AMItemRegistry.DROPBEAR_CLAW), potionHolder(CLINGING_POTION));
-        builder.registerPotionRecipe(potionHolder(CLINGING_POTION), Ingredient.of(Items.REDSTONE), potionHolder(LONG_CLINGING_POTION));
-        ProperBrewingRecipe.registerCustomRecipes();
-        });
     }
 }

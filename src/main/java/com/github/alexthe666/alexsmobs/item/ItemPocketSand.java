@@ -1,12 +1,14 @@
 package com.github.alexthe666.alexsmobs.item;
 
+import net.minecraft.world.entity.EquipmentSlot;
+
 import com.github.alexthe666.alexsmobs.entity.EntitySandShot;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -41,13 +43,13 @@ public class ItemPocketSand extends Item {
         return ItemStack.EMPTY;
     }
 
-    public InteractionResultHolder<ItemStack> use(Level worldIn, Player livingEntityIn, InteractionHand handIn) {
+    public InteractionResult use(Level worldIn, Player livingEntityIn, InteractionHand handIn) {
         ItemStack itemstack = livingEntityIn.getItemInHand(handIn);
         ItemStack ammo = findAmmo(livingEntityIn);
         if(livingEntityIn.isCreative()){
             ammo = new ItemStack(Items.SAND);
         }
-        if (!worldIn.isClientSide && !ammo.isEmpty()) {
+        if (!worldIn.isClientSide() && !ammo.isEmpty()) {
             livingEntityIn.gameEvent(GameEvent.ITEM_INTERACT_START);
             worldIn.playSound((Player)null, livingEntityIn.getX(), livingEntityIn.getY(), livingEntityIn.getZ(), SoundEvents.SAND_BREAK, SoundSource.PLAYERS, 0.5F, 0.4F + (livingEntityIn.getRandom().nextFloat() * 0.4F + 0.8F));
             boolean left = false;
@@ -57,15 +59,15 @@ public class ItemPocketSand extends Item {
             EntitySandShot blood = new EntitySandShot(worldIn, livingEntityIn, !left);
             Vec3 vector3d = livingEntityIn.getViewVector(1.0F);
             blood.shoot((double) vector3d.x(), (double) vector3d.y(), (double) vector3d.z(), 1.2F, 11);
-            if (!worldIn.isClientSide) {
+            if (!worldIn.isClientSide()) {
                 worldIn.addFreshEntity(blood);
             }
-            livingEntityIn.getCooldowns().addCooldown(this, 2);
+            livingEntityIn.getCooldowns().addCooldown(itemstack, 2);
             ammo.shrink(1);
-            itemstack.hurtAndBreak(1, livingEntityIn, livingEntityIn.getUsedItemHand() == net.minecraft.world.InteractionHand.MAIN_HAND ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND);
+            itemstack.hurtAndBreak(1, livingEntityIn, EquipmentSlot.MAINHAND);
         }
         livingEntityIn.awardStat(Stats.ITEM_USED.get(this));
-        return InteractionResultHolder.sidedSuccess(itemstack, worldIn.isClientSide());
+        return worldIn.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
     }
 
 

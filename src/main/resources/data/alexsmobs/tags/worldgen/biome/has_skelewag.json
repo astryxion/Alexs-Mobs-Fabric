@@ -1,9 +1,0 @@
-{
-  "values": [
-    "#minecraft:is_overworld",
-    "#minecraft:is_deep_ocean"
-  ],
-  "remove": [
-    "#forge:no_default_monsters"
-  ]
-}

@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import com.github.alexthe666.alexsmobs.block.BlockTerrapinEgg;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
@@ -10,9 +13,10 @@ import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityTerrapinEgg;
 import net.minecraft.ChatFormatting;
-import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancements.triggers.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -36,13 +40,17 @@ import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.animal.Bucketable;
+import net.minecraft.world.entity.Bucketable;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.*;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.material.Fluids;
@@ -54,6 +62,7 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 
 public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
 
@@ -93,7 +102,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 10.0D).add(Attributes.ARMOR, 10.0D).add(Attributes.MOVEMENT_SPEED, 0.1F);
+        return Monster.createMonsterAttributes().add(Attributes.TEMPT_RANGE, 10.0D).add(Attributes.MAX_HEALTH, 10.0D).add(Attributes.ARMOR, 10.0D).add(Attributes.MOVEMENT_SPEED, 0.1F);
     }
 
     protected SoundEvent getHurtSound(DamageSource damageSourceIn) {
@@ -104,19 +113,29 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
         return AMSoundRegistry.TERRAPIN_HURT;
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.terrapinSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static boolean canTerrapinSpawn(EntityType<EntityTerrapin> entityType, ServerLevelAccessor iServerWorld, MobSpawnType reason, BlockPos pos, RandomSource random) {
-        return reason == MobSpawnType.SPAWNER || iServerWorld.getBlockState(pos).getFluidState().is(Fluids.WATER);
+    public static boolean canTerrapinSpawn(EntityType<EntityTerrapin> entityType, ServerLevelAccessor iServerWorld, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
+        return reason == EntitySpawnReason.SPAWNER || iServerWorld.getBlockState(pos).getFluidState().is(Fluids.WATER);
     }
 
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new BreathAirGoal(this));
         this.goalSelector.addGoal(1, new MateGoal(this, 1.0D));
         this.goalSelector.addGoal(1, new LayEggGoal(this, 1.0D));
-        this.goalSelector.addGoal(2, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.TERRAPIN_BREEDABLES), false));
+        this.goalSelector.addGoal(2, new TemptGoal(this, 1.1D, Ingredient.of(this.registryAccess().lookupOrThrow(Registries.ITEM).getOrThrow(AMTagRegistry.TERRAPIN_BREEDABLES)), false) {
+            @Override
+            public boolean canUse() {
+                return !EntityTerrapin.this.isInLove() && !EntityTerrapin.this.hasEgg() && super.canUse();
+            }
+
+            @Override
+            public boolean canContinueToUse() {
+                return !EntityTerrapin.this.isInLove() && !EntityTerrapin.this.hasEgg() && super.canContinueToUse();
+            }
+        });
         this.goalSelector.addGoal(3, new AnimalAIFindWater(this));
         this.goalSelector.addGoal(3, new AnimalAILeaveWater(this));
         this.goalSelector.addGoal(4, new SemiAquaticAIRandomSwimming(this, 1.0D, 30));
@@ -132,7 +151,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
         prevRetreatProgress = retreatProgress;
         prevSpinProgress = spinProgress;
 
-        final boolean inWaterOrBubble = this.isInWaterOrBubble();
+        final boolean inWaterOrBubble = AMEntityRegistry.isInWaterOrBubble(this);
         final boolean spinning = this.isSpinning();
         final boolean retreated = this.hasRetreated();
 
@@ -188,11 +207,11 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
                 changeSpinAngleCooldown--;
             }
         }
-        if (!this.level().isClientSide) {
-            if (this.isInWaterOrBubble() && this.isLandNavigator) {
+        if (!this.level().isClientSide()) {
+            if (AMEntityRegistry.isInWaterOrBubble(this) && this.isLandNavigator) {
                 switchNavigator(false);
             }
-            if (!this.isInWaterOrBubble() && !this.isLandNavigator) {
+            if (!AMEntityRegistry.isInWaterOrBubble(this) && !this.isLandNavigator) {
                 switchNavigator(true);
             }
             if (isInWater()) {
@@ -201,7 +220,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
                 swimTimer = Math.min(0, swimTimer - 1);
                 List<Player> list = this.level().getEntitiesOfClass(Player.class, this.getBoundingBox().inflate(0, 0.15F, 0));
                 for (Player player : list) {
-                    if ((AMEntityRegistry.getLivingJumping(player) || !player.onGround()) && player.getY() > this.getEyeY()) {
+                    if (((player.getDeltaMovement().y > 0) || !player.onGround()) && player.getY() > this.getEyeY()) {
                         if (!hasRetreated()) {
                             this.hideInShellTimer += 40 + random.nextInt(40);
                         } else if (!isSpinning()) {
@@ -216,12 +235,15 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
             }
 
             if (swimProgress > 0) {
-                this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.0);
+                // setMaxUpStep removed in 1.21
             } else {
-                this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(0.6);
+                // setMaxUpStep removed in 1.21
             }
             if (hideInShellTimer > 0) {
                 hideInShellTimer--;
+            }
+            if (this.isInLove() || this.hasEgg()) {
+                hideInShellTimer = 0;
             }
             this.setRetreated(hideInShellTimer > 0 && !this.isSpinning());
         }
@@ -269,7 +291,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
         builder.define(FROM_BUCKET, false);
     }
 
-    public void addAdditionalSaveData(CompoundTag compound) {
+    public void addAdditionalSaveData(ValueOutput compound) {
         super.addAdditionalSaveData(compound);
         compound.putInt("TurtleType", this.getTurtleTypeOrdinal());
         compound.putInt("ShellType", this.getShellType());
@@ -281,16 +303,16 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
         compound.putBoolean("Bucketed", this.fromBucket());
     }
 
-    public void readAdditionalSaveData(CompoundTag compound) {
+    public void readAdditionalSaveData(ValueInput compound) {
         super.readAdditionalSaveData(compound);
-        this.setTurtleTypeOrdinal(compound.getInt("TurtleType"));
-        this.setShellType(compound.getInt("ShellType"));
-        this.setSkinType(compound.getInt("SkinType"));
-        this.setTurtleColor(compound.getInt("TurtleColor"));
-        this.setShellColor(compound.getInt("ShellColor"));
-        this.setSkinColor(compound.getInt("SkinColor"));
-        this.setHasEgg(compound.getBoolean("HasEgg"));
-        this.setFromBucket(compound.getBoolean("Bucketed"));
+        this.setTurtleTypeOrdinal(compound.getIntOr("TurtleType", 0));
+        this.setShellType(compound.getIntOr("ShellType", 0));
+        this.setSkinType(compound.getIntOr("SkinType", 0));
+        this.setTurtleColor(compound.getIntOr("TurtleColor", 0));
+        this.setShellColor(compound.getIntOr("ShellColor", 0));
+        this.setSkinColor(compound.getIntOr("SkinColor", 0));
+        this.setHasEgg(compound.getBooleanOr("HasEgg", false));
+        this.setFromBucket(compound.getBooleanOr("Bucketed", false));
     }
 
     protected void playStepSound(BlockPos pos, BlockState state) {
@@ -416,15 +438,16 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
     }
 
     public void push(Entity entity) {
-        if (this.isInWaterOrBubble() || entity instanceof EntityTerrapin) {
+        if (AMEntityRegistry.isInWaterOrBubble(this) || entity instanceof EntityTerrapin) {
             super.push(entity);
         } else {
             entity.setDeltaMovement(entity.getDeltaMovement().add(this.getDeltaMovement()));
         }
     }
 
-    public boolean canBeCollidedWith() {
-        return this.isInWaterOrBubble() ? super.canBeCollidedWith() : this.isAlive();
+    @Override
+    public boolean canBeCollidedWith(@Nullable Entity entity) {
+        return AMEntityRegistry.isInWaterOrBubble(this) ? super.canBeCollidedWith(entity) : this.isAlive();
     }
 
     private void spinFor(int time) {
@@ -444,7 +467,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
     private void handleSpin() {
         this.setRetreated(true);
         ++this.spinCounter;
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (this.spinCounter > maxRollTime) {
                 this.setSpinning(false);
                 this.hideInShellTimer = 10 + random.nextInt(30);
@@ -465,7 +488,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
 
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
         this.setAirSupply(this.getMaxAirSupply());
         this.setTurtleType(TerrapinTypes.getRandomType(random));
         this.setShellType(random.nextInt(7));
@@ -478,12 +501,18 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
 
     @Override
     public AgeableMob getBreedOffspring(ServerLevel p_146743_, AgeableMob p_146744_) {
-        return AMEntityRegistry.TERRAPIN.create(p_146743_);
+        return AMEntityRegistry.TERRAPIN.create(p_146743_, EntitySpawnReason.BREEDING);
     }
 
     @Override
     public boolean shouldStopMoving() {
-        return this.isSpinning() || this.hasRetreated();
+        if (this.isSpinning()) {
+            return true;
+        }
+        if (this.isInLove() || this.hasEgg()) {
+            return false;
+        }
+        return this.hasRetreated();
     }
 
     @Override
@@ -543,35 +572,57 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
         if (this.hasCustomName()) {
             bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, this.getCustomName());
         }
-        CompoundTag platTag = new CompoundTag();
-        this.addAdditionalSaveData(platTag);
-        net.minecraft.world.item.component.CustomData existing = bucket.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
-        CompoundTag compound = existing != null ? existing.copyTag() : new CompoundTag();
+        Bucketable.saveDefaultDataToBucketTag(this, bucket);
+        TagValueOutput out = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, this.level().registryAccess());
+        this.addAdditionalSaveData(out);
+        CompoundTag platTag = out.buildResult();
+        CompoundTag compound = bucket.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
         compound.put("TerrapinData", platTag);
         bucket.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(compound));
     }
 
     @Override
     public void loadFromBucketTag(@Nonnull CompoundTag compound) {
-        if (compound.contains("TerrapinData")) {
-            this.readAdditionalSaveData(compound.getCompound("TerrapinData"));
-        }
+        Bucketable.loadDefaultDataFromBucketTag(this, compound);
+        compound.getCompound("TerrapinData").ifPresent(sub -> {
+            ValueInput input = TagValueInput.create(ProblemReporter.DISCARDING, this.level().registryAccess(), sub);
+            this.readAdditionalSaveData(input);
+        });
     }
 
     @Override
     @Nonnull
     public InteractionResult mobInteract(@Nonnull Player player, @Nonnull InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
-        if (itemstack.is(AMTagRegistry.TERRAPIN_BREEDABLES)){
+        if (itemstack.is(AMTagRegistry.TERRAPIN_BREEDABLES)) {
             this.setPersistenceRequired();
         }
-        return Bucketable.bucketMobPickup(player, hand, this).orElse(super.mobInteract(player, hand));
+        Optional<InteractionResult> bucketResult = Bucketable.bucketMobPickup(player, hand, this);
+        if (bucketResult.isPresent()) {
+            return bucketResult.get();
+        }
+        if (isFood(itemstack) && !this.isBaby() && this.getAge() == 0 && this.canFallInLove()) {
+            if (!this.level().isClientSide()) {
+                this.usePlayerItem(player, hand, itemstack);
+                this.setInLove(player);
+                this.gameEvent(GameEvent.EAT);
+                this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
+                this.hideInShellTimer = 0;
+                this.setRetreated(false);
+            }
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        }
+        InteractionResult type = super.mobInteract(player, hand);
+        if (type.consumesAction() && isFood(itemstack)) {
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        }
+        return type;
     }
 
     public void calculateEntityAnimation(boolean flying) {
         final float f1 = (float) Mth.length(this.getX() - this.xo, 0, this.getZ() - this.zo);
         final float f2 = Math.min(f1 * (isSpinning() ? 4.0F : 32.0F), 1.0F);
-        this.walkAnimation.update(f2, 0.4F);
+        this.walkAnimation.update(f2, 0.4F, 1.0F);
     }
 
 
@@ -615,7 +666,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
             this.animal.setAge(6000);
             this.partner.setAge(6000);
             RandomSource random = this.animal.getRandom();
-            if (this.level.getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)) {
+            if (this.level.getGameRules().get(GameRules.MOB_DROPS)) {
                 this.level.addFreshEntity(new ExperienceOrb(this.level, this.animal.getX(), this.animal.getY(), this.animal.getZ(), random.nextInt(7) + 1));
             }
 
@@ -654,7 +705,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
             if (!this.turtle.isInWater() && this.isReachedTarget()) {
                 Level world = this.turtle.level();
                 turtle.gameEvent(GameEvent.BLOCK_PLACE);
-                world.playSound(null, blockpos, SoundEvents.TURTLE_LAY_EGG, SoundSource.BLOCKS, 0.3F, 0.9F + world.random.nextFloat() * 0.2F);
+                world.playSound(null, blockpos, SoundEvents.TURTLE_LAY_EGG, SoundSource.BLOCKS, 0.3F, 0.9F + this.turtle.getRandom().nextFloat() * 0.2F);
                 world.setBlock(this.blockPos.above(), AMBlockRegistry.TERRAPIN_EGG.defaultBlockState().setValue(BlockTerrapinEgg.EGGS, Integer.valueOf(this.turtle.random.nextInt(1) + 3)), 3);
                 if(world.getBlockEntity(this.blockPos.above()) instanceof TileEntityTerrapinEgg eggTe){
                     eggTe.parent1 = new TileEntityTerrapinEgg.ParentData(turtle.getTurtleType(), turtle.getShellType(), turtle.getSkinType(), turtle.getTurtleColor(), turtle.getShellColor(), turtle.getSkinColor());
@@ -667,7 +718,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
         }
 
         protected boolean isValidTarget(LevelReader worldIn, BlockPos pos) {
-            return worldIn.isEmptyBlock(pos.above()) && BlockTerrapinEgg.isProperHabitat(worldIn, pos);
+            return worldIn.getBlockState(pos.above()).isAir() && BlockTerrapinEgg.isProperHabitat(worldIn, pos);
         }
     }
 }

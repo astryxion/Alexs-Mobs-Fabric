@@ -1,9 +1,9 @@
 {
   "replace": false,
   "values": [
-    "minecraft:egg",
+    "#c:eggs",
     "minecraft:sugar",
-    "minecraft:wheat_seeds",
+    "#c:seeds",
     "#alexsmobs:crow_breedables",
     "#alexsmobs:crow_breedables"
   ]

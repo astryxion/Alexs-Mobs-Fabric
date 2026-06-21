@@ -1,10 +1,18 @@
 {
-  "anvil_cost": 1,
-  "description": {"translate": "enchantment.alexsmobs.straddle_jump"},
-  "max_cost": {"base": 14, "per_level_above_first": 5},
+  "description": {
+    "translate": "enchantment.alexsmobs.straddle_jump"
+  },
+  "supported_items": "#alexsmobs:straddleboard",
+  "weight": 10,
   "max_level": 3,
-  "min_cost": {"base": 4, "per_level_above_first": 5},
-  "slots": ["mainhand"],
-  "supported_items": "#alexsmobs:enchantable/straddleboard",
-  "weight": 5
+  "min_cost": {
+    "base": 1,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 16,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 1,
+  "slots": ["mainhand"]
 }

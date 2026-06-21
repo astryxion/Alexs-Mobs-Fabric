@@ -2,14 +2,13 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 
 import com.github.alexthe666.alexsmobs.entity.EntityGrizzlyBear;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
-import com.google.common.base.Predicate;
+import java.util.function.Predicate;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.util.LandRandomPos;
-import net.minecraft.world.entity.animal.Bee;
+import net.minecraft.world.entity.animal.bee.Bee;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nullable;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -23,11 +22,10 @@ public class GrizzlyBearAIFleeBees extends Goal {
     private Path path;
 
     public GrizzlyBearAIFleeBees(EntityGrizzlyBear entityIn, float avoidDistanceIn, double farSpeedIn, double nearSpeedIn) {
-        this.avoidTargetSelector = new Predicate<Bee>() {
-            public boolean apply(@Nullable Bee p_apply_1_) {
-                return p_apply_1_.isAlive() && GrizzlyBearAIFleeBees.this.entity.getSensing().hasLineOfSight(p_apply_1_) && !GrizzlyBearAIFleeBees.this.entity.isAlliedTo(p_apply_1_) && p_apply_1_.getRemainingPersistentAngerTime() > 0;
-            }
-        };
+        this.avoidTargetSelector = p_apply_1_ -> p_apply_1_.isAlive()
+                && GrizzlyBearAIFleeBees.this.entity.getSensing().hasLineOfSight(p_apply_1_)
+                && !GrizzlyBearAIFleeBees.this.entity.isAlliedTo(p_apply_1_)
+                && p_apply_1_.isAngry();
         this.entity = entityIn;
         this.avoidDistance = avoidDistanceIn;
         this.farSpeed = farSpeedIn;
@@ -76,7 +74,7 @@ public class GrizzlyBearAIFleeBees extends Goal {
     }
 
     public void tick() {
-        if(closestLivingEntity != null && closestLivingEntity.getRemainingPersistentAngerTime() <= 0){
+        if (closestLivingEntity != null && !closestLivingEntity.isAngry()) {
             this.stop();
         }
         this.entity.getNavigation().setSpeedModifier(getRunSpeed());

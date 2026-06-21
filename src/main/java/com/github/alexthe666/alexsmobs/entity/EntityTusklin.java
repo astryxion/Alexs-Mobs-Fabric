@@ -1,5 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
@@ -11,7 +14,6 @@ import com.github.alexthe666.citadel.animation.Animation;
 import com.github.alexthe666.citadel.animation.AnimationHandler;
 import com.github.alexthe666.citadel.animation.IAnimatedEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -26,6 +28,8 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.ConversionParams;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -66,19 +70,24 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
 
     protected EntityTusklin(EntityType<? extends Animal> type, Level level) {
         super(type, level);
-        this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.1);
+        // setMaxUpStep removed in 1.21
     }
 
-    public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
+    public boolean checkSpawnRules(LevelAccessor worldIn, EntitySpawnReason spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.tusklinSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
-    public static boolean canTusklinSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
+    public static boolean canTusklinSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         return worldIn.getRawBrightness(pos, 0) > 8 && (worldIn.getBlockState(pos.below()).isSolid() || worldIn.getBlockState(pos.below()).is(AMTagRegistry.TUSKLIN_SPAWNS));
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 40D).add(Attributes.ATTACK_DAMAGE, 9.0D).add(Attributes.MOVEMENT_SPEED, 0.3F).add(Attributes.KNOCKBACK_RESISTANCE, 0.9F);
+    }
+
+    @Override
+    public boolean canFreeze() {
+        return false;
     }
 
     protected SoundEvent getAmbientSound() {
@@ -122,7 +131,7 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
         this.goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 15.0F));
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
         this.targetSelector.addGoal(1, (new AnimalAIHurtByTargetNotBaby(this)).setAlertOthers());
-        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<Player>(this, Player.class, 100, true, false, this::isAngryAt));
+        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<Player>(this, Player.class, 100, true, false, AMEntityRegistry.toSelector((entity) -> this.isAngryAt(entity))));
     }
 
     public boolean isAngryAt(LivingEntity p_21675_) {
@@ -136,7 +145,7 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
         super.tickRidden(player, vec3);
         this.setRot(player.getYRot(), player.getXRot() * 0.25F);
         this.yRotO = this.yBodyRot = this.yHeadRot = this.getYRot();
-        this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.0);
+        // setMaxUpStep removed in 1.21
         this.getNavigation().stop();
         this.setTarget(null);
         this.setSprinting(true);
@@ -203,7 +212,7 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
             final float angle = (Maths.STARTING_ANGLE * this.yBodyRot);
             final double extraX = radius * Mth.sin(Mth.PI + angle);
             final double extraZ = radius * Mth.cos(angle);
-            passenger.setPos(this.getX() + extraX, this.getY() + this.getPassengersRidingOffset() + 0.0D, this.getZ() + extraZ);
+            passenger.setPos(this.getX() + extraX, this.getY() + (this.getBbHeight() * 0.75) + passenger.getBbHeight() * 0.5, this.getZ() + extraZ);
         }
     }
 
@@ -256,7 +265,7 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
         InteractionResult type = super.mobInteract(player, hand);
         if (type != InteractionResult.SUCCESS && !isFood(itemstack)) {
             if (!player.isShiftKeyDown() && !this.isBaby() && this.isSaddled() && this.getAnimation() != ANIMATION_BUCK) {
-                player.startRiding(this);
+                player.startRiding(this, true, true);
                 return InteractionResult.SUCCESS;
             }
         }
@@ -267,35 +276,27 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
         return stack.is(AMTagRegistry.TUSKLIN_BREEDABLES);
     }
 
-    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(SADDLED, false);
         builder.define(PASSIVETICKS, 0);
     }
 
-    public void addAdditionalSaveData(CompoundTag p_31808_) {
+    public void addAdditionalSaveData(ValueOutput p_31808_) {
         super.addAdditionalSaveData(p_31808_);
         if (!this.getShoeStack().isEmpty()) {
-            p_31808_.put("ShoeItem", this.getShoeStack().save(this.level().registryAccess()));
+            p_31808_.store("ShoeItem", ItemStack.CODEC, this.getShoeStack());
         }
         p_31808_.putInt("PassiveTicks", this.getPassiveTicks());
 
         p_31808_.putBoolean("Saddle", this.isSaddled());
     }
 
-    public void readAdditionalSaveData(CompoundTag p_31795_) {
+    public void readAdditionalSaveData(ValueInput p_31795_) {
         super.readAdditionalSaveData(p_31795_);
-        this.setSaddled(p_31795_.getBoolean("Saddle"));
-        this.setPassiveTicks(p_31795_.getInt("PassiveTicks"));
-        CompoundTag compoundtag = p_31795_.getCompound("ShoeItem");
-        if (compoundtag != null && !compoundtag.isEmpty()) {
-            ItemStack itemstack = ItemStack.parseOptional(this.level().registryAccess(), compoundtag);
-            if (itemstack.isEmpty()) {
-                AlexsMobs.LOGGER.warn("Unable to load item from: {}", compoundtag);
-            }
-            this.setShoeStack(itemstack);
-        }
+        this.setSaddled(p_31795_.getBooleanOr("Saddle", false));
+        this.setPassiveTicks(p_31795_.getIntOr("PassiveTicks", 0));
+        p_31795_.read("ShoeItem", ItemStack.CODEC).ifPresentOrElse(this::setShoeStack, () -> this.setShoeStack(ItemStack.EMPTY));
     }
 
     public boolean isMushroom(ItemStack stack) {
@@ -318,17 +319,14 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
         this.entityData.set(SADDLED, Boolean.valueOf(saddled));
     }
 
-    protected void dropEquipment() {
-        super.dropEquipment();
+    @Override
+    protected void dropEquipment(ServerLevel level) {
+        super.dropEquipment(level);
         if (this.isSaddled()) {
-            if (!this.level().isClientSide) {
-                this.spawnAtLocation(Items.SADDLE);
-            }
+            this.spawnAtLocation(level, Items.SADDLE);
         }
         if (!this.getShoeStack().isEmpty()) {
-            if (!this.level().isClientSide) {
-                this.spawnAtLocation(this.getShoeStack().copy());
-            }
+            this.spawnAtLocation(level, this.getShoeStack().copy());
         }
         this.setSaddled(false);
         this.setShoeStack(ItemStack.EMPTY);
@@ -346,12 +344,15 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
         super.tick();
         if(isInNether()) {
             conversionTime++;
-            if (conversionTime > 300 && !this.level().isClientSide) {
-                Hoglin hoglin = this.convertTo(EntityType.HOGLIN, false);
-                if(hoglin != null){
-                    hoglin.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 200, 0));
-                    this.dropEquipment();
-                    level().addFreshEntity(hoglin);
+            if (conversionTime > 300 && !this.level().isClientSide() && this.level() instanceof ServerLevel serverLevel) {
+                Hoglin hoglin = this.convertTo(
+                    EntityTypes.HOGLIN,
+                    ConversionParams.single(this, false, false),
+                    hog -> hog.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 200, 0))
+                );
+                if (hoglin != null) {
+                    this.dropEquipment(serverLevel);
+                    serverLevel.addFreshEntity(hoglin);
                     this.remove(RemovalReason.DISCARDED);
                 }
             }
@@ -368,7 +369,7 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
                     float x = Mth.sin(rot * Mth.DEG_TO_RAD);
                     float z = -Mth.cos(rot * Mth.DEG_TO_RAD);
                     if (!(strength <= 0.0D)) {
-                        launch.hasImpulse = true;
+                        launch.needsSync = true;
                         Vec3 vec3 = this.getDeltaMovement();
                         Vec3 vec31 = vec3.add((new Vec3(x, 0.0D, z)).normalize().scale(strength));
                         launch.setDeltaMovement(vec31.x, strength, vec31.z);
@@ -382,7 +383,7 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
                 entityToLaunchId = passenger.getId();
             }
         }
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             if (this.isVehicle()) {
                 ridingTime++;
                 if (ridingTime >= this.getMaxRidingTime() && this.getAnimation() != ANIMATION_BUCK) {
@@ -404,9 +405,9 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
                         }
                     }
                 }
-                this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(2.0);
+                // setMaxUpStep removed in 1.21
             }else{
-                this.getAttribute(Attributes.STEP_HEIGHT).setBaseValue(1.1);
+                // setMaxUpStep removed in 1.21
             }
             if (this.getTarget() != null && this.hasLineOfSight(this.getTarget()) && distanceTo(this.getTarget()) < this.getTarget().getBbWidth() + this.getBbWidth() + 1.8F) {
                 if (this.getAnimation() == ANIMATION_FLING && this.getAnimationTick() == 6) {
@@ -437,7 +438,7 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
                 this.heal(5);
             }
         }
-        if (!this.level().isClientSide && this.getAnimation() == NO_ANIMATION && getRandom().nextInt(isBaby() ? 140 : 70) == 0 && (this.getLastHurtByMob() == null || this.distanceTo(this.getLastHurtByMob()) > 30)) {
+        if (!this.level().isClientSide() && this.getAnimation() == NO_ANIMATION && getRandom().nextInt(isBaby() ? 140 : 70) == 0 && (this.getLastHurtByMob() == null || this.distanceTo(this.getLastHurtByMob()) > 30)) {
             if (level().getBlockState(this.blockPosition().below()).is(Blocks.GRASS_BLOCK) && getRandom().nextInt(3) == 0) {
                 this.setAnimation(ANIMATION_RUT);
             }
@@ -456,7 +457,7 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
     private void knockbackTarget(LivingEntity entity, float strength, float angle) {
         float rot = getYRot() + angle;
         if(entity != null){
-            entity.knockback(strength, Mth.sin(rot * Mth.DEG_TO_RAD), -Mth.cos(rot * Mth.DEG_TO_RAD));
+            entity.knockback(strength, Mth.sin(rot * Mth.DEG_TO_RAD), -Mth.cos(rot * Mth.DEG_TO_RAD), this.damageSources().mobAttack(this), 0.0F);
         }
     }
 
@@ -480,7 +481,7 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
         currentAnimation = animation;
     }
 
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, EntitySpawnReason reason, @Nullable SpawnGroupData spawnDataIn) {
         if (spawnDataIn == null) {
             spawnDataIn = new AgeableMob.AgeableMobGroupData(0.34F);
         }
@@ -497,6 +498,6 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
     @Nullable
     @Override
     public AgeableMob getBreedOffspring(ServerLevel level, AgeableMob mob) {
-        return AMEntityRegistry.TUSKLIN.create(level());
+        return AMEntityRegistry.TUSKLIN.create(level, EntitySpawnReason.BREEDING);
     }
 }

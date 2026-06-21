@@ -2,8 +2,11 @@
   "display": {
     "icon": {
       "id": "alexsmobs:tab_icon",
+      "nbt": "{DisplayEntityType:\"alexsmobs:cockroach\", DisplayMobFlags:99}",
       "components": {
-        "minecraft:custom_data": "{DisplayEntityType:\"alexsmobs:cockroach\", DisplayMobFlags:99}"
+        "alexsmobs:tab_icon_display": {
+          "display_entity_type": "alexsmobs:cockroach"
+        }
       }
     },
     "title": {

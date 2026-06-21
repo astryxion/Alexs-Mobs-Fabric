@@ -20,7 +20,6 @@ public class EntityPollenBall extends EntityMobProjectile {
         Vec3 vec3 = flutter.position().add(calcOffsetVec(new Vec3(0, 0.4F * flutter.getScale(), 0), flutter.getFlutterPitch(), flutter.getYRot()));
         this.setPos(vec3.x, vec3.y, vec3.z);
     }
-
     public boolean isNoGravity() {
         return true;
     }
@@ -31,7 +30,7 @@ public class EntityPollenBall extends EntityMobProjectile {
         if (entity instanceof Mob && ((Mob) entity).getTarget() != null) {
             LivingEntity target = ((Mob) entity).getTarget();
             if (target == null) {
-                this.kill();
+                this.remove(Entity.RemovalReason.DISCARDED);
             }
             final double d0 = target.getX() - this.getX();
             final double d1 = target.getY() + target.getBbHeight() * 0.5F - this.getY();
@@ -40,7 +39,7 @@ public class EntityPollenBall extends EntityMobProjectile {
             shoot(d0, d1, d2, speed, 0);
             this.setYRot(-((float) Mth.atan2(d0, d2)) * Mth.RAD_TO_DEG);
         }
-        if(this.level().isClientSide && random.nextInt(2) == 0){
+        if(this.level().isClientSide() && random.nextInt(2) == 0){
             final float r1 = (random.nextFloat() - 0.5F) * 0.5F;
             final float r2 = (random.nextFloat() - 0.5F) * 0.5F;
             final float r3 = (random.nextFloat() - 0.5F) * 0.5F;

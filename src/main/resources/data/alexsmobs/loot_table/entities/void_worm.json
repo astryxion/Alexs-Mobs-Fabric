@@ -3,7 +3,7 @@
   "pools": [
     {
       "name": "eye",
-      "rolls": 1.0,
+      "rolls": 1,
       "entries": [
         {
           "type": "minecraft:item",
@@ -19,7 +19,7 @@
     },
     {
       "name": "eye",
-      "rolls": 1.0,
+      "rolls": 1,
       "entries": [
         {
           "type": "minecraft:item",

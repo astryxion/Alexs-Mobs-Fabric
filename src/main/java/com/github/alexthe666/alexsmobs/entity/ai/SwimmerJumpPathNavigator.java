@@ -1,9 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
-import net.minecraft.network.protocol.game.DebugPackets;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
@@ -18,6 +17,11 @@ public class SwimmerJumpPathNavigator  extends PathNavigation {
 
     public SwimmerJumpPathNavigator(Mob entitylivingIn, Level worldIn) {
         super(entitylivingIn, worldIn);
+    }
+
+    @Override
+    public boolean canNavigateGround() {
+        return false;
     }
 
     protected PathFinder createPathFinder(int p_179679_1_) {
@@ -52,7 +56,6 @@ public class SwimmerJumpPathNavigator  extends PathNavigation {
                 }
             }
 
-            DebugPackets.sendPathFindingPacket(this.level, this.mob, this.path, this.maxDistanceToWaypoint);
             if (!this.isDone()) {
                 Vec3 vector3d1 = this.path.getNextEntityPos(this.mob);
                 this.mob.getMoveControl().setWantedPosition(vector3d1.x, vector3d1.y, vector3d1.z, this.speedModifier);
@@ -128,7 +131,7 @@ public class SwimmerJumpPathNavigator  extends PathNavigation {
     }
 
     public boolean isStableDestination(BlockPos pos) {
-        return !this.level.getBlockState(pos).isSolidRender(this.level, pos);
+        return !this.level.getBlockState(pos).isSolidRender();
     }
 
     public void setCanFloat(boolean canSwim) {
