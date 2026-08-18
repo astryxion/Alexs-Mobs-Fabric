@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.effect;
 
+import net.minecraft.server.level.ServerLevel;
+
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
@@ -13,7 +15,7 @@ public class EffectKnockbackResistance extends MobEffect {
         this.addAttributeModifier(Attributes.KNOCKBACK_RESISTANCE, net.minecraft.resources.Identifier.parse("alexsmobs:knockback_resistance"), 0.5D, AttributeModifier.Operation.ADD_VALUE);
     }
 
-    public boolean applyEffectTick(LivingEntity LivingEntityIn, int amplifier) {
+    public boolean applyEffectTick(ServerLevel level, LivingEntity LivingEntityIn, int amplifier) {
         return true;
     }
 

@@ -54,6 +54,11 @@ java {
     targetCompatibility = JavaVersion.VERSION_25
 }
 
+jar {
+    from("LICENSE")
+    from("README.md")
+}
+
 tasks.matching { it.name in ['runClient', 'runServer'] }.configureEach {
     enabled = false
 }

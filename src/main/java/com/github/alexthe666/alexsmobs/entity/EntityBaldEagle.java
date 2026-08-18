@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
@@ -351,7 +353,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                     if (remainderTemplate != null) {
                         ItemStack remainder = remainderTemplate.create();
                         if (!remainder.isEmpty()) {
-                            this.spawnAtLocation((ServerLevel) this.level(), remainder);
+                            AMEntityHooks.drop(this, remainder);
                         }
                     }
                 }
@@ -386,7 +388,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                         itemstack.hurtAndBreak(1, (ServerPlayer) player, EquipmentSlot.MAINHAND);
                     }
                 }
-                this.spawnAtLocation((ServerLevel) this.level(), AMItemRegistry.FALCONRY_HOOD);
+                AMEntityHooks.drop(this, AMItemRegistry.FALCONRY_HOOD);
                 this.setCap(false);
                 return InteractionResult.SUCCESS;
             } else if (!this.isBaby() && getRidingFalcons(player) <= 0 && (player.getItemInHand(InteractionHand.MAIN_HAND).getItem() == AMItemRegistry.FALCONRY_GLOVE || player.getItemInHand(InteractionHand.OFF_HAND).getItem() == AMItemRegistry.FALCONRY_GLOVE)) {

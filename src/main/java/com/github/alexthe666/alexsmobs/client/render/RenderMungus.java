@@ -303,14 +303,8 @@ public class RenderMungus extends MobRenderer<EntityMungus, CitadelLivingRenderS
 
         private void renderSingleMushroomBlock(PoseStack matrixStackIn, SubmitNodeCollector collector, int packedLightIn, int overlay, BlockState blockstate) {
             BlockModelRenderState blockModelRenderState = new BlockModelRenderState();
-            try {
-                java.lang.reflect.Field resolverField = Minecraft.class.getDeclaredField("blockModelResolver");
-                resolverField.setAccessible(true);
-                Object resolver = resolverField.get(Minecraft.getInstance());
-                java.lang.reflect.Method update = resolver.getClass().getMethod("update", BlockModelRenderState.class, BlockState.class, net.minecraft.world.item.ItemDisplayContext.class);
-                update.invoke(resolver, blockModelRenderState, blockstate, RenderMungus.this.blockDisplayContext);
-            } catch (ReflectiveOperationException ignored) {
-            }
+            new net.minecraft.client.renderer.block.BlockModelResolver(Minecraft.getInstance().getModelManager())
+                    .update(blockModelRenderState, blockstate, RenderMungus.this.blockDisplayContext);
             blockModelRenderState.submit(matrixStackIn, collector, packedLightIn, overlay, 0);
         }
 

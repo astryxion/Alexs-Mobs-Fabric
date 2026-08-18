@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
@@ -416,6 +418,8 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
                 this.setNoGravity(true);
                 if (this.isSitting() || this.isPassenger() || this.isInLove()) {
                     this.setFlying(false);
+                } else if (timeFlying > 8 && (this.onGround() || this.verticalCollisionBelow)) {
+                    this.setFlying(false);
                 }
             } else {
                 timeFlying = 0;
@@ -449,7 +453,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
                 if (remainderTemplate != null) {
                     ItemStack remainder = remainderTemplate.create();
                     if (!remainder.isEmpty()) {
-                        this.spawnAtLocation((ServerLevel) this.level(), remainder);
+                        AMEntityHooks.drop(this, remainder);
                     }
                 }
                 this.getMainHandItem().shrink(1);
@@ -562,10 +566,9 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
     }
 
     public void setFlying(boolean flying) {
-        if(flying && isBaby()){
-            return;
+        if (!flying || !this.isBaby() && !this.isPassenger()) {
+            this.entityData.set(FLYING, flying);
         }
-        this.entityData.set(FLYING, flying);
     }
 
     public int getCommand() {
@@ -716,7 +719,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
         final ItemStack duplicate = e.getItem().copy();
         duplicate.setCount(1);
         if (!this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !this.level().isClientSide()) {
-            this.spawnAtLocation((ServerLevel) this.level(), this.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
+            AMEntityHooks.drop(this, this.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
         }
         this.setItemInHand(InteractionHand.MAIN_HAND, duplicate);
         Entity itemThrower = e.getOwner();

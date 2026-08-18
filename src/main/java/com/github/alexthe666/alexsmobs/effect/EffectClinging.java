@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.effect;
 
+import net.minecraft.server.level.ServerLevel;
+
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.effect.MobEffect;
@@ -14,7 +16,7 @@ public class EffectClinging extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0XBD4B4B);
     }
 
-    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
+    public boolean applyEffectTick(ServerLevel level, LivingEntity entity, int amplifier) {
         entity.refreshDimensions();
         entity.setNoGravity(false);
 

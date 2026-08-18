@@ -3,6 +3,7 @@ package com.github.alexthe666.alexsmobs.entity;
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.network.MessageHurtMultipart;
 import com.github.alexthe666.alexsmobs.network.MessageInteractMultipart;
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -40,6 +41,7 @@ public class EntityGiantSquidPart extends Entity implements IHurtableMultipart {
 
     public EntityGiantSquidPart(EntityGiantSquid parent, float sizeX, float sizeY) {
         super(AMEntityRegistry.GIANT_SQUID_PART, parent.level());
+        AMEntityHooks.assignClientPartId(this);
         this.parent = parent;
         this.size = EntityDimensions.scalable(sizeX, sizeY);
         this.refreshDimensions();

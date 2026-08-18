@@ -7,6 +7,7 @@ import com.github.alexthe666.alexsmobs.entity.ai.CreatureAITargetItems;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
@@ -14,6 +15,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -171,11 +173,14 @@ public class EntityCockroach extends Animal implements Shearable, ITargetsDroppe
         compound.getInt("EggTime").ifPresent(v -> this.timeUntilNextEgg = v);
     }
 
-    // TODO 1.21: getDefaultLootTable now returns ResourceKey<LootTable>
-    // @Nullable
-    //     protected Identifier getDefaultLootTable() {
-    //         return this.hasMaracas() ? this.isHeadless() ? MARACA_HEADLESS_LOOT : MARACA_LOOT : super.getDefaultLootTable();
-    //     }
+    @Override
+    protected void dropFromLootTable(ServerLevel level, DamageSource source, boolean playerKilled) {
+        if (this.hasMaracas()) {
+            this.dropFromLootTable(level, source, playerKilled, ResourceKey.create(Registries.LOOT_TABLE, this.isHeadless() ? MARACA_HEADLESS_LOOT : MARACA_LOOT));
+        } else {
+            super.dropFromLootTable(level, source, playerKilled);
+        }
+    }
 
     public float getWalkTargetValue(BlockPos pos, LevelReader worldIn) {
         return 0.5F - Math.max(worldIn.getBrightness(LightLayer.BLOCK, pos), worldIn.getBrightness(LightLayer.SKY, pos));
@@ -190,6 +195,9 @@ public class EntityCockroach extends Animal implements Shearable, ITargetsDroppe
 
     public InteractionResult mobInteract(Player p_230254_1_, InteractionHand p_230254_2_) {
         ItemStack lvt_3_1_ = p_230254_1_.getItemInHand(p_230254_2_);
+        if (AMEntityHooks.shearWithShears(this, p_230254_1_, p_230254_2_, lvt_3_1_)) {
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        }
        if (lvt_3_1_.getItem() == AMItemRegistry.MARACA && this.isAlive() && !this.hasMaracas()) {
             this.setMaracas(true);
             lvt_3_1_.shrink(1);
@@ -197,8 +205,8 @@ public class EntityCockroach extends Animal implements Shearable, ITargetsDroppe
         } else if (lvt_3_1_.getItem() != AMItemRegistry.MARACA && this.isAlive() && this.hasMaracas()) {
             this.setMaracas(false);
             this.setDancing(false);
-            this.spawnAtLocation((ServerLevel) this.level(), new ItemStack(AMItemRegistry.MARACA));
-            return InteractionResult.SUCCESS;
+            AMEntityHooks.drop(this, new ItemStack(AMItemRegistry.MARACA));
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
         } else {
             return super.mobInteract(p_230254_1_, p_230254_2_);
         }
@@ -307,7 +315,7 @@ public class EntityCockroach extends Animal implements Shearable, ITargetsDroppe
             laCucarachaTimer = 0;
         }
         if (!this.level().isClientSide() && this.isAlive() && !this.isBaby() && --this.timeUntilNextEgg <= 0) {
-           ItemEntity dropped = this.spawnAtLocation((ServerLevel) this.level(), AMItemRegistry.COCKROACH_OOTHECA);
+           ItemEntity dropped = AMEntityHooks.drop(this, AMItemRegistry.COCKROACH_OOTHECA);
            if(dropped != null){
                dropped.setDefaultPickUpDelay();
            }
@@ -375,6 +383,7 @@ public class EntityCockroach extends Animal implements Shearable, ITargetsDroppe
         serverLevel.playSound(null, this, SoundEvents.SHEEP_SHEAR, category, 1.0F, 1.0F);
         this.gameEvent(GameEvent.ENTITY_INTERACT);
         this.setHeadless(true);
+        AMEntityHooks.drop(this, new ItemStack(AMItemRegistry.COCKROACH_WING_FRAGMENT));
     }
 
     public List<ItemStack> onSheared(@Nullable Player player, ItemStack item, Level world, BlockPos pos) {

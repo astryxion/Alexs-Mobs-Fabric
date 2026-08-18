@@ -7,13 +7,23 @@
     "client.ModelCitadelBridgeRenderMixin",
     "client.ItemModelResolverSpecialItemMixin",
     "client.EntityRenderDispatcherStateCaptureMixin",
-    "client.LivingEntityRendererMixin"
+    "client.LivingEntityRendererMixin",
+    "client.LavaFogEnvironmentMixin"
   ],
   "mixins": [
+    "EntityMixin",
     "LivingEntityMixin",
-    "MobTargetMixin",
+    "LivingEntityJumpingAccessor",
     "LivingEntityBreathingMixin",
-    "LivingEntityVineLassoTickMixin"
+    "LivingEntityVineLassoTickMixin",
+    "MobTargetMixin",
+    "PotionBrewingMixin",
+    "PotionBrewingBuilderMixin",
+    "BrewingStandPotionSlotMixin",
+    "BrewingStandBlockEntityMixin",
+    "LootTableMixin",
+    "ItemEntityMixin",
+    "PowderSnowBlockMixin"
   ],
   "injectors": {
     "defaultRequire": 1

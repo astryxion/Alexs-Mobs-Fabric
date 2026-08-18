@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
@@ -200,7 +202,7 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
         }
         if (!this.level().isClientSide() && this.isAlive() && !this.isBaby() && --this.timeUntilNextEgg <= 0) {
             this.playSound(SoundEvents.CHICKEN_EGG, 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
-            this.spawnAtLocation((ServerLevel) this.level(), AMItemRegistry.EMU_EGG);
+            AMEntityHooks.drop(this, AMItemRegistry.EMU_EGG);
             this.timeUntilNextEgg = this.getRandom().nextInt(6000) + 6000;
         }
         AnimationHandler.INSTANCE.updateAnimations(this);

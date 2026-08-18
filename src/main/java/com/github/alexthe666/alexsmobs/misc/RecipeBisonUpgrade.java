@@ -6,6 +6,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.equipment.Equippable;
@@ -55,6 +57,9 @@ public class RecipeBisonUpgrade extends CustomRecipe {
             }
             if (!boots.isEmpty()) {
                 ItemStack stack = boots.copy();
+                CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+                tag.putBoolean("BisonFur", true);
+                stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
                 return stack;
             }
         }

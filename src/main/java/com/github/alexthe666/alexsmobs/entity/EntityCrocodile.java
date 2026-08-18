@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
@@ -127,7 +129,7 @@ public class EntityCrocodile extends TamableAnimal implements IAnimatedEntity, I
     protected void ageBoundaryReached() {
         super.ageBoundaryReached();
         if (!this.isBaby() && this.level().getServer().getGameRules().get(GameRules.MOB_DROPS)) {
-            this.spawnAtLocation((ServerLevel) this.level(), new ItemStack(AMItemRegistry.CROCODILE_SCUTE, this.getRandom().nextInt(1) + 1));
+            AMEntityHooks.drop(this, new ItemStack(AMItemRegistry.CROCODILE_SCUTE, this.getRandom().nextInt(1) + 1));
         }
     }
 

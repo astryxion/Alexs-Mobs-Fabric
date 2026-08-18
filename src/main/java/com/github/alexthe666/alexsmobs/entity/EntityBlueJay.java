@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
@@ -549,7 +551,7 @@ public class EntityBlueJay extends Animal implements ITargetsDroppedItems{
     @Override
     public void onGetItem(ItemEntity e) {
         if (!this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !this.level().isClientSide()) {
-            this.spawnAtLocation((ServerLevel) this.level(), this.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
+            AMEntityHooks.drop(this, this.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
         }
         this.heal(3);
         Entity itemThrower = e.getOwner();

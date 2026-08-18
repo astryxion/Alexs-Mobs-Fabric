@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIWanderRanged;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
@@ -248,7 +250,7 @@ public class EntityBananaSlug extends Animal {
             }
         }
         if (!this.level().isClientSide() && this.isAlive() && !this.isBaby() && --this.timeUntilSlime <= 0) {
-            this.spawnAtLocation((ServerLevel) this.level(), AMItemRegistry.BANANA_SLUG_SLIME);
+            AMEntityHooks.drop(this, AMItemRegistry.BANANA_SLUG_SLIME);
             this.timeUntilSlime = this.random.nextInt(12000) + 24000;
         }
     }

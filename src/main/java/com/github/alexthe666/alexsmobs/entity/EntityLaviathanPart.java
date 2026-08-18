@@ -1,5 +1,6 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -36,6 +37,7 @@ public class EntityLaviathanPart extends Entity {
 
     public EntityLaviathanPart(EntityLaviathan parent, float sizeX, float sizeY) {
         super(AMEntityRegistry.LAVIATHAN_PART, parent.level());
+        AMEntityHooks.assignClientPartId(this);
         this.parent = parent;
         this.size = EntityDimensions.scalable(sizeX, sizeY);
         this.refreshDimensions();
@@ -43,6 +45,7 @@ public class EntityLaviathanPart extends Entity {
 
     public EntityLaviathanPart(EntityLaviathan parent, float sizeX, float sizeY, EntityDimensions size) {
         super(AMEntityRegistry.LAVIATHAN_PART, parent.level());
+        AMEntityHooks.assignClientPartId(this);
         this.parent = parent;
         this.size = size;
         this.refreshDimensions();

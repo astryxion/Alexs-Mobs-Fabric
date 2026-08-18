@@ -9,6 +9,8 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.world.entity.LivingEntity;
@@ -32,6 +34,19 @@ public final class CitadelEntityModelBridge<E extends LivingEntity> extends Enti
     /** Citadel mesh draw for layers and custom submit (same as {@link #renderToBuffer(PoseStack, VertexConsumer, int, int, int)}). */
     public void renderCitadelToBuffer(PoseStack poseStack, VertexConsumer buffer, int packedLight, int packedOverlay, int color) {
         this.citadel.renderToBuffer(poseStack, buffer, packedLight, packedOverlay, color);
+    }
+
+    /**
+     * Queues the Citadel mesh and restores {@link #setupAnim(LivingEntityRenderState)} at replay so a shared model
+     * is not left in another entity's pose when translucent overlays draw.
+     */
+    public void submitAnimatedCitadel(PoseStack poseStack, SubmitNodeCollector collector, RenderType renderType,
+            LivingEntityRenderState state, int light, int overlay, int tint, PoseStack scratch) {
+        collector.submitCustomGeometry(poseStack, renderType, (pose, consumer) -> {
+            this.setupAnim(state);
+            AlexAdvancedEntityModel.withCitadelSubmitPose(pose, scratch, s ->
+                    this.citadel.renderToBuffer(s, consumer, light, overlay, tint));
+        });
     }
 
     /**

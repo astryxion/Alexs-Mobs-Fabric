@@ -89,9 +89,9 @@ public class RenderSugarGlider extends MobRenderer<EntitySugarGlider, CitadelLiv
             }
 
             matrixStackIn.translate(0.0D, trans, 0.0D);
-            Quaternionf current = rotate(entityLiving.getAttachmentFacing()).getRotation();
-            current.mul(1F - prevProg);
-            matrixStackIn.mulPose(current);
+            Quaternionf targetRot = rotate(entityLiving.getAttachmentFacing()).getRotation();
+            Quaternionf blended = new Quaternionf().slerp(targetRot, 1.0F - prevProg);
+            matrixStackIn.mulPose(blended);
             matrixStackIn.translate(0.0D, -trans, 0.0D);
         }
 

@@ -8,6 +8,7 @@ import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
+import com.github.alexthe666.alexsmobs.misc.AMFrostWalker;
 import com.github.alexthe666.citadel.animation.Animation;
 import com.github.alexthe666.citadel.animation.AnimationHandler;
 import com.github.alexthe666.citadel.animation.IAnimatedEntity;
@@ -622,23 +623,10 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
             }
         }
     }
-    protected void onChangedBlock(BlockPos pos) {
-        if (this.hasSpikes() && this.onGround()) {
-            int radius = 2;
-            BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
-            for (int x = -radius; x <= radius; x++) {
-                for (int z = -radius; z <= radius; z++) {
-                    if (x * x + z * z <= radius * radius) {
-                        mutablePos.set(pos.getX() + x, pos.getY() - 1, pos.getZ() + z);
-                        BlockState state = this.level().getBlockState(mutablePos);
-                        if (state.is(Blocks.WATER) && state.getFluidState().isSource()) {
-                            BlockState iceState = Blocks.FROSTED_ICE.defaultBlockState();
-                            this.level().setBlockAndUpdate(mutablePos, iceState);
-                            this.level().scheduleTick(mutablePos.immutable(), Blocks.FROSTED_ICE, Mth.nextInt(this.getRandom(), 60, 120));
-                        }
-                    }
-                }
-            }
+    protected void onChangedBlock(ServerLevel level, BlockPos pos) {
+        super.onChangedBlock(level, pos);
+        if (this.hasSpikes()) {
+            AMFrostWalker.freezeAround(this, level, pos, 1);
         }
     }
 

@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.effect;
 
+import net.minecraft.server.level.ServerLevel;
+
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffects;
@@ -12,7 +14,7 @@ public class EffectPoisonResistance extends MobEffect {
 
     }
 
-    public boolean applyEffectTick(LivingEntity LivingEntityIn, int amplifier) {
+    public boolean applyEffectTick(ServerLevel level, LivingEntity LivingEntityIn, int amplifier) {
         if(LivingEntityIn.hasEffect(MobEffects.POISON)){
             LivingEntityIn.removeEffect(MobEffects.POISON);
         }

@@ -1,7 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity.util;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
+import com.github.alexthe666.alexsmobs.mixin.LivingEntityJumpingAccessor;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.network.MessageSyncEntityData;
 import com.github.alexthe666.citadel.server.entity.CitadelEntityData;
@@ -41,8 +41,9 @@ public class FlyingFishBootsUtil {
 
     public static void tickFlyingFishBoots(LivingEntity fishy) {
         int boostTime = getBoostTicks(fishy);
-        if(boostTime <= 15 && AMEntityRegistry.isInWaterOrBubble(fishy) && !fishy.onGround()){
-            if(fishy.getFluidHeight(FluidTags.WATER) < 0.4F && (fishy.getDeltaMovement().y > 0.0D) /* TODO 1.21: jumping field is protected, using velocity check as workaround */ &&( !(fishy instanceof Player) || !((Player) fishy).getAbilities().flying)){
+        if(boostTime <= 15 && fishy.isInWater() && !fishy.onGround()){
+            boolean jumping = fishy instanceof LivingEntityJumpingAccessor accessor ? accessor.alexsmobs$isJumping() : fishy.getDeltaMovement().y > 0.0D;
+            if(fishy.getFluidHeight(FluidTags.WATER) < 0.4F && jumping &&( !(fishy instanceof Player) || !((Player) fishy).getAbilities().flying)){
                 final RandomSource rand = fishy.getRandom();
                 boostTime = MIN_BOOST_TIME;
                 Vec3 forward = new Vec3(0, 0.0F, 0.5F + rand.nextFloat() * 1.2F).xRot(-fishy.getXRot() * Mth.DEG_TO_RAD).yRot(-fishy.getYHeadRot() * Mth.DEG_TO_RAD);
@@ -52,7 +53,7 @@ public class FlyingFishBootsUtil {
             }
         }
         if(boostTime > 0){
-            if(!AMEntityRegistry.isInWaterOrBubble(fishy) && !fishy.onGround()){
+            if(!fishy.isInWater() && !fishy.onGround()){
                 if(fishy.getDeltaMovement().y < 0){
                     fishy.setDeltaMovement(fishy.getDeltaMovement().multiply(1F, 0.75F, 1F));
                 }

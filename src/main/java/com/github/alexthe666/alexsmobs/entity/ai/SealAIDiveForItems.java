@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import com.github.alexthe666.alexsmobs.entity.EntitySeal;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
@@ -63,7 +65,7 @@ public class SealAIDiveForItems extends Goal {
             if (seal.distanceTo(thrower) < 2D) {
                 ItemStack stack = seal.getMainHandItem().copy();
                 seal.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-                ItemEntity item = seal.spawnAtLocation((ServerLevel) seal.level(), stack);
+                ItemEntity item = AMEntityHooks.drop(seal, stack);
                 if (item != null) {
                     double d0 = thrower.getX() - this.seal.getX();
                     double d1 = thrower.getEyeY() - this.seal.getEyeY();
@@ -103,7 +105,7 @@ public class SealAIDiveForItems extends Goal {
                         copy = copy.copy();
                         this.seal.setItemInHand(InteractionHand.MAIN_HAND, copy);
                         for (ItemStack stack : lootList) {
-                            this.seal.spawnAtLocation((ServerLevel) this.seal.level(), stack.copy());
+                            AMEntityHooks.drop(this.seal, stack.copy());
                         }
                         this.returnToPlayer = true;
                     }
@@ -128,7 +130,7 @@ public class SealAIDiveForItems extends Goal {
         returnToPlayer = false;
         seal.fishFeedings = 0;
         if(!seal.getMainHandItem().isEmpty()){
-            seal.spawnAtLocation((ServerLevel) seal.level(), seal.getMainHandItem().copy());
+            AMEntityHooks.drop(seal, seal.getMainHandItem().copy());
             seal.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
         }
     }

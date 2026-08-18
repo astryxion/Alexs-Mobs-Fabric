@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.effect;
 
+import net.minecraft.server.level.ServerLevel;
+
 import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import net.minecraft.world.effect.MobEffect;
@@ -20,7 +22,7 @@ public class EffectPowerDown extends MobEffect {
         this.addAttributeModifier(Attributes.MOVEMENT_SPEED, net.minecraft.resources.Identifier.parse("alexsmobs:power_down_speed"), (double)-1.0F, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
     }
 
-    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
+    public boolean applyEffectTick(ServerLevel level, LivingEntity entity, int amplifier) {
         if(entity.getDeltaMovement().y > 0 && !AMEntityRegistry.isInWaterOrBubble(entity)){
             entity.setDeltaMovement(entity.getDeltaMovement().multiply(1, 0, 1));
         }

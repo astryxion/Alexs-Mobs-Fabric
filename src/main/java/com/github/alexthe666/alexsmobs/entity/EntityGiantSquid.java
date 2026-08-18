@@ -10,6 +10,7 @@ import com.github.alexthe666.alexsmobs.entity.ai.EntityAINearestTarget3D;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
 import com.github.alexthe666.citadel.server.entity.collision.ICustomCollisions;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -92,8 +93,6 @@ public class EntityGiantSquid extends WaterAnimal implements ICustomCollisions {
     public int humTick = 0;
     private int holdTime;
     private int resetCapturedStateIn;
-    private boolean giantSquidPartsSpawned;
-
     protected EntityGiantSquid(EntityType type, Level level) {
         super(type, level);
         this.setPathfindingMalus(PathType.WATER, 0.0F);
@@ -224,21 +223,6 @@ public class EntityGiantSquid extends WaterAnimal implements ICustomCollisions {
 
     public void tick() {
         super.tick();
-        if (!this.level().isClientSide() && this.isAlive() && !this.giantSquidPartsSpawned) {
-            boolean chunksReady = true;
-            for (EntityGiantSquidPart part : this.allParts) {
-                if (!this.level().hasChunkAt(part.blockPosition())) {
-                    chunksReady = false;
-                    break;
-                }
-            }
-            if (chunksReady) {
-                this.giantSquidPartsSpawned = true;
-                for (EntityGiantSquidPart part : this.allParts) {
-                    this.level().addFreshEntity(part);
-                }
-            }
-        }
         if(this.tickCount % 100 == 0){
             this.heal(2);
         }
@@ -350,7 +334,7 @@ public class EntityGiantSquid extends WaterAnimal implements ICustomCollisions {
                     this.incrementSquidPitch(dist);
                 }
             }
-            if (!this.onGround() && this.getFluidHeight(FluidTags.WATER) < this.getBbHeight()) {
+            if (this.isInWater() && !this.onGround() && this.getFluidHeight(FluidTags.WATER) < this.getBbHeight()) {
                 this.setDeltaMovement(this.getDeltaMovement().add(0, -0.1F, 0));
             }
             float pressure = getDepressureLevel();
@@ -508,7 +492,7 @@ public class EntityGiantSquid extends WaterAnimal implements ICustomCollisions {
     }
 
     public boolean canBeCollidedWith() {
-        return this.isAlive();
+        return AMEntityHooks.isFullyConstructed(this) && this.isAlive();
     }
 
     @Override
@@ -518,8 +502,11 @@ public class EntityGiantSquid extends WaterAnimal implements ICustomCollisions {
 
     @Override
     public Vec3 getCustomAllowedMovement(Vec3 movement) {
-        if (touchingUnloadedChunk() || !AMEntityRegistry.isInWaterOrBubble(this)) {
+        if (touchingUnloadedChunk()) {
             return movement;
+        }
+        if (!AMEntityRegistry.isInWaterOrBubble(this)) {
+            return ICustomCollisions.getAllowedMovementForEntity(this, movement);
         } else {
             AABB aabb = this.mantleCollisionPart.getBoundingBox();
             List<VoxelShape> list = this.level().getEntityCollisions(this, aabb.expandTowards(movement));

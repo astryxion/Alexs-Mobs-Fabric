@@ -75,7 +75,8 @@ public class RenderTerrapin extends MobRenderer<EntityTerrapin, LivingEntityRend
         }
         Pose pose = entity.getPose();
         if (pose != Pose.SLEEPING && !entity.isSpinning()) {
-            stack.mulPose(Axis.YP.rotationDegrees(180.0F - rotationYaw));
+            float yaw = Mth.rotLerp(partialTickTime, entity.yRotO, entity.getYRot());
+            stack.mulPose(Axis.YP.rotationDegrees(180.0F - yaw));
         }
 
         if (entity.deathTime > 0) {

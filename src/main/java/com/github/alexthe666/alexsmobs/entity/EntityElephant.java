@@ -929,8 +929,34 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
             double extraX = radius * Mth.sin(Mth.PI + angle);
             double extraZ = radius * Mth.cos(angle);
 
-            passenger.setPos(this.getX() + extraX, this.getY() + this.getBbHeight() * 0.75 + scaleY + 0, this.getZ() + extraZ);
+            Vec3 attach = passenger.getVehicleAttachmentPoint(this);
+            moveFunc.accept(passenger, this.getX() + extraX, this.getY() + this.getPassengersRidingOffset() + scaleY - attach.y, this.getZ() + extraZ);
         }
+    }
+
+    @Override
+    public Vec3 getPassengerRidingPosition(Entity passenger) {
+        float standAdd = -0.3F * standProgress;
+        float scale = this.isBaby() ? 0.5F : this.isTusked() ? 1.1F : 1.0F;
+        float sitAdd = -0.065F * sitProgress;
+        float scaleY = scale * (2.4F * sitAdd - 0.4F * standAdd);
+        if (passenger instanceof AbstractVillager) {
+            scaleY -= 0.3F;
+        }
+        float radius = scale * (0.5F + standAdd);
+        float angle = (Maths.STARTING_ANGLE * this.yBodyRot);
+        if (this.getAnimation() == ANIMATION_CHARGE_PREPARE) {
+            float sinWave = Mth.sin((float) (Math.PI * (this.getAnimationTick() / 25F)));
+            radius += sinWave * 0.2F * scale;
+        }
+        if (this.getAnimation() == ANIMATION_STOMP) {
+            float sinWave = Mth.sin((float) (Math.PI * (this.getAnimationTick() / 20F)));
+            radius -= sinWave * 1.0F * scale;
+            scaleY += sinWave * 0.7F * scale;
+        }
+        double extraX = radius * Mth.sin(Mth.PI + angle);
+        double extraZ = radius * Mth.cos(angle);
+        return new Vec3(this.getX() + extraX, this.getY() + this.getPassengersRidingOffset() + scaleY, this.getZ() + extraZ);
     }
 
     protected Vec3 getRiddenInput(Player player, Vec3 deltaIn) {
@@ -963,8 +989,8 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
         float scale = this.isBaby() ? 0.5F : this.isTusked() ? 1.1F : 1.0F;
         float f = Math.min(0.25F, this.walkAnimation.speed());
         float f1 = this.walkAnimation.position();
-        float sitAdd = 0.01F * 0;
-        float standAdd = 0.07F * 0;
+        float sitAdd = 0.01F * this.sitProgress;
+        float standAdd = 0.07F * this.standProgress;
         return (double) this.getBbHeight() - 0.05F - scale * ((double) (0.1F * Mth.cos(f1 * 1.4F) * 1.4F * f) + sitAdd + standAdd);
     }
 

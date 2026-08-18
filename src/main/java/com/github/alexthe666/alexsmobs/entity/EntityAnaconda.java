@@ -8,6 +8,7 @@ import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.entity.util.AnacondaPartIndex;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
@@ -243,11 +244,14 @@ public class EntityAnaconda extends Animal implements ISemiAquatic {
     }
 
     public Entity getChild() {
-        UUID id = getChildId();
-        if (id != null && !level().isClientSide()) {
-            return ((ServerLevel) level()).getEntity(id);
+        int syncedId = this.entityData.get(CHILD_ID);
+        if (syncedId != -1) {
+            Entity byId = this.level().getEntity(syncedId);
+            if (byId != null) {
+                return byId;
+            }
         }
-        return null;
+        return AMEntityHooks.findEntity(this.level(), getChildId(), this);
     }
 
     public boolean canBreatheUnderwaterAM() {
@@ -295,17 +299,15 @@ public class EntityAnaconda extends Animal implements ISemiAquatic {
                 final float angle = (Maths.STARTING_ANGLE * (target.yBodyRot - 45F));
                 final double extraX = radius * Mth.sin(Mth.PI + angle);
                 final double extraZ = radius * Mth.cos(angle);
-                Vec3 targetVec = new Vec3(extraX + target.getX(), target.getY(1.0F), extraZ + target.getZ());
+                Vec3 targetVec = new Vec3(extraX + target.getX(), target.getY(), extraZ + target.getZ());
                 Vec3 moveVec = targetVec.subtract(this.position()).scale(1F);
                 this.setDeltaMovement(moveVec);
-                if (!target.onGround()) {
-                    target.setDeltaMovement(new Vec3(0, -0.08F, 0));
-                } else {
-                    target.setDeltaMovement(Vec3.ZERO);
-                }
+                target.setDeltaMovement(target.onGround() ? Vec3.ZERO : new Vec3(0, -0.08F, 0));
                 if (strangleTimer >= 40 && strangleTimer % 20 == 0) {
                     final double health = Mth.clamp(this.getTarget().getMaxHealth(), 4, 50);
-                    this.getTarget().hurt(this.damageSources().mobAttack(this), (float) Math.max(4F, 0.25F * health));
+                    if (this.level() instanceof ServerLevel serverLevel) {
+                        this.getTarget().hurtServer(serverLevel, this.damageSources().mobAttack(this), (float) Math.max(4F, 0.25F * health));
+                    }
                 }
                 if (this.getTarget() == null || !this.getTarget().isAlive()) {
                     strangleTimer = 0;
@@ -329,8 +331,8 @@ public class EntityAnaconda extends Animal implements ISemiAquatic {
         }
         this.ringBuffer[this.ringBufferIndex] = this.getYRot();
 
+        final int segments = 7;
         if (!this.level().isClientSide()) {
-            final int segments = 7;
             final Entity child = getChild();
             if (child == null) {
                 LivingEntity partParent = this;
@@ -352,7 +354,7 @@ public class EntityAnaconda extends Animal implements ISemiAquatic {
                     if (partParent instanceof EntityAnacondaPart) {
                         ((EntityAnacondaPart) partParent).setChildId(part.getUUID());
                     }
-                    part.setPos(part.tickMultipartPosition(partIndex, prevPos, this.getXRot(), prevReqRot, reqRot, false));
+                    part.setPos(part.tickMultipartPosition(this.getId(), partIndex, prevPos, this.getXRot(), prevReqRot, reqRot, false));
                     partParent = part;
                     level().addFreshEntity(part);
                     parts[i] = part;
@@ -360,6 +362,10 @@ public class EntityAnaconda extends Animal implements ISemiAquatic {
                     prevPos = part.position();
                 }
             }
+            if (isInWater()) swimTimer = Math.max(swimTimer + 1, 0);
+            else swimTimer = Math.min(swimTimer - 1, 0);
+        }
+        if (!this.level().isClientSide()) {
             if (shouldReplaceParts() && this.getChild() instanceof EntityAnacondaPart) {
                 parts = new EntityAnacondaPart[segments];
                 parts[0] = (EntityAnacondaPart) this.getChild();
@@ -370,25 +376,23 @@ public class EntityAnaconda extends Animal implements ISemiAquatic {
                     i++;
                 }
             }
-            if (tickCount > 1) {
+            if (tickCount > 1 && this.parts != null) {
                 AnacondaPartIndex partIndex = AnacondaPartIndex.HEAD;
                 Vec3 prev = this.position();
                 float xRot = this.getXRot();
+                boolean followGround = !this.isStrangling();
                 for (int i = 0; i < segments; i++) {
                     if (this.parts[i] != null) {
                         final float prevReqRot = calcPartRotation(i) + getYawForPart(i);
                         final float reqRot = calcPartRotation(i + 1) + getYawForPart(i);
                         parts[i].setStrangleProgress(this.strangleProgress);
                         parts[i].copyDataFrom(this);
-                        prev = parts[i].tickMultipartPosition(partIndex, prev, xRot, prevReqRot, reqRot, true);
+                        prev = parts[i].tickMultipartPosition(this.getId(), partIndex, prev, xRot, prevReqRot, reqRot, followGround);
                         partIndex = parts[i].getPartType();
                         xRot = parts[i].getXRot();
                     }
                 }
             }
-
-            if (isInWater()) swimTimer = Math.max(swimTimer + 1, 0);
-            else swimTimer = Math.min(swimTimer - 1, 0);
         }
         if (shedCooldown > 0) {
             shedCooldown--;
@@ -598,7 +602,9 @@ public class EntityAnaconda extends Animal implements ISemiAquatic {
             final LivingEntity target = snake.getTarget();
             if (target != null && target.isAlive()) {
                 if (jumpAttemptCooldown == 0 && snake.distanceTo(target) < 1 + target.getBbWidth() && !snake.isStrangling()) {
-                    target.hurt(snake.damageSources().mobAttack(snake), 4);
+                    if (snake.level() instanceof ServerLevel serverLevel) {
+                        target.hurtServer(serverLevel, snake.damageSources().mobAttack(snake), 4);
+                    }
                     snake.setStrangling(target.getBbWidth() <= 2.0F && !(target instanceof EntityAnaconda));
                     snake.playSound(AMSoundRegistry.ANACONDA_ATTACK, snake.getSoundVolume(), snake.getVoicePitch());
                     jumpAttemptCooldown = 5 + random.nextInt(5);

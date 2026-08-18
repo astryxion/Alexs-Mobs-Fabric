@@ -16,6 +16,8 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 public interface ICustomCollisions {
+    double MAX_SWEEP_PER_TICK = 16.0D;
+
     /*
         Routed through Entity#collide mixin on 26.1+; do not override collide() in subclasses.
      */
@@ -25,7 +27,8 @@ public interface ICustomCollisions {
 
     boolean canPassThrough(BlockPos mutablePos, BlockState blockstate, VoxelShape voxelshape);
 
-    static Vec3 getAllowedMovementForEntity(Entity entity, Vec3 vecIN) {
+    static Vec3 getAllowedMovementForEntity(Entity entity, Vec3 vecInRaw) {
+        Vec3 vecIN = clampSweep(vecInRaw);
         AABB aabb = entity.getBoundingBox();
         List<VoxelShape> list = entity.level().getEntityCollisions(entity, aabb.expandTowards(vecIN));
         Vec3 vec3 = vecIN.lengthSqr() == 0.0D ? vecIN : collideBoundingBox2(entity, vecIN, aabb, entity.level(), list);
@@ -49,6 +52,21 @@ public interface ICustomCollisions {
         }
 
         return vec3;
+    }
+
+    private static Vec3 clampSweep(Vec3 vec) {
+        if (Math.abs(vec.x) <= MAX_SWEEP_PER_TICK && Math.abs(vec.y) <= MAX_SWEEP_PER_TICK
+                && Math.abs(vec.z) <= MAX_SWEEP_PER_TICK && !Double.isNaN(vec.x + vec.y + vec.z)) {
+            return vec;
+        }
+        return new Vec3(clampAxis(vec.x), clampAxis(vec.y), clampAxis(vec.z));
+    }
+
+    private static double clampAxis(double d) {
+        if (Double.isNaN(d)) {
+            return 0.0D;
+        }
+        return Math.max(-MAX_SWEEP_PER_TICK, Math.min(MAX_SWEEP_PER_TICK, d));
     }
 
     private static Vec3 collideBoundingBox2(@Nullable Entity p_198895_, Vec3 p_198896_, AABB p_198897_, Level p_198898_, List<VoxelShape> p_198899_) {

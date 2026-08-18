@@ -99,8 +99,6 @@ public class EntityCachalotWhale extends Animal {
     private int despawnDelay = 47999;
     private int echoSoundCooldown = 0;
     private boolean hasRewardedPlayer = false;
-    private boolean cachalotPartsSpawned;
-
     public EntityCachalotWhale(EntityType type, Level world) {
         super(type, world);
         this.setPathfindingMalus(PathType.WATER, 0.0F);
@@ -437,21 +435,6 @@ public class EntityCachalotWhale extends Animal {
 
     public void aiStep() {
         super.aiStep();
-        if (!this.level().isClientSide() && this.isAlive() && !this.cachalotPartsSpawned) {
-            boolean chunksReady = true;
-            for (EntityCachalotPart part : this.whaleParts) {
-                if (!this.level().hasChunkAt(part.blockPosition())) {
-                    chunksReady = false;
-                    break;
-                }
-            }
-            if (chunksReady) {
-                this.cachalotPartsSpawned = true;
-                for (EntityCachalotPart part : this.whaleParts) {
-                    this.level().addFreshEntity(part);
-                }
-            }
-        }
         scaleParts();
 
         if (echoSoundCooldown > 0) {

@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.event;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
@@ -23,10 +25,12 @@ import com.github.alexthe666.alexsmobs.item.ItemGhostlyPickaxe;
 import com.github.alexthe666.alexsmobs.network.MessageSwingArm;
 import com.github.alexthe666.alexsmobs.misc.AMAdvancementTriggerRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
+import com.github.alexthe666.alexsmobs.misc.AMTeleportQueue;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetExperiencePacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -95,8 +99,9 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectList;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.server.level.TicketType;
+import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.*;
 import java.util.Queue;
@@ -113,7 +118,6 @@ public class ServerEvents {
     private static final String HAS_BOOK_TAG = "alexsmobs_has_book";
     private static final Queue<AfterDamageEntry> DEFERRED_AFTER_DAMAGE = new ConcurrentLinkedQueue<>();
     private static final Map<ServerLevel, BeachedCachalotWhaleSpawner> BEACHED_CACHALOT_WHALE_SPAWNER_MAP = new HashMap<>();
-    public static final ObjectList<Triple<ServerPlayer, ServerLevel, BlockPos>> teleportPlayers = new ObjectArrayList<>();
 
     private static final class AfterDamageEntry {
         final LivingEntity entity;
@@ -126,8 +130,6 @@ public class ServerEvents {
             this.amount = amount;
         }
     }
-
-    public record Triple<A, B, C>(A a, B b, C c) {}
 
     private static void enqueueAfterDamage(LivingEntity entity, DamageSource source, float amount) {
         DEFERRED_AFTER_DAMAGE.add(new AfterDamageEntry(entity, source, amount));
@@ -143,8 +145,8 @@ public class ServerEvents {
             if (!entry.entity.getUseItem().isEmpty() && entry.source.getEntity() instanceof LivingEntity attacker) {
                 if (entry.entity.getUseItem().is(AMItemRegistry.SHIELD_OF_THE_DEEP)) {
                     boolean flag = false;
-                    if (attacker.distanceTo(entry.entity) <= 4 && !attacker.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.EXSANGUINATION))) {
-                        attacker.addEffect(new MobEffectInstance(net.minecraft.core.Holder.direct(AMEffectRegistry.EXSANGUINATION), 60, 2));
+                    if (attacker.distanceTo(entry.entity) <= 4 && !attacker.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.EXSANGUINATION))) {
+                        attacker.addEffect(new MobEffectInstance(AMEffectRegistry.holder(AMEffectRegistry.EXSANGUINATION), 60, 2));
                         flag = true;
                     }
                     if (AMEntityRegistry.isInWaterOrBubble(entry.entity)) {
@@ -162,6 +164,21 @@ public class ServerEvents {
     private static void onLevelTick(ServerLevel level) {
         BEACHED_CACHALOT_WHALE_SPAWNER_MAP.computeIfAbsent(level, k -> new BeachedCachalotWhaleSpawner(level));
         BEACHED_CACHALOT_WHALE_SPAWNER_MAP.get(level).tick();
+        if (!AMTeleportQueue.PLAYERS.isEmpty()) {
+            for (Triple<ServerPlayer, ServerLevel, BlockPos> triple : AMTeleportQueue.PLAYERS) {
+                ServerPlayer player = triple.getLeft();
+                ServerLevel endpointWorld = triple.getMiddle();
+                BlockPos endpoint = triple.getRight();
+                int heightFromMap = endpointWorld.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, endpoint.getX(), endpoint.getZ());
+                endpoint = new BlockPos(endpoint.getX(), Math.max(heightFromMap, endpoint.getY()), endpoint.getZ());
+                player.teleportTo(endpointWorld, endpoint.getX() + 0.5, endpoint.getY() + 0.5, endpoint.getZ() + 0.5,
+                        Set.of(), player.getYRot(), player.getXRot(), false);
+                ChunkPos chunkpos = ChunkPos.containing(endpoint);
+                endpointWorld.getChunkSource().addTicketWithRadius(TicketType.UNKNOWN, chunkpos, 1);
+                player.connection.send(new ClientboundSetExperiencePacket(player.experienceProgress, player.totalExperience, player.experienceLevel));
+            }
+            AMTeleportQueue.PLAYERS.clear();
+        }
         AMWorldData data = AMWorldData.get(level);
         if (data != null) {
             data.tickPupfish();
@@ -235,9 +252,9 @@ public class ServerEvents {
         });
 
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, damageAmount) -> {
-            if (entity.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.DEBILITATING_STING))
-                    && entity.getEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.DEBILITATING_STING)) != null
-                    && entity.getEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.DEBILITATING_STING)).getAmplifier() > 0
+            if (entity.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.DEBILITATING_STING))
+                    && entity.getEffect(AMEffectRegistry.holder(AMEffectRegistry.DEBILITATING_STING)) != null
+                    && entity.getEffect(AMEffectRegistry.holder(AMEffectRegistry.DEBILITATING_STING)).getAmplifier() > 0
                     && entity instanceof Mob mob) {
                 mob.setPersistenceRequired();
             }
@@ -301,6 +318,16 @@ public class ServerEvents {
 
     public static void onLivingEntityTick(LivingEntity entity) {
         onLivingTick(entity);
+    }
+
+    public static boolean hasBisonFurBoots(LivingEntity entity) {
+        ItemStack boots = entity.getItemBySlot(EquipmentSlot.FEET);
+        if (boots.isEmpty()) {
+            return false;
+        }
+        CompoundTag tag = boots.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+                net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
+        return tag.getBooleanOr("BisonFur", false);
     }
 
     @SuppressWarnings("unchecked")
@@ -519,7 +546,7 @@ public class ServerEvents {
                 living.knockback(1F, Mth.sin(player.getYRot() * Mth.DEG_TO_RAD),
                         -Mth.cos(player.getYRot() * Mth.DEG_TO_RAD), player.damageSources().playerAttack(player), 0.0F);
             }
-            if (player.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.TIGERS_BLESSING))
+            if (player.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.TIGERS_BLESSING))
                     && !target.isAlliedTo(player) && !(target instanceof EntityTiger)) {
                 AABB bb = new AABB(player.getX() - 32, player.getY() - 32, player.getZ() - 32,
                         player.getX() + 32, player.getY() + 32, player.getZ() + 32);
@@ -626,8 +653,8 @@ public class ServerEvents {
 
         public static void onItemUseLast(LivingEntity entity, ItemStack usedItem) {
         if (usedItem.getItem() == Items.CHORUS_FRUIT && RAND.nextInt(3) == 0
-                && entity.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.ENDER_FLU))) {
-            entity.removeEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.ENDER_FLU));
+                && entity.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.ENDER_FLU))) {
+            entity.removeEffect(AMEffectRegistry.holder(AMEffectRegistry.ENDER_FLU));
         }
     }
 
@@ -705,21 +732,17 @@ public class ServerEvents {
                 }
             }
         }
-        ItemStack boots = entity.getItemBySlot(EquipmentSlot.FEET);
-        if (!boots.isEmpty()) {
-            CompoundTag tag = boots.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                    net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
-            if (tag.getBooleanOr("BisonFur", false)) {
-                BlockPos posBelow = new BlockPos((int) entity.getX(), (int) (entity.getBoundingBox().minY - 0.1F), (int) entity.getZ());
-                if (entity.level().getBlockState(posBelow).is(Blocks.POWDER_SNOW)) {
-                    entity.setOnGround(true);
-                    entity.setTicksFrozen(0);
-                    entity.setPos(entity.getX(), Math.max(entity.getY(), posBelow.getY() + 1F), entity.getZ());
-                }
-                if (entity.isInPowderSnow) {
-                    entity.setOnGround(true);
-                    entity.setDeltaMovement(entity.getDeltaMovement().add(0, 0.1F, 0));
-                }
+        if (hasBisonFurBoots(entity)) {
+            BlockPos posBelow = new BlockPos((int) entity.getX(), (int) (entity.getBoundingBox().minY - 0.1F), (int) entity.getZ());
+            if (entity.level().getBlockState(posBelow).is(Blocks.POWDER_SNOW)) {
+                entity.setOnGround(true);
+                entity.setTicksFrozen(0);
+                entity.setPos(entity.getX(), Math.max(entity.getY(), posBelow.getY() + 1F), entity.getZ());
+            }
+            if (entity.isInPowderSnow) {
+                entity.setOnGround(true);
+                entity.setTicksFrozen(0);
+                entity.setDeltaMovement(entity.getDeltaMovement().add(0, 0.1F, 0));
             }
         }
         if (entity.getItemBySlot(EquipmentSlot.LEGS).getItem() == AMItemRegistry.CENTIPEDE_LEGGINGS) {
@@ -783,7 +806,7 @@ public class ServerEvents {
         if (newTarget != null) {
             // Check for arthropod type using vanilla tag
             if (mob.getType().builtInRegistryHolder().is(net.minecraft.tags.EntityTypeTags.ARTHROPOD)) {
-                if (newTarget.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.BUG_PHEROMONES))
+                if (newTarget.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.BUG_PHEROMONES))
                         && mob.getLastHurtByMob() != newTarget) {
                     return true;
                 }
@@ -803,9 +826,9 @@ public class ServerEvents {
         public static float onLivingDamageEvent(LivingEntity target, DamageSource source, float incomingDamage) {
         float damage = incomingDamage;
         if (source.getEntity() instanceof LivingEntity attacker) {
-            if (damage > 0 && attacker.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.SOULSTEAL))
-                    && attacker.getEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.SOULSTEAL)) != null) {
-                int level = attacker.getEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.SOULSTEAL)).getAmplifier() + 1;
+            if (damage > 0 && attacker.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.SOULSTEAL))
+                    && attacker.getEffect(AMEffectRegistry.holder(AMEffectRegistry.SOULSTEAL)) != null) {
+                int level = attacker.getEffect(AMEffectRegistry.holder(AMEffectRegistry.SOULSTEAL)).getAmplifier() + 1;
                 if (attacker.getHealth() < attacker.getMaxHealth()
                         && ThreadLocalRandom.current().nextFloat() < (0.25F + (level * 0.25F))) {
                     attacker.heal(Math.min(damage / 2F * level, 2 + 2 * level));
@@ -854,7 +877,7 @@ public class ServerEvents {
                         player.awardStat(Stats.ITEM_USED.get(Items.GLASS_BOTTLE));
                         player.igniteForSeconds(6);
                         if (!player.addItem(new ItemStack(AMItemRegistry.LAVA_BOTTLE))) {
-                            player.spawnAtLocation((ServerLevel) level, new ItemStack(AMItemRegistry.LAVA_BOTTLE));
+                            AMEntityHooks.drop(player, new ItemStack(AMItemRegistry.LAVA_BOTTLE));
                         }
                         player.swing(hand);
                         if (!player.isCreative()) {
@@ -877,7 +900,7 @@ public class ServerEvents {
                 return InteractionResult.SUCCESS;
             }
             if (!(target instanceof Player) && !(target instanceof EntityEndergrade)
-                    && living.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.ENDER_FLU))) {
+                    && living.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.ENDER_FLU))) {
                 if (itemStack.getItem() == Items.CHORUS_FRUIT) {
                     if (!player.isCreative()) {
                         itemStack.shrink(1);
@@ -885,7 +908,7 @@ public class ServerEvents {
                     target.gameEvent(GameEvent.EAT);
                     target.playSound(SoundEvents.GENERIC_EAT.value(), 1.0F, 0.5F + player.getRandom().nextFloat());
                     if (player.getRandom().nextFloat() < 0.4F) {
-                        living.removeEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.ENDER_FLU));
+                        living.removeEffect(AMEffectRegistry.holder(AMEffectRegistry.ENDER_FLU));
                         Items.CHORUS_FRUIT.finishUsingItem(itemStack.copy(), level, living);
                     }
                     return InteractionResult.SUCCESS;

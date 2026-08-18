@@ -30,13 +30,13 @@ public class EntityTossedItem extends ThrowableItemProjectile {
     }
 
     public EntityTossedItem(Level worldIn, LivingEntity throwerIn) {
-        super(AMEntityRegistry.TOSSED_ITEM, throwerIn, worldIn, new ItemStack(Items.COBBLESTONE));
+        super(AMEntityRegistry.TOSSED_ITEM, throwerIn, worldIn, ItemStack.EMPTY);
         this.setOwner(throwerIn);
         this.setPos(throwerIn.getX(), throwerIn.getEyeY() - 0.1D, throwerIn.getZ());
     }
 
     public EntityTossedItem(Level worldIn, double x, double y, double z) {
-        super(AMEntityRegistry.TOSSED_ITEM, x, y, z, worldIn, new ItemStack(Items.COBBLESTONE));
+        super(AMEntityRegistry.TOSSED_ITEM, x, y, z, worldIn, ItemStack.EMPTY);
         this.setPos(x, y, z);
     }
     @Override
@@ -46,7 +46,12 @@ public class EntityTossedItem extends ThrowableItemProjectile {
     }
 
     public boolean isDart() {
-        return this.entityData.get(DART);
+        return this.entityData != null && this.entityData.get(DART);
+    }
+
+    public ItemStack getItem() {
+        ItemStack stack = super.getItem();
+        return stack.isEmpty() ? new ItemStack(getDefaultItem()) : stack;
     }
 
     public void setDart(boolean dart) {

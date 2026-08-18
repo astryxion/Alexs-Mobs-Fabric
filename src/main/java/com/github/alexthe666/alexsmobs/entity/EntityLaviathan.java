@@ -9,6 +9,7 @@ import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMAdvancementTriggerRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import com.google.common.collect.Sets;
@@ -111,8 +112,6 @@ public class EntityLaviathan extends Animal implements ISemiAquatic, IHerdPanic 
     private int blockBreakCounter;
     private double lastX = 0;
     private double lastZ = 0;
-    private boolean laviathanPartsSpawned;
-
     protected EntityLaviathan(EntityType<? extends Animal> entityType, Level level) {
         super(entityType, level);
         // setMaxUpStep removed in 1.21
@@ -171,7 +170,7 @@ public class EntityLaviathan extends Animal implements ISemiAquatic, IHerdPanic 
     }
 
     public boolean canBeCollidedWith() {
-        return this.isAlive();
+        return AMEntityHooks.isFullyConstructed(this) && this.isAlive();
     }
 
     protected boolean canAddPassenger(Entity p_38390_) {
@@ -533,21 +532,6 @@ public class EntityLaviathan extends Animal implements ISemiAquatic, IHerdPanic 
 
     public void tick() {
         super.tick();
-        if (!this.level().isClientSide() && this.isAlive() && !this.laviathanPartsSpawned) {
-            boolean chunksReady = true;
-            for (EntityLaviathanPart part : this.allParts) {
-                if (!this.level().hasChunkAt(part.blockPosition())) {
-                    chunksReady = false;
-                    break;
-                }
-            }
-            if (chunksReady) {
-                this.laviathanPartsSpawned = true;
-                for (EntityLaviathanPart part : this.allParts) {
-                    this.level().addFreshEntity(part);
-                }
-            }
-        }
         this.yBodyRot = Mth.approachDegrees(this.yBodyRotO, yBodyRot, getHeadRotSpeed());
         prevSwimProgress = swimProgress;
         prevBiteProgress = biteProgress;

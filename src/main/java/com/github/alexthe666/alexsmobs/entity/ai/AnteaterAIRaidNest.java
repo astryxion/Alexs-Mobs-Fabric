@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import com.github.alexthe666.alexsmobs.block.BlockLeafcutterAntChamber;
 import com.github.alexthe666.alexsmobs.block.BlockLeafcutterAnthill;
@@ -53,7 +55,7 @@ public class AnteaterAIRaidNest extends MoveToBlockGoal {
         List<ItemStack> lootList = getItemStacks(anteater);
         if (lootList.size() > 0) {
             for (ItemStack stack : lootList) {
-                ItemEntity e = this.anteater.spawnAtLocation((ServerLevel) this.anteater.level(), stack.copy());
+                ItemEntity e = AMEntityHooks.drop(this.anteater, stack.copy());
                 e.needsSync = true;
                 e.setDeltaMovement(e.getDeltaMovement().multiply(0.2, 0.2, 0.2));
             }

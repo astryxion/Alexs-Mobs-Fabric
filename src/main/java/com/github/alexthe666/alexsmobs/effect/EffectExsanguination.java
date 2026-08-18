@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.effect;
 
+import net.minecraft.server.level.ServerLevel;
+
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
@@ -13,8 +15,8 @@ public class EffectExsanguination extends MobEffect {
         super(MobEffectCategory.HARMFUL, 0XED5151);
     }
 
-    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
-        entity.hurt(entity.damageSources().magic(), Math.min(amplifier + 1, Math.round(lastDuration / 20F)));
+    public boolean applyEffectTick(ServerLevel level, LivingEntity entity, int amplifier) {
+        entity.hurtServer(level, entity.damageSources().magic(), Math.min(amplifier + 1, Math.round(lastDuration / 20F)));
         for(int i = 0; i < 3; i++){
             entity.level().addParticle(ParticleTypes.DAMAGE_INDICATOR, entity.getRandomX(1.0), entity.getRandomY(), entity.getRandomZ(1.0), 0, 0, 0);
         }

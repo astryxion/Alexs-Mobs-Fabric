@@ -229,7 +229,7 @@ public final class AMRenderTypes {
             });
 
     public static RenderType getUnderminer(Identifier texture) {
-        return UNDERMINER_TYPE.apply(texture);
+        return RenderTypes.entityTranslucent(texture);
     }
 
     /**

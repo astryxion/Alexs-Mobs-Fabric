@@ -16,7 +16,6 @@ import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -37,7 +36,7 @@ public class RenderTossedItem extends EntityRenderer<EntityTossedItem, EntityRen
     }
 
     public Identifier getTextureLocation(EntityRenderState state) {
-        return TextureAtlas.LOCATION_BLOCKS;
+        return DART_TEXTURE;
     }
 
     @Override

@@ -81,6 +81,12 @@ public class BlockCapsid extends BaseEntityBlock {
         return tryInsertItem(worldIn, pos, player, handIn, state);
     }
 
+    @Override
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
+        return tryInsertItem(worldIn, pos, player, handIn, state);
+    }
+
+    @Override
     protected InteractionResult useWithoutItem(BlockState state, Level worldIn, BlockPos pos, Player player, BlockHitResult hit) {
         if (worldIn.getBlockEntity(pos) instanceof TileEntityCapsid capsid && !capsid.getItem(0).isEmpty()) {
             popResource(worldIn, pos, capsid.getItem(0).copy());

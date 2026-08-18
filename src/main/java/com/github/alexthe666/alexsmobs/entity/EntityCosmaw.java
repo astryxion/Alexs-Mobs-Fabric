@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
@@ -302,7 +304,7 @@ public class EntityCosmaw extends TamableAnimal implements ITargetsDroppedItems,
                 if (remainderTemplate != null) {
                     ItemStack remainder = remainderTemplate.create();
                     if (!remainder.isEmpty()) {
-                        this.spawnAtLocation((ServerLevel) this.level(), remainder);
+                        AMEntityHooks.drop(this, remainder);
                     }
                 }
                 this.getMainHandItem().shrink(1);
@@ -448,7 +450,7 @@ public class EntityCosmaw extends TamableAnimal implements ITargetsDroppedItems,
         ItemStack duplicate = e.getItem().copy();
         duplicate.setCount(1);
         if (!this.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && !this.level().isClientSide()) {
-            this.spawnAtLocation((ServerLevel) this.level(), this.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
+            AMEntityHooks.drop(this, this.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
         }
         this.setItemInHand(InteractionHand.MAIN_HAND, duplicate);
         Entity itemThrower = e.getOwner();

@@ -64,9 +64,9 @@ tasks.register('copyProductionJars', Copy) {
 	from(project(':citadel').layout.buildDirectory.dir('libs')) {
 		include "citadelfabric-${citadel_version}.jar"
 	}
-	into layout.projectDirectory.dir('production jars')
+	into layout.projectDirectory.dir('jars')
 	doFirst {
-		delete fileTree(dir: 'production jars', include: '*.jar')
+		delete fileTree(dir: 'jars', include: '*.jar')
 	}
 }
 
@@ -102,9 +102,8 @@ java {
 jar {
 	inputs.property "projectName", project.name
 
-	from("LICENSE") {
-		rename { "${it}_${project.name}"}
-	}
+	from("LICENSE")
+	from("README.md")
 }
 
 // configure the maven publication

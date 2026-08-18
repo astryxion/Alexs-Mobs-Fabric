@@ -209,7 +209,7 @@ public class EntityCentipedeHead extends Monster {
 
     public void tick() {
         super.tick();
-        // isInsidePortal removed in 1.21
+        this.portalProcess = null;
         this.yBodyRot = Mth.clamp(this.getYRot(), this.yBodyRot - 2, this.yBodyRot + 2);
         this.yHeadRot = this.yBodyRot;
         if (this.ringBufferIndex < 0) {

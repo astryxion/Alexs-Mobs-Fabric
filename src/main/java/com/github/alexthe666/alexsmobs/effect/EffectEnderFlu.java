@@ -16,7 +16,7 @@ public class EffectEnderFlu extends MobEffect {
         super(MobEffectCategory.HARMFUL, 0X6836AA);
     }
 
-    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
+    public boolean applyEffectTick(ServerLevel level, LivingEntity entity, int amplifier) {
         if (lastDuration == 1) {
             int phages = amplifier + 1;
             entity.hurt(entity.damageSources().magic(), phages * 10);

@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
@@ -505,7 +507,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
 
     @Override
     public Animation[] getAnimations() {
-        return new Animation[]{ANIMATION_THROW, ANIMATION_SCRATCH};
+        return new Animation[]{ANIMATION_THROW, ANIMATION_SCRATCH, ANIMATION_HEADTILT};
     }
 
     @Override
@@ -530,7 +532,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
         this.playSound(SoundEvents.GENERIC_EAT.value(), this.getSoundVolume(), this.getVoicePitch());
         if (e.getItem().is(AMTagRegistry.BANANAS)) {
             if (getRandom().nextInt(4) == 0) {
-                this.spawnAtLocation((ServerLevel) this.level(), new ItemStack(AMBlockRegistry.BANANA_PEEL));
+                AMEntityHooks.drop(this, new ItemStack(AMBlockRegistry.BANANA_PEEL));
             }
         }
 

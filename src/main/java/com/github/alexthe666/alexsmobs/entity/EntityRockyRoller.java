@@ -8,6 +8,7 @@ import com.github.alexthe666.alexsmobs.entity.ai.MovementControllerCustomCollisi
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
 import com.github.alexthe666.citadel.server.entity.collision.ICustomCollisions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -301,7 +302,7 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
     }
 
     public boolean canBeCollidedWith() {
-        return this.isAlive();
+        return AMEntityHooks.isFullyConstructed(this) && this.isAlive();
     }
 
     public void push(Entity entity) {

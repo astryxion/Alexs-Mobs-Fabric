@@ -2,16 +2,28 @@
   "schemaVersion": 1,
   "id": "citadel",
   "version": "${version}",
-  "name": "Citadel",
-  "description": "Core library for Alex's Mobs.",
+  "name": "Citadel (Fabric)",
+  "description": "Citadel library",
   "authors": [
+    "Astryxion"
+  ],
+  "contributors": [
     "Alexthe666"
   ],
-  "license": "GPL-3.0",
+  "contact": {
+    "homepage": "https://github.com/astryxion/Citadel-Fabric",
+    "sources": "https://github.com/astryxion/Citadel-Fabric",
+    "issues": "https://github.com/astryxion/Citadel-Fabric/issues"
+  },
+  "license": "LGPL-3.0",
+  "icon": "assets/citadel/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
       "com.github.alexthe666.citadel.Citadel"
+    ],
+    "client": [
+      "com.github.alexthe666.citadel.CitadelClient"
     ]
   },
   "mixins": [

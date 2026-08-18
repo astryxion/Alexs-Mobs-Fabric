@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.effect;
 
+import net.minecraft.server.level.ServerLevel;
+
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,7 +19,7 @@ public class EffectFleetFooted extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0X685441);
     }
 
-    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
+    public boolean applyEffectTick(ServerLevel level, LivingEntity entity, int amplifier) {
         // Get the effect instance to check duration
         var effectInstance = entity.getEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.FLEET_FOOTED));
         int currentDuration = effectInstance != null ? effectInstance.getDuration() : 0;

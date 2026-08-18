@@ -108,9 +108,9 @@ public class ClientEvents {
     }
 
         public void onGetStarBrightness(EventGetStarBrightness event) {
-        if (Minecraft.getInstance().player.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.POWER_DOWN))) {
-            if (Minecraft.getInstance().player.getEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.POWER_DOWN)) != null) {
-                MobEffectInstance instance = Minecraft.getInstance().player.getEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.POWER_DOWN));
+        if (Minecraft.getInstance().player.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.POWER_DOWN))) {
+            if (Minecraft.getInstance().player.getEffect(AMEffectRegistry.holder(AMEffectRegistry.POWER_DOWN)) != null) {
+                MobEffectInstance instance = Minecraft.getInstance().player.getEffect(AMEffectRegistry.holder(AMEffectRegistry.POWER_DOWN));
                 EffectPowerDown powerDown = (EffectPowerDown) instance.getEffect().value();
                 int duration = instance.getDuration();
                 float partialTicks = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
@@ -187,8 +187,26 @@ public class ClientEvents {
         }
     }
 
+    private static void tickClinging() {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null || !player.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.CLINGING))) {
+            return;
+        }
+        player.setNoGravity(false);
+        if (EffectClinging.isUpsideDown(player)) {
+            player.fallDistance = 0.0F;
+            if (!player.isShiftKeyDown()) {
+                if (!player.horizontalCollision) {
+                    player.setDeltaMovement(player.getDeltaMovement().add(0.0D, 0.3D, 0.0D));
+                }
+                player.setDeltaMovement(player.getDeltaMovement().multiply(0.998F, 1.0F, 0.998F));
+            }
+        }
+    }
+
     public void clientTick() {
         AMItemstackRenderer.incrementTick();
+        tickClinging();
         onRenderWorldLastEvent();
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null && mc.player != null) {
@@ -209,11 +227,7 @@ public class ClientEvents {
             return;
         }
         if (!AMConfig.shadersCompat) {
-            boolean hasLavaVision = Minecraft.getInstance().player.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.LAVA_VISION));
-            if (hasLavaVision != previousLavaVision) {
-                updateAllChunks();
-            }
-            previousLavaVision = hasLavaVision;
+            previousLavaVision = Minecraft.getInstance().player.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.LAVA_VISION));
         }
         if (Minecraft.getInstance().getCameraEntity() instanceof EntityBaldEagle eagle) {
             LocalPlayer playerEntity = Minecraft.getInstance().player;
@@ -238,9 +252,6 @@ public class ClientEvents {
     }
 
     private void updateAllChunks() {
-        if (Minecraft.getInstance().levelRenderer != null) {
-            Minecraft.getInstance().levelRenderer.resetLevelRenderData();
-        }
     }
 
     //     // public void onRenderNameplate(RenderNameTagEvent event) {
@@ -253,7 +264,7 @@ public class ClientEvents {
 
 
         public void onGetFluidRenderType(EventGetFluidRenderType event) {
-        if (Minecraft.getInstance().player.hasEffect(net.minecraft.core.Holder.direct(AMEffectRegistry.LAVA_VISION)) && (event.getFluidState().is(Fluids.LAVA) || event.getFluidState().is(Fluids.FLOWING_LAVA))) {
+        if (Minecraft.getInstance().player.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.LAVA_VISION)) && (event.getFluidState().is(Fluids.LAVA) || event.getFluidState().is(Fluids.FLOWING_LAVA))) {
             event.setRenderType(RenderTypes.translucentMovingBlock());
             event.setResult(TriState.TRUE);
         }

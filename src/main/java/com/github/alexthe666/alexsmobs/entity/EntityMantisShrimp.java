@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
@@ -135,7 +137,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
                 fishNbt.putString("DeathLootTable", "minecraft:empty");
                 ValueInput fishIn = TagValueInput.create(ProblemReporter.DISCARDING, this.level().registryAccess(), fishNbt);
                 living.load(fishIn);
-                living.spawnAtLocation((ServerLevel) this.level(), Items.SHULKER_SHELL);
+                AMEntityHooks.drop(living, Items.SHULKER_SHELL);
             }
         }
         super.awardKillScore(entity, src);
@@ -371,7 +373,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
                     itemstack.shrink(1);
                     return InteractionResult.SUCCESS;
                 } else {
-                    this.spawnAtLocation((ServerLevel) this.level(), this.getMainHandItem().copy());
+                    AMEntityHooks.drop(this, this.getMainHandItem().copy());
                     this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
                     return InteractionResult.SUCCESS;
                 }

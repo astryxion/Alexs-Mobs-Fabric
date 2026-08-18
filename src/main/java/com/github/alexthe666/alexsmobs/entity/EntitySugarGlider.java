@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
@@ -306,7 +308,7 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
                     List<ItemStack> lootList = getForageLoot(state);
                     if (lootList.size() > 0) {
                         for (ItemStack stack : lootList) {
-                            ItemEntity e = this.spawnAtLocation((ServerLevel) this.level(), stack.copy());
+                            ItemEntity e = AMEntityHooks.drop(this, stack.copy());
                             if(e != null){
                                 e.needsSync = true;
                                 e.setDeltaMovement(e.getDeltaMovement().multiply(0.2, 0.2, 0.2));

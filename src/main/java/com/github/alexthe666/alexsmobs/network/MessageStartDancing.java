@@ -1,13 +1,18 @@
 package com.github.alexthe666.alexsmobs.network;
 
+import com.github.alexthe666.alexsmobs.AlexsMobs;
+import com.github.alexthe666.alexsmobs.entity.IDancingMob;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 
 /**
- * Server -> Client packet to sync dancing state.
+ * Dancing state packet. Clients send it when a frog/wolf hears a jukebox; the server then syncs other clients.
  */
 public record MessageStartDancing(int entityID, boolean dance, BlockPos jukeBox) implements CustomPacketPayload {
 
@@ -34,5 +39,18 @@ public record MessageStartDancing(int entityID, boolean dance, BlockPos jukeBox)
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return ID;
+    }
+
+    public static void handleServer(MessageStartDancing payload, ServerPlayNetworking.Context context) {
+        ServerPlayer player = context.player();
+        if (player == null || player.level() == null) {
+            return;
+        }
+        Entity entity = player.level().getEntity(payload.entityID());
+        if (entity instanceof IDancingMob mob) {
+            mob.setDancing(payload.dance());
+            mob.setJukeboxPos(payload.dance() ? payload.jukeBox() : null);
+            AlexsMobs.sendMSGToAll(payload);
+        }
     }
 }

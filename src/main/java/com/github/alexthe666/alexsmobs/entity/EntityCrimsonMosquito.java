@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
+
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
@@ -22,6 +24,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -147,14 +150,16 @@ public class EntityCrimsonMosquito extends Monster {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 10.0D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.ARMOR, 0.0D).add(Attributes.ATTACK_DAMAGE, 5.0D).add(Attributes.MOVEMENT_SPEED, 0.25F);
     }
 
-    // TODO 1.21: getDefaultLootTable now returns ResourceKey<LootTable>
-    // @Nullable
-    // protected Identifier getDefaultLootTable() {
-    //     if (this.getBloodLevel() > 0) {
-    //         return this.isFromFly() ? FROM_FLY_FULL_LOOT : FULL_LOOT;
-    //     }
-    //     return this.isFromFly() ? FROM_FLY_LOOT : super.getDefaultLootTable();
-    // }
+    @Override
+    protected void dropFromLootTable(ServerLevel level, DamageSource source, boolean playerKilled) {
+        if (this.getBloodLevel() > 0) {
+            this.dropFromLootTable(level, source, playerKilled, ResourceKey.create(Registries.LOOT_TABLE, this.isFromFly() ? FROM_FLY_FULL_LOOT : FULL_LOOT));
+        } else if (this.isFromFly()) {
+            this.dropFromLootTable(level, source, playerKilled, ResourceKey.create(Registries.LOOT_TABLE, FROM_FLY_LOOT));
+        } else {
+            super.dropFromLootTable(level, source, playerKilled);
+        }
+    }
 
     public boolean canRiderInteract() {
         return true;
@@ -244,7 +249,7 @@ public class EntityCrimsonMosquito extends Monster {
             return;
         }
         final boolean mungus = AMConfig.warpedMoscoTransformation && mount instanceof EntityMungus && ((EntityMungus) mount).isWarpedMoscoReady();
-        if (mount.hurtOrSimulate(this.damageSources().mobAttack(this), mungus ? 7F : 2.0F)) {
+        if (this.level() instanceof ServerLevel serverLevel && mount.hurtServer(serverLevel, this.damageSources().mobAttack(this), mungus ? 7F : 2.0F)) {
             if (mungus) {
                 ((EntityMungus) mount).disableExplosion();
             }
@@ -386,17 +391,8 @@ public class EntityCrimsonMosquito extends Monster {
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
         float damage = amount;
-        if (source.getEntity() != null && this.isLatched() && this.getRootVehicle() == source.getEntity().getRootVehicle()) {
+        if (source.getEntity() != null && this.getRootVehicle() == source.getEntity().getRootVehicle()) {
             damage *= 0.333F;
-        }
-        if (this.isLatched()) {
-            LivingEntity mount = this.getLatchTarget();
-            this.clearLatch(mount);
-            if (source.getEntity() != null) {
-                double dx = source.getEntity().getX() - this.getX();
-                double dz = source.getEntity().getZ() - this.getZ();
-                this.knockback(0.6, dx, dz, this.damageSources().mobAttack(this), 0.0F);
-            }
         }
         if (flightTicks < 0) {
             flightTicks = 0;
@@ -727,7 +723,7 @@ public class EntityCrimsonMosquito extends Monster {
             if (remainderTemplate != null) {
                 ItemStack remainder = remainderTemplate.create();
                 if (!remainder.isEmpty()) {
-                    this.spawnAtLocation((ServerLevel) this.level(), remainder);
+                    AMEntityHooks.drop(this, remainder);
                 }
             }
             if (!player.isCreative()) {

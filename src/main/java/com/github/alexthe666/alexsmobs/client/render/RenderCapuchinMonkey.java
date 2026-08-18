@@ -1,39 +1,45 @@
 package com.github.alexthe666.alexsmobs.client.render;
 
-import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
+import com.github.alexthe666.alexsmobs.client.model.AlexAdvancedEntityModel;
+import com.github.alexthe666.alexsmobs.client.model.AlexAdvancedEntityModel.CitadelLivingRenderState;
 import com.github.alexthe666.alexsmobs.client.model.ModelCapuchinMonkey;
 import com.github.alexthe666.alexsmobs.client.render.layer.LayerCapuchinItem;
 import com.github.alexthe666.alexsmobs.entity.EntityCapuchinMonkey;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.resources.Identifier;
 
-public class RenderCapuchinMonkey extends MobRenderer<EntityCapuchinMonkey, LivingEntityRenderState, CitadelEntityModelBridge<EntityCapuchinMonkey>> {
+public class RenderCapuchinMonkey extends MobRenderer<EntityCapuchinMonkey, CitadelLivingRenderState, AlexAdvancedEntityModel.CitadelEntityModelBridge<EntityCapuchinMonkey, ModelCapuchinMonkey>> {
     private static final Identifier TEXTURE_0 = Identifier.parse("alexsmobs:textures/entity/capuchin_monkey_0.png");
     private static final Identifier TEXTURE_1 = Identifier.parse("alexsmobs:textures/entity/capuchin_monkey_1.png");
     private static final Identifier TEXTURE_2 = Identifier.parse("alexsmobs:textures/entity/capuchin_monkey_2.png");
     private static final Identifier TEXTURE_3 = Identifier.parse("alexsmobs:textures/entity/capuchin_monkey_3.png");
 
     public RenderCapuchinMonkey(EntityRendererProvider.Context renderManagerIn) {
-        super(renderManagerIn, new CitadelEntityModelBridge<>(new ModelCapuchinMonkey()), 0.25F);
+        super(renderManagerIn, new AlexAdvancedEntityModel.CitadelEntityModelBridge<>(new ModelCapuchinMonkey()), 0.25F);
         this.addLayer(new LayerCapuchinItem(this));
     }
 
     @Override
-    public LivingEntityRenderState createRenderState() {
-        return new LivingEntityRenderState();
+    public CitadelLivingRenderState createRenderState() {
+        return new CitadelLivingRenderState();
     }
 
     @Override
-    protected void scale(LivingEntityRenderState state, PoseStack matrixStackIn) {
+    public void extractRenderState(EntityCapuchinMonkey entity, CitadelLivingRenderState state, float partialTick) {
+        super.extractRenderState(entity, state, partialTick);
+        state.citadelEntity = entity;
+    }
+
+    @Override
+    protected void scale(CitadelLivingRenderState state, PoseStack matrixStackIn) {
         matrixStackIn.scale(0.8F, 0.8F, 0.8F);
     }
 
     @Override
-    public Identifier getTextureLocation(LivingEntityRenderState state) {
-        EntityCapuchinMonkey entity = AlexsMobsClientKeys.getLiving(state) instanceof EntityCapuchinMonkey e ? e : null;
+    public Identifier getTextureLocation(CitadelLivingRenderState state) {
+        EntityCapuchinMonkey entity = state.citadelEntity instanceof EntityCapuchinMonkey e ? e : null;
         if (entity == null) {
             return TEXTURE_0;
         }

@@ -1,5 +1,6 @@
 package com.github.alexthe666.citadel;
 
+import com.github.alexthe666.citadel.animation.Animation;
 import com.github.alexthe666.citadel.animation.IAnimatedEntity;
 import com.github.alexthe666.citadel.client.event.EventRenderSplashText;
 import com.github.alexthe666.citadel.client.game.Tetris;
@@ -281,12 +282,15 @@ public class ClientProxy extends ServerProxy {
     @Override
     public void handleAnimationPacket(int entityId, int index) {
         if (Minecraft.getInstance().level != null) {
-            IAnimatedEntity entity = (IAnimatedEntity) Minecraft.getInstance().level.getEntity(entityId);
-            if (entity != null) {
+            Entity found = Minecraft.getInstance().level.getEntity(entityId);
+            if (found instanceof IAnimatedEntity entity) {
                 if (index == -1) {
                     entity.setAnimation(IAnimatedEntity.NO_ANIMATION);
                 } else {
-                    entity.setAnimation(entity.getAnimations()[index]);
+                    Animation[] animations = entity.getAnimations();
+                    if (animations != null && index >= 0 && index < animations.length) {
+                        entity.setAnimation(animations[index]);
+                    }
                 }
                 entity.setAnimationTick(0);
             }

@@ -7,7 +7,9 @@ import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.entity.util.AnacondaPartIndex;
 import com.github.alexthe666.alexsmobs.network.MessageHurtMultipart;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -27,10 +29,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -49,6 +53,7 @@ public class EntityAnacondaPart extends LivingEntity implements IHurtableMultipa
     private float strangleProgess;
     private float prevSwell;
     private float prevStrangleProgess;
+    private int headEntityId = -1;
     private double prevHeight = 0;
     protected float damageMultiplier = 1.0F;
 //    public Vec3[] stranglePosition = new Vec3[]{
@@ -99,7 +104,7 @@ public class EntityAnacondaPart extends LivingEntity implements IHurtableMultipa
 
         prevStrangleProgess = strangleProgess;
         prevSwell = this.getSwell();
-        // isInsidePortal removed in 1.21
+        this.portalProcess = null;
         this.setDeltaMovement(Vec3.ZERO);
         if (this.tickCount > 1) {
             final Entity parent = getParent();
@@ -152,8 +157,7 @@ public class EntityAnacondaPart extends LivingEntity implements IHurtableMultipa
             ((EntityAnaconda) e).feed();
     }
 
-    public Vec3 tickMultipartPosition(AnacondaPartIndex parentIndex, Vec3 parentPosition, float parentXRot, float parentYRot, float ourYRot, boolean doHeight) {
-        // Match EntityCentipedeBody: yDif + parentFront probe reset so prevHeight does not drag segments under ground when the head is knocked.
+    public Vec3 tickMultipartPosition(int headId, AnacondaPartIndex parentIndex, Vec3 parentPosition, float parentXRot, float parentYRot, float ourYRot, boolean doHeight) {
         final float yDif = doHeight ? 1.0F - 0.95F * (float) Math.min(Math.abs(parentPosition.y - this.getY()), 1.0F) : 1F;
         final Vec3 parentButt = parentPosition.add(calcOffsetVec(-yDif * parentIndex.getBackOffset() * this.getScale(), parentXRot, parentYRot));
         final Vec3 ourButt = parentButt.add(calcOffsetVec(yDif * (-this.getPartType().getBackOffset() - 0.5F * this.getBbWidth()) * this.getScale(), this.getXRot(), ourYRot));
@@ -177,8 +181,37 @@ public class EntityAnacondaPart extends LivingEntity implements IHurtableMultipa
         this.setXRot(f2);
         this.setYRot(f);
         this.yHeadRot = f;
-        this.snapTo(avg.x, avg.y, avg.z, f, f2);
-        return avg;
+        final Vec3 grounded = new Vec3(avg.x, liftOutOfGround(avg.x, avg.y, avg.z), avg.z);
+        this.snapTo(grounded.x, grounded.y, grounded.z, f, f2);
+        this.xo = grounded.x;
+        this.yo = grounded.y;
+        this.zo = grounded.z;
+        this.xOld = grounded.x;
+        this.yOld = grounded.y;
+        this.zOld = grounded.z;
+        this.headEntityId = headId;
+        return grounded;
+    }
+
+    private double liftOutOfGround(double x, double y, double z) {
+        if (this.noPhysics || this.isFluidAt(x, y, z)) {
+            return y;
+        }
+        double probe = y + 1.0E-4;
+        BlockPos pos = AMBlockPos.fromCoords(x, probe, z);
+        BlockState state = this.level().getBlockState(pos);
+        if (state.isAir() || !state.isSuffocating(this.level(), pos)) {
+            return y;
+        }
+        VoxelShape shape = state.getCollisionShape(this.level(), pos);
+        if (shape.isEmpty()) {
+            return y;
+        }
+        AABB point = AABB.ofSize(new Vec3(x, probe, z), 1.0E-6, 1.0E-6, 1.0E-6);
+        if (!Shapes.joinIsNotEmpty(shape.move(pos.getX(), pos.getY(), pos.getZ()), Shapes.create(point), BooleanOp.AND)) {
+            return y;
+        }
+        return Math.max(y, pos.getY() + shape.max(Direction.Axis.Y));
     }
 
     public double getLowPartHeight(double x, double yIn, double z) {
@@ -219,7 +252,7 @@ public class EntityAnacondaPart extends LivingEntity implements IHurtableMultipa
             final AABB axisAlignedBB = AABB.ofSize(vec3, d, 1.0E-6D, d);
             return this.level().getBlockStates(axisAlignedBB).filter(Predicate.not(BlockBehaviour.BlockStateBase::isAir)).anyMatch((p_185969_) -> {
                 BlockPos blockpos = AMBlockPos.fromVec3(vec3);
-                return p_185969_.isSuffocating(this.level(), blockpos) && Shapes.joinIsNotEmpty(p_185969_.getCollisionShape(this.level(), blockpos).move(vec3.x, vec3.y, vec3.z), Shapes.create(axisAlignedBB), BooleanOp.AND);
+                return p_185969_.isSuffocating(this.level(), blockpos) && Shapes.joinIsNotEmpty(p_185969_.getCollisionShape(this.level(), blockpos).move(blockpos.getX(), blockpos.getY(), blockpos.getZ()), Shapes.create(axisAlignedBB), BooleanOp.AND);
             });
         }
     }
@@ -304,14 +337,7 @@ public class EntityAnacondaPart extends LivingEntity implements IHurtableMultipa
     }
 
     public Entity getParent() {
-        if (!this.level().isClientSide()) {
-            final UUID id = getParentId();
-            if (id != null) {
-                return ((ServerLevel) level()).getEntity(id);
-            }
-        }
-
-        return null;
+        return AMEntityHooks.findEntity(this.level(), getParentId(), this);
     }
 
     public void setParent(Entity entity) {
@@ -328,14 +354,7 @@ public class EntityAnacondaPart extends LivingEntity implements IHurtableMultipa
     }
 
     public Entity getChild() {
-        if (!this.level().isClientSide()) {
-            final UUID id = getChildId();
-            if (id != null) {
-                return ((ServerLevel) level()).getEntity(id);
-            }
-        }
-
-        return null;
+        return AMEntityHooks.findEntity(this.level(), getChildId(), this);
     }
 
     @Nullable

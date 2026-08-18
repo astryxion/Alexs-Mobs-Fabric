@@ -13,6 +13,7 @@ import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.network.MessageMungusBiomeChange;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
@@ -376,6 +377,9 @@ public class EntityMungus extends Animal implements ITargetsDroppedItems, Sheara
 
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
+        if (AMEntityHooks.shearWithShears(this, player, hand, itemstack)) {
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        }
         InteractionResult type = super.mobInteract(player, hand);
         if (itemstack.getItem() == Items.POISONOUS_POTATO && !this.isBaby()) {
             this.entityData.set(REVERTING, true);
@@ -641,6 +645,7 @@ public class EntityMungus extends Animal implements ITargetsDroppedItems, Sheara
         this.gameEvent(GameEvent.ENTITY_INTERACT);
         serverLevel.playSound(null, this, SoundEvents.SHEEP_SHEAR, category, 1.0F, 1.0F);
         if (this.getMushroomState() != null && this.getMushroomCount() > 0) {
+            AMEntityHooks.drop(this, new ItemStack(this.getMushroomState().getBlock()));
             this.setMushroomCount(this.getMushroomCount() - 1);
             if (this.getMushroomCount() <= 0) {
                 this.setMushroomState(null);

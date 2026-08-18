@@ -53,7 +53,8 @@ public class LayerUnderminerItem extends RenderLayer<HumanoidRenderState, Citade
         matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90));
         matrixStackIn.mulPose(Axis.YP.rotationDegrees(180));
         ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-        renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, matrixStackIn, collector, packedLightIn);
+        int packedLight = itemstack.is(AMItemRegistry.GHOSTLY_PICKAXE) ? 15728880 : packedLightIn;
+        renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, matrixStackIn, collector, packedLight);
         matrixStackIn.popPose();
         matrixStackIn.popPose();
     }

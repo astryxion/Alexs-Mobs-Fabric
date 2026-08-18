@@ -203,25 +203,26 @@ public class RenderUnderminer extends MobRenderer<EntityUnderminer, HumanoidRend
         RenderType rendertype = this.getRenderType(state, flag, flag1, flag2);
         if (rendertype != null && entityIn != null && !entityIn.isFullyHidden()) {
             int i = LivingEntityRenderer.getOverlayCoords(state, this.getWhiteOverlayProgress(state));
-            int baseColor = flag1 ? 654311423 : -1;
-            int tintedColor = ARGB.multiply(baseColor, this.getModelTint(state));
 
+            float hide = (entityIn.prevHidingProgress + (entityIn.hidingProgress - entityIn.prevHidingProgress) * partialTick) * 0.1F;
+            float alpha = flag1 ? 0.15F : Mth.clamp((1.0F - hide) * 0.6F, 0.0F, 1.0F);
+            int tint = ARGB.multiply(ARGB.color(Mth.clamp((int) (alpha * 255.0F), 0, 255), 255, 255, 255), this.getModelTint(state));
             if (entityIn.isDwarf()) {
                 this.syncDwarfModelFields(entityIn, state, partialTick);
                 this.model.setupAnim(state);
                 int overlay = i;
-                int tint = tintedColor;
+                int modelTint = tint;
                 PoseStack citadelPoseStack = new PoseStack();
                 submitNodeCollector.submitCustomGeometry(poseStack, rendertype, (pose, consumer) ->
-                    AlexAdvancedEntityModel.withCitadelSubmitPose(pose, citadelPoseStack, scratch -> this.dwarfModel.renderToBuffer(scratch, consumer, state.lightCoords, overlay, tint))
+                    AlexAdvancedEntityModel.withCitadelSubmitPose(pose, citadelPoseStack, scratch -> this.dwarfModel.renderToBuffer(scratch, consumer, state.lightCoords, overlay, modelTint))
                 );
             } else {
                 this.normalModel.setupAnim(state);
                 int overlay = i;
-                int tint = tintedColor;
+                int modelTint = tint;
                 PoseStack citadelPoseStack = new PoseStack();
                 submitNodeCollector.submitCustomGeometry(poseStack, rendertype, (pose, consumer) ->
-                    AlexAdvancedEntityModel.withCitadelSubmitPose(pose, citadelPoseStack, scratch -> this.normalModel.renderToBuffer(scratch, consumer, state.lightCoords, overlay, tint))
+                    AlexAdvancedEntityModel.withCitadelSubmitPose(pose, citadelPoseStack, scratch -> this.normalModel.renderToBuffer(scratch, consumer, state.lightCoords, overlay, modelTint))
                 );
             }
         }
@@ -250,17 +251,16 @@ public class RenderUnderminer extends MobRenderer<EntityUnderminer, HumanoidRend
                 double d2 = Mth.lerp(partialTicks, entityIn.zo, entityIn.getZ());
 
                 poseStack.translate((double) miningPos.getX() - d0, (double) miningPos.getY() - d1, (double) miningPos.getZ() - d2);
-                int progress = (int) Math.round((DESTROY_TYPES.size() - 1) * (float) Mth.clamp(entityIn.getMiningProgress(), 0F, 1.0F));
-                RenderType destroyType = DESTROY_TYPES.get(progress);
+                int progress = Math.round((DESTROY_TYPES.size() - 1) * Mth.clamp(entityIn.getMiningProgress(), 0F, 1.0F));
                 BlockState blockState = entityIn.level().getBlockState(miningPos);
-                BlockStateModel blockModel = Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(blockState);
-                long seed = miningPos.asLong();
-                submitNodeCollector.submitCustomGeometry(poseStack, destroyType, (pose, baseConsumer) -> {
-                    PoseStack.Pose posestack$pose = poseStack.last();
-                    VertexConsumer vertexconsumer1 = new SheetedDecalTextureGenerator(baseConsumer, posestack$pose, 1.0F);
-                    BlockQuadOutput quadOutput = (x, y, z, quad, instance) -> vertexconsumer1.putBlockBakedQuad(x, y, z, quad, instance);
-                    RenderUnderminer.this.blockRenderer.tesselateBlock(quadOutput, 0.0F, 0.0F, 0.0F, (BlockAndTintGetter) entityIn.level(), miningPos, blockState, blockModel, seed);
-                });
+                try {
+                    java.util.ArrayList<net.minecraft.client.renderer.block.dispatch.BlockStateModelPart> parts = new java.util.ArrayList<>();
+                    net.minecraft.util.RandomSource random = net.minecraft.util.RandomSource.create();
+                    random.setSeed(blockState.getSeed(miningPos));
+                    Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(blockState).collectParts(random, parts);
+                    submitNodeCollector.submitBreakingBlockModel(poseStack, java.util.List.copyOf(parts), progress);
+                } catch (Throwable ignored) {
+                }
                 poseStack.popPose();
             }
         }

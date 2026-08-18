@@ -28,6 +28,7 @@ public final class AMNetworking {
         PayloadTypeRegistry.clientboundPlay().register(MessageSyncEntityData.ID, MessageSyncEntityData.CODEC);
 
         PayloadTypeRegistry.serverboundPlay().register(MessageSwingArm.ID, MessageSwingArm.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(MessageStartDancing.ID, MessageStartDancing.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(MessageUpdateEagleControls.ID, MessageUpdateEagleControls.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(MessageTransmuteFromMenu.ID, MessageTransmuteFromMenu.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(MessageMosquitoDismount.ID, MessageMosquitoDismount.CODEC);
@@ -42,6 +43,7 @@ public final class AMNetworking {
 
     public static void registerServerReceivers() {
         ServerPlayNetworking.registerGlobalReceiver(MessageSwingArm.ID, MessageSwingArm::handleServer);
+        ServerPlayNetworking.registerGlobalReceiver(MessageStartDancing.ID, MessageStartDancing::handleServer);
         ServerPlayNetworking.registerGlobalReceiver(MessageUpdateEagleControls.ID, MessageUpdateEagleControls::handleServer);
         ServerPlayNetworking.registerGlobalReceiver(MessageTransmuteFromMenu.ID, MessageTransmuteFromMenu::handleServer);
         ServerPlayNetworking.registerGlobalReceiver(MessageMosquitoDismount.ID, MessageMosquitoDismount::handleServer);

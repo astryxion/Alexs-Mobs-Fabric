@@ -9,6 +9,7 @@ import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.entity.util.TerrapinTypes;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityTerrapinEgg;
@@ -447,7 +448,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
 
     @Override
     public boolean canBeCollidedWith(@Nullable Entity entity) {
-        return AMEntityRegistry.isInWaterOrBubble(this) ? super.canBeCollidedWith(entity) : this.isAlive();
+        return AMEntityHooks.isFullyConstructed(this) && (AMEntityRegistry.isInWaterOrBubble(this) ? super.canBeCollidedWith(entity) : this.isAlive());
     }
 
     private void spinFor(int time) {

@@ -2,6 +2,7 @@ package com.github.alexthe666.alexsmobs.entity;
 
 import com.github.alexthe666.alexsmobs.enchantment.AMEnchantments;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
+import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
 import net.minecraft.util.BlockUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -146,7 +147,7 @@ public class EntityStraddleboard extends Entity implements PlayerRideableJumping
     }
 
     public boolean canBeCollidedWith() {
-        return !this.isRemoveLogic();
+        return AMEntityHooks.isFullyConstructed(this) && !this.isRemoveLogic();
     }
 
     public boolean isPushable() {
@@ -208,7 +209,7 @@ public class EntityStraddleboard extends Entity implements PlayerRideableJumping
                     drop = true;
                 }
                 if(drop){
-                    this.spawnAtLocation((ServerLevel) this.level(), this.getItemStack().copy());
+                    AMEntityHooks.drop(this, this.getItemStack().copy());
                 }
                 this.discard();
             }
