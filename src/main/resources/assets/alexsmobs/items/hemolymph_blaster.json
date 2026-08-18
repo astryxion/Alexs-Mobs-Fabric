@@ -1,0 +1,14 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "alexsmobs:hemolymph_blaster_empty",
+    "on_true": {
+      "type": "minecraft:model",
+      "model": "alexsmobs:item/hemolymph_blaster_empty"
+    },
+    "on_false": {
+      "type": "minecraft:model",
+      "model": "alexsmobs:item/hemolymph_blaster"
+    }
+  }
+}

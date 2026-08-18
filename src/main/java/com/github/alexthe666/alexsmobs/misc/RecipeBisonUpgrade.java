@@ -1,0 +1,87 @@
+package com.github.alexthe666.alexsmobs.misc;
+
+import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.equipment.Equippable;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.item.crafting.CustomRecipe;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.level.Level;
+
+public class RecipeBisonUpgrade extends CustomRecipe {
+    public static final MapCodec<RecipeBisonUpgrade> MAP_CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
+            CraftingBookCategory.CODEC.optionalFieldOf("category", CraftingBookCategory.MISC).forGetter(RecipeBisonUpgrade::category)
+    ).apply(inst, RecipeBisonUpgrade::new));
+    public static final net.minecraft.network.codec.StreamCodec<RegistryFriendlyByteBuf, RecipeBisonUpgrade> STREAM_CODEC = ByteBufCodecs.fromCodecWithRegistries(MAP_CODEC.codec());
+
+    private final CraftingBookCategory category;
+
+    public RecipeBisonUpgrade(CraftingBookCategory category) {
+        super();
+        this.category = category;
+    }
+
+    @Override
+    public CraftingBookCategory category() {
+        return this.category;
+    }
+
+    private ItemStack createBoots(CraftingInput container) {
+        ItemStack boots = ItemStack.EMPTY;
+        int fur = 0;
+        for (int j = 0; j < container.size(); ++j) {
+            ItemStack itemstack1 = container.getItem(j);
+            if (itemstack1.is(AMBlockRegistry.BISON_FUR_BLOCK.asItem())) {
+                fur++;
+            }
+        }
+        if (fur == 1) {
+            for (int j = 0; j < container.size(); ++j) {
+                ItemStack itemstack1 = container.getItem(j);
+                boolean notFurred = true;
+                if (!itemstack1.isEmpty() && notFurred) {
+                    Equippable eq = itemstack1.get(DataComponents.EQUIPPABLE);
+                    if (eq != null && eq.slot() == EquipmentSlot.FEET) {
+                        boots = itemstack1;
+                    }
+                }
+            }
+            if (!boots.isEmpty()) {
+                ItemStack stack = boots.copy();
+                CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+                tag.putBoolean("BisonFur", true);
+                stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+                return stack;
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
+    @Override
+    public boolean matches(CraftingInput inv, Level worldIn) {
+        return !createBoots(inv).isEmpty();
+    }
+
+    @Override
+    public ItemStack assemble(CraftingInput container) {
+        return createBoots(container);
+    }
+
+    public boolean canCraftInDimensions(int x, int y) {
+        return x * y >= 2;
+    }
+
+    @Override
+    public RecipeSerializer<RecipeBisonUpgrade> getSerializer() {
+        return AMRecipeRegistry.BISON_UPGRADE;
+    }
+}

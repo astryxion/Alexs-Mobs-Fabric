@@ -1,0 +1,13 @@
+{
+  "gives": {
+    "count": 1,
+    "id": "alexsmobs:sombrero"
+  },
+  "max_uses": 1,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 20,
+    "id": "minecraft:emerald"
+  },
+  "xp": 1
+}

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "citadel",
+  "version": "${version}",
+  "name": "Citadel (Fabric)",
+  "description": "Citadel library",
+  "authors": [
+    "Astryxion"
+  ],
+  "contributors": [
+    "Alexthe666"
+  ],
+  "contact": {
+    "homepage": "https://github.com/astryxion/Citadel-Fabric",
+    "sources": "https://github.com/astryxion/Citadel-Fabric",
+    "issues": "https://github.com/astryxion/Citadel-Fabric/issues"
+  },
+  "license": "LGPL-3.0",
+  "icon": "assets/citadel/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.github.alexthe666.citadel.Citadel"
+    ],
+    "client": [
+      "com.github.alexthe666.citadel.CitadelClient"
+    ]
+  },
+  "mixins": [
+    "citadel.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": ">=26.1",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

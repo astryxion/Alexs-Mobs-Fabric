@@ -1,0 +1,17 @@
+{
+    "type":  "minecraft:crafting_shaped",
+    "pattern":  [
+                    "HHH",
+                    "HCH",
+                    "  T"
+                ],
+    "key":  {
+                "H":  "alexsmobs:bear_fur",
+                "T":  "alexsmobs:raccoon_tail",
+                "C":  "minecraft:leather_helmet"
+            },
+    "result":  {
+                   "id":  "alexsmobs:frontier_cap",
+                   "count":  1
+               }
+}

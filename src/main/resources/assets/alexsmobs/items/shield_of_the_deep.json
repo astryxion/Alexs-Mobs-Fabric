@@ -1,0 +1,26 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:using_item",
+    "on_false": {
+      "type": "minecraft:special",
+      "base": "alexsmobs:item/shield_of_the_deep",
+      "model": {
+        "type": "minecraft:shield"
+      }
+    },
+    "on_true": {
+      "type": "minecraft:special",
+      "base": "alexsmobs:item/shield_of_the_deep_blocking",
+      "model": {
+        "type": "minecraft:shield"
+      }
+    },
+    "transformation": {
+      "left_rotation": [0.0, 0.0, 0.0, 1.0],
+      "right_rotation": [0.0, 0.0, 0.0, 1.0],
+      "scale": [1.0, -1.0, -1.0],
+      "translation": [0.0, 0.0, 0.0]
+    }
+  }
+}

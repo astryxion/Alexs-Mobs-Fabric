@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    "alexsmobs:wandering_trader/emerald_animal_dictionary",
+    "alexsmobs:wandering_trader/emerald_acacia_blossom",
+    "alexsmobs:wandering_trader/emerald_cockroach_ootheca",
+    "alexsmobs:wandering_trader/emerald_blobfish_bucket",
+    "alexsmobs:wandering_trader/emerald_crocodile_egg",
+    "alexsmobs:wandering_trader/emerald_bear_fur",
+    "alexsmobs:wandering_trader/emerald_crocodile_scute",
+    "alexsmobs:wandering_trader/emerald_roadrunner_feather",
+    "alexsmobs:wandering_trader/emerald_mosquito_larva"
+  ]
+}

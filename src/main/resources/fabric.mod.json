@@ -1,0 +1,42 @@
+{
+	"schemaVersion": 1,
+	"id": "alexsmobs",
+	"version": "${version}",
+	"name": "Alex's Mobs (Fabric)",
+	"description": "New, original, engaging, and aesthetic mobs for Minecraft.",
+	"authors": [
+		"Astryxion"
+	],
+	"contributors": [
+		"Alexthe666",
+		"Carro1001",
+		"Paint_Ninja",
+		"Raguto"
+	],
+	"contact": {
+		"homepage": "https://github.com/astryxion/Alexs-Mobs-Fabric",
+		"sources": "https://github.com/astryxion/Alexs-Mobs-Fabric",
+		"issues": "https://github.com/astryxion/Alexs-Mobs-Fabric/issues"
+	},
+	"license": "LGPL-3.0",
+	"icon": "assets/alexsmobs/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.github.alexthe666.alexsmobs.AlexsMobs"
+		],
+		"client": [
+			"com.github.alexthe666.alexsmobs.AlexsMobsClient"
+		]
+	},
+	"mixins": [
+		"mixins.alexsmobs.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": ">=26.1",
+		"java": ">=25",
+		"citadel": ">=26.1-1.1.0",
+		"fabric-api": "*"
+	}
+}

@@ -1,0 +1,14 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:using_item",
+    "on_false": {
+      "type": "minecraft:model",
+      "model": "alexsmobs:item/skelewag_sword"
+    },
+    "on_true": {
+      "type": "minecraft:model",
+      "model": "alexsmobs:item/skelewag_sword_blocking"
+    }
+  }
+}

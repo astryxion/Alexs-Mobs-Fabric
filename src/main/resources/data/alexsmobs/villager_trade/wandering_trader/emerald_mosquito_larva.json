@@ -1,0 +1,13 @@
+{
+  "gives": {
+    "count": 3,
+    "id": "alexsmobs:mosquito_larva"
+  },
+  "max_uses": 5,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 1,
+    "id": "minecraft:emerald"
+  },
+  "xp": 1
+}

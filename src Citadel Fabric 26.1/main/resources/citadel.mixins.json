@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.github.alexthe666.citadel.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "citadel.refmap.json",
+  "mixins": [
+    "BlockBehaviourAccessor",
+    "ChunkGeneratorMixin",
+    "EntityCollideMixin",
+    "LivingEntityMixin",
+    "NoiseGeneratorSettingsMixin"
+  ],
+  "client": [
+    "client.EntityTeamColorMixin",
+    "client.LevelRendererMixin",
+    "client.OutlineBufferSourceMixin",
+    "client.SplashRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

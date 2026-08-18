@@ -1,0 +1,174 @@
+package com.github.alexthe666.alexsmobs.item;
+
+import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
+import com.github.alexthe666.alexsmobs.block.BlockCapsid;
+import com.github.alexthe666.alexsmobs.entity.EntityVoidPortal;
+import com.github.alexthe666.alexsmobs.item.data.CarverPortalPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+
+public class ItemDimensionalCarver extends Item {
+
+    public static final int MAX_TIME = 200;
+
+    public ItemDimensionalCarver(Item.Properties props) {
+        super(props);
+    }
+
+    protected static BlockHitResult rayTracePortal(Level worldIn, Player player, ClipContext.Fluid fluidMode) {
+        final float f = player.getXRot();
+        final float f1 = player.getYRot();
+        Vec3 vector3d = player.getEyePosition(1.0F);
+        final float f11 = -f1 * Mth.DEG_TO_RAD - Mth.PI;
+        final float f12 = -f * Mth.DEG_TO_RAD;
+        final float f2 = Mth.cos(f11);
+        final float f3 = Mth.sin(f11);
+        final float f4 = -Mth.cos(f12);
+        final float f5 = Mth.sin(f12);
+        final float f6 = f3 * f4;
+        final float f7 = f2 * f4;
+        final double d0 = 1.5F;
+        Vec3 vector3d1 = vector3d.add((double) f6 * d0, (double) f5 * d0, (double) f7 * d0);
+        return worldIn.clip(new ClipContext(vector3d, vector3d1, ClipContext.Block.OUTLINE, fluidMode, player));
+    }
+
+    public int getItemStackLimit(ItemStack stack) {
+        return 1;
+    }
+
+    public InteractionResult useOn(UseOnContext context) {
+        if (context.getLevel().getBlockState(context.getClickedPos()).getBlock() instanceof BlockCapsid) {
+            return BlockCapsid.tryInsertItem(context.getLevel(), context.getClickedPos(), context.getPlayer(), context.getHand(), context.getLevel().getBlockState(context.getClickedPos()));
+        }
+        return InteractionResult.PASS;
+    }
+
+    public InteractionResult use(Level worldIn, Player playerIn, InteractionHand handIn) {
+        ItemStack itemstack = playerIn.getItemInHand(handIn);
+        if (itemstack.getDamageValue() >= itemstack.getMaxDamage()) {
+            return InteractionResult.FAIL;
+        } else {
+            playerIn.startUsingItem(handIn);
+            
+            // Only set the portal position if not already active
+            CarverPortalPos currentPos = itemstack.get(AMDataComponents.CARVER_PORTAL_POS);
+            if (currentPos == null || !currentPos.active()) {
+                HitResult raytraceresult = rayTracePortal(worldIn, playerIn, ClipContext.Fluid.ANY);
+                Direction dir = Direction.orderedByNearest(playerIn)[0];
+
+                double x = raytraceresult.getLocation().x - (double) dir.getStepX() * 0.1D;
+                double y = raytraceresult.getLocation().y - (double) dir.getStepY() * 0.1D;
+                double z = raytraceresult.getLocation().z - (double) dir.getStepZ() * 0.1D;
+                
+                itemstack.set(AMDataComponents.CARVER_PORTAL_POS, new CarverPortalPos(x, y, z, true));
+            }
+            
+            CarverPortalPos portalPos = itemstack.get(AMDataComponents.CARVER_PORTAL_POS);
+            if (portalPos != null && portalPos.active()) {
+                worldIn.addParticle(AMParticleRegistry.INVERT_DIG, portalPos.x(), portalPos.y(), portalPos.z(), playerIn.getId(), 0, 0);
+            }
+            return InteractionResult.CONSUME;
+        }
+    }
+
+    public int getUseDuration(ItemStack stack, LivingEntity entity) {
+        return 200;
+    }
+
+    public float getXpRepairRatio(ItemStack stack) {
+        return 100F;
+    }
+
+    public void onUseTick(Level level, LivingEntity player, ItemStack itemstack, int count) {
+        player.swing(player.getUsedItemHand());
+        RandomSource random = player.getRandom();
+        if (count % 5 == 0) {
+            player.gameEvent(GameEvent.ITEM_INTERACT_START);
+            player.playSound(SoundEvents.NETHERITE_BLOCK_HIT, 1, 0.5F + random.nextFloat());
+        }
+        boolean flag = false;
+        CarverPortalPos portalPos = itemstack.get(AMDataComponents.CARVER_PORTAL_POS);
+        if (portalPos != null && portalPos.active()) {
+            double x = portalPos.x();
+            double y = portalPos.y();
+            double z = portalPos.z();
+            if (random.nextFloat() < 0.2) {
+                player.level().addParticle(AMParticleRegistry.WORM_PORTAL, x + random.nextGaussian() * 0.1F, y + random.nextGaussian() * 0.1F, z + random.nextGaussian() * 0.1F, random.nextGaussian() * 0.1F, -0.1F, random.nextGaussian() * 0.1F);
+            }
+            if (player.distanceToSqr(x, y, z) > 9) {
+                flag = true;
+                if (player instanceof Player p) {
+                    p.getCooldowns().addCooldown(itemstack, 40);
+                }
+            }
+            if (count == 1 && !player.level().isClientSide()) {
+                player.gameEvent(GameEvent.ITEM_INTERACT_START);
+                player.playSound(SoundEvents.GLASS_BREAK, 1, 0.5F);
+                EntityVoidPortal portal = new EntityVoidPortal(player.level(), this);
+                portal.setPos(x, y, z);
+                Direction dir = Direction.orderedByNearest(player)[0].getOpposite();
+                if (dir == Direction.UP) {
+                    dir = Direction.DOWN;
+                }
+                portal.setAttachmentFacing(dir);
+                player.level().addFreshEntity(portal);
+                onPortalOpen(player.level(), player, portal, dir);
+                itemstack.hurtAndBreak(1, player, net.minecraft.world.entity.EquipmentSlot.MAINHAND);
+                flag = true;
+                if (player instanceof Player p) {
+                    p.getCooldowns().addCooldown(itemstack, 200);
+                }
+            }
+        }
+        if (flag) {
+            player.stopUsingItem();
+            itemstack.set(AMDataComponents.CARVER_PORTAL_POS, CarverPortalPos.EMPTY);
+        }
+    }
+
+    public boolean releaseUsing(ItemStack stack, Level worldIn, LivingEntity entityLiving, int timeLeft) {
+        stack.set(AMDataComponents.CARVER_PORTAL_POS, CarverPortalPos.EMPTY);
+        return true;
+    }
+
+    public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
+        return !ItemStack.isSameItem(oldStack, newStack);
+    }
+
+    public void onPortalOpen(Level worldIn, LivingEntity player, EntityVoidPortal portal, Direction dir) {
+        portal.setLifespan(1200);
+        ResourceKey<Level> respawnDimension = Level.OVERWORLD;
+        BlockPos respawnPosition = player.getSleepingPos().isPresent() ? player.getSleepingPos().get() : player.level().getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, BlockPos.ZERO);
+        if (player instanceof ServerPlayer serverPlayer) {
+            ServerPlayer.RespawnConfig respawnConfig = serverPlayer.getRespawnConfig();
+            if (respawnConfig != null) {
+                respawnDimension = respawnConfig.respawnData().dimension();
+                BlockPos spawnPos = respawnConfig.respawnData().pos();
+                if (spawnPos != null) {
+                    respawnPosition = spawnPos;
+                }
+            }
+        }
+        portal.exitDimension = respawnDimension;
+        portal.setDestination(respawnPosition.above(2));
+    }
+}

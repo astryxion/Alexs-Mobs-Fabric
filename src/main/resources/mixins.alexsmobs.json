@@ -1,0 +1,31 @@
+{
+  "required": true,
+  "package": "com.github.alexthe666.alexsmobs.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "client.CitadelItemstackDrawSpriteQuadMixin",
+    "client.ModelCitadelBridgeRenderMixin",
+    "client.ItemModelResolverSpecialItemMixin",
+    "client.EntityRenderDispatcherStateCaptureMixin",
+    "client.LivingEntityRendererMixin",
+    "client.LavaFogEnvironmentMixin"
+  ],
+  "mixins": [
+    "EntityMixin",
+    "LivingEntityMixin",
+    "LivingEntityJumpingAccessor",
+    "LivingEntityBreathingMixin",
+    "LivingEntityVineLassoTickMixin",
+    "MobTargetMixin",
+    "PotionBrewingMixin",
+    "PotionBrewingBuilderMixin",
+    "BrewingStandPotionSlotMixin",
+    "BrewingStandBlockEntityMixin",
+    "LootTableMixin",
+    "ItemEntityMixin",
+    "PowderSnowBlockMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
