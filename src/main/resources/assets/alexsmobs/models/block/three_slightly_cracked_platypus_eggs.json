@@ -1,6 +1,0 @@
-{
-  "parent": "alexsmobs:block/template_three_platypus_eggs",
-  "textures": {
-    "0": "alexsmobs:block/platypus_eggs_slightly_cracked"
-  }
-}

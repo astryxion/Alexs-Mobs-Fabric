@@ -1,8 +1,0 @@
-{
-  "__comment": "Pacifies indefinitely, heals, and gives regen and strength to Bunfungus",
-  "replace": false,
-  "values": [
-    "minecraft:carrot",
-    "minecraft:golden_carrot"
-  ]
-}
