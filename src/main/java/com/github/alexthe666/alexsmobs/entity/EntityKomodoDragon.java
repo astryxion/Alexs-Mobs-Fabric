@@ -75,6 +75,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
     public boolean instantlyTriggerJostleAI = false;
     public int jostleCooldown = 100 + random.nextInt(40);
     private boolean hasJostlingSize;
+    private int rottenFleshFed;
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
@@ -110,7 +111,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 2D, false));
         this.goalSelector.addGoal(3, new TameableAIFollowOwner(this, 1.2D, 6.0F, 3.0F, false));
         this.goalSelector.addGoal(4, new KomodoDragonAIJostle(this));
-        this.goalSelector.addGoal(5, new TameableAITempt(this, 1.1D, TEMPTATION_ITEMS, false));
+        this.goalSelector.addGoal(5, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.KOMODO_DRAGON_TAMEABLES));
         this.goalSelector.addGoal(5, new AnimalAIFleeAdult(this, 1.25D, 32));
         this.goalSelector.addGoal(6, new KomodoDragonAIBreed(this, 1.0D));
         this.goalSelector.addGoal(6, new RandomStrollGoal(this, 1D, 50));
@@ -183,6 +184,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         }
         this.setCommand(compound.getInt("KomodoCommand"));
         this.jostleCooldown = compound.getInt("JostlingCooldown");
+        this.rottenFleshFed = compound.getInt("RottenFleshFed");
         this.setSaddled(compound.getBoolean("Saddle"));
 
     }
@@ -193,6 +195,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         compound.putInt("KomodoCommand", this.getCommand());
         compound.putBoolean("Saddle", this.isSaddled());
         compound.putInt("JostlingCooldown", this.jostleCooldown);
+        compound.putInt("RottenFleshFed", this.rottenFleshFed);
     }
 
     public boolean isFood(ItemStack stack) {
@@ -336,7 +339,7 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
             float angle = (Maths.STARTING_ANGLE * this.yBodyRot);
             double extraX = radius * Mth.sin(Mth.PI + angle);
             double extraZ = radius * Mth.cos(angle);
-            passenger.setPos(this.getX() + extraX, this.getY() + this.getPassengersRidingOffset() + this.getPassengerRidingPosition(passenger).y, this.getZ() + extraZ);
+            passenger.setPos(this.getX() + extraX, this.getY() + this.getPassengersRidingOffset() - passenger.getVehicleAttachmentPoint(this).y, this.getZ() + extraZ);
         }
     }
 
@@ -355,11 +358,14 @@ public class EntityKomodoDragon extends TamableAnimal implements ITargetsDropped
         if(itemstack.is(AMTagRegistry.KOMODO_DRAGON_TAMEABLES)){
             if(!isTame()){
                 int size = itemstack.getCount();
-                int tameAmount = 58 + random.nextInt(16);
-                if(size > tameAmount){
-                    this.tame(player);
-                }
+                this.rottenFleshFed += size;
                 itemstack.shrink(size);
+                if(this.rottenFleshFed > 58 + random.nextInt(16)){
+                    this.tame(player);
+                    this.level().broadcastEntityEvent(this, (byte) 7);
+                } else {
+                    this.level().broadcastEntityEvent(this, (byte) 6);
+                }
                 return InteractionResult.SUCCESS;
             }else if(this.getHealth() <= this.getMaxHealth()){
                 usePlayerItem(player, hand, itemstack);

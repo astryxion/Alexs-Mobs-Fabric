@@ -1,13 +1,16 @@
 {
   "schemaVersion": 1,
   "authors": [
+    "Astryxion"
+  ],
+  "contributors": [
     "Alexthe668",
     "Carro1001",
     "Paint_Ninja"
   ],
   "contact": {
-    "homepage": "https://www.curseforge.com/minecraft/mc-mods/alexs-mobs",
-    "issues": "https://github.com/Alex-the-666/AlexsMobs/issues"
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/alexs-mobs-fabric",
+    "issues": "https://github.com/astryxion/Alexs-Mobs-Fabric/issues"
   },
   "depends": {
     "fabricloader": ">=0.18.0",
@@ -15,6 +18,9 @@
     "java": ">=21",
     "fabric-api": "*",
     "citadel": "*"
+  },
+  "suggests": {
+    "jei": "*"
   },
   "description": "New, original, engaging, and aesthetic mobs for Minecraft.",
   "entrypoints": {
@@ -30,6 +36,7 @@
   },
   "environment": "*",
   "id": "alexsmobs",
+  "icon": "assets/alexsmobs/icon.png",
   "license": "LGPL-3.0-or-later",
   "mixins": [
     "alexsmobs.mixins.json",

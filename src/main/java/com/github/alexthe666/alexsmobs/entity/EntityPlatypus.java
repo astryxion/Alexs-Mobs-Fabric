@@ -165,7 +165,7 @@ public class EntityPlatypus extends Animal implements ISemiAquatic, ITargetsDrop
         this.goalSelector.addGoal(2, new LayEggGoal(this, 1.0D));
         this.goalSelector.addGoal(2, new BreedGoal(this, 0.8D));
         this.goalSelector.addGoal(3, new PanicGoal(this, 1.1D));
-        this.goalSelector.addGoal(3, new TemptGoal(this, 1.0D, Ingredient.of(AMTagRegistry.PLATYPUS_CHARGEABLES), false){
+        this.goalSelector.addGoal(3, new AMTagTemptGoal(this, 1.0D, false, AMTagRegistry.PLATYPUS_CHARGEABLES){
             public void start() {
                 super.start();
                 EntityPlatypus.this.setSensingVisual(true);
@@ -180,7 +180,7 @@ public class EntityPlatypus extends Animal implements ISemiAquatic, ITargetsDrop
                 EntityPlatypus.this.setSensingVisual(false);
             }
         });
-        this.goalSelector.addGoal(5, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.PLATYPUS_FOODSTUFFS), false){
+        this.goalSelector.addGoal(5, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.PLATYPUS_FOODSTUFFS){
             public boolean canUse(){
                 return super.canUse() && !EntityPlatypus.this.isSensing();
             }

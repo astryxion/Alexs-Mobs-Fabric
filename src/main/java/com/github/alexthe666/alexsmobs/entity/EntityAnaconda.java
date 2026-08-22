@@ -139,7 +139,7 @@ public class EntityAnaconda extends Animal implements ISemiAquatic {
         this.goalSelector.addGoal(2, new AIMelee());
         this.goalSelector.addGoal(3, new AnimalAIFindWater(this));
         this.goalSelector.addGoal(3, new AnimalAILeaveWater(this));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.25D, Ingredient.of(AMTagRegistry.ANACONDA_FOODSTUFFS), false));
+        this.goalSelector.addGoal(4, new AMTagTemptGoal(this, 1.25D, false, AMTagRegistry.ANACONDA_FOODSTUFFS));
         this.goalSelector.addGoal(5, new BreedGoal(this, 1.0D));
         this.goalSelector.addGoal(6, new FollowParentGoal(this, 1.1D));
         this.goalSelector.addGoal(7, new AnimalAIWanderRanged(this, 60, 1.0D, 14, 7));
@@ -307,8 +307,19 @@ public class EntityAnaconda extends Animal implements ISemiAquatic {
                     target.setDeltaMovement(Vec3.ZERO);
                 }
                 if (strangleTimer >= 40 && strangleTimer % 20 == 0) {
-                    final double health = Mth.clamp(this.getTarget().getMaxHealth(), 4, 50);
-                    this.getTarget().hurt(this.damageSources().mobAttack(this), (float) Math.max(4F, 0.25F * health));
+                    LivingEntity strangling = this.getTarget();
+                    if (strangling == null || !strangling.isAlive()) {
+                        strangleTimer = 0;
+                        this.setStrangling(false);
+                    } else {
+                        final double health = Mth.clamp(strangling.getMaxHealth(), 4, 50);
+                        strangling.hurt(this.damageSources().mobAttack(this), (float) Math.max(4F, 0.25F * health));
+                        if (!strangling.isAlive()) {
+                            strangleTimer = 0;
+                            this.setStrangling(false);
+                            this.setTarget(null);
+                        }
+                    }
                 }
                 if (this.getTarget() == null || !this.getTarget().isAlive()) {
                     strangleTimer = 0;
@@ -575,7 +586,7 @@ public class EntityAnaconda extends Animal implements ISemiAquatic {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn) {
         this.setYellow(random.nextBoolean());
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn);
     }

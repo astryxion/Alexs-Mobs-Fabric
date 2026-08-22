@@ -137,20 +137,21 @@ public class ServerEvents {
             LivingEntity entity = e.entity;
             DamageSource source = e.source;
             float amount = e.amount;
-            if (!entity.isAlive()) continue;
             if (source.getEntity() instanceof LivingEntity attacker) {
-                if (amount > 0 && attacker.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.SOULSTEAL)) && attacker.getEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.SOULSTEAL)) != null) {
-                    int lvl = attacker.getEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.SOULSTEAL)).getAmplifier() + 1;
-                    if (attacker.getHealth() < attacker.getMaxHealth() && ThreadLocalRandom.current().nextFloat() < (0.25F + (lvl * 0.25F))) {
+                if (amount > 0 && attacker.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.SOULSTEAL))) {
+                    var instance = attacker.getEffect(AMEffectRegistry.holder(AMEffectRegistry.SOULSTEAL));
+                    if (instance != null && attacker.getHealth() < attacker.getMaxHealth()
+                            && ThreadLocalRandom.current().nextFloat() < (0.25F + (instance.getAmplifier() + 1) * 0.25F)) {
+                        int lvl = instance.getAmplifier() + 1;
                         attacker.heal(Math.min(amount / 2F * lvl, 2 + 2 * lvl));
                     }
                 }
-                if (entity instanceof Player player && attacker.distanceTo(player) < attacker.getBbWidth() + player.getBbWidth() + 0.5F && player.getItemBySlot(EquipmentSlot.HEAD).getItem() == AMItemRegistry.SPIKED_TURTLE_SHELL) {
+                if (entity.isAlive() && entity instanceof Player player && attacker.distanceTo(player) < attacker.getBbWidth() + player.getBbWidth() + 0.5F && player.getItemBySlot(EquipmentSlot.HEAD).getItem() == AMItemRegistry.SPIKED_TURTLE_SHELL) {
                     attacker.hurt(attacker.damageSources().thorns(player), 1F);
                     attacker.knockback(0.5F, Mth.sin((attacker.getYRot() + 180) * Mth.DEG_TO_RAD), -Mth.cos((attacker.getYRot() + 180) * Mth.DEG_TO_RAD));
                 }
             }
-            if (!entity.getUseItem().isEmpty() && source.getEntity() != null && source.getEntity() instanceof LivingEntity living) {
+            if (entity.isAlive() && !entity.getUseItem().isEmpty() && source.getEntity() != null && source.getEntity() instanceof LivingEntity living) {
                 if (entity.getUseItem().getItem() == AMItemRegistry.SHIELD_OF_THE_DEEP) {
                     boolean flag = false;
                     if (living.distanceTo(entity) <= 4 && !living.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.EXSANGUINATION))) {

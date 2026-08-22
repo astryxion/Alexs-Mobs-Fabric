@@ -193,7 +193,8 @@ public class EntityRaccoon extends TamableAnimal implements IAnimatedEntity, IFo
 
     public Item getCarpetItemBeingWorn() {
         if (this.getColor() != null) {
-            return EntityElephant.DYE_COLOR_ITEM_MAP.get(this.getColor());
+            Item carpet = EntityElephant.DYE_COLOR_ITEM_MAP.get(this.getColor());
+            return carpet != null ? carpet : Items.AIR;
         }
         return Items.AIR;
     }

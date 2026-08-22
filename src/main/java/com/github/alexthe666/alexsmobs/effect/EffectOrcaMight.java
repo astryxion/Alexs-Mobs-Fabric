@@ -14,7 +14,8 @@ public class EffectOrcaMight extends MobEffect {
         this.addAttributeModifier(Attributes.ATTACK_SPEED, ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, "orcas_might_attack_speed"), 3D, AttributeModifier.Operation.ADD_VALUE);
     }
 
-    public boolean isDurationEffectTick(int duration, int amplifier) {
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
         return duration > 0;
     }
 

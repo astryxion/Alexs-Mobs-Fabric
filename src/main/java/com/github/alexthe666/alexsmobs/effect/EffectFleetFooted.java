@@ -2,7 +2,6 @@ package com.github.alexthe666.alexsmobs.effect;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
@@ -22,7 +21,8 @@ public class EffectFleetFooted extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0X685441);
     }
 
-    public boolean tick(ServerLevel level, LivingEntity entity, int amplifier) {
+    @Override
+    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
         AttributeInstance modifiableattributeinstance = entity.getAttribute(Attributes.MOVEMENT_SPEED);
         boolean applyEffect = entity.isSprinting() && !entity.onGround() && lastDuration > 2;
         if(removeEffectAfter > 0){
@@ -50,7 +50,8 @@ public class EffectFleetFooted extends MobEffect {
         }
     }
 
-    public boolean isDurationEffectTick(int duration, int amplifier) {
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
         lastDuration = duration;
         return duration > 0;
     }

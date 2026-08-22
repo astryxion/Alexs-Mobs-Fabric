@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.effect;
 
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
@@ -12,11 +11,13 @@ public class EffectLavaVision extends MobEffect {
 
     }
 
-    public boolean tick(ServerLevel level, LivingEntity LivingEntityIn, int amplifier) {
+    @Override
+    public boolean applyEffectTick(LivingEntity LivingEntityIn, int amplifier) {
         return true;
     }
 
-    public boolean isDurationEffectTick(int duration, int amplifier) {
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
         return duration > 0;
     }
 

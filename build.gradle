@@ -28,6 +28,9 @@ loom {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}
+		"citadel" {
+			sourceSet project(':citadel').sourceSets.main
+		}
 	}
 
 }
@@ -44,11 +47,16 @@ dependencies {
 	// JSR305 for javax.annotation.Nullable/Nonnull (not on JDK classpath in Java 21)
 	compileOnly "com.google.code.findbugs:jsr305:3.0.2"
 
-	// Citadel Fabric port: jar in project root (update filename if you replace the file)
-	modImplementation files("citadel-1.21.1-1.0.0.jar")
+	implementation project(path: ':citadel', configuration: 'namedElements')
+	clientImplementation project(path: ':citadel', configuration: 'namedElements')
 
-	// JEI: optional compile-only for client compat (optional at runtime)
-	modCompileOnly "mezz.jei:jei-1.21.1-fabric-api:19.21.0.246"
+	// JEI: optional — API for compile; full mod only in local runs (not bundled in jar)
+	modCompileOnly "mezz.jei:jei-${minecraft_version}-fabric-api:${jei_version}"
+	modLocalRuntime("mezz.jei:jei-${minecraft_version}-fabric:${jei_version}") {
+		exclude group: "mezz.jei", module: "jei-${minecraft_version}-common-api"
+		exclude group: "mezz.jei", module: "jei-${minecraft_version}-fabric-api"
+		exclude group: "mezz.jei", module: "jei-${minecraft_version}-common-api-intermediary"
+	}
 }
 
 processResources {

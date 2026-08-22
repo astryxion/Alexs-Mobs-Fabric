@@ -69,6 +69,7 @@ public class ItemModArmor extends ArmorItem {
         }
         if (this.armorMaterialWrapper == AMItemRegistry.KIMONO_MATERIAL) {
             tooltip.add(Component.translatable("item.alexsmobs.unsettling_kimono.desc").withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("item.alexsmobs.unsettling_kimono.desc2").withStyle(ChatFormatting.GRAY));
         }
     }
 
@@ -114,8 +115,8 @@ public class ItemModArmor extends ArmorItem {
         ResourceLocation base = armorModId("kimono_armor_" + type.ordinal());
         builder.put(Attributes.ARMOR.value(), new AttributeModifier(ResourceLocation.fromNamespaceAndPath(base.getNamespace(), base.getPath() + "_armor"), materialIn.getDefenseForType(this.type), AttributeModifier.Operation.ADD_VALUE));
         builder.put(Attributes.ARMOR_TOUGHNESS.value(), new AttributeModifier(ResourceLocation.fromNamespaceAndPath(base.getNamespace(), base.getPath() + "_toughness"), materialIn.getToughness(), AttributeModifier.Operation.ADD_VALUE));
-        builder.put(AMItemRegistry.BLOCK_REACH_ATTRIBUTE, new AttributeModifier(ResourceLocation.fromNamespaceAndPath(base.getNamespace(), base.getPath() + "_block_reach"), 2, AttributeModifier.Operation.ADD_VALUE));
-        builder.put(AMItemRegistry.ENTITY_REACH_ATTRIBUTE, new AttributeModifier(ResourceLocation.fromNamespaceAndPath(base.getNamespace(), base.getPath() + "_entity_reach"), 2, AttributeModifier.Operation.ADD_VALUE));
+        builder.put(Attributes.BLOCK_INTERACTION_RANGE.value(), new AttributeModifier(ResourceLocation.fromNamespaceAndPath(base.getNamespace(), base.getPath() + "_block_reach"), 2, AttributeModifier.Operation.ADD_VALUE));
+        builder.put(Attributes.ENTITY_INTERACTION_RANGE.value(), new AttributeModifier(ResourceLocation.fromNamespaceAndPath(base.getNamespace(), base.getPath() + "_entity_reach"), 2, AttributeModifier.Operation.ADD_VALUE));
         attributeMapKimono = builder.build();
     }
 

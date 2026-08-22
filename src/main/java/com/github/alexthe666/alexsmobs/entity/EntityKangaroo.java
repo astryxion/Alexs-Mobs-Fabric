@@ -404,7 +404,7 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
         this.goalSelector.addGoal(2, new TameableAIFollowOwner(this, 1.2D, 5.0F, 2.0F, false));
         this.goalSelector.addGoal(3, new BreedGoal(this, 1D));
         this.goalSelector.addGoal(4, new AnimalAIRideParent(this, 1.25D));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.2D, Ingredient.of(AMTagRegistry.KANGAROO_TAMEABLES), false));
+        this.goalSelector.addGoal(4, new AMTagTemptGoal(this, 1.2D, false, AMTagRegistry.KANGAROO_TAMEABLES));
         this.goalSelector.addGoal(5, new AnimalAIWanderRanged(this, 110, 1.2D, 10, 7));
         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 10.0F));
         this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
@@ -826,14 +826,13 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
                         swordDamage = dmg;
                         swordIndex = i;
                     }
-                    if (stack.getItem() instanceof ArmorItem ai && ai.getEquipmentSlot() == EquipmentSlot.HEAD && !this.isBaby() && helmetIndex == -1) {
-                        helmetIndex = i;
-                    }
-                    if (stack.getItem() instanceof ArmorItem ai && ai.getEquipmentSlot() == EquipmentSlot.CHEST && !this.isBaby() && chestplateIndex == -1) {
-                        chestplateIndex = i;
-                    }
-                    if (stack.getItem() instanceof ArmorItem && !this.isBaby()) {
-                        ArmorItem armorItem = (ArmorItem) stack.getItem();
+                    if (!this.isBaby() && stack.getItem() instanceof ArmorItem armorItem) {
+                        if (armorItem.getEquipmentSlot() == EquipmentSlot.HEAD && helmetIndex == -1) {
+                            helmetIndex = i;
+                        }
+                        if (armorItem.getEquipmentSlot() == EquipmentSlot.CHEST && chestplateIndex == -1) {
+                            chestplateIndex = i;
+                        }
                         if (armorItem.getEquipmentSlot() == EquipmentSlot.HEAD) {
                             double prot = getProtectionForItem(stack, EquipmentSlot.HEAD);
                             if (prot > 0 && prot > helmetArmor) {
@@ -920,12 +919,18 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
     }
 
     private ItemStack getArmorInSlot(EquipmentSlot slot) {
+        if (kangarooInventory == null) {
+            return ItemStack.EMPTY;
+        }
         int helmIndex = entityData.get(HELMET_INDEX);
         int chestIndex = entityData.get(CHEST_INDEX);
         return slot == EquipmentSlot.HEAD && helmIndex >= 0 ? kangarooInventory.getItem(helmIndex) : slot == EquipmentSlot.CHEST && chestIndex >= 0 ? kangarooInventory.getItem(chestIndex) : ItemStack.EMPTY;
     }
 
     private ItemStack getItemInHand(EquipmentSlot slot) {
+        if (kangarooInventory == null) {
+            return ItemStack.EMPTY;
+        }
         int index = entityData.get(SWORD_INDEX);
         return slot == EquipmentSlot.MAINHAND && index >= 0 ? kangarooInventory.getItem(index) : ItemStack.EMPTY;
     }

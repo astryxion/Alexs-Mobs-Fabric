@@ -1,6 +1,7 @@
 package com.github.alexthe666.alexsmobs.client.render.layer;
 
 import com.github.alexthe666.alexsmobs.client.model.ModelUnderminerDwarf;
+import com.github.alexthe666.alexsmobs.client.render.AMRenderTypes;
 import com.github.alexthe666.alexsmobs.client.render.RenderUnderminer;
 import com.github.alexthe666.alexsmobs.entity.EntityUnderminer;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
@@ -12,6 +13,9 @@ import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -44,8 +48,15 @@ public class LayerUnderminerItem extends RenderLayer<EntityUnderminer, EntityMod
 
             matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90));
             matrixStackIn.mulPose(Axis.YP.rotationDegrees(180));
-            ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-            renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, false, matrixStackIn, bufferIn, packedLightIn);
+            if (itemstack.is(AMItemRegistry.GHOSTLY_PICKAXE)) {
+                var itemRenderer = Minecraft.getInstance().getItemRenderer();
+                BakedModel model = itemRenderer.getModel(itemstack, entitylivingbaseIn.level(), entitylivingbaseIn, entitylivingbaseIn.getId());
+                MultiBufferSource ghostBuffers = renderType -> bufferIn.getBuffer(AMRenderTypes.getGhostPickaxe(TextureAtlas.LOCATION_BLOCKS));
+                itemRenderer.render(itemstack, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, false, matrixStackIn, ghostBuffers, 15728880, OverlayTexture.NO_OVERLAY, model);
+            } else {
+                ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
+                renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, false, matrixStackIn, bufferIn, packedLightIn);
+            }
             matrixStackIn.popPose();
             matrixStackIn.popPose();
         }

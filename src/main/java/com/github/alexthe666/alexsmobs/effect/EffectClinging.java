@@ -3,7 +3,6 @@ package com.github.alexthe666.alexsmobs.effect;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.Entity;
@@ -21,7 +20,8 @@ public class EffectClinging extends MobEffect {
         return AMBlockPos.fromCoords(e.getX(), e.getBoundingBox().maxY + 1.51F, e.getZ());
     }
 
-    public boolean tick(ServerLevel level, LivingEntity entity, int amplifier) {
+    @Override
+    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
         entity.refreshDimensions();
         entity.setNoGravity(false);
 
@@ -37,22 +37,27 @@ public class EffectClinging extends MobEffect {
         return true;
     }
 
-    public static boolean isUpsideDown(LivingEntity entity){
+    public static boolean isUpsideDown(LivingEntity entity) {
         BlockPos pos = getPositionUnderneath(entity);
         BlockState ground = entity.level().getBlockState(pos);
         return (entity.verticalCollision || ground.isFaceSturdy(entity.level(), pos, Direction.DOWN)) && !entity.onGround();
     }
+
+    public static boolean isFlippedUpsideDown(LivingEntity entity) {
+        return entity.hasEffect(AMEffectRegistry.holder(AMEffectRegistry.CLINGING)) && isUpsideDown(entity);
+    }
+
     @Override
     public void removeAttributeModifiers(AttributeMap attributeMapIn) {
         super.removeAttributeModifiers(attributeMapIn);
     }
 
-    public boolean isDurationEffectTick(int duration, int amplifier) {
+    @Override
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
         return duration > 0;
     }
 
     public String getDescriptionId() {
         return "alexsmobs.potion.clinging";
     }
-
 }

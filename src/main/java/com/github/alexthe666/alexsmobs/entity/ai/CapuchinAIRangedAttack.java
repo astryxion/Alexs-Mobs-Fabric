@@ -110,8 +110,9 @@ public class CapuchinAIRangedAttack extends Goal {
             if (!flag && this.seeTime < -60) {
                 this.entity.stopUsingItem();
             } else if (flag) {
-                this.entity.setAnimation(EntityCapuchinMonkey.ANIMATION_THROW);
-                this.attackTime = this.attackCooldown;
+                if (this.entity.getAnimation() != EntityCapuchinMonkey.ANIMATION_THROW) {
+                    this.entity.setAnimation(EntityCapuchinMonkey.ANIMATION_THROW);
+                }
             }
 
         }

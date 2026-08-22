@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.entity.ai.AMTagTemptGoal;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIFleeLight;
@@ -116,7 +118,7 @@ public class EntityCockroach extends Animal implements Shearable, ITargetsDroppe
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new PanicGoal(this, 1.1D));
         this.goalSelector.addGoal(2, new BreedGoal(this, 1.0D));
-        this.goalSelector.addGoal(3, new TemptGoal(this, 1.0D, Ingredient.of(AMTagRegistry.COCKROACH_FOODSTUFFS), false));
+        this.goalSelector.addGoal(3, new AMTagTemptGoal(this, 1.0D, false, AMTagRegistry.COCKROACH_FOODSTUFFS));
         this.goalSelector.addGoal(4, new AvoidEntityGoal(this, EntityCentipedeHead.class, 16, 1.3D, 1.0D));
         this.goalSelector.addGoal(4, new AvoidEntityGoal(this, Player.class, 8, 1.3D, 1.0D) {
             public boolean canUse() {
@@ -195,14 +197,18 @@ public class EntityCockroach extends Animal implements Shearable, ITargetsDroppe
     public InteractionResult mobInteract(Player p_230254_1_, InteractionHand p_230254_2_) {
         ItemStack lvt_3_1_ = p_230254_1_.getItemInHand(p_230254_2_);
        if (lvt_3_1_.getItem() == AMItemRegistry.MARACA && this.isAlive() && !this.hasMaracas()) {
-            this.setMaracas(true);
-            lvt_3_1_.shrink(1);
+            if (!this.level().isClientSide) {
+                this.setMaracas(true);
+                lvt_3_1_.shrink(1);
+            }
             return InteractionResult.sidedSuccess(this.level().isClientSide);
         } else if (lvt_3_1_.getItem() != AMItemRegistry.MARACA && this.isAlive() && this.hasMaracas()) {
-            this.setMaracas(false);
-            this.setDancing(false);
-            this.spawnAtLocation(new ItemStack(AMItemRegistry.MARACA));
-            return InteractionResult.SUCCESS;
+            if (!this.level().isClientSide) {
+                this.setMaracas(false);
+                this.setDancing(false);
+                this.spawnAtLocation(new ItemStack(AMItemRegistry.MARACA));
+            }
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
         } else {
             return super.mobInteract(p_230254_1_, p_230254_2_);
         }

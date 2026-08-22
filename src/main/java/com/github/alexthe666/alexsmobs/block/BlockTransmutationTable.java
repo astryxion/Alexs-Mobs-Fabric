@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -101,7 +102,13 @@ public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecia
             player.awardStat(Stats.INTERACT_WITH_LOOM);
             BlockEntity te = level.getBlockEntity(pos);
             if (te instanceof TileEntityTransmutationTable table) {
-                AlexsMobs.sendMSGToAll(new MessageUpdateTransmutablesToDisplay(player.getId(), table.getPossibility(0), table.getPossibility(1), table.getPossibility(2)));
+                if (!table.hasPossibilities()) {
+                    table.setRerollPlayerUUID(player.getUUID());
+                    TileEntityTransmutationTable.commonTick(level, pos, state, table);
+                }
+                if (player instanceof ServerPlayer serverPlayer) {
+                    AlexsMobs.sendNonLocal(new MessageUpdateTransmutablesToDisplay(player.getId(), table.getPossibility(0), table.getPossibility(1), table.getPossibility(2)), serverPlayer);
+                }
             }
             return InteractionResult.CONSUME;
         }

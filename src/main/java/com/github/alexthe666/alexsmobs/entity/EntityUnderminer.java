@@ -250,7 +250,7 @@ public class EntityUnderminer extends PathfinderMob {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficultyInstance, MobSpawnType mobSpawnType, @Nullable SpawnGroupData spawnData, @Nullable CompoundTag tag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficultyInstance, MobSpawnType mobSpawnType, @Nullable SpawnGroupData spawnData) {
         spawnData = super.finalizeSpawn(level, difficultyInstance, mobSpawnType, spawnData);
         RandomSource randomsource = level.getRandom();
         this.populateDefaultEquipmentSlots(randomsource, difficultyInstance);
@@ -339,7 +339,7 @@ public class EntityUnderminer extends PathfinderMob {
             this.take(itemEntity, itemstack.getCount());
             itemEntity.discard();
             this.mineAIFlag = this.lastGivenStack == null || !ItemStack.isSameItem(this.lastGivenStack, itemEntity.getItem());
-            this.lastGivenStack = itemEntity.getItem();
+            this.lastGivenStack = itemEntity.getItem().copy();
             this.resetStackTime = 2000 + random.nextInt(1200);
             this.mineCooldown = 0;
         }else{

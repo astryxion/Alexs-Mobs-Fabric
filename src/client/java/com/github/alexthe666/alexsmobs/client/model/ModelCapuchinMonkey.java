@@ -237,8 +237,10 @@ public class ModelCapuchinMonkey extends AdvancedEntityModel<EntityCapuchinMonke
 		this.walk(tail2_r1, walkSpeed, walkDegree * 0.2F, false, 1.5F, 0F, limbSwing, limbSwingAmount);
 		this.walk(body, walkSpeed, walkDegree * 0.2F, false, 0, 0F, limbSwing, limbSwingAmount);
 		this.bob(body, walkSpeed, walkDegree * 2F, false, limbSwing, limbSwingAmount);
-		this.walk(arm_left, walkSpeed, walkDegree, false, 1.4F, 0F, limbSwing, limbSwingAmount);
-		this.walk(arm_right, walkSpeed, walkDegree, false, 1.4F, 0F, limbSwing, limbSwingAmount);
+		if (entity.getAnimation() != EntityCapuchinMonkey.ANIMATION_THROW && entity.getAnimation() != EntityCapuchinMonkey.ANIMATION_SCRATCH) {
+			this.walk(arm_left, walkSpeed, walkDegree, false, 1.4F, 0F, limbSwing, limbSwingAmount);
+			this.walk(arm_right, walkSpeed, walkDegree, false, 1.4F, 0F, limbSwing, limbSwingAmount);
+		}
 		this.walk(leg_left, walkSpeed, walkDegree, false, -2F, 0F, limbSwing, limbSwingAmount);
 		this.walk(leg_right, walkSpeed, walkDegree, false, -2F, 0F, limbSwing, limbSwingAmount);
 

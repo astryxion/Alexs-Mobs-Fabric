@@ -109,7 +109,7 @@ public class CrowAIFollowOwner extends Goal {
                 if (this.crow.isFlying()) {
                     circlingTime++;
                 }
-                if(circlingTime > maxCircleTime && crow.getRidingCrows(owner) < 2){
+                if(circlingTime > maxCircleTime && crow.canBoardOwner(owner) && crow.getRidingCrows(owner) < 2){
                     crow.getMoveControl().setWantedPosition(owner.getX(), owner.getY() + owner.getEyeHeight() + 0.2F, owner.getZ(), 0.7F);
                     if(crow.distanceTo(owner) < 2){
                         crow.startRiding(owner, true);

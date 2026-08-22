@@ -131,6 +131,10 @@ public class ItemEcholocator extends Item {
                 livingEntityIn.gameEvent(GameEvent.ITEM_INTERACT_START);
                 worldIn.playSound((Player)null, whaleEcho.getX(), whaleEcho.getY(), whaleEcho.getZ(), AMSoundRegistry.CACHALOT_WHALE_CLICK, SoundSource.PLAYERS, 1.0F, 1.0F);
                 stack.hurtAndBreak(1, livingEntityIn, livingEntityIn.getUsedItemHand() == net.minecraft.world.InteractionHand.MAIN_HAND ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND);
+            } else {
+                // Still play feedback when no target (e.g. pupfish chunk not generated yet)
+                livingEntityIn.gameEvent(GameEvent.ITEM_INTERACT_START);
+                worldIn.playSound((Player)null, livingEntityIn.getX(), livingEntityIn.getY(), livingEntityIn.getZ(), AMSoundRegistry.CACHALOT_WHALE_CLICK, SoundSource.PLAYERS, 0.6F, 0.7F);
             }
         }
         livingEntityIn.getCooldowns().addCooldown(this, 5);

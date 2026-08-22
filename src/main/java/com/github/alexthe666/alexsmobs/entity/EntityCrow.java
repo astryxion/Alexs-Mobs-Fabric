@@ -234,6 +234,10 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
         return crowCount;
     }
 
+    public boolean canBoardOwner(LivingEntity owner) {
+        return owner != null && !owner.isShiftKeyDown() && this.boardingCooldown <= 0;
+    }
+
     public boolean isFood(ItemStack stack) {
         return stack.is(AMTagRegistry.CROW_BREEDABLES) && this.isTame();
     }
@@ -242,9 +246,11 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
         final ItemStack itemstack = player.getItemInHand(hand);
         final InteractionResult type = super.mobInteract(player, hand);
         if (!this.getMainHandItem().isEmpty() && type != InteractionResult.SUCCESS) {
-            this.spawnAtLocation(this.getMainHandItem().copy());
-            this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-            return InteractionResult.SUCCESS;
+            if (!this.level().isClientSide) {
+                this.spawnAtLocation(this.getMainHandItem().copy());
+                this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            }
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
         } else {
             final InteractionResult interactionresult = itemstack.interactLivingEntity(player, this, hand);
             if (interactionresult != InteractionResult.SUCCESS && type != InteractionResult.SUCCESS && isTame() && isOwnedBy(player) && !isFood(itemstack)) {
@@ -287,7 +293,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
                 sitProgress--;
         }
 
-        if (isFlying()) {
+        if (isFlying() && !isSittingOrPassenger) {
             if (flyProgress < 5F)
                 flyProgress++;
         } else {
@@ -340,7 +346,7 @@ public class EntityCrow extends TamableAnimal implements ITargetsDroppedItems {
                     }
                 }
                 Item rem = this.getMainHandItem().getItem().getCraftingRemainingItem();
-                if (rem != null && rem != net.minecraft.world.item.Items.AIR) {
+                if (rem != null && rem != net.minecraft.world.item.Items.AIR && !this.level().isClientSide) {
                     this.spawnAtLocation(new ItemStack(rem, 1));
                 }
                 this.getMainHandItem().shrink(1);

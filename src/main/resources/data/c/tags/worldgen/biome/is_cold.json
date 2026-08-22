@@ -1,0 +1,10 @@
+{
+  "values": [
+    "#c:is_cold/overworld",
+    "minecraft:the_end",
+    "minecraft:small_end_islands",
+    "minecraft:end_midlands",
+    "minecraft:end_highlands",
+    "minecraft:end_barrens"
+  ]
+}

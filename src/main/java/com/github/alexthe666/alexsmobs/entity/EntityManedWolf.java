@@ -58,7 +58,16 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
     private static final EntityDataAccessor<Float> EAR_YAW = SynchedEntityData.defineId(EntityManedWolf.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Boolean> DANCING = SynchedEntityData.defineId(EntityManedWolf.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> SHAKING_TIME = SynchedEntityData.defineId(EntityManedWolf.class, EntityDataSerializers.INT);
-    private static final Ingredient allFoods = AMTagRegistry.ingredientFromTags(AMTagRegistry.MANED_WOLF_BREEDABLES, AMTagRegistry.MANED_WOLF_STENCH_FOODS);
+    private static Ingredient cachedAllFoods;
+    private static Ingredient allFoods() {
+        if (cachedAllFoods == null) {
+            cachedAllFoods = AMTagRegistry.ingredientFromTags(AMTagRegistry.MANED_WOLF_BREEDABLES, AMTagRegistry.MANED_WOLF_STENCH_FOODS);
+            if (cachedAllFoods == null) {
+                cachedAllFoods = Ingredient.of();
+            }
+        }
+        return cachedAllFoods;
+    }
     public float prevEarPitch;
     public float prevEarYaw;
     public float prevDanceProgress;
@@ -89,7 +98,7 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new PanicGoal(this, 1.5D));
         this.goalSelector.addGoal(2, new BreedGoal(this, 1.0D));
-        this.goalSelector.addGoal(3, new TemptGoal(this, 1.1D, allFoods, false));
+        this.goalSelector.addGoal(3, new TemptGoal(this, 1.1D, allFoods(), false));
         this.goalSelector.addGoal(4, new RandomStrollGoal(this, 1D, 60));
         this.goalSelector.addGoal(5, new FollowParentGoal(this, 1D));
         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 6.0F));
@@ -309,7 +318,7 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
     }
 
     public boolean isFood(ItemStack stack) {
-        return !stack.is(AMTagRegistry.MANED_WOLF_STENCH_FOODS) && allFoods.test(stack);
+        return !stack.is(AMTagRegistry.MANED_WOLF_STENCH_FOODS) && allFoods().test(stack);
     }
 
     public void travel(Vec3 vec3d) {
@@ -324,7 +333,7 @@ public class EntityManedWolf extends Animal implements ITargetsDroppedItems, IDa
 
     @Override
     public boolean canTargetItem(ItemStack stack) {
-        return allFoods.test(stack) && !this.isShaking();
+        return allFoods().test(stack) && !this.isShaking();
     }
 
     @Override

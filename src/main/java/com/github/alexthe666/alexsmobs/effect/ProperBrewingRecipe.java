@@ -38,11 +38,23 @@ public class ProperBrewingRecipe {
             return stack.isEmpty();
         }
         for (ItemStack itemstack : matchingStacks) {
-            if (ItemStack.isSameItem(stack, itemstack) && ItemStack.isSameItemSameComponents(itemstack, stack)) {
+            if (isSameBrewingInput(stack, itemstack)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static boolean isSameBrewingInput(ItemStack stack, ItemStack recipeInput) {
+        if (!ItemStack.isSameItem(stack, recipeInput)) {
+            return false;
+        }
+        if (stack.is(Items.POTION) || stack.is(Items.SPLASH_POTION) || stack.is(Items.LINGERING_POTION)) {
+            PotionContents a = stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
+            PotionContents b = recipeInput.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
+            return a.potion().equals(b.potion());
+        }
+        return true;
     }
 
     public boolean isIngredient(ItemStack stack) {
@@ -56,7 +68,35 @@ public class ProperBrewingRecipe {
     /** Recipes that need custom handling (item input or item output). Applied by mixin. */
     public static final List<ProperBrewingRecipe> CUSTOM_RECIPES = new ArrayList<>();
 
+    public static boolean isCustomIngredient(ItemStack stack) {
+        for (ProperBrewingRecipe recipe : CUSTOM_RECIPES) {
+            if (recipe.isIngredient(stack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isCustomInput(ItemStack stack) {
+        for (ProperBrewingRecipe recipe : CUSTOM_RECIPES) {
+            if (recipe.isInput(stack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static ItemStack mixCustom(ItemStack input, ItemStack ingredient) {
+        for (ProperBrewingRecipe recipe : CUSTOM_RECIPES) {
+            if (recipe.isInput(input) && recipe.isIngredient(ingredient)) {
+                return recipe.getOutput(input, ingredient);
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
     public static void registerCustomRecipes() {
+        CUSTOM_RECIPES.clear();
         // LAVA_BOTTLE (item) + BONE_SERPENT_TOOTH -> LAVA_VISION_POTION
         CUSTOM_RECIPES.add(new ProperBrewingRecipe(
                 Ingredient.of(AMItemRegistry.LAVA_BOTTLE),

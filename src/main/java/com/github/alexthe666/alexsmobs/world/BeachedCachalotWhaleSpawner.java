@@ -78,7 +78,7 @@ public class BeachedCachalotWhaleSpawner {
                 BlockPos upPos = new BlockPos(blockpos2.getX(), blockpos2.getY() + 2, blockpos2.getZ());
                 EntityCachalotWhale whale = AMEntityRegistry.CACHALOT_WHALE.create(world);
                 whale.moveTo(upPos.getX() + 0.5D, upPos.getY() + 0.5D, upPos.getZ() + 0.5D, random.nextFloat() * 360 - 180F, 0);
-                whale.finalizeSpawn(world, world.getCurrentDifficultyAt(upPos), MobSpawnType.SPAWNER, null, null);
+                whale.finalizeSpawn(world, world.getCurrentDifficultyAt(upPos), MobSpawnType.SPAWNER, null);
                 whale.setBeached(true);
                 AMWorldData worldinfo = AMWorldData.get(world);
                 worldinfo.setBeachedCachalotID(whale.getUUID());

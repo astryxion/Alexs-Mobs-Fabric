@@ -194,7 +194,12 @@ public class ModelCrimsonMosquito extends AdvancedEntityModel<EntityCrimsonMosqu
 		this.tail.rotateAngleX -= entityIn.getBloodLevel() * 0.05F;
 		this.tail.setScale(bloatScale, bloatScale, bloatScale);
 	}
-		@Override
+
+	public void renderBloodAbdomen(com.mojang.blaze3d.vertex.PoseStack matrixStackIn, com.mojang.blaze3d.vertex.VertexConsumer buffer, int packedLight, int packedOverlay) {
+		this.tail.render(matrixStackIn, buffer, packedLight, packedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);
+	}
+
+	@Override
 	public Iterable<AdvancedModelBox> getAllParts() {
 		return ImmutableList.of(root, body, wingL, wingR, legsL, legL1, legL2, legL3, legsR, legR1, legR2, legR3, tail, head, antennaL, antennaR, mouth);
 	}

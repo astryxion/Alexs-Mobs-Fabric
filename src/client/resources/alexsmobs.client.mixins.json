@@ -6,7 +6,9 @@
   "client": [
     "LivingEntityRendererMixin",
     "LivingEntityRendererAccessor",
-    "client.FogRendererMixin"
+    "client.FogRendererMixin",
+    "client.MinecraftAttackMixin",
+    "client.ItemInHandRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

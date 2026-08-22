@@ -1,0 +1,33 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.github.alexthe666.citadel.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "citadel.refmap.json",
+  "mixins": [
+    "ChunkGeneratorMixin",
+    "LevelMixin",
+    "LivingEntityMixin",
+    "MinecraftServerMixin",
+    "NodeEvaluatorAccessor",
+    "NoiseGeneratorSettingsMixin",
+    "PrimaryLevelDataMixin",
+    "ServerLevelMixin",
+    "SmithingMenuMixin"
+  ],
+  "client": [
+    "client.AbstractClientPlayerMixin",
+    "client.ClientLevelMixin",
+    "client.HumanoidModelMixin",
+    "client.ItemBlockRenderTypesMixin",
+    "client.LevelRendererMixin",
+    "client.LivingEntityRendererMixin",
+    "client.MinecraftAccessor",
+    "client.SoundEngineMixin",
+    "client.SplashRendererMixin",
+    "client.TimerAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

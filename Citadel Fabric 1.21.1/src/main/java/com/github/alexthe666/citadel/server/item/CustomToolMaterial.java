@@ -1,0 +1,68 @@
+package com.github.alexthe666.citadel.server.item;
+
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.item.Tier;
+import net.minecraft.world.item.crafting.Ingredient;
+
+public class CustomToolMaterial implements Tier {
+    private final String name;
+    private final int harvestLevel;
+    private final int durability;
+    private final float damage;
+    private final float speed;
+    private final int enchantability;
+    private Ingredient ingredient = null;
+
+    public CustomToolMaterial(String name, int harvestLevel, int durability, float damage, float speed, int enchantability) {
+        this.name = name;
+        this.harvestLevel = harvestLevel;
+        this.durability = durability;
+        this.damage = damage;
+        this.speed = speed;
+        this.enchantability = enchantability;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public int getUses() {
+        return durability;
+    }
+
+    @Override
+    public float getSpeed() {
+        return speed;
+    }
+
+    @Override
+    public float getAttackDamageBonus() {
+        return damage;
+    }
+
+    public int getLevel() {
+        return harvestLevel;
+    }
+
+    @Override
+    public TagKey<Block> getIncorrectBlocksForDrops() {
+        return BlockTags.INCORRECT_FOR_WOODEN_TOOL;
+    }
+
+    @Override
+    public int getEnchantmentValue() {
+        return enchantability;
+    }
+
+    @Override
+    public Ingredient getRepairIngredient() {
+        return ingredient == null ? Ingredient.EMPTY : ingredient;
+    }
+
+    public void setRepairMaterial(Ingredient ingredient) {
+        this.ingredient = ingredient;
+    }
+}

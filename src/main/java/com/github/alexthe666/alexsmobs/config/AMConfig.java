@@ -54,7 +54,7 @@ public class AMConfig {
     public static int blobfishSpawnWeight = 30;
     public static int blobfishSpawnRolls = 0;
     public static int blobfishSpawnHeight = 25;
-    public static int sealSpawnWeight = 35;
+    public static int sealSpawnWeight = 20;
     public static int sealSpawnRolls = 0;
     public static int cockroachSpawnWeight = 4;
     public static int cockroachSpawnRolls = 0;
@@ -92,7 +92,7 @@ public class AMConfig {
     public static int dropbearSpawnRolls = 1;
     public static int tasmanianDevilSpawnWeight = 10;
     public static int tasmanianDevilSpawnRolls = 0;
-    public static int kangarooSpawnWeight = 42;
+    public static int kangarooSpawnWeight = 25;
     public static int kangarooSpawnRolls = 0;
     public static int cachalotWhaleSpawnWeight = 2;
     public static int cachalotWhaleSpawnRolls = 0;

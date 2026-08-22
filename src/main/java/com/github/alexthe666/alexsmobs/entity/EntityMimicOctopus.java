@@ -155,7 +155,7 @@ public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, I
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn) {
         this.entityData.set(PREV_MIMIC_ORDINAL, 0);
         this.setMimickedBlock(null);
         this.setMimicState(MimicState.OVERLAY);
@@ -468,6 +468,9 @@ public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, I
 
     public void tick() {
         super.tick();
+        if (this.isInWaterOrBubble() || this.getMainHandItem().getItem() == Items.WATER_BUCKET) {
+            this.setAirSupply(this.getMaxAirSupply());
+        }
         if (localMimic != this.getPrevMimickedBlock()) {
             localMimic = this.getPrevMimickedBlock();
             colorShiftProgress = 0.0F;

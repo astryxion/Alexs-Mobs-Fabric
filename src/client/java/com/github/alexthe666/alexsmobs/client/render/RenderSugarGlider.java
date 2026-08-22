@@ -60,12 +60,11 @@ public class RenderSugarGlider extends MobRenderer<EntitySugarGlider, ModelSugar
             }
 
             matrixStackIn.translate(0.0D, trans, 0.0D);
+            float lerp = Mth.clamp(prevProg, 0.0F, 1.0F);
+            Quaternionf prev = rotate(entityLiving.prevAttachDir).getRotation();
             Quaternionf current = rotate(entityLiving.getAttachmentFacing()).getRotation();
-            current.mul(1F - prevProg);
-            matrixStackIn.mulPose(current);
-            //Quaternionf prev = rotate(entityLiving.prevAttachDir).getRotation();
-            //prev.mul(prevProg);
-            //matrixStackIn.mulPose(prev);
+            Quaternionf blended = new Quaternionf(prev).slerp(current, 1.0F - lerp);
+            matrixStackIn.mulPose(blended);
             matrixStackIn.translate(0.0D, -trans, 0.0D);
         }
 

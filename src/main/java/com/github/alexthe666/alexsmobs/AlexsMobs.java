@@ -3,6 +3,7 @@ package com.github.alexthe666.alexsmobs;
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
+import com.github.alexthe666.alexsmobs.config.BiomeConfig;
 import com.github.alexthe666.alexsmobs.config.ConfigHolder;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.enchantment.AMEnchantmentRegistry;
@@ -133,6 +134,7 @@ public class AlexsMobs implements ModInitializer {
         isHalloween = calendar.get(Calendar.MONTH) + 1 == 10 && calendar.get(Calendar.DATE) >= 29 && calendar.get(Calendar.DATE) <= 31;
 
         ConfigHolder.loadConfig();
+        BiomeConfig.init();
 
         AMEntityRegistry.init();
         AMBlockRegistry.init();
@@ -244,12 +246,22 @@ public class AlexsMobs implements ModInitializer {
         PacketContext ctx = new PacketContext(null, true, registryAccess);
         Supplier<PacketContext> sup = () -> ctx;
         switch (id) {
+            case ID_MOSQUITO_MOUNT -> MessageMosquitoMountPlayer.Handler.handle(MessageMosquitoMountPlayer.read(buf), sup);
+            case ID_MOSQUITO_DISMOUNT -> MessageMosquitoDismount.Handler.handle(MessageMosquitoDismount.read(buf), sup);
+            case ID_HURT_MULTIPART -> MessageHurtMultipart.Handler.handle(MessageHurtMultipart.read(buf), sup);
+            case ID_CROW_MOUNT -> MessageCrowMountPlayer.Handler.handle(MessageCrowMountPlayer.read(buf), sup);
+            case ID_CROW_DISMOUNT -> MessageCrowDismount.Handler.handle(MessageCrowDismount.read(buf), sup);
+            case ID_MUNGUS_BIOME -> MessageMungusBiomeChange.Handler.handle(MessageMungusBiomeChange.read(buf), sup);
+            case ID_KANGAROO_SYNC -> MessageKangarooInventorySync.Handler.handle(MessageKangarooInventorySync.read(buf, registryAccess), sup);
+            case ID_KANGAROO_EAT -> MessageKangarooEat.Handler.handle(MessageKangarooEat.read(buf, registryAccess), sup);
+            case ID_UPDATE_CAPSID -> MessageUpdateCapsid.Handler.handle(MessageUpdateCapsid.read(buf, registryAccess), sup);
+            case ID_SYNC_ENTITY_POS -> MessageSyncEntityPos.Handler.handle(MessageSyncEntityPos.read(buf), sup);
+            case ID_TARANTULA_STING -> MessageTarantulaHawkSting.Handler.handle(MessageTarantulaHawkSting.read(buf), sup);
+            case ID_START_DANCING -> MessageStartDancing.Handler.handle(MessageStartDancing.read(buf), sup);
             case ID_VISUAL_FLAG -> MessageSendVisualFlagFromServer.Handler.handle(MessageSendVisualFlagFromServer.read(buf), sup);
             case ID_PUPFISH_CHUNK -> MessageSetPupfishChunkOnClient.Handler.handle(MessageSetPupfishChunkOnClient.read(buf), sup);
             case ID_TRANSMUTABLES -> MessageUpdateTransmutablesToDisplay.Handler.handle(MessageUpdateTransmutablesToDisplay.read(buf, registryAccess), sup);
             case ID_SYNC_ENTITY_DATA -> MessageSyncEntityData.Handler.handle(MessageSyncEntityData.read(buf), sup);
-            case ID_KANGAROO_SYNC -> MessageKangarooInventorySync.Handler.handle(MessageKangarooInventorySync.read(buf, registryAccess), sup);
-            case ID_KANGAROO_EAT -> MessageKangarooEat.Handler.handle(MessageKangarooEat.read(buf, registryAccess), sup);
             default -> {}
         }
     }

@@ -118,6 +118,9 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
 
     public void tick(){
         super.tick();
+        if (this.isInWaterOrBubble()) {
+            this.setAirSupply(this.getMaxAirSupply());
+        }
         this.prevOnLandProgress = onLandProgress;
         boolean onLand = !this.isInWaterOrBubble() && this.onGround();
         if (onLand && onLandProgress < 5F) {

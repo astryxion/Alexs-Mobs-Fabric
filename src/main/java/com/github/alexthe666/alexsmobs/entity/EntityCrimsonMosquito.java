@@ -789,8 +789,9 @@ public class EntityCrimsonMosquito extends Monster {
         public void tick() {
             if (parentEntity.getTarget() != null) {
                 this.parentEntity.getMoveControl().setWantedPosition(parentEntity.getTarget().getX(), parentEntity.getTarget().getY(), parentEntity.getTarget().getZ(), 1.0D);
-                if (parentEntity.getBoundingBox().inflate(0.3F, 0.3F, 0.3F).intersects(parentEntity.getTarget().getBoundingBox()) && !isBittenByMosquito(parentEntity.getTarget()) && parentEntity.drinkTime == 0) {
+                if (parentEntity.getBoundingBox().inflate(0.75F, 0.75F, 0.75F).intersects(parentEntity.getTarget().getBoundingBox()) && !isBittenByMosquito(parentEntity.getTarget()) && parentEntity.drinkTime == 0) {
                     parentEntity.startRiding(parentEntity.getTarget(), true);
+                    parentEntity.drinkTime = 1;
                     if (!parentEntity.level().isClientSide) {
                         AlexsMobs.sendMSGToAll(new MessageMosquitoMountPlayer(parentEntity.getId(), parentEntity.getTarget().getId()));
                     }

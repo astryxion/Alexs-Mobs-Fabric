@@ -23,13 +23,20 @@ public class MessageUpdateCapsid  {
     }
 
     public static MessageUpdateCapsid read(FriendlyByteBuf buf, net.minecraft.core.HolderLookup.Provider registryAccess) {
+        long pos = buf.readLong();
         net.minecraft.nbt.CompoundTag tag = buf.readNbt();
-        return new MessageUpdateCapsid(buf.readLong(), tag != null ? ItemStack.parseOptional(registryAccess, tag) : ItemStack.EMPTY);
+        return new MessageUpdateCapsid(pos, tag != null ? ItemStack.parseOptional(registryAccess, tag) : ItemStack.EMPTY);
     }
 
     public static void write(MessageUpdateCapsid message, FriendlyByteBuf buf, net.minecraft.core.HolderLookup.Provider registryAccess) {
         buf.writeLong(message.blockPos);
-        buf.writeNbt(message.heldStack.save(registryAccess));
+        ItemStack stack = message.heldStack == null ? ItemStack.EMPTY : message.heldStack;
+        // Empty stacks cannot use ItemStack.save(); write empty NBT instead.
+        if (stack.isEmpty()) {
+            buf.writeNbt(new net.minecraft.nbt.CompoundTag());
+        } else {
+            buf.writeNbt(stack.save(registryAccess));
+        }
     }
 
     public static class Handler {

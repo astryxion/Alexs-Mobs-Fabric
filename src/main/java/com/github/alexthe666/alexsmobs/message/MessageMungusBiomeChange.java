@@ -66,26 +66,33 @@ public class MessageMungusBiomeChange {
                         Entity entity = player.level().getEntity(message.mungusID);
                         Registry<Biome> registry = player.level().registryAccess().registryOrThrow(Registries.BIOME);
                         Holder<Biome> holder = registry.getHolder(ResourceKey.create(Registries.BIOME, ResourceLocation.parse(message.biomeOption))).orElse(null);
-                        if (AMConfig.mungusBiomeTransformationType == 2) {
+                        if (AMConfig.mungusBiomeTransformationType == 2 && !AMConfig.shadersCompat) {
                             if (entity instanceof EntityMungus && entity.distanceToSqr(message.posX, entity.getY(), message.posZ) < 1000 && holder != null) {
-                                LevelChunk chunk = player.level().getChunkAt(new BlockPos(message.posX, 0, message.posZ));
-                                int i = QuartPos.fromBlock(chunk.getMinBuildHeight());
-                                int k = i + QuartPos.fromBlock(chunk.getHeight()) - 1;
-                                int l = Mth.clamp(QuartPos.fromBlock((int)entity.getY()), i, k);
-                                int j = chunk.getSectionIndex(QuartPos.toBlock(l));
-                                LevelChunkSection section = chunk.getSection(j);
-                                if(section != null){
-                                    PalettedContainer<Holder<Biome>> container = section.getBiomes().recreate();
-                                    for (int biomeX = 0; biomeX < 4; ++biomeX) {
-                                        for (int biomeY = 0; biomeY < 4; ++biomeY) {
-                                            for (int biomeZ = 0; biomeZ < 4; ++biomeZ) {
-                                                container.getAndSetUnchecked(biomeX, biomeY, biomeZ, holder);
+                                try {
+                                    LevelChunk chunk = player.level().getChunkAt(new BlockPos(message.posX, 0, message.posZ));
+                                    if (chunk == null) {
+                                        return;
+                                    }
+                                    int i = QuartPos.fromBlock(chunk.getMinBuildHeight());
+                                    int k = i + QuartPos.fromBlock(chunk.getHeight()) - 1;
+                                    int l = Mth.clamp(QuartPos.fromBlock((int)entity.getY()), i, k);
+                                    int j = chunk.getSectionIndex(QuartPos.toBlock(l));
+                                    LevelChunkSection section = chunk.getSection(j);
+                                    if (section != null) {
+                                        PalettedContainer<Holder<Biome>> container = section.getBiomes().recreate();
+                                        for (int biomeX = 0; biomeX < 4; ++biomeX) {
+                                            for (int biomeY = 0; biomeY < 4; ++biomeY) {
+                                                for (int biomeZ = 0; biomeZ < 4; ++biomeZ) {
+                                                    container.getAndSetUnchecked(biomeX, biomeY, biomeZ, holder);
+                                                }
                                             }
                                         }
+                                        AMChunkBiomeUtil.setSectionBiomes(section, container);
                                     }
-                                    AMChunkBiomeUtil.setSectionBiomes(section, container);
+                                    AlexsMobs.PROXY.updateBiomeVisuals(message.posX, message.posZ);
+                                } catch (Throwable t) {
+                                    AlexsMobs.LOGGER.warn("Mungus biome visual update failed (shader compat?)", t);
                                 }
-                                AlexsMobs.PROXY.updateBiomeVisuals(message.posX, message.posZ);
                             }
                         }
                     }

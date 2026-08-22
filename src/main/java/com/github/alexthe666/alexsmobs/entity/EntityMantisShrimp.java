@@ -350,9 +350,11 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
                     itemstack.shrink(1);
                     return InteractionResult.SUCCESS;
                 } else {
-                    this.spawnAtLocation(this.getMainHandItem().copy());
-                    this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-                    return InteractionResult.SUCCESS;
+                    if (!this.level().isClientSide) {
+                        this.spawnAtLocation(this.getMainHandItem().copy());
+                        this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                    }
+                    return InteractionResult.sidedSuccess(this.level().isClientSide);
                 }
             } else if (!isFood(itemstack)) {
                 this.setCommand(this.getCommand() + 1);
@@ -550,7 +552,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn) {
         int i;
         if(reason == MobSpawnType.SPAWN_EGG){
             i = this.getRandom().nextInt(4);

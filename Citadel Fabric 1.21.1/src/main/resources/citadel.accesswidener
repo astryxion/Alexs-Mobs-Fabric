@@ -1,0 +1,44 @@
+accessWidener v2 named
+# Allow WorldRenderMacros.AlwaysDepthTestStateShard to extend DepthTestStateShard (protected in vanilla)
+extendable class net/minecraft/client/renderer/RenderStateShard$DepthTestStateShard
+# SurfaceRules inner types (protected in vanilla) for CitadelSurfaceRuleWrapper
+accessible class net/minecraft/world/level/levelgen/SurfaceRules$Context
+accessible class net/minecraft/world/level/levelgen/SurfaceRules$SurfaceRule
+# GuiBasicBook needs to clear renderables
+accessible field net/minecraft/client/gui/screens/Screen renderables Ljava/util/List;
+# WorldRenderMacros.AlwaysDepthTestStateShard sets setupState
+mutable field net/minecraft/client/renderer/RenderStateShard setupState Ljava/lang/Runnable;
+# TabulaModelBlock/TabulaModelHandler use vanilla model Deserializers (class + constructor)
+accessible class net/minecraft/client/renderer/block/model/BlockElement$Deserializer
+accessible method net/minecraft/client/renderer/block/model/BlockElement$Deserializer <init> ()V
+accessible class net/minecraft/client/renderer/block/model/BlockElementFace$Deserializer
+accessible method net/minecraft/client/renderer/block/model/BlockElementFace$Deserializer <init> ()V
+accessible class net/minecraft/client/renderer/block/model/BlockFaceUV$Deserializer
+accessible method net/minecraft/client/renderer/block/model/BlockFaceUV$Deserializer <init> ()V
+accessible class net/minecraft/client/renderer/block/model/ItemOverride$Deserializer
+accessible method net/minecraft/client/renderer/block/model/ItemOverride$Deserializer <init> ()V
+accessible class net/minecraft/client/renderer/block/model/ItemTransform$Deserializer
+accessible method net/minecraft/client/renderer/block/model/ItemTransform$Deserializer <init> ()V
+accessible class net/minecraft/client/renderer/block/model/ItemTransforms$Deserializer
+accessible method net/minecraft/client/renderer/block/model/ItemTransforms$Deserializer <init> ()V
+# ClientTickRateTracker accesses timer (1.21.1 DeltaTracker.Timer)
+mutable field net/minecraft/client/Minecraft timer Lnet/minecraft/client/DeltaTracker$Timer;
+mutable field net/minecraft/client/DeltaTracker$Timer msPerTick F
+# ClientProxy screen callbacks and confirm screen fields
+accessible method net/minecraft/client/gui/screens/Screen addRenderableWidget (Lnet/minecraft/client/gui/components/events/GuiEventListener;)Lnet/minecraft/client/gui/components/events/GuiEventListener;
+mutable field net/minecraft/client/gui/screens/BackupConfirmScreen onProceed Lnet/minecraft/client/gui/screens/BackupConfirmScreen$Listener;
+mutable field net/minecraft/client/gui/screens/ConfirmScreen callback Lit/unimi/dsi/fastutil/booleans/BooleanConsumer;
+# PrimaryLevelDataMixin NoiseBasedChunkGenerator.settings
+mutable field net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator settings Lnet/minecraft/core/Holder;
+# AdvancedPathNavigate NodeEvaluator dimensions
+mutable field net/minecraft/world/level/pathfinder/NodeEvaluator entityWidth I
+mutable field net/minecraft/world/level/pathfinder/NodeEvaluator entityHeight I
+mutable field net/minecraft/world/level/pathfinder/NodeEvaluator entityDepth I
+# ChunkCache/WorldChunkUtil ChunkMap.getVisibleChunkIfPresent
+accessible method net/minecraft/server/level/ChunkMap getVisibleChunkIfPresent (J)Lnet/minecraft/server/level/ChunkHolder;
+# SurfaceRulesManager SurfaceRules inner types
+accessible class net/minecraft/world/level/levelgen/SurfaceRules$TestRuleSource
+accessible class net/minecraft/world/level/levelgen/SurfaceRules$BiomeConditionSource
+accessible class net/minecraft/world/level/levelgen/SurfaceRules$SequenceRuleSource
+# BiomeConditionSource.biomes and StructureTemplatePool.templates/rawTemplates accessed via reflection (1.20.1 field names/descriptors vary)
+# PathingStuckHandler uses MethodHandle for BlockBehaviour.canSurvive (no access widener in 1.21.1)

@@ -217,7 +217,10 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
         final Vec3 avg = new Vec3((parentButt.x + ourButt.x) / 2F, (parentButt.y + ourButt.y) / 2F, (parentButt.z + ourButt.z) / 2F);
         final double d0 = parentButt.x - ourButt.x;
         final double d2 = parentButt.z - ourButt.z;
-        final double d3 = Math.sqrt(d0 * d0 + d2 * d2);
+        double d3 = Math.sqrt(d0 * d0 + d2 * d2);
+        if (d3 < 1.0E-4D) {
+            d3 = 1.0E-4D;
+        }
         final double hgt = doHeight ? (getLowPartHeight(parentButt.x, parentButt.y, parentButt.z) + getHighPartHeight(ourButt.x, ourButt.y, ourButt.z)) : 0;
         if(Math.abs(prevHeight - hgt) > 0.2){
             prevHeight = hgt;

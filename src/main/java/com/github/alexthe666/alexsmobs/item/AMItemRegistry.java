@@ -303,7 +303,7 @@ public class AMItemRegistry {
         register("spawn_egg_potoo", new SpawnEggItem(AMEntityRegistry.POTOO, 0x8C7753, 0xFFC042, new Item.Properties()));
         register("spawn_egg_mudskipper", new SpawnEggItem(AMEntityRegistry.MUDSKIPPER, 0x60704A, 0x49806C, new Item.Properties()));
         register("spawn_egg_rhinoceros", new SpawnEggItem(AMEntityRegistry.RHINOCEROS, 0xA19594, 0x827474, new Item.Properties()));
-        register("spawn_egg_sugar_glider", new SpawnEggItem(AMEntityRegistry.SUGAR_GLIDER, 0x868181, 0xEBEBE0, new Item.Properties()));
+        register("spawn_egg_sugar_glider", new ItemSugarGliderSpawnEgg(0x868181, 0xEBEBE0, new Item.Properties()));
         register("spawn_egg_farseer", new SpawnEggItem(AMEntityRegistry.FARSEER, 0x33374F, 0x91FF59, new Item.Properties()));
         register("spawn_egg_skreecher", new SpawnEggItem(AMEntityRegistry.SKREECHER, 0x074857, 0x7FF8FF, new Item.Properties()));
         register("spawn_egg_underminer", new SpawnEggItem(AMEntityRegistry.UNDERMINER, 0xD6E2FF, 0x6C84C4, new Item.Properties()));
@@ -496,8 +496,8 @@ public class AMItemRegistry {
         BANANA_SLUG_SLIME = register("banana_slug_slime", new Item(new Item.Properties()));
         MOSQUITO_REPELLENT_STEW = register("mosquito_repellent_stew", new Item(new Item.Properties().food(new FoodProperties.Builder().nutrition(4).alwaysEdible().saturationModifier(0.3F).effect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(AMEffectRegistry.MOSQUITO_REPELLENT), 24000), 1.0F).usingConvertsTo(Items.BOWL).build()).stacksTo(1)));
         TRIOPS_BUCKET = register("triops_bucket", new ItemModFishBucket(() -> AMEntityRegistry.TRIOPS, Fluids.WATER, new Item.Properties()));
-        MUSIC_DISC_THIME = register("music_disc_thime", new Item(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
-        MUSIC_DISC_DAZE = register("music_disc_daze", new Item(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
+        MUSIC_DISC_THIME = register("music_disc_thime", new Item(new Item.Properties().stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(ResourceKey.create(Registries.JUKEBOX_SONG, id("music_disc_thime")))));
+        MUSIC_DISC_DAZE = register("music_disc_daze", new Item(new Item.Properties().stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(ResourceKey.create(Registries.JUKEBOX_SONG, id("music_disc_daze")))));
 
         initSpawnEggs();
 

@@ -334,7 +334,7 @@ public class CommonConfig {
         flySpawnWeight = AMConfig.flySpawnWeight;
         flySpawnRolls = AMConfig.flySpawnRolls;
         hummingbirdSpawnWeight = AMConfig.hummingbirdSpawnWeight;
-        hummingbirdSpawnRolls = AMConfig.flySpawnRolls;
+        hummingbirdSpawnRolls = AMConfig.hummingbirdSpawnRolls;
         orcaSpawnWeight = AMConfig.orcaSpawnWeight;
         orcaSpawnRolls = AMConfig.orcaSpawnRolls;
         sunbirdSpawnWeight = AMConfig.sunbirdSpawnWeight;
@@ -503,7 +503,7 @@ public class CommonConfig {
         beachedCachalotWhaleSpawnChance = AMConfig.beachedCachalotWhaleSpawnChance;
         beachedCachalotWhaleSpawnDelay = AMConfig.beachedCachalotWhaleSpawnDelay;
         leafcutterAnthillSpawnChance = AMConfig.leafcutterAnthillSpawnChance;
-        geladaMonkeySpawnHeight = AMConfig.geladaMonkeySpawnRolls;
+        geladaMonkeySpawnHeight = AMConfig.geladaMonkeySpawnHeight;
         restrictPupfishSpawns = true;
         pupfishChunkSpawnDistance = AMConfig.pupfishChunkSpawnDistance;
         restrictSkelewagSpawns = true;

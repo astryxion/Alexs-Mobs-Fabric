@@ -258,13 +258,21 @@ public class AMTagRegistry {
         return TagKey.create(Registries.STRUCTURE, ResourceLocation.fromNamespaceAndPath(AlexsMobs.MODID, name));
     }
 
-    /** Fabric: build Ingredient from item tags (replaces Ingredient.TagValue which is package-private in 1.20.1). */
+    /** Build Ingredient from one or more item tags. */
     @SafeVarargs
     public static Ingredient ingredientFromTags(TagKey<Item>... tags) {
-        List<ItemStack> stacks = new ArrayList<>();
-        for (TagKey<Item> tag : tags) {
-            BuiltInRegistries.ITEM.getTag(tag).ifPresent(holders -> holders.stream().forEach(h -> stacks.add(new ItemStack(h.value()))));
+        if (tags == null || tags.length == 0) {
+            return Ingredient.of();
         }
-        return Ingredient.of(stacks.toArray(new ItemStack[0]));
+        if (tags.length == 1) {
+            return Ingredient.of(tags[0]);
+        }
+        java.util.List<ItemStack> stacks = new java.util.ArrayList<>();
+        for (TagKey<Item> tag : tags) {
+            for (var holder : BuiltInRegistries.ITEM.getTagOrEmpty(tag)) {
+                stacks.add(new ItemStack(holder.value()));
+            }
+        }
+        return stacks.isEmpty() ? Ingredient.of() : Ingredient.of(stacks.stream());
     }
 }

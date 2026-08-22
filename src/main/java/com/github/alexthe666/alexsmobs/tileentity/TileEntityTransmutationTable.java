@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 
 import java.util.*;
 
@@ -54,7 +55,10 @@ public class TileEntityTransmutationTable  extends BlockEntity {
             return ItemStack.EMPTY;
         }else{
             LootTable loottable = player.level().getServer().reloadableRegistries().getLootTable(loc);
-            List<ItemStack> loots = loottable.getRandomItems((new LootParams.Builder((ServerLevel) player.level())).create(LootContextParamSets.EMPTY));
+            List<ItemStack> loots = loottable.getRandomItems((new LootParams.Builder((ServerLevel) player.level()))
+                    .withParameter(LootContextParams.ORIGIN, player.position())
+                    .withParameter(LootContextParams.THIS_ENTITY, player)
+                    .create(LootContextParamSets.CHEST));
             return loots.isEmpty() ? ItemStack.EMPTY : loots.get(0);
         }
     }

@@ -90,6 +90,12 @@ public class ClientProxy extends CommonProxy {
         net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry.BLOCK.register((state, world, pos, tint) -> world != null && pos != null ? RainbowUtil.calculateGlassColor(pos) : -1, AMBlockRegistry.RAINBOW_GLASS);
         // NeoForge assigns translucent terrain layer from TransparentBlock; Fabric needs explicit registration.
         net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.RAINBOW_GLASS, RenderType.translucent());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.CAPSID, RenderType.translucent());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.ENDER_RESIDUE, RenderType.translucent());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.TRANSMUTATION_TABLE, RenderType.translucent());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.SKUNK_SPRAY, RenderType.translucent());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.BANANA_SLUG_SLIME_BLOCK, RenderType.translucent());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.CRYSTALIZED_BANANA_SLUG_MUCUS, RenderType.translucent());
         setupParticles();
         net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin.register(pluginContext ->
                 pluginContext.modifyModelAfterBake().register((model, context) -> {

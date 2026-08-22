@@ -39,6 +39,7 @@ public class ItemMysteriousWorm extends Item {
                     }
                     entity.level().addFreshEntity(worm);
                 }
+                return true;
             }
         }
         return false;

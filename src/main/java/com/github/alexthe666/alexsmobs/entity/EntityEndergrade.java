@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.entity.ai.AMTagTemptGoal;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.entity.ai.DirectPathNavigator;
@@ -108,7 +110,7 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
                 EntityEndergrade.this.stopWandering = false;
             }
         });
-        this.goalSelector.addGoal(3, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.ENDERGRADE_BREEDABLES), false) {
+        this.goalSelector.addGoal(3, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.ENDERGRADE_BREEDABLES) {
             public void start() {
                 super.start();
                 EntityEndergrade.this.stopWandering = true;
@@ -183,7 +185,7 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
             float angle = (Maths.STARTING_ANGLE * this.yBodyRot);
             double extraX = radius * Mth.sin(Mth.PI + angle);
             double extraZ = radius * Mth.cos(angle);
-            passenger.setPos(this.getX() + extraX, this.getPassengersRidingOffset() + this.getPassengerRidingPosition(passenger).y, this.getZ() + extraZ);
+            passenger.setPos(this.getX() + extraX, this.getY() + this.getPassengersRidingOffset() - passenger.getVehicleAttachmentPoint(this).y, this.getZ() + extraZ);
         }
     }
 

@@ -47,7 +47,7 @@ public class ItemRainbowJelly extends Item {
         return st.get(net.minecraft.core.component.DataComponents.FOOD) != null ? e.eat(level, st) : st;
     }
 
-    public int getUseDuration(ItemStack stack) {
+    public int getUseDuration(ItemStack stack, LivingEntity entity) {
         if (stack.get(net.minecraft.core.component.DataComponents.FOOD) != null) {
             return 64;
         } else {
