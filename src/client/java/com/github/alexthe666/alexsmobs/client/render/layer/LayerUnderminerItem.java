@@ -24,38 +24,46 @@ public class LayerUnderminerItem extends RenderLayer<EntityUnderminer, EntityMod
     }
 
     public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, EntityUnderminer entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
-        if(!entitylivingbaseIn.isFullyHidden()){
+        if (!entitylivingbaseIn.isFullyHidden()) {
             ItemStack itemstack = entitylivingbaseIn.getItemBySlot(EquipmentSlot.MAINHAND);
-            if(RenderUnderminer.renderWithPickaxe){
+            if (RenderUnderminer.renderWithPickaxe) {
                 itemstack = new ItemStack(AMItemRegistry.GHOSTLY_PICKAXE);
             }
             matrixStackIn.pushPose();
             matrixStackIn.pushPose();
             float f = entitylivingbaseIn.getMainArm() == HumanoidArm.LEFT ? 0.1F : -0.1F;
             float f1 = entitylivingbaseIn.isDwarf() ? 0.5F : 0.45F;
-            if(entitylivingbaseIn.isDwarf()){
-                matrixStackIn.translate(0F,  1F, 0F);
+            if (entitylivingbaseIn.isDwarf()) {
+                matrixStackIn.translate(0F, 1F, 0F);
                 f *= 0.3F;
-            }else{
-                matrixStackIn.translate(0F,  0.2F, 0);
+            } else {
+                matrixStackIn.translate(0F, 0.2F, 0);
             }
             translateToHand(entitylivingbaseIn.getMainArm(), matrixStackIn);
-            matrixStackIn.translate(f,  f1,  -0.15F);
+            matrixStackIn.translate(f, f1, -0.15F);
 
             matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90));
             matrixStackIn.mulPose(Axis.YP.rotationDegrees(180));
             ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-            renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, false, matrixStackIn, bufferIn, packedLightIn);
+            int light = itemstack.is(AMItemRegistry.GHOSTLY_PICKAXE) ? 15728880 : packedLightIn;
+            if (itemstack.is(AMItemRegistry.GHOSTLY_PICKAXE)) {
+                MultiBufferSource translucentBuffers = renderType -> bufferIn.getBuffer(
+                        com.github.alexthe666.alexsmobs.client.render.AMRenderTypes.getGhostPickaxe(
+                                net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS));
+                renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, false, matrixStackIn, translucentBuffers, light);
+            } else {
+                renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, false, matrixStackIn, bufferIn, light);
+            }
             matrixStackIn.popPose();
             matrixStackIn.popPose();
         }
     }
 
     protected void translateToHand(HumanoidArm arm, PoseStack matrixStack) {
-        if(getParentModel() instanceof ModelUnderminerDwarf){
-            ((ModelUnderminerDwarf)getParentModel()).translateToHand(arm, matrixStack);
-        }else if(getParentModel() instanceof ArmedModel){
-            ((ArmedModel)getParentModel()).translateToHand(arm, matrixStack);
+        if (getParentModel() instanceof ModelUnderminerDwarf) {
+            ((ModelUnderminerDwarf) getParentModel()).translateToHand(arm, matrixStack);
+        } else if (getParentModel() instanceof ArmedModel) {
+            ((ArmedModel) getParentModel()).translateToHand(arm, matrixStack);
         }
     }
 }

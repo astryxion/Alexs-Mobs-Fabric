@@ -2,70 +2,82 @@ package com.github.alexthe666.alexsmobs.misc;
 
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
-import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+
+import java.util.List;
 
 public class RecipeMimicreamRepair extends CustomRecipe {
-    public RecipeMimicreamRepair(ResourceLocation idIn, CraftingBookCategory category) {
-        super(idIn, category);
+    public RecipeMimicreamRepair(ResourceLocation id, CraftingBookCategory category) {
+        super(id, category);
+    }
+
+    private static java.util.List<ItemStack> items(CraftingContainer inv) {
+        java.util.List<ItemStack> list = new java.util.ArrayList<>();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            list.add(inv.getItem(i));
+        }
+        return list;
     }
 
     /**
      * Used to check if a recipe matches current crafting inventory
      */
-    public boolean matches(CraftingContainer inv, Level worldIn) {
-        if(!AMConfig.mimicreamRepair){
+    @Override
+    public boolean matches(CraftingContainer craftInput, Level worldIn) {
+        if (!AMConfig.mimicreamRepair) {
             return false;
         }
         ItemStack damageableStack = ItemStack.EMPTY;
         int mimicreamCount = 0;
-
-        for (int j = 0; j < inv.getContainerSize(); ++j) {
-            ItemStack itemstack1 = inv.getItem(j);
+        List<ItemStack> items = items(craftInput);
+        for (int j = 0; j < items.size(); ++j) {
+            ItemStack itemstack1 = items.get(j);
             if (!itemstack1.isEmpty()) {
-                if (itemstack1.isDamageableItem() && !isBlacklisted(itemstack1)) {
+                if (itemstack1.isDamageableItem() && !isBlacklisted(itemstack1, worldIn.registryAccess())) {
                     damageableStack = itemstack1;
                 } else {
-                    if (itemstack1.getItem() == AMItemRegistry.MIMICREAM) {
+                    if (itemstack1.is(AMItemRegistry.MIMICREAM)) {
                         mimicreamCount++;
                     }
                 }
             }
         }
-
         return !damageableStack.isEmpty() && mimicreamCount >= 8;
     }
 
-    public boolean isBlacklisted(ItemStack stack) {
-        ResourceLocation name = BuiltInRegistries.ITEM.getKey(stack.getItem());
+    public boolean isBlacklisted(ItemStack stack, RegistryAccess provider) {
+        ResourceLocation name = BuiltInRegistries.ITEM.getResourceKey(stack.getItem()).map(ResourceKey::location).orElse(null);
         return name != null && AMConfig.mimicreamBlacklist.contains(name.toString());
     }
 
     /**
      * Returns an Item that is the result of this recipe
      */
-    public ItemStack assemble(CraftingContainer inv, RegistryAccess registryAccess) {
+    @Override
+    public ItemStack assemble(CraftingContainer craftInput, RegistryAccess provider) {
         ItemStack damageableStack = ItemStack.EMPTY;
         int mimicreamCount = 0;
-
-        for (int j = 0; j < inv.getContainerSize(); ++j) {
-            ItemStack itemstack1 = inv.getItem(j);
+        List<ItemStack> items = items(craftInput);
+        for (int j = 0; j < items.size(); ++j) {
+            ItemStack itemstack1 = items.get(j);
             if (!itemstack1.isEmpty()) {
-                if (itemstack1.isDamageableItem() && !isBlacklisted(itemstack1)) {
+                if (itemstack1.isDamageableItem() && !isBlacklisted(itemstack1, provider)) {
                     damageableStack = itemstack1;
                 } else {
-                    if (itemstack1.getItem() == AMItemRegistry.MIMICREAM) {
+                    if (itemstack1.is(AMItemRegistry.MIMICREAM)) {
                         mimicreamCount++;
                     }
                 }
@@ -74,56 +86,59 @@ public class RecipeMimicreamRepair extends CustomRecipe {
 
         if (!damageableStack.isEmpty() && mimicreamCount >= 8) {
             ItemStack itemstack2 = damageableStack.copy();
-            CompoundTag compoundnbt = damageableStack.getTag().copy();
+            CompoundTag compoundnbt = damageableStack.hasTag()
+                    ? damageableStack.getTag().copy()
+                    : new CompoundTag();
 
-            if(damageableStack.is(AMItemRegistry.GHOSTLY_PICKAXE) && compoundnbt.contains("Items")){
+            if (damageableStack.is(AMItemRegistry.GHOSTLY_PICKAXE) && compoundnbt.contains("Items")) {
                 compoundnbt.remove("Items");
             }
-            ListTag oldNBTList = compoundnbt.getList("Enchantments", 10);
-            ListTag newNBTList = new ListTag();
-            ResourceLocation mendingName = net.minecraft.core.registries.BuiltInRegistries.ENCHANTMENT.getKey(Enchantments.MENDING);
-            for (int i = 0; i < oldNBTList.size(); ++i) {
-                CompoundTag compoundnbt2 = oldNBTList.getCompound(i);
-                ResourceLocation resourcelocation1 = ResourceLocation.tryParse(compoundnbt2.getString("id"));
-                if (resourcelocation1 == null || !resourcelocation1.equals(mendingName)) {
-                    newNBTList.add(compoundnbt2);
+            ResourceLocation mendingName = BuiltInRegistries.ENCHANTMENT.getKey(Enchantments.MENDING);
+            if (mendingName != null && compoundnbt.contains("Enchantments", 9)) {
+                net.minecraft.nbt.ListTag oldNBTList = compoundnbt.getList("Enchantments", 10);
+                net.minecraft.nbt.ListTag newNBTList = new net.minecraft.nbt.ListTag();
+                for (int i = 0; i < oldNBTList.size(); ++i) {
+                    CompoundTag compoundnbt2 = oldNBTList.getCompound(i);
+                    ResourceLocation resourcelocation1 = ResourceLocation.tryParse(compoundnbt2.getString("id"));
+                    if (resourcelocation1 == null || !resourcelocation1.equals(mendingName)) {
+                        newNBTList.add(compoundnbt2);
+                    }
                 }
+                compoundnbt.put("Enchantments", newNBTList);
             }
-            compoundnbt.put("Enchantments", newNBTList);
             itemstack2.setTag(compoundnbt);
-            itemstack2.setDamageValue(itemstack2.getMaxDamage());
+            itemstack2.setDamageValue(0);
             return itemstack2;
         } else {
             return ItemStack.EMPTY;
         }
     }
 
-    public NonNullList<ItemStack> getRemainingItems(CraftingContainer inv) {
-        NonNullList<ItemStack> nonnulllist = NonNullList.withSize(inv.getContainerSize(), ItemStack.EMPTY);
-
+    @Override
+    public NonNullList<ItemStack> getRemainingItems(CraftingContainer craftInput) {
+        List<ItemStack> items = items(craftInput);
+        NonNullList<ItemStack> nonnulllist = NonNullList.withSize(items.size(), ItemStack.EMPTY);
         for (int i = 0; i < nonnulllist.size(); ++i) {
-            ItemStack itemstack = inv.getItem(i);
+            ItemStack itemstack = items.get(i);
             net.minecraft.world.item.Item remItem = itemstack.getItem().getCraftingRemainingItem();
             if (remItem != null && remItem != net.minecraft.world.item.Items.AIR) {
                 nonnulllist.set(i, new ItemStack(remItem, 1));
-            } else if (itemstack.getItem().canBeDepleted()) {
+            } else if (itemstack.isDamageableItem()) {
                 ItemStack itemstack1 = itemstack.copy();
                 itemstack1.setCount(1);
                 nonnulllist.set(i, itemstack1);
                 break;
             }
         }
-
         return nonnulllist;
     }
 
+    @Override
     public RecipeSerializer<?> getSerializer() {
         return AMRecipeRegistry.MIMICREAM_RECIPE;
     }
 
-    /**
-     * Used to determine if this recipe can fit in a grid of the given width/height
-     */
+    @Override
     public boolean canCraftInDimensions(int width, int height) {
         return width >= 3 && height >= 3;
     }

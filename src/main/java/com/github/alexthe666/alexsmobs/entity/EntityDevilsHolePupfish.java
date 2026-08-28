@@ -14,7 +14,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -142,13 +145,14 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
         return false;
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(FROM_BUCKET, false);
         this.entityData.define(PUPFISH_SCALE, 1.0F);
         this.entityData.define(FEEDING_TIME, 0);
         this.entityData.define(BABY_AGE, 0);
-        this.entityData.define(FEEDING_POS, Optional.empty());
+        this.entityData.define(FEEDING_POS, Optional.<BlockPos>empty());
     }
 
     public void tick() {
@@ -207,6 +211,7 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
     }
 
 
+    @Override
     public EntityDimensions getDimensions(Pose poseIn) {
         return super.getDimensions(poseIn).scale(this.getPupfishScale());
     }
@@ -225,9 +230,11 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
             bucket.setHoverName(this.getCustomName());
         }
         Bucketable.saveDefaultDataToBucketTag(this, bucket);
-        CompoundTag compound = bucket.getOrCreateTag();
+        net.minecraft.nbt.CompoundTag existing = bucket.getTag();
+        CompoundTag compound = existing != null ? existing.copy() : new net.minecraft.nbt.CompoundTag();
         compound.putFloat("BucketScale", this.getPupfishScale());
         compound.putFloat("BabyAge", this.getBabyAge());
+        bucket.setTag(compound);
     }
 
     @Override
@@ -301,7 +308,7 @@ public class EntityDevilsHolePupfish extends WaterAnimal implements FlyingAnimal
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setPupfishScale(0.65F + random.nextFloat() * 0.35F);
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
     }

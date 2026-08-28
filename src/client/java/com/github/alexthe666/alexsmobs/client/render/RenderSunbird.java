@@ -17,8 +17,8 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 public class RenderSunbird extends MobRenderer<EntitySunbird, ModelSunbird> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/sunbird.png");
-    private static final ResourceLocation TEXTURE_GLOW = new ResourceLocation("alexsmobs:textures/entity/sunbird_glow.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/sunbird.png");
+    private static final ResourceLocation TEXTURE_GLOW = new ResourceLocation("alexsmobs", "textures/entity/sunbird_glow.png");
 
     public RenderSunbird(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new ModelSunbird(), 0.5F);
@@ -26,7 +26,7 @@ public class RenderSunbird extends MobRenderer<EntitySunbird, ModelSunbird> {
     }
 
     private static void vertex(VertexConsumer p_114090_, Matrix4f p_114091_, Matrix3f p_114092_, int p_114093_, float p_114094_, float p_114095_, int p_114096_, int p_114097_) {
-        p_114090_.vertex(p_114091_, p_114094_, p_114095_, 0.0F).color(255, 255, 255, 100).uv((float) p_114096_, (float) p_114097_).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(p_114093_).normal(p_114092_, 0.0F, 1.0F, 0.0F).endVertex();
+        p_114090_.vertex(p_114091_, p_114094_, p_114095_, 0.0F).color(255, 255, 255, 100).uv((float) p_114096_, (float) p_114097_).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(p_114093_).normal(0.0F, 1.0F, 0.0F).endVertex();
     }
 
     @Override
@@ -36,22 +36,28 @@ public class RenderSunbird extends MobRenderer<EntitySunbird, ModelSunbird> {
         final float scale = (12.0F + (float) Math.sin(ageInTicks * 0.3F)) * entity.getScorchProgress(partialTicks);
         if(scale > 0.0F) {
             poseStack.pushPose();
-            poseStack.translate(0, entity.getBbHeight() * 0.5F, 0);
-            poseStack.mulPose(this.entityRenderDispatcher.cameraOrientation());
-            poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
-            poseStack.pushPose();
-            poseStack.mulPose(Axis.ZP.rotationDegrees(ageInTicks * 8F));
-            poseStack.translate(-scale * 0.5F, -scale * 0.5F, 0);
-            PoseStack.Pose posestack$pose = poseStack.last();
-            Matrix4f matrix4f = posestack$pose.pose();
-            Matrix3f matrix3f = posestack$pose.normal();
-            VertexConsumer vertexconsumer = buffer.getBuffer(AMRenderTypes.getSunbirdShine());
-            vertex(vertexconsumer, matrix4f, matrix3f, light, 0.0F, 0, 0, 1);
-            vertex(vertexconsumer, matrix4f, matrix3f, light, scale, 0, 1, 1);
-            vertex(vertexconsumer, matrix4f, matrix3f, light, scale, scale, 1, 0);
-            vertex(vertexconsumer, matrix4f, matrix3f, light, 0.0F, scale, 0, 0);
-            poseStack.popPose();
-            poseStack.popPose();
+            try {
+                poseStack.translate(0, entity.getBbHeight() * 0.5F, 0);
+                poseStack.mulPose(this.entityRenderDispatcher.cameraOrientation());
+                poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+                poseStack.pushPose();
+                try {
+                    poseStack.mulPose(Axis.ZP.rotationDegrees(ageInTicks * 8F));
+                    poseStack.translate(-scale * 0.5F, -scale * 0.5F, 0);
+                    PoseStack.Pose posestack$pose = poseStack.last();
+                    Matrix4f matrix4f = posestack$pose.pose();
+                    Matrix3f matrix3f = posestack$pose.normal();
+                    VertexConsumer vertexconsumer = buffer.getBuffer(AMRenderTypes.getSunbirdShine());
+                    vertex(vertexconsumer, matrix4f, matrix3f, light, 0.0F, 0, 0, 1);
+                    vertex(vertexconsumer, matrix4f, matrix3f, light, scale, 0, 1, 1);
+                    vertex(vertexconsumer, matrix4f, matrix3f, light, scale, scale, 1, 0);
+                    vertex(vertexconsumer, matrix4f, matrix3f, light, 0.0F, scale, 0, 0);
+                } finally {
+                    poseStack.popPose();
+                }
+            } finally {
+                poseStack.popPose();
+            }
         }
     }
 

@@ -15,11 +15,13 @@ public class ItemTabIcon extends ItemInventoryOnly {
     }
 
     public static boolean hasCustomEntityDisplay(ItemStack stack){
-        return stack.getTag() != null && stack.getTag().contains("DisplayEntityType");
+        net.minecraft.nbt.CompoundTag data = stack.getTag();
+        return data != null && data.copy().contains("DisplayEntityType");
     }
 
     public static String getCustomDisplayEntityString(ItemStack stack){
-        return stack.getTag().getString("DisplayEntityType");
+        net.minecraft.nbt.CompoundTag data = stack.getTag();
+        return data != null ? data.copy().getString("DisplayEntityType") : "";
     }
 
     @Nullable

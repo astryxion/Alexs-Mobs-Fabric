@@ -24,6 +24,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
@@ -102,8 +103,8 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
     }
 
     @Override
-    protected float getStandingEyeHeight(Pose pose, EntityDimensions dimensions) {
-        return dimensions.height * 0.7F;
+    public EntityDimensions getDimensions(Pose pose) {
+        return super.getDimensions(pose).scale(1.0F, 0.7F);
     }
 
     @Override
@@ -157,6 +158,7 @@ public class EntityFarseer extends Monster implements IAnimatedEntity {
         return !AMConfig.restrictFarseerSpawns || iServerWorld.getWorldBorder().getDistanceToBorder(pos.getX(), pos.getZ()) < AMConfig.farseerBorderSpawnDistance;
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(HAS_EMERGED, false);

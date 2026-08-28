@@ -29,6 +29,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -205,8 +206,11 @@ public class AMItemstackRenderer extends BlockEntityWithoutLevelRenderer {
             matrixStackIn.translate(0.5F, 0.5f, 0.5f);
             ItemStack spriteItem = new ItemStack(AMItemRegistry.SKELEWAG_SWORD_INVENTORY);
             ItemStack handItem = new ItemStack(AMItemRegistry.SKELEWAG_SWORD_HAND);
-            spriteItem.setTag(itemStackIn.getTag());
-            handItem.setTag(itemStackIn.getTag());
+            net.minecraft.nbt.CompoundTag customData = itemStackIn.getTag();
+            if (customData != null) {
+                spriteItem.setTag(customData);
+                handItem.setTag(customData);
+            }
             if (transformType == ItemDisplayContext.THIRD_PERSON_LEFT_HAND || transformType == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND || transformType == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND || transformType == ItemDisplayContext.FIRST_PERSON_LEFT_HAND) {
                 Minecraft.getInstance().getItemRenderer().renderStatic(handItem, transformType, combinedLightIn, combinedOverlayIn, matrixStackIn, bufferIn, level, 0);
             } else {
@@ -292,12 +296,13 @@ public class AMItemstackRenderer extends BlockEntityWithoutLevelRenderer {
             Level levelForEntity = level != null ? level : Minecraft.getInstance().level;
             if (levelForEntity != null) {
                 if (ItemTabIcon.hasCustomEntityDisplay(itemStackIn)) {
-                    flags = itemStackIn.getTag().getInt("DisplayMobFlags");
+                    CompoundTag tag = itemStackIn.hasTag() ? itemStackIn.getTag() : null;
+                    flags = tag != null ? tag.getInt("DisplayMobFlags") : 0;
                     String index = ItemTabIcon.getCustomDisplayEntityString(itemStackIn);
-                    EntityType local = ItemTabIcon.getEntityType(itemStackIn.getTag());
+                    EntityType local = ItemTabIcon.getEntityType(tag);
                     scale = getScaleFor(local, mobIcons);
-                    if (itemStackIn.getTag().getFloat("DisplayMobScale") > 0) {
-                        scale = itemStackIn.getTag().getFloat("DisplayMobScale");
+                    if (tag != null && tag.getFloat("DisplayMobScale") > 0) {
+                        scale = tag.getFloat("DisplayMobScale");
                     }
                     if (this.renderedEntites.get(index) == null && !blockedRenderEntities.contains(local)) {
                         try {

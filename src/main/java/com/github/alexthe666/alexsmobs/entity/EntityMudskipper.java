@@ -114,9 +114,7 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
         return !worldIn.getBlockState(pos).isSuffocating(worldIn, pos);
     }
 
-    public boolean canBreatheUnderwater() {
-        return true;
-    }
+    /** canBreatheUnderwater() is final in 1.21.1; preserved via mixin. */
 
     protected void registerGoals() {
         super.registerGoals();
@@ -125,7 +123,7 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
         this.goalSelector.addGoal(2, new MudskipperAIAttack(this));
         this.goalSelector.addGoal(3, new AnimalAIFindWater(this));
         this.goalSelector.addGoal(3, new AnimalAILeaveWater(this));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.MUDSKIPPER_TAMEABLES), false));
+        this.goalSelector.addGoal(4, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.MUDSKIPPER_TAMEABLES));
         this.goalSelector.addGoal(5, new BreedGoal(this, 0.8D));
         this.goalSelector.addGoal(6, new PanicGoal(this, 1D));
         this.goalSelector.addGoal(7, new MudskipperAIDisplay(this));
@@ -161,7 +159,7 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
         this.entityData.define(DISPLAYING, false);
         this.entityData.define(FROM_BUCKET, false);
         this.entityData.define(DISPLAY_ANGLE, 0F);
-        this.entityData.define(DISPLAYER_UUID, Optional.empty());
+        this.entityData.define(DISPLAYER_UUID, Optional.<java.util.UUID>empty());
         this.entityData.define(MOUTH_TICKS, 0);
         this.entityData.define(COMMAND, 0);
         this.entityData.define(SITTING, false);
@@ -398,7 +396,7 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
     @Nonnull
     public ItemStack getBucketItemStack() {
         ItemStack stack = new ItemStack(AMItemRegistry.MUDSKIPPER_BUCKET);
-        if (this.hasCustomName()) {
+        if (this.hasCustomName() && this.getCustomName() != null) {
             stack.setHoverName(this.getCustomName());
         }
         return stack;
@@ -406,13 +404,15 @@ public class EntityMudskipper extends TamableAnimal implements IFollower, ISemiA
 
     @Override
     public void saveToBucketTag(@Nonnull ItemStack bucket) {
-        if (this.hasCustomName()) {
+        if (this.hasCustomName() && this.getCustomName() != null) {
             bucket.setHoverName(this.getCustomName());
         }
         CompoundTag platTag = new CompoundTag();
         this.addAdditionalSaveData(platTag);
-        CompoundTag compound = bucket.getOrCreateTag();
+        net.minecraft.nbt.CompoundTag customData = bucket.getTag();
+        CompoundTag compound = customData != null ? customData.copy() : new net.minecraft.nbt.CompoundTag();
         compound.put("MudskipperData", platTag);
+        bucket.setTag(compound);
     }
 
     @Override

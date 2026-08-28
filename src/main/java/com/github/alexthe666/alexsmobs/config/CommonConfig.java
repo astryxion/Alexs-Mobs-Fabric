@@ -281,8 +281,7 @@ public class CommonConfig {
         acaciaBlossomsDropFromLeaves = true;
         acaciaBlossomChance = 130;
         wanderingTraderOffers = true;
-        // 0 = off, 1 = blocks only, 2 = blocks + chunk biome rewrite (uses packets; conflicts with Biome Replacer)
-        mungusBiomeTransformationType = 1;
+        mungusBiomeTransformationType = 2;
         mungusBiomeMatches = Lists.newArrayList(
             "minecraft:red_mushroom|minecraft:mushroom_fields|minecraft:mycelium",
             "minecraft:brown_mushroom|minecraft:mushroom_fields|minecraft:mycelium",
@@ -335,7 +334,7 @@ public class CommonConfig {
         flySpawnWeight = AMConfig.flySpawnWeight;
         flySpawnRolls = AMConfig.flySpawnRolls;
         hummingbirdSpawnWeight = AMConfig.hummingbirdSpawnWeight;
-        hummingbirdSpawnRolls = AMConfig.flySpawnRolls;
+        hummingbirdSpawnRolls = AMConfig.hummingbirdSpawnRolls;
         orcaSpawnWeight = AMConfig.orcaSpawnWeight;
         orcaSpawnRolls = AMConfig.orcaSpawnRolls;
         sunbirdSpawnWeight = AMConfig.sunbirdSpawnWeight;
@@ -504,7 +503,7 @@ public class CommonConfig {
         beachedCachalotWhaleSpawnChance = AMConfig.beachedCachalotWhaleSpawnChance;
         beachedCachalotWhaleSpawnDelay = AMConfig.beachedCachalotWhaleSpawnDelay;
         leafcutterAnthillSpawnChance = AMConfig.leafcutterAnthillSpawnChance;
-        geladaMonkeySpawnHeight = AMConfig.geladaMonkeySpawnRolls;
+        geladaMonkeySpawnHeight = AMConfig.geladaMonkeySpawnHeight;
         restrictPupfishSpawns = true;
         pupfishChunkSpawnDistance = AMConfig.pupfishChunkSpawnDistance;
         restrictSkelewagSpawns = true;

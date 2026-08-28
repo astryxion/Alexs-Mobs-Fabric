@@ -108,10 +108,6 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
         return AMSoundRegistry.WARPED_TOAD_HURT;
     }
 
-    public boolean canBreatheUnderwater() {
-        return true;
-    }
-
     public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.warpedToadSpawnRolls, this.getRandom(), spawnReasonIn);
     }
@@ -160,7 +156,7 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
         this.goalSelector.addGoal(3, new AnimalAIFindWater(this));
         this.goalSelector.addGoal(3, new AnimalAILeaveWater(this));
         this.goalSelector.addGoal(3, new BreedGoal(this, 0.8D));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.0D, Ingredient.of(AMTagRegistry.WARPED_TOAD_FOODSTUFFS), false));
+        this.goalSelector.addGoal(4, new AMTagTemptGoal(this, 1.0D, false, AMTagRegistry.WARPED_TOAD_FOODSTUFFS));
         this.goalSelector.addGoal(5, new WarpedToadAIRandomSwimming(this, 1.0D, 7));
         this.goalSelector.addGoal(6, new AnimalAILeapRandomly(this, 50, 7){
             public boolean canUse(){
@@ -356,7 +352,7 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
         prevSwimProgress = swimProgress;
         prevJumpProgress = jumpProgress;
         prevReboundProgress = reboundProgress;
-        this.setMaxUpStep(1);
+        this.setMaxUpStep((float)(1.0));
 
         final boolean isTechnicalBlinking = this.tickCount % 50 > 42;
         if (isTechnicalBlinking) {
@@ -683,7 +679,7 @@ public class EntityWarpedToad extends TamableAnimal implements ITargetsDroppedIt
         }
 
         private boolean isTeleportFriendlyBlock(BlockPos p_226329_1_) {
-            BlockPathTypes lvt_2_1_ = WalkNodeEvaluator.getBlockPathTypeStatic(this.world, p_226329_1_.mutable());
+            BlockPathTypes lvt_2_1_ = WalkNodeEvaluator.getBlockPathTypeStatic(this.tameable.level(), new net.minecraft.core.BlockPos.MutableBlockPos().set(p_226329_1_));
             if (lvt_2_1_ != BlockPathTypes.WALKABLE) {
                 return false;
             } else {

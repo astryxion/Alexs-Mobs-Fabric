@@ -46,7 +46,7 @@ public class TameableAIRide extends Goal {
 
     @Override
     public void tick() {
-        tameableEntity.setMaxUpStep(1F);
+        tameableEntity.setMaxUpStep((float)(1.0));
         tameableEntity.getNavigation().stop();
         tameableEntity.setTarget(null);
         double x = tameableEntity.getX();

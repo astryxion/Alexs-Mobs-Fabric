@@ -5,6 +5,9 @@ import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.crafting.Ingredient;
 
+/**
+ * Armor material for Alex's Mobs items (Minecraft 1.20.1 ArmorMaterial interface).
+ */
 public class AMArmorMaterial implements ArmorMaterial {
 
     protected static final int[] MAX_DAMAGE_ARRAY = new int[]{13, 15, 16, 11};
@@ -14,7 +17,7 @@ public class AMArmorMaterial implements ArmorMaterial {
     private final int encantability;
     private final SoundEvent sound;
     private final float toughness;
-    private Ingredient ingredient = null;
+    private Ingredient ingredient = Ingredient.EMPTY;
     public float knockbackResistance = 0.0F;
 
     public AMArmorMaterial(String name, int durability, int[] damageReduction, int encantability, SoundEvent sound, float toughness) {
@@ -36,7 +39,6 @@ public class AMArmorMaterial implements ArmorMaterial {
         this.toughness = toughness;
         this.knockbackResistance = knockbackResist;
     }
-
 
     @Override
     public int getDurabilityForType(ArmorItem.Type type) {
@@ -67,7 +69,6 @@ public class AMArmorMaterial implements ArmorMaterial {
         this.ingredient = ingredient;
     }
 
-
     @Override
     public String getName() {
         return name;
@@ -82,5 +83,4 @@ public class AMArmorMaterial implements ArmorMaterial {
     public float getKnockbackResistance() {
         return knockbackResistance;
     }
-
 }

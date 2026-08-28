@@ -40,31 +40,9 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Method;
 import java.util.EnumSet;
 
 public class EntitySpectre extends Animal implements FlyingAnimal {
-
-    /** Fabric: Mob.leashInfoTag and restoreLeashFromSave() are private in 1.20.1; use reflection to preserve 1:1 behavior. */
-    private static CompoundTag getLeashInfoTag(Mob mob) {
-        try {
-            java.lang.reflect.Field f = Mob.class.getDeclaredField("leashInfoTag");
-            f.setAccessible(true);
-            return (CompoundTag) f.get(mob);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static void restoreLeashFromSave(Mob mob) {
-        try {
-            Method m = Mob.class.getDeclaredMethod("restoreLeashFromSave");
-            m.setAccessible(true);
-            m.invoke(mob);
-        } catch (Exception e) {
-            // ignore
-        }
-    }
 
     private static final EntityDataAccessor<Integer> CARDINAL_ORDINAL = SynchedEntityData.defineId(EntitySpectre.class, EntityDataSerializers.INT);
     public float birdPitch = 0;
@@ -84,6 +62,11 @@ public class EntitySpectre extends Animal implements FlyingAnimal {
     public static boolean canSpectreSpawn(EntityType<? extends Animal> animal, LevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource random) {
         BlockState blockstate = worldIn.getBlockState(pos.below());
         return true;
+    }
+
+    @Override
+    public boolean isFood(ItemStack stack) {
+        return false;
     }
 
     protected SoundEvent getAmbientSound() {
@@ -135,7 +118,7 @@ public class EntitySpectre extends Animal implements FlyingAnimal {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setXRot(0.0F);
         this.randomizeDirection();
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
@@ -194,7 +177,6 @@ public class EntitySpectre extends Animal implements FlyingAnimal {
     protected void tickLeash() {
         if (this.getLeashHolder() != null) {
             if (this.getLeashHolder().isPassenger() || this.getLeashHolder() instanceof LeashFenceKnotEntity) {
-                super.tickLeash();
                 return;
             }
             float f = this.distanceTo(this.getLeashHolder());
@@ -204,9 +186,6 @@ public class EntitySpectre extends Animal implements FlyingAnimal {
                 double lvt_7_1_ = (this.getLeashHolder().getZ() - this.getZ()) / (double) f;
                 this.setDeltaMovement(this.getDeltaMovement().add(Math.copySign(lvt_3_1_ * lvt_3_1_ * 0.4D, lvt_3_1_), Math.copySign(lvt_5_1_ * lvt_5_1_ * 0.4D, lvt_5_1_), Math.copySign(lvt_7_1_ * lvt_7_1_ * 0.4D, lvt_7_1_)));
             }
-        }
-        if (getLeashInfoTag(this) != null) {
-            restoreLeashFromSave(this);
         }
 
         if (this.getLeashHolder() != null) {

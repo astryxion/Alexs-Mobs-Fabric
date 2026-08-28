@@ -15,10 +15,10 @@ import net.minecraft.resources.ResourceLocation;
 import javax.annotation.Nullable;
 
 public class RenderCombJelly extends MobRenderer<EntityCombJelly, ModelCombJelly> {
-    private static final ResourceLocation TEXTURE_0 = new ResourceLocation("alexsmobs:textures/entity/comb_jelly_blue.png");
-    private static final ResourceLocation TEXTURE_1 = new ResourceLocation("alexsmobs:textures/entity/comb_jelly_green.png");
-    private static final ResourceLocation TEXTURE_2 = new ResourceLocation("alexsmobs:textures/entity/comb_jelly_red.png");
-    private static final ResourceLocation TEXTURE_OVERLAY = new ResourceLocation("alexsmobs:textures/entity/comb_jelly_overlay.png");
+    private static final ResourceLocation TEXTURE_0 = new ResourceLocation("alexsmobs", "textures/entity/comb_jelly_blue.png");
+    private static final ResourceLocation TEXTURE_1 = new ResourceLocation("alexsmobs", "textures/entity/comb_jelly_green.png");
+    private static final ResourceLocation TEXTURE_2 = new ResourceLocation("alexsmobs", "textures/entity/comb_jelly_red.png");
+    private static final ResourceLocation TEXTURE_OVERLAY = new ResourceLocation("alexsmobs", "textures/entity/comb_jelly_overlay.png");
     private static final ModelCombJelly STRIPES_MODEL = new ModelCombJelly(0.05F);
     public RenderCombJelly(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new ModelCombJelly(0.0F), 0.3F);
@@ -57,9 +57,15 @@ public class RenderCombJelly extends MobRenderer<EntityCombJelly, ModelCombJelly
         }
 
         public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, EntityCombJelly entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
-            VertexConsumer rainbow = AMRenderTypes.createMergedVertexConsumer(bufferIn.getBuffer(AMRenderTypes.COMBJELLY_RAINBOW_GLINT), bufferIn.getBuffer(RenderType.entityCutoutNoCull(TEXTURE_OVERLAY)));
-            STRIPES_MODEL.setupAnim(entitylivingbaseIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
-            STRIPES_MODEL.renderToBuffer(matrixStackIn, rainbow, packedLightIn, OverlayTexture.NO_OVERLAY, 1, 1, 1, 1.0F);
+            try {
+                STRIPES_MODEL.setupAnim(entitylivingbaseIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
+                VertexConsumer glint = bufferIn.getBuffer(AMRenderTypes.COMBJELLY_RAINBOW_GLINT);
+                STRIPES_MODEL.renderToBuffer(matrixStackIn, glint, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+                VertexConsumer overlay = bufferIn.getBuffer(RenderType.entityCutoutNoCull(TEXTURE_OVERLAY));
+                STRIPES_MODEL.renderToBuffer(matrixStackIn, overlay, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            } catch (IllegalStateException e) {
+                // In GUI/inventory context (e.g. Animal Dictionary) buffer may not be in building state; skip rainbow overlay
+            }
         }
     }
 }

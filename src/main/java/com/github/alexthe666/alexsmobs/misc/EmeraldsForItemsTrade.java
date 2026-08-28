@@ -25,7 +25,6 @@ public class EmeraldsForItemsTrade implements VillagerTrades.ItemListing {
     }
 
     public MerchantOffer getOffer(Entity p_221182_1_, RandomSource p_221182_2_) {
-        ItemStack lvt_3_1_ = new ItemStack(this.tradeItem, 1);
-        return new MerchantOffer(lvt_3_1_, new ItemStack(Items.EMERALD, this.count), this.maxUses, this.xpValue, this.priceMultiplier);
+        return new MerchantOffer(new ItemStack(this.tradeItem), new ItemStack(Items.EMERALD, this.count), this.maxUses, this.xpValue, this.priceMultiplier);
     }
 }

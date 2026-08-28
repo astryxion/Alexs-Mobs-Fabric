@@ -28,8 +28,10 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.control.LookControl;
 import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.OwnerHurtByTargetGoal;
@@ -105,6 +107,12 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
     protected EntityBaldEagle(EntityType<? extends TamableAnimal> type, Level worldIn) {
         super(type, worldIn);
         switchNavigator(true);
+        this.lookControl = new LookControl(this) {
+            @Override
+            protected boolean resetXRotOnTick() {
+                return !EntityBaldEagle.this.controlledFlag;
+            }
+        };
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
@@ -127,18 +135,28 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
         this.goalSelector.addGoal(3, new AITackle());
         this.goalSelector.addGoal(4, new AILandOnGlove());
         this.goalSelector.addGoal(5, new BreedGoal(this, 1.0D));
-        this.goalSelector.addGoal(6, new TemptGoal(this, 1.1D, AMTagRegistry.ingredientFromTags(AMTagRegistry.BALD_EAGLE_TAMEABLES, AMTagRegistry.BALD_EAGLE_FOODSTUFFS), false));
+        this.goalSelector.addGoal(6, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.BALD_EAGLE_TAMEABLES, AMTagRegistry.BALD_EAGLE_FOODSTUFFS));
         this.goalSelector.addGoal(7, new AIWanderIdle());
         this.goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 6.0F) {
             @Override
             public boolean canUse() {
-                return EntityBaldEagle.this.returnControlTime == 0 && super.canUse();
+                return EntityBaldEagle.this.returnControlTime == 0 && !EntityBaldEagle.this.controlledFlag && super.canUse();
+            }
+
+            @Override
+            public boolean canContinueToUse() {
+                return !EntityBaldEagle.this.controlledFlag && super.canContinueToUse();
             }
         });
         this.goalSelector.addGoal(9, new RandomLookAroundGoal(this) {
             @Override
             public boolean canUse() {
-                return EntityBaldEagle.this.returnControlTime == 0 && super.canUse();
+                return EntityBaldEagle.this.returnControlTime == 0 && !EntityBaldEagle.this.controlledFlag && super.canUse();
+            }
+
+            @Override
+            public boolean canContinueToUse() {
+                return !EntityBaldEagle.this.controlledFlag && super.canContinueToUse();
             }
         });
         this.targetSelector.addGoal(1, new OwnerHurtByTargetGoal(this));
@@ -385,7 +403,7 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                 this.playSound(SoundEvents.SHEEP_SHEAR, 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
                 if (!this.level().isClientSide) {
                     if (player instanceof ServerPlayer) {
-                        itemstack.hurt(1, random, (ServerPlayer) player);
+                        itemstack.hurtAndBreak(1, player, (e) -> e.broadcastBreakEvent((hand == InteractionHand.MAIN_HAND ) ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
                     }
                 }
                 this.spawnAtLocation(AMItemRegistry.FALCONRY_HOOD);
@@ -743,12 +761,11 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
     }
 
     public boolean shouldHoodedReturn() {
-        if (this.getOwner() != null) {
-            if (!this.getOwner().isAlive() || this.getOwner().isShiftKeyDown()) {
-                return true;
-            }
+        if (this.getOwner() == null || this.getOwner().isAlive() && !this.getOwner().isShiftKeyDown()) {
+            return !this.isAlive() || this.isInsidePortal || this.launchTime > 12000 || this.portalTime > 0 || this.isRemoved();
+        } else {
+            return true;
         }
-        return !this.isAlive() || this.isInsidePortal || launchTime > 12000 || this.portalTime > 0 || this.isRemoved();
     }
 
     public void remove(RemovalReason reason) {
@@ -865,7 +882,6 @@ public class EntityBaldEagle extends TamableAnimal implements IFollower, IFalcon
                 for (int j = -1; j <= 1; j++) {
                     ChunkPos pos = new ChunkPos(this.blockPosition().offset(i * 16, 0, j * 16));
                     serverWorld.setChunkForced(pos.x, pos.z, true);
-
                 }
             }
         }

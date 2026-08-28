@@ -10,7 +10,7 @@
       "item": "alexsmobs:rainbow_jelly"
     },
     "G": {
-      "item": "minecraft:glass"
+      "tag": "c:glass_blocks"
     }
   },
   "result": {

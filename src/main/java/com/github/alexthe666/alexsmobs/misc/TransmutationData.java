@@ -3,6 +3,7 @@ package com.github.alexthe666.alexsmobs.misc;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.item.ItemStack;

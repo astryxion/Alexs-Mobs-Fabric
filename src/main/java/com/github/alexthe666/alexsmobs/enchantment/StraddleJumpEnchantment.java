@@ -5,18 +5,21 @@ import net.minecraft.world.item.enchantment.EnchantmentCategory;
 
 public class StraddleJumpEnchantment extends StraddleEnchantment {
 
-    protected StraddleJumpEnchantment(Rarity p_i46729_1_, EnchantmentCategory p_i46729_2_, EquipmentSlot... p_i46729_3_) {
-        super(p_i46729_1_, p_i46729_2_, p_i46729_3_);
+    protected StraddleJumpEnchantment(Rarity rarity, EnchantmentCategory category, EquipmentSlot... slots) {
+        super(rarity, category, slots);
     }
 
-    public int getMinCost(int p_77321_1_) {
-        return 4 + (p_77321_1_ - 1) * 5;
+    @Override
+    public int getMinCost(int level) {
+        return 4 + (level - 1) * 5;
     }
 
-    public int getMaxCost(int p_223551_1_) {
-        return super.getMinCost(p_223551_1_) + 10;
+    @Override
+    public int getMaxCost(int level) {
+        return super.getMinCost(level) + 10;
     }
 
+    @Override
     public int getMaxLevel() {
         return 3;
     }

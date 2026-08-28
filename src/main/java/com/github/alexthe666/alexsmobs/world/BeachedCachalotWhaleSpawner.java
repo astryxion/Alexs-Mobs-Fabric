@@ -10,10 +10,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.entity.SpawnPlacements.Type;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameRules;
-import net.minecraft.world.level.NaturalSpawner;
+import net.minecraft.world.entity.SpawnPlacements;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 
 import javax.annotation.Nullable;
@@ -99,11 +98,11 @@ public class BeachedCachalotWhaleSpawner {
         for(int i = 0; i < 10; ++i) {
             int j = p_221244_1_.getX() + this.random.nextInt(p_221244_2_ * 2) - p_221244_2_;
             int k = p_221244_1_.getZ() + this.random.nextInt(p_221244_2_ * 2) - p_221244_2_;
-            int l = this.world.getHeight(Types.WORLD_SURFACE, j, k);
+            int l = this.world.getHeightmapPos(Types.WORLD_SURFACE, new BlockPos(j, 0, k)).getY();
             BlockPos blockpos1 = new BlockPos(j, l, k);
             Holder<net.minecraft.world.level.biome.Biome> biomeHolder = world.getBiome(blockpos1);
-            ResourceLocation biomeId = biomeHolder.unwrapKey().map(key -> key.location()).orElse(new ResourceLocation("minecraft:plains"));
-            if (AMSpawnBiomeMatcher.matches(biomeHolder, biomeId, AMDefaultBiomes.BEACHED_CACHALOT_WHALE) && NaturalSpawner.isSpawnPositionOk(Type.ON_GROUND, this.world, blockpos1, EntityType.WANDERING_TRADER)) {
+            ResourceLocation biomeId = biomeHolder.unwrapKey().map(key -> key.location()).orElse(new ResourceLocation("minecraft", "plains"));
+            if (AMSpawnBiomeMatcher.matches(biomeHolder, biomeId, AMDefaultBiomes.BEACHED_CACHALOT_WHALE) && SpawnPlacements.checkSpawnRules(EntityType.WANDERING_TRADER, this.world, MobSpawnType.NATURAL, blockpos1, this.world.random)) {
                 blockpos = blockpos1;
                 break;
             }

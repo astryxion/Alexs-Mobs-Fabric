@@ -8,7 +8,6 @@ import com.github.alexthe666.alexsmobs.entity.ai.DirectPathNavigator;
 import com.github.alexthe666.alexsmobs.entity.ai.EntityAINearestTarget3D;
 import com.github.alexthe666.alexsmobs.entity.ai.FlightMoveController;
 import com.github.alexthe666.alexsmobs.entity.ai.GroundPathNavigatorWide;
-import com.github.alexthe666.alexsmobs.entity.util.LivingEntityUtil;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.alexsmobs.message.MessageMosquitoDismount;
 import com.github.alexthe666.alexsmobs.message.MessageMosquitoMountPlayer;
@@ -43,6 +42,7 @@ import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -57,6 +57,11 @@ import java.util.EnumSet;
 import java.util.function.Predicate;
 
 public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
+
+    @Override
+    public boolean isFood(ItemStack stack) {
+        return stack.isEdible();
+    }
 
     private static final EntityDataAccessor<Float> PHAGE_PITCH = SynchedEntityData.defineId(EntityEnderiophage.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Boolean> FLYING = SynchedEntityData.defineId(EntityEnderiophage.class, EntityDataSerializers.BOOLEAN);
@@ -110,7 +115,7 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         if (reason == MobSpawnType.NATURAL) {
             doInitialPosing(worldIn);
         }
@@ -265,16 +270,16 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
                                             target.addEffect(new MobEffectInstance(AMEffectRegistry.ENDER_FLU, duration, Math.min(level + 1, 4)));
                                         }
                                         this.heal(5);
-                                        this.gameEvent(GameEvent.ENTITY_ROAR);
+                                        this.gameEvent(GameEvent.ENTITY_INTERACT);
                                         this.playSound(SoundEvents.ITEM_BREAK, this.getSoundVolume(), this.getVoicePitch());
                                         this.setMissingEye(true);
                                     }
                                     if (!this.level().isClientSide) {
                                         this.setTarget(null);
-                                        LivingEntityUtil.clearLastHurtMob(this);
+                                        this.setLastHurtMob(null);
                                         this.setLastHurtByMob(null);
-                                        this.goalSelector.getRunningGoals().forEach(Goal::stop);
-                                        this.targetSelector.getRunningGoals().forEach(Goal::stop);
+                                        this.goalSelector.getAvailableGoals().forEach(w -> { if (w.isRunning()) w.getGoal().stop(); });
+                                        this.targetSelector.getAvailableGoals().forEach(w -> { if (w.isRunning()) w.getGoal().stop(); });
                                     }
                                 }
                             }
@@ -358,8 +363,8 @@ public class EntityEnderiophage extends Animal implements Enemy, FlyingAnimal {
                         try {
                             GoalSelector gs = getMobGoalSelector((Mob) angryEnderman);
                             GoalSelector ts = getMobTargetSelector((Mob) angryEnderman);
-                            if (gs != null) gs.getRunningGoals().forEach(Goal::stop);
-                            if (ts != null) ts.getRunningGoals().forEach(Goal::stop);
+                            if (gs != null) gs.getAvailableGoals().forEach(w -> { if (w.isRunning()) w.getGoal().stop(); });
+                            if (ts != null) ts.getAvailableGoals().forEach(w -> { if (w.isRunning()) w.getGoal().stop(); });
                         } catch (Exception e) {
                             e.printStackTrace();
                         }

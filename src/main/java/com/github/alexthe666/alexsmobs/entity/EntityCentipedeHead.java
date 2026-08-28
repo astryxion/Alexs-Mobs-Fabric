@@ -52,7 +52,7 @@ public class EntityCentipedeHead extends Monster {
     protected EntityCentipedeHead(EntityType type, Level worldIn) {
         super(type, worldIn);
         this.xpReward = 13;
-        this.setMaxUpStep(3);
+        this.setMaxUpStep((float)(3.0));
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
@@ -88,10 +88,6 @@ public class EntityCentipedeHead extends Monster {
         return AMSoundRegistry.CENTIPEDE_HURT;
     }
 
-    public MobType getMobType() {
-        return MobType.ARTHROPOD;
-    }
-
     protected void playStepSound(BlockPos pos, BlockState blockIn) {
         this.playSound(AMSoundRegistry.CENTIPEDE_WALK, 1F, 1.0F);
     }
@@ -111,7 +107,7 @@ public class EntityCentipedeHead extends Monster {
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(CHILD_UUID, Optional.empty());
+        this.entityData.define(CHILD_UUID, Optional.<UUID>empty());
         this.entityData.define(CHILD_ID, -1);
         this.entityData.define(SEGMENT_COUNT, 5);
     }
@@ -169,7 +165,7 @@ public class EntityCentipedeHead extends Monster {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setSegmentCount(random.nextInt(4) + 5);
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
     }
@@ -211,7 +207,7 @@ public class EntityCentipedeHead extends Monster {
 
     public void tick() {
         super.tick();
-        isInsidePortal = false;
+        this.isInsidePortal = false;
         this.yBodyRot = Mth.clamp(this.getYRot(), this.yBodyRot - 2, this.yBodyRot + 2);
         this.yHeadRot = this.yBodyRot;
         if (this.ringBufferIndex < 0) {
@@ -265,12 +261,14 @@ public class EntityCentipedeHead extends Monster {
                 Vec3 prev = this.position();
                 float xRot = this.getXRot();
                 float backOffset = 0.45F;
-                for (int i = 0; i < this.getSegmentCount(); i++) {
-                    if (this.parts[i] != null) {
-                        final float reqRot = getYawForPart(i);
-                        prev = parts[i].tickMultipartPosition(this.getId(), backOffset, prev, xRot, reqRot, true);
-                        xRot = parts[i].getXRot();
-                        backOffset = parts[i].getBackOffset();
+                if (this.parts != null) {
+                    for (int i = 0; i < this.getSegmentCount(); i++) {
+                        if (this.parts[i] != null) {
+                            final float reqRot = getYawForPart(i);
+                            prev = parts[i].tickMultipartPosition(this.getId(), backOffset, prev, xRot, reqRot, true);
+                            xRot = parts[i].getXRot();
+                            backOffset = parts[i].getBackOffset();
+                        }
                     }
                 }
             }

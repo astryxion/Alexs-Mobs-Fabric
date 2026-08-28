@@ -14,6 +14,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -25,10 +26,10 @@ import net.minecraft.world.phys.BlockHitResult;
 import javax.annotation.Nullable;
 
 public class BlockCapsid extends BaseEntityBlock {
-
     public static final DirectionProperty HORIZONTAL_FACING = HorizontalDirectionalBlock.FACING;
-    public BlockCapsid() {
-        super(Properties.of().mapColor(MapColor.COLOR_PURPLE).noOcclusion().isValidSpawn(BlockCapsid::spawnOption).isRedstoneConductor(BlockCapsid::isntSolid).sound(SoundType.GLASS).lightLevel((state) -> 5).requiresCorrectToolForDrops().strength(1.5F));
+
+    public BlockCapsid(BlockBehaviour.Properties properties) {
+        super(properties);
     }
 
     public BlockState rotate(BlockState p_185499_1_, Rotation p_185499_2_) {
@@ -47,11 +48,11 @@ public class BlockCapsid extends BaseEntityBlock {
         builder.add(HORIZONTAL_FACING);
     }
 
-    private static Boolean spawnOption(BlockState state, BlockGetter reader, BlockPos pos, EntityType<?> entity) {
+    public static Boolean spawnOption(BlockState state, BlockGetter reader, BlockPos pos, EntityType<?> entity) {
         return (boolean)false;
     }
 
-    private static boolean isntSolid(BlockState state, BlockGetter reader, BlockPos pos) {
+    public static boolean isntSolid(BlockState state, BlockGetter reader, BlockPos pos) {
         return false;
     }
 
@@ -61,25 +62,27 @@ public class BlockCapsid extends BaseEntityBlock {
 
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
         ItemStack heldItem = player.getItemInHand(handIn);
-        if (worldIn.getBlockEntity(pos) instanceof TileEntityCapsid && (!player.isShiftKeyDown()  && heldItem.getItem() != this.asItem())) {
-            TileEntityCapsid capsid = (TileEntityCapsid)worldIn.getBlockEntity(pos);
-            ItemStack copy = heldItem.copy();
-            copy.setCount(1);
-            if(capsid.getItem(0).isEmpty()){
-                capsid.setItem(0, copy);
-                if(!player.isCreative()){
+        if (worldIn.getBlockEntity(pos) instanceof TileEntityCapsid && (!player.isShiftKeyDown() && heldItem.getItem() != this.asItem())) {
+            TileEntityCapsid capsid = (TileEntityCapsid) worldIn.getBlockEntity(pos);
+            ItemStack insert = heldItem.copy();
+            insert.setCount(1);
+            if (capsid.getItem(0).isEmpty()) {
+                capsid.setItem(0, insert);
+                if (!player.isCreative()) {
                     heldItem.shrink(1);
                 }
                 return InteractionResult.SUCCESS;
-            }else if(ItemStack.isSameItem(capsid.getItem(0), copy) && capsid.getItem(0).getMaxStackSize() > capsid.getItem(0).getCount() + copy.getCount()){
+            } else if (ItemStack.isSameItemSameTags(capsid.getItem(0), insert)
+                    && capsid.getItem(0).getMaxStackSize() > capsid.getItem(0).getCount() + insert.getCount()) {
                 capsid.getItem(0).grow(1);
-                if(!player.isCreative()){
+                if (!player.isCreative()) {
                     heldItem.shrink(1);
                 }
                 return InteractionResult.SUCCESS;
-            }else{
-                popResource(worldIn, pos, capsid.getItem(0).copy());
+            } else {
+                ItemStack stored = capsid.getItem(0).copy();
                 capsid.setItem(0, ItemStack.EMPTY);
+                popResource(worldIn, pos, stored);
                 return InteractionResult.SUCCESS;
             }
         }

@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
@@ -28,7 +29,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import javax.annotation.Nullable;
 
 public class BlockEndPirateShipWheel extends BaseEntityBlock implements AMSpecialRenderBlock{
-
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     private static final VoxelShape SOUTH_AABB = Block.box(-2, -2, 0, 18, 18, 3);
     private static final VoxelShape NORTH_AABB = Block.box(-2, -2, 13, 18, 18, 16);
@@ -37,8 +37,8 @@ public class BlockEndPirateShipWheel extends BaseEntityBlock implements AMSpecia
     private static final VoxelShape UP_AABB = Block.box(-2, 0, -2, 18, 3, 18);
     private static final VoxelShape DOWN_AABB = Block.box(-2, 13, -2, 16, 16, 18);
 
-    public BlockEndPirateShipWheel() {
-        super(Properties.of().mapColor(MapColor.TERRACOTTA_WHITE).noOcclusion().sound(SoundType.ANCIENT_DEBRIS).strength(1F).lightLevel((i) -> 3).noCollission().requiresCorrectToolForDrops());
+    public BlockEndPirateShipWheel(BlockBehaviour.Properties properties) {
+        super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
 

@@ -1,5 +1,9 @@
 package com.github.alexthe666.alexsmobs.event;
 
+
+
+import com.github.alexthe666.alexsmobs.entity.AMMobTypes;
+import net.minecraft.world.entity.MobType;
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
@@ -19,14 +23,12 @@ import com.github.alexthe666.alexsmobs.misc.AMAdvancementTriggerRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import com.github.alexthe666.alexsmobs.misc.EmeraldsForItemsTrade;
 import com.github.alexthe666.alexsmobs.misc.ItemsForEmeraldsTrade;
-import com.github.alexthe666.alexsmobs.world.AMGiftedBookData;
 import com.github.alexthe666.alexsmobs.world.AMWorldData;
 import com.github.alexthe666.alexsmobs.world.BeachedCachalotWhaleSpawner;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetExperiencePacket;
 import net.minecraft.server.level.ServerLevel;
@@ -62,6 +64,8 @@ import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.entity.npc.WanderingTrader;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
@@ -83,6 +87,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.server.packs.PackType;
+import java.util.UUID;
 import java.util.*;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -94,7 +99,18 @@ public class ServerEvents {
     public record Triple<A, B, C>(A a, B b, C c) {}
     /** Fabric 1.20.1: no AFTER_DAMAGE event; queue (entity, source, amount) and process at end of tick (1:1). */
     private static final Queue<AfterDamageEntry> DEFERRED_AFTER_DAMAGE = new ConcurrentLinkedQueue<>();
-    private record AfterDamageEntry(LivingEntity entity, DamageSource source, float amount) {}
+
+    private static final class AfterDamageEntry {
+        final LivingEntity entity;
+        final DamageSource source;
+        final float amount;
+
+        AfterDamageEntry(LivingEntity entity, DamageSource source, float amount) {
+            this.entity = entity;
+            this.source = source;
+            this.amount = amount;
+        }
+    }
 
     private static void enqueueAfterDamage(LivingEntity entity, DamageSource source, float amount) {
         DEFERRED_AFTER_DAMAGE.add(new AfterDamageEntry(entity, source, amount));
@@ -120,26 +136,31 @@ public class ServerEvents {
         }
     }
 
+    private static void applySoulstealHeal(LivingEntity attacker, float amount) {
+        if (amount <= 0 || !attacker.hasEffect(AMEffectRegistry.SOULSTEAL)) {
+            return;
+        }
+        var instance = attacker.getEffect(AMEffectRegistry.SOULSTEAL);
+        if (instance != null && attacker.getHealth() < attacker.getMaxHealth()
+                && ThreadLocalRandom.current().nextFloat() < (0.25F + (instance.getAmplifier() + 1) * 0.25F)) {
+            int lvl = instance.getAmplifier() + 1;
+            attacker.heal(Math.min(amount / 2F * lvl, 2 + 2 * lvl));
+        }
+    }
+
     private static void runDeferredAfterDamage() {
         AfterDamageEntry e;
         while ((e = DEFERRED_AFTER_DAMAGE.poll()) != null) {
-            LivingEntity entity = e.entity();
-            DamageSource source = e.source();
-            float amount = e.amount();
-            if (!entity.isAlive()) continue;
+            LivingEntity entity = e.entity;
+            DamageSource source = e.source;
+            float amount = e.amount;
             if (source.getEntity() instanceof LivingEntity attacker) {
-                if (amount > 0 && attacker.hasEffect(AMEffectRegistry.SOULSTEAL) && attacker.getEffect(AMEffectRegistry.SOULSTEAL) != null) {
-                    int lvl = attacker.getEffect(AMEffectRegistry.SOULSTEAL).getAmplifier() + 1;
-                    if (attacker.getHealth() < attacker.getMaxHealth() && ThreadLocalRandom.current().nextFloat() < (0.25F + (lvl * 0.25F))) {
-                        attacker.heal(Math.min(amount / 2F * lvl, 2 + 2 * lvl));
-                    }
-                }
-                if (entity instanceof Player player && attacker.distanceTo(player) < attacker.getBbWidth() + player.getBbWidth() + 0.5F && player.getItemBySlot(EquipmentSlot.HEAD).getItem() == AMItemRegistry.SPIKED_TURTLE_SHELL) {
+                if (entity.isAlive() && entity instanceof Player player && attacker.distanceTo(player) < attacker.getBbWidth() + player.getBbWidth() + 0.5F && player.getItemBySlot(EquipmentSlot.HEAD).getItem() == AMItemRegistry.SPIKED_TURTLE_SHELL) {
                     attacker.hurt(attacker.damageSources().thorns(player), 1F);
                     attacker.knockback(0.5F, Mth.sin((attacker.getYRot() + 180) * Mth.DEG_TO_RAD), -Mth.cos((attacker.getYRot() + 180) * Mth.DEG_TO_RAD));
                 }
             }
-            if (!entity.getUseItem().isEmpty() && source.getEntity() != null && source.getEntity() instanceof LivingEntity living) {
+            if (entity.isAlive() && !entity.getUseItem().isEmpty() && source.getEntity() != null && source.getEntity() instanceof LivingEntity living) {
                 if (entity.getUseItem().getItem() == AMItemRegistry.SHIELD_OF_THE_DEEP) {
                     boolean flag = false;
                     if (living.distanceTo(entity) <= 4 && !living.hasEffect(AMEffectRegistry.EXSANGUINATION)) {
@@ -151,7 +172,7 @@ public class ServerEvents {
                         flag = true;
                     }
                     if (flag) {
-                        entity.getUseItem().hurtAndBreak(1, entity, p -> p.broadcastBreakEvent(entity.getUsedItemHand()));
+                        entity.getUseItem().hurtAndBreak(1, entity, (breaker) -> breaker.broadcastBreakEvent((entity.getUsedItemHand() == net.minecraft.world.InteractionHand.MAIN_HAND ) ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
                     }
                 }
             }
@@ -201,7 +222,11 @@ public class ServerEvents {
             }
             if (entity instanceof EntityEmu emu && source.getDirectEntity() instanceof Projectile projectile && !entity.level().isClientSide) {
                 if (projectile instanceof AbstractArrow arrow) {
-                    arrow.setPierceLevel((byte) 0);
+                    try {
+                        java.lang.reflect.Method m = AbstractArrow.class.getDeclaredMethod("setPierceLevel", byte.class);
+                        m.setAccessible(true);
+                        m.invoke(arrow, (byte)0);
+                    } catch (Exception ignored) {}
                 }
                 if ((emu.getAnimation() == EntityEmu.ANIMATION_DODGE_RIGHT || emu.getAnimation() == EntityEmu.ANIMATION_DODGE_LEFT) && emu.getAnimationTick() < 7) {
                     return false;
@@ -232,10 +257,13 @@ public class ServerEvents {
                     return false;
                 }
             }
-            if (entity.isUsingItem() && entity.getUseItem().getItem() == AMItemRegistry.SHIELD_OF_THE_DEEP) {
-                tryShieldOfTheDeepBlock(entity, source);
+            if (amount > 0) {
+                // Heal immediately so lethal hits (e.g. slime kills) still grant Soulsteal.
+                if (source.getEntity() instanceof LivingEntity attacker) {
+                    applySoulstealHeal(attacker, amount);
+                }
+                enqueueAfterDamage(entity, source, amount);
             }
-            if (amount > 0) enqueueAfterDamage(entity, source, amount);
             return true;
         });
 
@@ -278,9 +306,6 @@ public class ServerEvents {
         }
 
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD.register((entity, serverWorld) -> {
-            if (entity instanceof EntityKangaroo kangaroo && !serverWorld.isClientSide()) {
-                kangaroo.syncInventoryToClients();
-            }
             if (entity instanceof WanderingTrader trader && AMConfig.elephantTraderSpawnChance > 0) {
                 Biome biome = serverWorld.getBiome(entity.blockPosition()).value();
                 if (RAND.nextFloat() <= AMConfig.elephantTraderSpawnChance && (!AMConfig.limitElephantTraderBiomes || biome.getBaseTemperature() >= 1.0F)) {
@@ -489,24 +514,18 @@ public class ServerEvents {
         onLivingTick(entity);
     }
 
-    private static void tryShieldOfTheDeepBlock(LivingEntity entity, DamageSource source) {
-        if (entity.getUseItem().isEmpty() || entity.getUseItem().getItem() != AMItemRegistry.SHIELD_OF_THE_DEEP) {
-            return;
-        }
-        if (!(source.getEntity() instanceof LivingEntity living)) {
-            return;
-        }
+    public static void onPlayerEmptyLeftClick(Player player) {
         boolean flag = false;
-        if (living.distanceTo(entity) <= 4 && !living.hasEffect(AMEffectRegistry.EXSANGUINATION)) {
-            living.addEffect(new MobEffectInstance(AMEffectRegistry.EXSANGUINATION, 60, 2));
+        ItemStack leftItem = player.getItemInHand(InteractionHand.OFF_HAND);
+        ItemStack rightItem = player.getItemInHand(InteractionHand.MAIN_HAND);
+        if (leftItem.getItem() instanceof ILeftClick leftClick && leftClick.onLeftClick(leftItem, player)) {
             flag = true;
         }
-        if (entity.isInWaterOrBubble()) {
-            entity.setAirSupply(Math.min(entity.getMaxAirSupply(), entity.getAirSupply() + 150));
+        if (rightItem.getItem() instanceof ILeftClick rightClick && rightClick.onLeftClick(rightItem, player)) {
             flag = true;
         }
-        if (flag) {
-            entity.getUseItem().hurtAndBreak(1, entity, p -> p.broadcastBreakEvent(entity.getUsedItemHand()));
+        if (flag && player.level().isClientSide) {
+            AlexsMobs.sendMSGToServer(MessageSwingArm.INSTANCE);
         }
     }
 
@@ -521,10 +540,12 @@ public class ServerEvents {
             }
             if (entity instanceof Mob mob && mob.getTarget() != null) {
                 LivingEntity target = mob.getTarget();
-                if (mob.getMobType() == MobType.ARTHROPOD && target.hasEffect(AMEffectRegistry.BUG_PHEROMONES) && mob.getLastHurtByMob() != target) {
+                if (AMMobTypes.getMobType(mob) == MobType.ARTHROPOD && target.hasEffect(AMEffectRegistry.BUG_PHEROMONES) && mob.getLastHurtByMob() != target) {
                     mob.setTarget(null);
                 }
-                if (mob.getMobType() == MobType.UNDEAD && !mob.getType().is(AMTagRegistry.IGNORES_KIMONO) && target.getItemBySlot(EquipmentSlot.CHEST).is(AMItemRegistry.UNSETTLING_KIMONO) && mob.getLastHurtByMob() != target) {
+                if (AMMobTypes.getMobType(mob) == MobType.UNDEAD && !mob.getType().is(AMTagRegistry.IGNORES_KIMONO)
+                        && target.getItemBySlot(EquipmentSlot.CHEST).is(AMItemRegistry.UNSETTLING_KIMONO)
+                        && mob.getLastHurtByMob() != target) {
                     mob.setTarget(null);
                 }
             }
@@ -536,7 +557,7 @@ public class ServerEvents {
             if (player.getEyeHeight() < player.getBbHeight() * 0.5D) {
                 player.refreshDimensions();
             }
-            if (player.getActiveEffectsMap() != null && !player.getActiveEffectsMap().isEmpty() && player.getActiveEffectsMap().containsKey(AMEffectRegistry.CLINGING) && EffectClinging.isUpsideDown(player)) {
+            if (player.getEffect(AMEffectRegistry.CLINGING) != null && EffectClinging.isUpsideDown(player)) {
                 float minus = player.getBbHeight() - player.getEyeHeight();
                 setLivingEyeHeight(player, minus);
             }
@@ -548,7 +569,7 @@ public class ServerEvents {
                         if (attributes != null) attributes.addPermanentModifier(SAND_SPEED_BONUS);
                     }
                     if (player.tickCount % 25 == 0 && (player.getItemBySlot(EquipmentSlot.FEET).getItem() != AMItemRegistry.ROADDRUNNER_BOOTS || !sand) && (attributes != null && attributes.hasModifier(SAND_SPEED_BONUS))) {
-                        if (attributes != null) attributes.removeModifier(SAND_SPEED_BONUS);
+                        if (attributes != null) attributes.removeModifier(SAND_SPEED_BONUS_ID);
                     }
                 }
                 if (player.getItemBySlot(EquipmentSlot.HEAD).getItem() == AMItemRegistry.FRONTIER_CAP || (attributes != null && attributes.hasModifier(SNEAK_SPEED_BONUS))) {
@@ -557,16 +578,17 @@ public class ServerEvents {
                         if (attributes != null) attributes.addPermanentModifier(SNEAK_SPEED_BONUS);
                     }
                     if ((!shift || player.getItemBySlot(EquipmentSlot.HEAD).getItem() != AMItemRegistry.FRONTIER_CAP) && (attributes != null && attributes.hasModifier(SNEAK_SPEED_BONUS))) {
-                        if (attributes != null) attributes.removeModifier(SNEAK_SPEED_BONUS);
+                        if (attributes != null) attributes.removeModifier(SNEAK_SPEED_BONUS_ID);
                     }
                 }
             }
-            if (server && player.getItemBySlot(EquipmentSlot.HEAD).getItem() == AMItemRegistry.SPIKED_TURTLE_SHELL && !player.isEyeInFluid(FluidTags.WATER)) {
+            if (server && player.getItemBySlot(EquipmentSlot.HEAD).is(AMItemRegistry.SPIKED_TURTLE_SHELL) && !player.isEyeInFluid(FluidTags.WATER)) {
                 player.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 310, 0, false, false, true));
             }
         }
         ItemStack boots = entity.getItemBySlot(EquipmentSlot.FEET);
-        if (!boots.isEmpty() && boots.hasTag() && boots.getOrCreateTag().contains("BisonFur") && boots.getOrCreateTag().getBoolean("BisonFur")) {
+        net.minecraft.nbt.CompoundTag bootsData = boots.getTag();
+        if (!boots.isEmpty() && bootsData != null && bootsData.copy().contains("BisonFur") && bootsData.copy().getBoolean("BisonFur")) {
             BlockPos posBelow = new BlockPos((int) entity.getX(), (int) (entity.getBoundingBox().minY - 0.1F), (int) entity.getZ());
             if (entity.level().getBlockState(posBelow).is(Blocks.POWDER_SNOW)) {
                 entity.setOnGround(true);
@@ -632,22 +654,18 @@ public class ServerEvents {
     }
 
     private static void onPlayerLoggedIn(ServerPlayer player) {
-        if (player.level() instanceof ServerLevel serverLevel) {
-            for (EntityKangaroo kangaroo : serverLevel.getEntitiesOfClass(EntityKangaroo.class, player.getBoundingBox().inflate(128))) {
-                kangaroo.syncInventoryToPlayer(player);
-            }
-        }
-        if (AMConfig.giveBookOnStartup && player.level() instanceof ServerLevel serverLevel) {
-            if (!AMGiftedBookData.get(serverLevel).claimFirstTimeGift(player.getUUID())) {
-                return;
-            }
-            giveItemToPlayer(player, new ItemStack(AMItemRegistry.ANIMAL_DICTIONARY));
-            final boolean isAlex = Objects.equals(player.getUUID(), ALEX_UUID);
-            if (isAlex || Objects.equals(player.getUUID(), CARRO_UUID)) {
-                giveItemToPlayer(player, new ItemStack(AMItemRegistry.BEAR_DUST));
-            }
-            if (isAlex) {
-                giveItemToPlayer(player, new ItemStack(AMItemRegistry.NOVELTY_HAT));
+        if (AMConfig.giveBookOnStartup) {
+            AMWorldData worldData = AMWorldData.get(player.serverLevel());
+            if (worldData != null && !worldData.hasAnimalDictionaryBeenGranted(player.getUUID())) {
+                giveItemToPlayer(player, new ItemStack(AMItemRegistry.ANIMAL_DICTIONARY));
+                final boolean isAlex = Objects.equals(player.getUUID(), ALEX_UUID);
+                if (isAlex || Objects.equals(player.getUUID(), CARRO_UUID)) {
+                    giveItemToPlayer(player, new ItemStack(AMItemRegistry.BEAR_DUST));
+                }
+                if (isAlex) {
+                    giveItemToPlayer(player, new ItemStack(AMItemRegistry.NOVELTY_HAT));
+                }
+                worldData.markAnimalDictionaryGranted(player.getUUID());
             }
         }
     }
@@ -660,13 +678,12 @@ public class ServerEvents {
             m.invoke(living, height);
         } catch (Exception ignored) {}
     }
-
     public static final UUID ALEX_UUID = UUID.fromString("71363abe-fd03-49c9-940d-aae8b8209b7c");
     public static final UUID CARRO_UUID = UUID.fromString("98905d4a-1cbc-41a4-9ded-2300404e2290");
-    private static final UUID SAND_SPEED_MODIFIER = UUID.fromString("7E0292F2-9434-48D5-A29F-9583AF7DF28E");
-    private static final UUID SNEAK_SPEED_MODIFIER = UUID.fromString("7E0292F2-9434-48D5-A29F-9583AF7DF28F");
-    private static final AttributeModifier SAND_SPEED_BONUS = new AttributeModifier(SAND_SPEED_MODIFIER, "roadrunner speed bonus", 0.1F, AttributeModifier.Operation.ADDITION);
-    private static final AttributeModifier SNEAK_SPEED_BONUS = new AttributeModifier(SNEAK_SPEED_MODIFIER, "frontier cap speed bonus", 0.1F, AttributeModifier.Operation.ADDITION);
+    private static final UUID SAND_SPEED_BONUS_ID = UUID.fromString("7e029273-d706-55dd-afcd-ec05f32073b6");
+    private static final UUID SNEAK_SPEED_BONUS_ID = UUID.fromString("7e029274-d706-55dd-afcd-ec05f32073b7");
+    private static final AttributeModifier SAND_SPEED_BONUS = new AttributeModifier(SAND_SPEED_BONUS_ID, "alexsmobs_roadrunner_speed", 0.1, AttributeModifier.Operation.ADDITION);
+    private static final AttributeModifier SNEAK_SPEED_BONUS = new AttributeModifier(SNEAK_SPEED_BONUS_ID, "alexsmobs_frontier_cap_speed", 0.1, AttributeModifier.Operation.ADDITION);
     private static final Map<ServerLevel, BeachedCachalotWhaleSpawner> BEACHED_CACHALOT_WHALE_SPAWNER_MAP = new HashMap<>();
     public static final ObjectList<Triple<ServerPlayer, ServerLevel, BlockPos>> teleportPlayers = new ObjectArrayList<>();
     private static final Set<Integer> CHORUS_FRUIT_USERS_LAST_TICK = new HashSet<>();
@@ -685,7 +702,13 @@ public class ServerEvents {
         final float f5 = Mth.sin(f1);
         final float f6 = f3 * f4;
         final float f7 = f2 * f4;
-        final double d0 = 5.0D; // vanilla default block reach (Fabric has no ForgeMod.BLOCK_REACH)
+        double d0 = 5.0D;
+        if (AMItemRegistry.BLOCK_REACH_ATTRIBUTE != null) {
+            var reach = player.getAttribute(AMItemRegistry.BLOCK_REACH_ATTRIBUTE);
+            if (reach != null) {
+                d0 = reach.getValue();
+            }
+        }
         Vec3 vector3d1 = vector3d.add(f6 * d0, f5 * d0, f7 * d0);
         return worldIn.clip(new ClipContext(vector3d, vector3d1, ClipContext.Block.OUTLINE, fluidMode, player));
     }

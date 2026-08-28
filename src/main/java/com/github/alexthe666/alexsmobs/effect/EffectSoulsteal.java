@@ -10,9 +10,12 @@ public class EffectSoulsteal extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0X93FDFF);
     }
 
+    @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
+
     }
 
+    @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         return duration > 0;
     }

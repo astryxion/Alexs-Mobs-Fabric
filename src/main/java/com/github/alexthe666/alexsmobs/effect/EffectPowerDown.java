@@ -1,6 +1,8 @@
 package com.github.alexthe666.alexsmobs.effect;
 
+import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
@@ -19,20 +21,23 @@ public class EffectPowerDown extends MobEffect {
         this.addAttributeModifier(Attributes.MOVEMENT_SPEED, "7107DE5E-7CE8-4030-940E-514C1F160890", (double)-1.0F, AttributeModifier.Operation.MULTIPLY_BASE);
     }
 
+    @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
         if(entity.getDeltaMovement().y > 0 && !entity.isInWaterOrBubble()){
             entity.setDeltaMovement(entity.getDeltaMovement().multiply(1, 0, 1));
         }
         if(firstDuration == lastDuration){
             entity.playSound(AMSoundRegistry.APRIL_FOOLS_POWER_OUTAGE, 1.5F, 1);
-            entity.gameEvent(GameEvent.ENTITY_ROAR);
+            entity.gameEvent(GameEvent.ENTITY_INTERACT);
         }
+
     }
 
     public int getActiveTime(){
         return firstDuration - lastDuration;
     }
 
+    @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         lastDuration = duration;
         if(duration <= 0){
@@ -45,16 +50,18 @@ public class EffectPowerDown extends MobEffect {
         return duration > 0;
     }
 
-    public void removeAttributeModifiers(LivingEntity entity, AttributeMap map, int i) {
+    @Override
+    public void removeAttributeModifiers(LivingEntity entity, AttributeMap map, int amplifier) {
         lastDuration = -1;
         firstDuration = -1;
-        super.removeAttributeModifiers(entity, map, i);
+        super.removeAttributeModifiers(entity, map, amplifier);
     }
 
-    public void addAttributeModifiers(LivingEntity entity, AttributeMap map, int i) {
+    @Override
+    public void addAttributeModifiers(LivingEntity entity, AttributeMap map, int amplifier) {
         lastDuration = -1;
         firstDuration = -1;
-        super.addAttributeModifiers(entity, map, i);
+        super.addAttributeModifiers(entity, map, amplifier);
     }
 
     public String getDescriptionId() {

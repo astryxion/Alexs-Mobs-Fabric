@@ -250,6 +250,7 @@
   "item.alexsmobs.tendon_whip": "Tendon Whip",
   "item.alexsmobs.unsettling_kimono": "Unsettling Kimono",
   "item.alexsmobs.unsettling_kimono.desc": "Most Undead creatures become neutral",
+  "item.alexsmobs.unsettling_kimono.desc2": "Increases block and entity reach",
   "item.alexsmobs.stink_bottle": "Stink in a Bottle",
   "item.alexsmobs.stink_ray_hand": "Stink Ray",
   "item.alexsmobs.stink_ray_inventory": "Stink Ray",
@@ -1074,5 +1075,8 @@
   "advancements.alexsmobs.stink_ray.desc": "Craft a Stink Ray.",
   "advancements.alexsmobs.banana_slug.title": "Convergent Evolution...",
   "advancements.alexsmobs.banana_slug.desc": "Encounter a Banana Slug. Not so appetising.",
-  "alexsmobs.gui.capsid_transformation": "Transformation"
+  "alexsmobs.gui.capsid_transformation": "Transformation",
+  "attribute.name.generic.alexsmobs.block_reach": "Block Reach",
+  "attribute.name.generic.alexsmobs.entity_reach": "Entity Reach",
+  "attribute.name.generic.alexsmobs.swim_speed": "Swim Speed"
 }

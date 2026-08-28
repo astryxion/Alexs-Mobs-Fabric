@@ -126,7 +126,7 @@ public class EntityCrocodile extends TamableAnimal implements IAnimatedEntity, I
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setDesert(this.isBiomeDesert(worldIn, this.blockPosition()));
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
     }
@@ -186,6 +186,7 @@ public class EntityCrocodile extends TamableAnimal implements IAnimatedEntity, I
         }
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(SITTING, false);
@@ -371,7 +372,7 @@ public class EntityCrocodile extends TamableAnimal implements IAnimatedEntity, I
             if (damage >= 3.0F) {
                 int i = 1 + Mth.floor(damage);
                 InteractionHand hand = holder.getUsedItemHand();
-                holder.getUseItem().hurtAndBreak(i, holder, (p_213833_1_) -> p_213833_1_.broadcastBreakEvent(hand));
+                holder.getUseItem().hurtAndBreak(i, holder, (e) -> e.broadcastBreakEvent((hand == InteractionHand.MAIN_HAND ) ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
                 if (holder.getUseItem().isEmpty()) {
                     if (hand == InteractionHand.MAIN_HAND) {
                         holder.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
@@ -474,10 +475,6 @@ public boolean canRiderInteract() {
     @Override
     public boolean isInvulnerableTo(DamageSource source) {
         return source.is(DamageTypes.DROWN) || source.is(DamageTypes.IN_WALL)  || super.isInvulnerableTo(source);
-    }
-
-    public boolean canBreatheUnderwater() {
-        return true;
     }
 
     public float getWalkTargetValue(BlockPos pos, LevelReader worldIn) {
@@ -601,7 +598,7 @@ public boolean canRiderInteract() {
         if (item == Items.NAME_TAG) {
             return super.mobInteract(player, hand);
         }
-        if (isTame() && item.isEdible() && item.getFoodProperties() != null && item.getFoodProperties().isMeat() && this.getHealth() < this.getMaxHealth()) {
+        if (isTame() && itemstack.isEdible() && this.getHealth() < this.getMaxHealth()) {
             this.usePlayerItem(player, hand, itemstack);
             this.heal(10);
             this.gameEvent(GameEvent.EAT);

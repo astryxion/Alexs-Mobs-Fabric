@@ -152,9 +152,7 @@ public class ModelCachalotWhale extends AdvancedEntityModel<EntityCachalotWhale>
 			this.tail2.rotationPointZ -= 2 * limbSwingAmount;
 		}
 	}
-
-	@Override
-	public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
 		if (this.young) {
 			float f = 1.25F;
 			head.setScale(f, f, f);

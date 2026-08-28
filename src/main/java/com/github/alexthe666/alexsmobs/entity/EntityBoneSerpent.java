@@ -105,10 +105,6 @@ public class EntityBoneSerpent extends Monster {
         return super.canBeAffected(potioneffectIn);
     }
 
-    public MobType getMobType() {
-        return MobType.UNDEAD;
-    }
-
     public float getWalkTargetValue(BlockPos pos, LevelReader worldIn) {
         if (worldIn.getBlockState(pos).getFluidState().is(FluidTags.WATER) || worldIn.getBlockState(pos).getFluidState().is(FluidTags.LAVA)) {
             return 10.0F;
@@ -233,7 +229,7 @@ public class EntityBoneSerpent extends Monster {
 
     public void tick() {
         super.tick();
-        isInsidePortal = false;
+        setPortalCooldown(0);
         final boolean ground = !this.isInLava() && !this.isInWater() && this.onGround();
         if (jumpCooldown > 0) {
             jumpCooldown--;
@@ -303,10 +299,6 @@ public class EntityBoneSerpent extends Monster {
                 }
             }
         }
-    }
-
-    public boolean canBreatheUnderwater() {
-        return true;
     }
 
     static class BoneSerpentMoveController extends MoveControl {

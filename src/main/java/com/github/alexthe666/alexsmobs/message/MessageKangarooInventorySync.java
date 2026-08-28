@@ -4,10 +4,9 @@ import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.entity.EntityKangaroo;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-
 import java.util.function.Supplier;
 
 public class MessageKangarooInventorySync {
@@ -26,13 +25,16 @@ public class MessageKangarooInventorySync {
     }
 
     public static MessageKangarooInventorySync read(FriendlyByteBuf buf) {
-        return new MessageKangarooInventorySync(buf.readInt(), buf.readInt(), buf.readItem());
+        int kangaroo = buf.readInt();
+        int slotId = buf.readInt();
+        net.minecraft.nbt.CompoundTag tag = buf.readNbt();
+        return new MessageKangarooInventorySync(kangaroo, slotId, tag != null ? ItemStack.of(tag) : ItemStack.EMPTY);
     }
 
     public static void write(MessageKangarooInventorySync message, FriendlyByteBuf buf) {
         buf.writeInt(message.kangaroo);
         buf.writeInt(message.slotId);
-        buf.writeItem(message.stack);
+        buf.writeNbt(message.stack.isEmpty() ? null : message.stack.save(new net.minecraft.nbt.CompoundTag()));
     }
 
     public static class Handler {

@@ -2,7 +2,6 @@ package com.github.alexthe666.alexsmobs.entity;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
-import com.github.alexthe666.alexsmobs.entity.util.MultipartEntityUtil;
 import com.github.alexthe666.alexsmobs.message.MessageHurtMultipart;
 import com.github.alexthe666.alexsmobs.misc.AMAdvancementTriggerRegistry;
 import com.google.common.collect.ImmutableList;
@@ -13,6 +12,7 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
@@ -52,7 +52,6 @@ public class EntityVoidWormPart extends LivingEntity implements IHurtableMultipa
     public EntityDimensions multipartSize;
     public float prevWormAngle;
     protected float radius;
-    protected float prevRadius;
     protected float angleYaw;
     protected float offsetY;
     protected float damageMultiplier = 1;
@@ -86,6 +85,7 @@ public class EntityVoidWormPart extends LivingEntity implements IHurtableMultipa
         this.remove(RemovalReason.DISCARDED);
     }
 
+    @Override
     public EntityDimensions getDimensions(Pose poseIn) {
         return this.isTail() ? TAIL_SIZE.scale(getScale()) : super.getDimensions(poseIn);
     }
@@ -151,8 +151,8 @@ public class EntityVoidWormPart extends LivingEntity implements IHurtableMultipa
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(PARENT_UUID, Optional.empty());
-        this.entityData.define(CHILD_UUID, Optional.empty());
+        this.entityData.define(PARENT_UUID, Optional.<UUID>empty());
+        this.entityData.define(CHILD_UUID, Optional.<UUID>empty());
         this.entityData.define(TAIL, false);
         this.entityData.define(BODYINDEX, 0);
         this.entityData.define(WORM_SCALE, 1F);
@@ -201,17 +201,14 @@ public class EntityVoidWormPart extends LivingEntity implements IHurtableMultipa
 
     @Override
     public void tick() {
-        isInsidePortal = false;
         prevWormAngle = this.getWormAngle();
         prevWormYaw = this.entityData.get(WORM_YAW);
+        this.isInsidePortal = false;
         this.setDeltaMovement(Vec3.ZERO);
         radius = 1.0F + (this.getWormScale() * (this.isTail() ? 0.65F : 0.3F)) + (this.getBodyIndex() == 0 ? 0.8F : 0);
         if (this.tickCount > 3) {
             Entity parent = getParent();
-            if (Math.abs(radius - prevRadius) > 0.001F) {
-                refreshDimensions();
-                prevRadius = radius;
-            }
+            refreshDimensions();
             if (parent != null && !this.level().isClientSide) {
                 this.setNoGravity(true);
                 Vec3 parentVec = parent.position().subtract(parent.xo, parent.yo, parent.zo);
@@ -230,26 +227,24 @@ public class EntityVoidWormPart extends LivingEntity implements IHurtableMultipa
                 final float yaw = (float) (Mth.atan2(d2, d0) * (double) Mth.RAD_TO_DEG) - 90.0F;
                 final float pitch = parent.getXRot();
                 if (this.getPortalTicks() <= 1 && !doesParentControlPos) {
+                    //double d3 = d0 * d0 + d1 * d1 + d2 * d2;
                     final float f2 = -((float) (Mth.atan2(d1, Mth.sqrt((float) (d0 * d0 + d2 * d2))) * (double) Mth.RAD_TO_DEG));
-                    final double prevX = this.getX();
-                    final double prevY = this.getY();
-                    final double prevZ = this.getZ();
                     this.setPos(x, y, z);
                     this.setXRot(this.limitAngle(this.getXRot(), f2, 5.0F));
                     this.setYRot(yaw);
                     this.entityData.set(WORM_YAW, getYRot());
-                    if (prevX != this.getX() || prevY != this.getY() || prevZ != this.getZ()) {
-                        this.markHurt();
-                    }
                 }
+                this.markHurt();
                 this.yHeadRot = this.getYRot();
                 this.yBodyRot = pitch;
-                if (parent instanceof LivingEntity livingParent) {
-                    MultipartEntityUtil.syncHurtTimesFromParent(this, livingParent);
+                if (parent instanceof LivingEntity) {
+                    if (!this.level().isClientSide && (((LivingEntity) parent).hurtTime > 0 || ((LivingEntity) parent).deathTime > 0)) {
+                        AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), 0));
+                        this.hurtTime = ((LivingEntity) parent).hurtTime;
+                        this.deathTime = ((LivingEntity) parent).deathTime;
+                    }
                 }
-                if (this.tickCount % 3 == 0) {
-                    this.pushEntities();
-                }
+                this.pushEntities();
                 if (parent.isRemoved() && !this.level().isClientSide) {
                     this.remove(RemovalReason.DISCARDED);
                 }

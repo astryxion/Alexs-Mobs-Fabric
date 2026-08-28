@@ -18,6 +18,7 @@ public class BlossomLootModifier {
     public static boolean shouldAdd(LootContext context) {
         if (!AMConfig.acaciaBlossomsDropFromLeaves) return false;
         ItemStack ctxTool = context.getParamOrNull(LootContextParams.TOOL);
+        var enchantReg = context.getLevel().registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT);
         if (ctxTool != null) {
             int silkTouch = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, ctxTool);
             if (silkTouch > 0 || ctxTool.getItem() instanceof ShearsItem) return false;

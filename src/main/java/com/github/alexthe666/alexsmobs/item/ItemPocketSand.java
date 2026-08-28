@@ -62,9 +62,7 @@ public class ItemPocketSand extends Item {
             }
             livingEntityIn.getCooldowns().addCooldown(this, 2);
             ammo.shrink(1);
-            itemstack.hurtAndBreak(1, livingEntityIn, (player) -> {
-                player.broadcastBreakEvent(livingEntityIn.getUsedItemHand());
-            });
+            itemstack.hurtAndBreak(1, livingEntityIn, (e) -> e.broadcastBreakEvent((livingEntityIn.getUsedItemHand() == net.minecraft.world.InteractionHand.MAIN_HAND ) ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
         }
         livingEntityIn.awardStat(Stats.ITEM_USED.get(this));
         return InteractionResultHolder.sidedSuccess(itemstack, worldIn.isClientSide());

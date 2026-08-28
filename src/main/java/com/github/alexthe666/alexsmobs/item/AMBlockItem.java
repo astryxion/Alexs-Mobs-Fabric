@@ -2,7 +2,6 @@ package com.github.alexthe666.alexsmobs.item;
 
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -39,18 +38,19 @@ public class AMBlockItem extends BlockItem implements CustomTabBehavior {
     public void onDestroyed(ItemEntity p_150700_) {
         if (this.block instanceof ShulkerBoxBlock) {
             ItemStack itemstack = p_150700_.getItem();
-            CompoundTag compoundtag = getBlockEntityData(itemstack);
+            CompoundTag compoundtag = BlockItem.getBlockEntityData(itemstack);
             if (compoundtag != null && compoundtag.contains("Items", 9)) {
-                ListTag listtag = compoundtag.getList("Items", 10);
-                ItemUtils.onContainerDestroyed(p_150700_, listtag.stream().map(CompoundTag.class::cast).map(ItemStack::of));
+                net.minecraft.nbt.ListTag listtag = compoundtag.getList("Items", 10);
+                java.util.stream.Stream<ItemStack> contents = listtag.stream()
+                        .filter(CompoundTag.class::isInstance)
+                        .map(CompoundTag.class::cast)
+                        .map(ItemStack::of);
+                ItemUtils.onContainerDestroyed(p_150700_, contents);
             }
         }
     }
 
 
-    public boolean canBeHurtBy(DamageSource damage) {
-        return super.canBeHurtBy(damage) && (this != AMBlockRegistry.TRANSMUTATION_TABLE.asItem() || !damage.is(DamageTypeTags.IS_EXPLOSION));
-    }
 
     @Override
     public void fillItemCategory(CreativeModeTab.Output contents) {

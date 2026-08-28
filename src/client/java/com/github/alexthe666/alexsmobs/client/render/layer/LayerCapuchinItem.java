@@ -19,7 +19,7 @@ import net.minecraft.world.item.Items;
 
 public class LayerCapuchinItem extends RenderLayer<EntityCapuchinMonkey, ModelCapuchinMonkey> {
 
-    public static final ResourceLocation DART_TEXTURE = new ResourceLocation("alexsmobs:textures/entity/ancient_dart.png");
+    public static final ResourceLocation DART_TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/ancient_dart.png");
     public static final ModelAncientDart DART_MODEL = new ModelAncientDart();
 
     public LayerCapuchinItem(RenderCapuchinMonkey render) {
@@ -29,6 +29,7 @@ public class LayerCapuchinItem extends RenderLayer<EntityCapuchinMonkey, ModelCa
     public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, EntityCapuchinMonkey entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
         if(entitylivingbaseIn.hasDart()){
             matrixStackIn.pushPose();
+            try {
             if(entitylivingbaseIn.isBaby()){
                 matrixStackIn.scale(0.35F, 0.35F, 0.35F);
                 matrixStackIn.translate(0.5D, 2.6D, 0.15D);
@@ -50,15 +51,17 @@ public class LayerCapuchinItem extends RenderLayer<EntityCapuchinMonkey, ModelCa
             matrixStackIn.translate(0, 0.5F, 0F);
             matrixStackIn.scale(1.2F, 1.2F, 1.2F);
             matrixStackIn.pushPose();
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(f));
-            VertexConsumer ivertexbuilder = bufferIn.getBuffer(DART_MODEL.renderType(DART_TEXTURE));
-            DART_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-            matrixStackIn.popPose();
-            matrixStackIn.popPose();
+            try {
+                matrixStackIn.mulPose(Axis.XP.rotationDegrees(f));
+                VertexConsumer ivertexbuilder = bufferIn.getBuffer(DART_MODEL.renderType(DART_TEXTURE));
+                DART_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            } finally { matrixStackIn.popPose(); }
+            } finally { matrixStackIn.popPose(); }
 
         }else if(entitylivingbaseIn.getAnimation() == EntityCapuchinMonkey.ANIMATION_THROW && entitylivingbaseIn.getAnimationTick() <= 5) {
             ItemStack itemstack = new ItemStack(Items.COBBLESTONE);
             matrixStackIn.pushPose();
+            try {
             if (entitylivingbaseIn.isBaby()) {
                 matrixStackIn.scale(0.35F, 0.35F, 0.35F);
                 matrixStackIn.translate(0.5D, 2.6D, 0.15D);
@@ -73,7 +76,7 @@ public class LayerCapuchinItem extends RenderLayer<EntityCapuchinMonkey, ModelCa
             matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
             ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
             renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
-            matrixStackIn.popPose();
+            } finally { matrixStackIn.popPose(); }
         }
     }
 

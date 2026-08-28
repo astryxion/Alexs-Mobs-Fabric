@@ -11,10 +11,10 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
@@ -58,7 +58,7 @@ public class EntityTendonSegment  extends Entity {
 
     @Override
     protected void defineSynchedData() {
-        this.entityData.define(CREATOR_ID, Optional.empty());
+        this.entityData.define(CREATOR_ID, Optional.<UUID>empty());
         this.entityData.define(FROM_ID, -1);
         this.entityData.define(TARGET_COUNT, 0);
         this.entityData.define(CURRENT_TARGET_ID, -1);
@@ -112,7 +112,11 @@ public class EntityTendonSegment  extends Entity {
                         Entity entity = getCreatorEntity();
                         if(entity instanceof LivingEntity){
                             if(current != creator && current.hurt(damageSources().mobProjectile(this, (LivingEntity)entity), (float) getDamageFor((LivingEntity)creator, (LivingEntity)entity))){
-                                this.doEnchantDamageEffects((LivingEntity) creator, entity);
+                                LivingEntity livingCreator = (LivingEntity) entity;
+                                ItemStack whipStack = livingCreator.getItemInHand(InteractionHand.MAIN_HAND).is(AMItemRegistry.TENDON_WHIP) ? livingCreator.getItemInHand(InteractionHand.MAIN_HAND) : livingCreator.getItemInHand(InteractionHand.OFF_HAND);
+                                if (this.level() instanceof net.minecraft.server.level.ServerLevel sl && whipStack.is(AMItemRegistry.TENDON_WHIP)) {
+                                    EnchantmentHelper.doPostDamageEffects(livingCreator, current);
+                                }
                             }
                         }
                     }
@@ -160,21 +164,17 @@ public class EntityTendonSegment  extends Entity {
         ItemStack stack = creator.getItemInHand(InteractionHand.MAIN_HAND).is(AMItemRegistry.TENDON_WHIP) ? creator.getItemInHand(InteractionHand.MAIN_HAND) : creator.getItemInHand(InteractionHand.OFF_HAND);
         double dmg = this.getBaseDamage();
         if(stack.is(AMItemRegistry.TENDON_WHIP)){
-            dmg += EnchantmentHelper.getDamageBonus(stack, entity.getMobType());
+            dmg += getDamageForItem(stack);
         }
         return dmg;
     }
 
     private double getDamageForItem(ItemStack itemStack) {
-        Multimap<Attribute, AttributeModifier> map = itemStack.getAttributeModifiers(EquipmentSlot.MAINHAND);
-        if (!map.isEmpty()) {
-            double d = 0;
-            for (AttributeModifier mod : map.get(Attributes.ATTACK_DAMAGE)) {
-                d += mod.getAmount();
-            }
-            return d;
+        double d = 0;
+        for (AttributeModifier mod : itemStack.getAttributeModifiers(EquipmentSlot.MAINHAND).get(Attributes.ATTACK_DAMAGE)) {
+            d += mod.getAmount();
         }
-        return 0;
+        return d;
     }
 
     private boolean hasLineOfSight(Entity entity) {

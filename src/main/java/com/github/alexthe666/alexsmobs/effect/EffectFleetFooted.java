@@ -12,8 +12,8 @@ import java.util.UUID;
 
 public class EffectFleetFooted extends MobEffect {
 
-    private static final UUID SPRINT_JUMP_SPEED_MODIFIER = UUID.fromString("7E0292F2-9434-48D5-A29F-9583AF7DF29A");
-    private static final AttributeModifier SPRINT_JUMP_SPEED_BONUS = new AttributeModifier(SPRINT_JUMP_SPEED_MODIFIER, "fleetfooted speed bonus", 0.2F, AttributeModifier.Operation.ADDITION);
+    private static final UUID FLEET_FOOTED_SPEED_UUID = UUID.fromString("7E1C5A6A-6F4E-4B8A-9F2C-1D3E4F5A6B7C");
+    private static final AttributeModifier SPRINT_JUMP_SPEED_BONUS = new AttributeModifier(FLEET_FOOTED_SPEED_UUID, "fleet_footed_speed", 0.2, AttributeModifier.Operation.ADDITION);
     private int lastDuration = -1;
     private int removeEffectAfter = 0;
 
@@ -21,30 +21,36 @@ public class EffectFleetFooted extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0X685441);
     }
 
+    @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
         AttributeInstance modifiableattributeinstance = entity.getAttribute(Attributes.MOVEMENT_SPEED);
         boolean applyEffect = entity.isSprinting() && !entity.onGround() && lastDuration > 2;
-        if(removeEffectAfter > 0){
+        if (removeEffectAfter > 0) {
             removeEffectAfter--;
         }
         if (applyEffect) {
-            if(!modifiableattributeinstance.hasModifier(SPRINT_JUMP_SPEED_BONUS)){
+            if (modifiableattributeinstance != null && !modifiableattributeinstance.hasModifier(SPRINT_JUMP_SPEED_BONUS)) {
                 modifiableattributeinstance.addPermanentModifier(SPRINT_JUMP_SPEED_BONUS);
             }
             removeEffectAfter = 5;
         }
         if (removeEffectAfter <= 0 || lastDuration < 2) {
-            modifiableattributeinstance.removeModifier(SPRINT_JUMP_SPEED_BONUS);
+            if (modifiableattributeinstance != null) {
+                modifiableattributeinstance.removeModifier(SPRINT_JUMP_SPEED_BONUS);
+            }
         }
     }
 
-    public void removeAttributeModifiers(LivingEntity livingEntity, AttributeMap attributeMap, int level) {
-        AttributeInstance modifiableattributeinstance = livingEntity.getAttribute(Attributes.MOVEMENT_SPEED);
-        if(modifiableattributeinstance != null && modifiableattributeinstance.hasModifier(SPRINT_JUMP_SPEED_BONUS)){
+    @Override
+    public void removeAttributeModifiers(LivingEntity entity, AttributeMap attributeMap, int amplifier) {
+        AttributeInstance modifiableattributeinstance = attributeMap.getInstance(Attributes.MOVEMENT_SPEED);
+        if (modifiableattributeinstance != null && modifiableattributeinstance.hasModifier(SPRINT_JUMP_SPEED_BONUS)) {
             modifiableattributeinstance.removeModifier(SPRINT_JUMP_SPEED_BONUS);
         }
+        super.removeAttributeModifiers(entity, attributeMap, amplifier);
     }
 
+    @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         lastDuration = duration;
         return duration > 0;
@@ -53,5 +59,4 @@ public class EffectFleetFooted extends MobEffect {
     public String getDescriptionId() {
         return "alexsmobs.potion.fleet_footed";
     }
-
 }

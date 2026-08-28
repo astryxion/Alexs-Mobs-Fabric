@@ -10,9 +10,12 @@ public class EffectEarthquake extends MobEffect {
         super(MobEffectCategory.HARMFUL, 0XF0E9E1);
     }
 
+    @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
+
     }
 
+    @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         return duration > 0;
     }

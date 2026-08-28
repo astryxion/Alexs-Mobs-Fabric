@@ -105,6 +105,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
         map.put(DyeColor.BLACK, Items.BLACK_CARPET);
     });
     private static final ResourceLocation TRADER_LOOT = new ResourceLocation("alexsmobs", "gameplay/trader_elephant_chest");
+    
     public boolean forcedSit = false;
     public float prevSitProgress;
     public float sitProgress;
@@ -133,7 +134,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
     protected EntityElephant(EntityType type, Level world) {
         super(type, world);
         initElephantInventory();
-        this.setMaxUpStep(1.1F);
+        this.setMaxUpStep((float)(1.1));
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
@@ -167,7 +168,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
         this.elephantInventory = new SimpleContainer(54){
 
             public boolean stillValid(Player player) {
-                return EntityElephant.this.isAlive() && !EntityElephant.this.isInsidePortal;
+                return EntityElephant.this.isAlive() && EntityElephant.this.getPortalCooldown() <= 0;
             }
         };
         if (animalchest != null) {
@@ -201,7 +202,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
         this.goalSelector.addGoal(2, new EntityElephant.PanicGoal());
         this.goalSelector.addGoal(2, new ElephantAIVillagerRide(this, 1D));
         this.goalSelector.addGoal(3, new BreedGoal(this, 1.0D));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.0D, Ingredient.of(AMTagRegistry.ELEPHANT_TAMEABLES), false));
+        this.goalSelector.addGoal(4, new AMTagTemptGoal(this, 1.0D, false, AMTagRegistry.ELEPHANT_TAMEABLES));
         this.goalSelector.addGoal(5, new ElephantAIForageLeaves(this));
         this.goalSelector.addGoal(6, new FollowParentGoal(this, 1D));
         this.goalSelector.addGoal(7, new ElephantAIFollowCaravan(this, 0.5D));
@@ -412,7 +413,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
             this.setAnimation(this.getRandom().nextBoolean() ? ANIMATION_TRUMPET_0 : ANIMATION_TRUMPET_1);
         }
         if (this.getAnimation() == ANIMATION_TRUMPET_0 && this.getAnimationTick() == 8 || this.getAnimation() == ANIMATION_TRUMPET_1 && this.getAnimationTick() == 4) {
-            this.gameEvent(GameEvent.ENTITY_ROAR);
+            this.gameEvent(GameEvent.ENTITY_INTERACT);
             this.playSound(AMSoundRegistry.ELEPHANT_TRUMPET, this.getSoundVolume(), this.getVoicePitch());
         }
         if (this.isAlive() && charging) {
@@ -422,9 +423,9 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
                     launch(entity, true);
                 }
             }
-            this.setMaxUpStep(2F);
+            this.setMaxUpStep((float)(2.0));
         }else{
-            this.setMaxUpStep(1.1F);
+            this.setMaxUpStep((float)(1.1));
         }
         if (!isTame() && isTrader()) {
             if (!this.level().isClientSide) {
@@ -529,7 +530,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
             DyeColor color = getCarpetColor(stack);
             if (color != this.getColor()) {
                 if (this.getColor() != null) {
-                    this.spawnAtLocation(this.getCarpetItemBeingWorn());
+                    this.spawnAtLocation(new ItemStack(this.getCarpetItemBeingWorn()));
                 }
                 this.gameEvent(GameEvent.ENTITY_INTERACT);
                 this.playSound(SoundEvents.LLAMA_SWAG, 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
@@ -545,7 +546,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
             this.gameEvent(GameEvent.ENTITY_INTERACT);
             this.playSound(SoundEvents.SHEEP_SHEAR, 1.0F, (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
             if (this.getColor() != null) {
-                this.spawnAtLocation(this.getCarpetItemBeingWorn());
+                this.spawnAtLocation(new ItemStack(this.getCarpetItemBeingWorn()));
             }
             this.setColor(null);
             return InteractionResult.SUCCESS;
@@ -576,6 +577,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
         return type;
     }
 
+    @Override
     public EntityDimensions getDimensions(Pose poseIn) {
         return isTusked() && !isBaby() ? TUSKED_SIZE : super.getDimensions(poseIn);
     }
@@ -627,7 +629,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
         }
         if (!this.isTrader() && this.getColor() != null) {
             if (!this.level().isClientSide) {
-                this.spawnAtLocation(this.getCarpetItemBeingWorn());
+                this.spawnAtLocation(new ItemStack(this.getCarpetItemBeingWorn()));
             }
             this.setColor(null);
         }
@@ -770,7 +772,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         if (spawnDataIn instanceof AgeableMob.AgeableMobGroupData) {
             AgeableMob.AgeableMobGroupData lvt_6_1_ = (AgeableMob.AgeableMobGroupData) spawnDataIn;
             if (lvt_6_1_.getGroupSize() == 0) {
@@ -912,7 +914,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
             double extraX = radius * Mth.sin(Mth.PI + angle);
             double extraZ = radius * Mth.cos(angle);
 
-            passenger.setPos(this.getX() + extraX, this.getY() + this.getPassengersRidingOffset() + scaleY + passenger.getMyRidingOffset(), this.getZ() + extraZ);
+            moveFunc.accept(passenger, this.getX() + extraX, this.getY() + this.getPassengersRidingOffset() + scaleY + passenger.getMyRidingOffset() - 0.15D, this.getZ() + extraZ);
         }
     }
 
@@ -931,7 +933,7 @@ public class EntityElephant extends TamableAnimal implements ITargetsDroppedItem
         if(player.zza != 0 || player.xxa != 0){
             this.setRot(player.getYRot(), player.getXRot() * 0.25F);
             this.yRotO = this.yBodyRot = this.yHeadRot = this.getYRot();
-            this.setMaxUpStep(1);
+            this.setMaxUpStep((float)(1.0));
             this.getNavigation().stop();
             this.setTarget(null);
             this.setSprinting(true);

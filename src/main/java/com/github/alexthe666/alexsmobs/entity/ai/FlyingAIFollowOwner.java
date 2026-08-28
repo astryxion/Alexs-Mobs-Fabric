@@ -145,7 +145,7 @@ public class FlyingAIFollowOwner extends Goal {
             BlockPos blockpos = pos.subtract(this.tameable.blockPosition());
             return this.world.noCollision(this.tameable, this.tameable.getBoundingBox().move(blockpos));
         }
-        BlockPathTypes pathnodetype = WalkNodeEvaluator.getBlockPathTypeStatic(this.world, pos.mutable());
+        BlockPathTypes pathnodetype = WalkNodeEvaluator.getBlockPathTypeStatic(this.tameable.level(), new net.minecraft.core.BlockPos.MutableBlockPos().set(pos));
         if (pathnodetype != BlockPathTypes.WALKABLE) {
             return false;
         } else {

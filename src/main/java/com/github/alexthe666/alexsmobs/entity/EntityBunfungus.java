@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+
+import net.minecraft.world.entity.MobType;
 import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.*;
@@ -136,7 +138,7 @@ public class EntityBunfungus extends PathfinderMob implements IAnimatedEntity {
         });
         this.targetSelector.addGoal(2, new HurtByTargetGoal(this));
         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Mob.class, 5, false, false, (mob) -> {
-            return mob instanceof Enemy && !(mob instanceof Creeper) && !(mob.getMobType() == MobType.WATER && mob.isInWaterOrBubble()) && !mob.getType().is(AMTagRegistry.BUNFUNGUS_IGNORES);
+            return mob instanceof Enemy && !(mob instanceof Creeper) && !(AMMobTypes.getMobType(mob) == MobType.WATER && mob.isInWaterOrBubble()) && !mob.getType().is(AMTagRegistry.BUNFUNGUS_IGNORES);
         }));
     }
 

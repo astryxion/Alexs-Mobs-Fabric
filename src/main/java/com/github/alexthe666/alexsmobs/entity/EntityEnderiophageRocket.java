@@ -5,9 +5,6 @@ import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -32,7 +29,7 @@ import java.util.OptionalInt;
 
 /**
  * Custom rocket entity for the Enderiophage Rocket item.
- * Reimplemented to avoid accessing private fields in FireworkRocketEntity.
+ * Reimplemented to avoid accessing private fields in FireworkRocketEntity (NeoForge 1.21.1 port).
  */
 public class EntityEnderiophageRocket extends Projectile implements ItemSupplier {
 
@@ -64,11 +61,6 @@ public class EntityEnderiophageRocket extends Projectile implements ItemSupplier
         this(level, shooter, shooter.getX(), shooter.getY(), shooter.getZ(), stack);
         this.entityData.set(DATA_ATTACHED_TO_TARGET, OptionalInt.of(shooter.getId()));
         this.lifetime = 18 + this.random.nextInt(14);
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return new ClientboundAddEntityPacket(this);
     }
 
     @Override
@@ -206,14 +198,14 @@ public class EntityEnderiophageRocket extends Projectile implements ItemSupplier
     }
 
     @Override
-    public void addAdditionalSaveData(CompoundTag tag) {
+    protected void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putInt("Life", this.life);
         tag.putInt("LifeTime", this.lifetime);
     }
 
     @Override
-    public void readAdditionalSaveData(CompoundTag tag) {
+    protected void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         this.life = tag.getInt("Life");
         this.lifetime = tag.getInt("LifeTime");

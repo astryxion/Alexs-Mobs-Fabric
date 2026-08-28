@@ -155,7 +155,7 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(PARENT_UUID, Optional.empty());
+        this.entityData.define(PARENT_UUID, Optional.<java.util.UUID>empty());
         this.entityData.define(DESPAWN_SOON, false);
         this.entityData.define(LAUNCHED, false);
         this.entityData.define(FROM_BUCKET, false);
@@ -250,6 +250,15 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
 
     protected PathNavigation createNavigation(Level worldIn) {
         return new BoneSerpentPathNavigator(this, worldIn);
+    }
+
+    @Override
+    public void baseTick() {
+        int i = this.getAirSupply();
+        super.baseTick();
+        if (this.isInWater() || this.isInLava()) {
+            this.setAirSupply(i);
+        }
     }
 
     public void tick() {
@@ -347,7 +356,7 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
             if (damage >= 3.0F) {
                 int i = 1 + Mth.floor(damage);
                 InteractionHand hand = holder.getUsedItemHand();
-                holder.getUseItem().hurtAndBreak(i, holder, (p_213833_1_) -> p_213833_1_.broadcastBreakEvent(hand));
+                holder.getUseItem().hurtAndBreak(i, holder, (e) -> e.broadcastBreakEvent((hand == InteractionHand.MAIN_HAND ) ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
                 if (holder.getUseItem().isEmpty()) {
                     if (hand == InteractionHand.MAIN_HAND) {
                         holder.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
@@ -385,10 +394,6 @@ public class EntityStradpole extends WaterAnimal implements Bucketable {
         } else {
             super.travel(travelVector);
         }
-
-    }
-
-    protected void handleAirSupply(int p_209207_1_) {
 
     }
 

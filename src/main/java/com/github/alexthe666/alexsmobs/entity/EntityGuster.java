@@ -13,7 +13,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.BlockTags;
@@ -59,7 +62,7 @@ public class EntityGuster extends Monster {
 
     protected EntityGuster(EntityType type, Level worldIn) {
         super(type, worldIn);
-        this.setMaxUpStep(1);
+        this.setMaxUpStep((float)(1.0));
         this.setPathfindingMalus(BlockPathTypes.WATER, -1.0F);
     }
 
@@ -83,7 +86,7 @@ public class EntityGuster extends Monster {
         return true;
     }
 
-    @Nullable
+    @Override
     protected ResourceLocation getDefaultLootTable() {
         return this.getVariant() == 2 ? SOUL_LOOT : this.getVariant() == 1 ? RED_LOOT : super.getDefaultLootTable();
     }
@@ -137,6 +140,7 @@ public class EntityGuster extends Monster {
         return this.entityData.get(LIFT_ENTITY) != 0;
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(LIFT_ENTITY, 0);

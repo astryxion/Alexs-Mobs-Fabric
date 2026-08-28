@@ -1,7 +1,6 @@
 package com.github.alexthe666.alexsmobs.effect;
 
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
-import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionUtils;
@@ -13,36 +12,43 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Custom brewing recipes that cannot be expressed as potion+ingredient->potion
- * (e.g. item input or item output). Registered via FabricBrewingRecipeRegistry where possible;
- * the rest are stored here and applied by mixin for 1:1 behavior.
+ * Custom brewing recipes. Applied by BrewingStand/PotionBrewing mixins.
+ * Keeps a concrete input ItemStack (with PotionUtils NBT) so potion-type matching works on 1.20.1.
  */
 public class ProperBrewingRecipe {
 
-    private final Ingredient input;
+    private final ItemStack input;
     private final Ingredient ingredient;
     private final ItemStack output;
 
+    public ProperBrewingRecipe(ItemStack input, Ingredient ingredient, ItemStack output) {
+        this.input = input.copy();
+        this.ingredient = ingredient;
+        this.output = output;
+    }
+
     public ProperBrewingRecipe(Ingredient input, Ingredient ingredient, ItemStack output) {
-        this.input = input;
+        ItemStack[] stacks = input.getItems();
+        this.input = stacks.length > 0 ? stacks[0].copy() : ItemStack.EMPTY;
         this.ingredient = ingredient;
         this.output = output;
     }
 
     public boolean isInput(@Nonnull ItemStack stack) {
-        if (stack == null) {
+        if (stack == null || stack.isEmpty() || this.input.isEmpty()) {
             return false;
         }
-        ItemStack[] matchingStacks = input.getItems();
-        if (matchingStacks.length == 0) {
-            return stack.isEmpty();
+        return isSameBrewingInput(stack, this.input);
+    }
+
+    private static boolean isSameBrewingInput(ItemStack stack, ItemStack recipeInput) {
+        if (!ItemStack.isSameItem(stack, recipeInput)) {
+            return false;
         }
-        for (ItemStack itemstack : matchingStacks) {
-            if (ItemStack.isSameItem(stack, itemstack) && ItemStack.isSameItemSameTags(itemstack, stack)) {
-                return true;
-            }
+        if (stack.is(Items.POTION) || stack.is(Items.SPLASH_POTION) || stack.is(Items.LINGERING_POTION)) {
+            return PotionUtils.getPotion(stack) == PotionUtils.getPotion(recipeInput);
         }
-        return false;
+        return java.util.Objects.equals(stack.getTag(), recipeInput.getTag());
     }
 
     public boolean isIngredient(ItemStack stack) {
@@ -50,37 +56,12 @@ public class ProperBrewingRecipe {
     }
 
     public ItemStack getOutput(ItemStack inputStack, ItemStack ingredientStack) {
-        return output.copy();
+        return isInput(inputStack) && isIngredient(ingredientStack) ? output.copy() : ItemStack.EMPTY;
     }
 
-    public Ingredient getInput() {
-        return input;
-    }
+    public static final List<ProperBrewingRecipe> CUSTOM_RECIPES = new ArrayList<>();
 
-    public Ingredient getIngredient() {
-        return ingredient;
-    }
-
-    public ItemStack getOutputTemplate() {
-        return output.copy();
-    }
-
-    public static boolean isValidInput(ItemStack stack) {
-        if (stack.isEmpty()) {
-            return false;
-        }
-        for (ProperBrewingRecipe recipe : CUSTOM_RECIPES) {
-            if (recipe.isInput(stack)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static boolean isValidIngredient(ItemStack stack) {
-        if (stack.isEmpty()) {
-            return false;
-        }
+    public static boolean isCustomIngredient(ItemStack stack) {
         for (ProperBrewingRecipe recipe : CUSTOM_RECIPES) {
             if (recipe.isIngredient(stack)) {
                 return true;
@@ -89,50 +70,43 @@ public class ProperBrewingRecipe {
         return false;
     }
 
-    public static boolean canBrew(NonNullList<ItemStack> items) {
-        ItemStack ingredient = items.get(3);
-        if (ingredient.isEmpty()) {
-            return false;
-        }
-        for (int i = 0; i < 3; i++) {
-            ItemStack input = items.get(i);
-            if (input.isEmpty()) {
-                continue;
-            }
-            for (ProperBrewingRecipe recipe : CUSTOM_RECIPES) {
-                if (recipe.isInput(input) && recipe.isIngredient(ingredient)) {
-                    return true;
-                }
+    public static boolean isCustomInput(ItemStack stack) {
+        for (ProperBrewingRecipe recipe : CUSTOM_RECIPES) {
+            if (recipe.isInput(stack)) {
+                return true;
             }
         }
         return false;
     }
 
-    /** Recipes that need custom handling (item input or item output). Applied by mixin. */
-    public static final List<ProperBrewingRecipe> CUSTOM_RECIPES = new ArrayList<>();
+    public static ItemStack mixCustom(ItemStack input, ItemStack ingredient) {
+        for (ProperBrewingRecipe recipe : CUSTOM_RECIPES) {
+            ItemStack out = recipe.getOutput(input, ingredient);
+            if (!out.isEmpty()) {
+                return out;
+            }
+        }
+        return ItemStack.EMPTY;
+    }
 
     public static void registerCustomRecipes() {
-        // LAVA_BOTTLE (item) + BONE_SERPENT_TOOTH -> LAVA_VISION_POTION
-        CUSTOM_RECIPES.add(new ProperBrewingRecipe(
-                Ingredient.of(AMItemRegistry.LAVA_BOTTLE),
-                Ingredient.of(AMItemRegistry.BONE_SERPENT_TOOTH),
-                AMEffectRegistry.createPotion(AMEffectRegistry.LAVA_VISION_POTION)));
-        // POISON (potion in bottle) + RATTLESNAKE_RATTLE -> POISON_BOTTLE (item)
-        CUSTOM_RECIPES.add(new ProperBrewingRecipe(
-                Ingredient.of(PotionUtils.setPotion(new ItemStack(Items.POTION), Potions.POISON)),
-                Ingredient.of(AMItemRegistry.RATTLESNAKE_RATTLE),
-                new ItemStack(AMItemRegistry.POISON_BOTTLE)));
-        // POISON_BOTTLE (item) + CENTIPEDE_LEG -> POISON_RESISTANCE_POTION
-        CUSTOM_RECIPES.add(new ProperBrewingRecipe(
-                Ingredient.of(AMItemRegistry.POISON_BOTTLE),
-                Ingredient.of(AMItemRegistry.CENTIPEDE_LEG),
-                AMEffectRegistry.createPotion(AMEffectRegistry.POISON_RESISTANCE_POTION)));
-        // KOMODO_SPIT_BOTTLE (item) + CENTIPEDE_LEG -> POISON_RESISTANCE_POTION
-        CUSTOM_RECIPES.add(new ProperBrewingRecipe(
-                Ingredient.of(AMItemRegistry.KOMODO_SPIT_BOTTLE),
-                Ingredient.of(AMItemRegistry.CENTIPEDE_LEG),
-                AMEffectRegistry.createPotion(AMEffectRegistry.POISON_RESISTANCE_POTION)));
+        CUSTOM_RECIPES.clear();
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(Potions.STRENGTH), Ingredient.of(AMItemRegistry.BEAR_FUR), AMEffectRegistry.createPotion(AMEffectRegistry.KNOCKBACK_RESISTANCE_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(AMEffectRegistry.KNOCKBACK_RESISTANCE_POTION), Ingredient.of(Items.REDSTONE), AMEffectRegistry.createPotion(AMEffectRegistry.LONG_KNOCKBACK_RESISTANCE_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(AMEffectRegistry.KNOCKBACK_RESISTANCE_POTION), Ingredient.of(Items.GLOWSTONE_DUST), AMEffectRegistry.createPotion(AMEffectRegistry.STRONG_KNOCKBACK_RESISTANCE_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(new ItemStack(AMItemRegistry.LAVA_BOTTLE), Ingredient.of(AMItemRegistry.BONE_SERPENT_TOOTH), AMEffectRegistry.createPotion(AMEffectRegistry.LAVA_VISION_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(AMEffectRegistry.LAVA_VISION_POTION), Ingredient.of(Items.REDSTONE), AMEffectRegistry.createPotion(AMEffectRegistry.LONG_LAVA_VISION_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(Potions.AWKWARD), Ingredient.of(AMItemRegistry.RATTLESNAKE_RATTLE), new ItemStack(AMItemRegistry.POISON_BOTTLE)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(new ItemStack(AMItemRegistry.POISON_BOTTLE), Ingredient.of(AMItemRegistry.CENTIPEDE_LEG), AMEffectRegistry.createPotion(AMEffectRegistry.POISON_RESISTANCE_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(new ItemStack(AMItemRegistry.KOMODO_SPIT_BOTTLE), Ingredient.of(AMItemRegistry.CENTIPEDE_LEG), AMEffectRegistry.createPotion(AMEffectRegistry.POISON_RESISTANCE_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(AMEffectRegistry.POISON_RESISTANCE_POTION), Ingredient.of(AMItemRegistry.KOMODO_SPIT), AMEffectRegistry.createPotion(AMEffectRegistry.LONG_POISON_RESISTANCE_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(Potions.STRONG_SWIFTNESS), Ingredient.of(AMItemRegistry.GAZELLE_HORN), AMEffectRegistry.createPotion(AMEffectRegistry.SPEED_III_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(Potions.AWKWARD), Ingredient.of(AMItemRegistry.COCKROACH_WING), AMEffectRegistry.createPotion(AMEffectRegistry.BUG_PHEROMONES_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(AMEffectRegistry.BUG_PHEROMONES_POTION), Ingredient.of(Items.REDSTONE), AMEffectRegistry.createPotion(AMEffectRegistry.LONG_BUG_PHEROMONES_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(Potions.AWKWARD), Ingredient.of(AMItemRegistry.SOUL_HEART), AMEffectRegistry.createPotion(AMEffectRegistry.SOULSTEAL_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(AMEffectRegistry.SOULSTEAL_POTION), Ingredient.of(Items.REDSTONE), AMEffectRegistry.createPotion(AMEffectRegistry.LONG_SOULSTEAL_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(AMEffectRegistry.SOULSTEAL_POTION), Ingredient.of(Items.GLOWSTONE_DUST), AMEffectRegistry.createPotion(AMEffectRegistry.STRONG_SOULSTEAL_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(Potions.AWKWARD), Ingredient.of(AMItemRegistry.DROPBEAR_CLAW), AMEffectRegistry.createPotion(AMEffectRegistry.CLINGING_POTION)));
+        CUSTOM_RECIPES.add(new ProperBrewingRecipe(AMEffectRegistry.createPotion(AMEffectRegistry.CLINGING_POTION), Ingredient.of(Items.REDSTONE), AMEffectRegistry.createPotion(AMEffectRegistry.LONG_CLINGING_POTION)));
     }
 }
-
-

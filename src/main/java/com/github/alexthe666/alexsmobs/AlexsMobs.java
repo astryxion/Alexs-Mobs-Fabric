@@ -3,6 +3,7 @@ package com.github.alexthe666.alexsmobs;
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
+import com.github.alexthe666.alexsmobs.config.BiomeConfig;
 import com.github.alexthe666.alexsmobs.config.ConfigHolder;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.enchantment.AMEnchantmentRegistry;
@@ -15,7 +16,6 @@ import com.github.alexthe666.alexsmobs.misc.*;
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.world.AMFeatureRegistry;
 import com.github.alexthe666.alexsmobs.world.AMSpawnRegistry;
-import io.netty.buffer.Unpooled;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -105,23 +105,23 @@ public class AlexsMobs implements ModInitializer {
         isHalloween = calendar.get(Calendar.MONTH) + 1 == 10 && calendar.get(Calendar.DATE) >= 29 && calendar.get(Calendar.DATE) <= 31;
 
         ConfigHolder.loadConfig();
+        BiomeConfig.init();
 
         AMEntityRegistry.init();
         AMBlockRegistry.init();
         AMEffectRegistry.init();
-        AMItemRegistry.init();
-        AMTileEntityRegistry.init();
+                AMTileEntityRegistry.init();
         AMPointOfInterestRegistry.init();
         AMFeatureRegistry.init();
         AMSoundRegistry.init();
+        AMItemRegistry.init();
         AMParticleRegistry.init();
-        AMPaintingRegistry.init();
         AMEffectRegistry.registerBrewing();
         AMEnchantmentRegistry.init();
         AMMenuRegistry.init();
         AMRecipeRegistry.init();
         AMLootRegistry.init();
-        AMBannerRegistry.init();
+        AMPaintingRegistry.init();
         AMCreativeTabRegistry.init();
         AMSpawnRegistry.register();
 
@@ -131,7 +131,9 @@ public class AlexsMobs implements ModInitializer {
         AMAdvancementTriggerRegistry.init();
         PROXY.initPathfinding();
 
-        ServerLifecycleEvents.SERVER_STARTING.register(s -> server = s);
+        ServerLifecycleEvents.SERVER_STARTING.register(s -> {
+            server = s;
+        });
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> server = null);
         ServerEvents.register();
     }
@@ -164,19 +166,7 @@ public class AlexsMobs implements ModInitializer {
     }
 
     public static void sendNonLocal(Object msg, ServerPlayer player) {
-        ServerPlayNetworking.send(player, new AlexsMobsPacket(serializeMessage(msg)));
-    }
-
-    /** Copies packet payload to a standalone buffer for safe parsing (avoids Netty refCnt issues). */
-    public static byte[] serializeMessage(Object message) {
-        FriendlyByteBuf buf = writeMessageToBuf(message);
-        try {
-            byte[] data = new byte[buf.readableBytes()];
-            buf.getBytes(buf.readerIndex(), data);
-            return data;
-        } finally {
-            buf.release();
-        }
+        ServerPlayNetworking.send(player, PACKET_CHANNEL, writeMessageToBuf(msg));
     }
 
     private static final int ID_MOSQUITO_MOUNT = 0, ID_MOSQUITO_DISMOUNT = 1, ID_HURT_MULTIPART = 2, ID_CROW_MOUNT = 3, ID_CROW_DISMOUNT = 4;
@@ -185,72 +175,59 @@ public class AlexsMobs implements ModInitializer {
     private static final int ID_VISUAL_FLAG = 15, ID_PUPFISH_CHUNK = 16, ID_TRANSMUTABLES = 17, ID_TRANSMUTE_MENU = 18, ID_SYNC_ENTITY_DATA = 19;
 
     private static void registerNetworking() {
-        ServerPlayNetworking.registerGlobalReceiver(AlexsMobsPacket.TYPE, (packet, player, responseSender) ->
-                handleServerPacket(packet.data(), player));
+        ServerPlayNetworking.registerGlobalReceiver(PACKET_CHANNEL, (server, player, handler, buf, responseSender) -> {
+            FriendlyByteBuf packet = new FriendlyByteBuf(buf.copy());
+            int id = packet.readVarInt();
+            server.execute(() -> {
+                PacketContext ctx = new PacketContext(player, false);
+                Supplier<PacketContext> sup = () -> ctx;
+                switch (id) {
+                    case ID_MOSQUITO_MOUNT -> MessageMosquitoMountPlayer.Handler.handle(MessageMosquitoMountPlayer.read(packet), sup);
+                    case ID_MOSQUITO_DISMOUNT -> MessageMosquitoDismount.Handler.handle(MessageMosquitoDismount.read(packet), sup);
+                    case ID_HURT_MULTIPART -> MessageHurtMultipart.Handler.handle(MessageHurtMultipart.read(packet), sup);
+                    case ID_CROW_MOUNT -> MessageCrowMountPlayer.Handler.handle(MessageCrowMountPlayer.read(packet), sup);
+                    case ID_CROW_DISMOUNT -> MessageCrowDismount.Handler.handle(MessageCrowDismount.read(packet), sup);
+                    case ID_MUNGUS_BIOME -> MessageMungusBiomeChange.Handler.handle(MessageMungusBiomeChange.read(packet), sup);
+                    case ID_KANGAROO_SYNC -> MessageKangarooInventorySync.Handler.handle(MessageKangarooInventorySync.read(packet), sup);
+                    case ID_KANGAROO_EAT -> MessageKangarooEat.Handler.handle(MessageKangarooEat.read(packet), sup);
+                    case ID_UPDATE_CAPSID -> MessageUpdateCapsid.Handler.handle(MessageUpdateCapsid.read(packet), sup);
+                    case ID_SWING_ARM -> MessageSwingArm.Handler.handle(MessageSwingArm.read(packet), sup);
+                    case ID_EAGLE_CONTROLS -> MessageUpdateEagleControls.Handler.handle(MessageUpdateEagleControls.read(packet), sup);
+                    case ID_SYNC_ENTITY_POS -> MessageSyncEntityPos.Handler.handle(MessageSyncEntityPos.read(packet), sup);
+                    case ID_TARANTULA_STING -> MessageTarantulaHawkSting.Handler.handle(MessageTarantulaHawkSting.read(packet), sup);
+                    case ID_START_DANCING -> MessageStartDancing.Handler.handle(MessageStartDancing.read(packet), sup);
+                    case ID_INTERACT_MULTIPART -> MessageInteractMultipart.Handler.handle(MessageInteractMultipart.read(packet), sup);
+                    case ID_TRANSMUTE_MENU -> MessageTransmuteFromMenu.Handler.handle(MessageTransmuteFromMenu.read(packet), sup);
+                    default -> {}
+                }
+            });
+        });
         // Client receiver is registered in client-only ClientNetworkInit (no client API in main source set).
     }
 
-    private static void handleServerPacket(byte[] data, ServerPlayer player) {
-        if (data == null || data.length == 0) {
-            return;
-        }
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.copiedBuffer(data));
-        try {
-            if (!buf.isReadable()) {
-                return;
-            }
-            int id = buf.readVarInt();
-            PacketContext ctx = new PacketContext(player, false);
-            Supplier<PacketContext> sup = () -> ctx;
-            switch (id) {
-                case ID_MOSQUITO_MOUNT -> MessageMosquitoMountPlayer.Handler.handle(MessageMosquitoMountPlayer.read(buf), sup);
-                case ID_MOSQUITO_DISMOUNT -> MessageMosquitoDismount.Handler.handle(MessageMosquitoDismount.read(buf), sup);
-                case ID_HURT_MULTIPART -> MessageHurtMultipart.Handler.handle(MessageHurtMultipart.read(buf), sup);
-                case ID_CROW_MOUNT -> MessageCrowMountPlayer.Handler.handle(MessageCrowMountPlayer.read(buf), sup);
-                case ID_CROW_DISMOUNT -> MessageCrowDismount.Handler.handle(MessageCrowDismount.read(buf), sup);
-                case ID_MUNGUS_BIOME -> MessageMungusBiomeChange.Handler.handle(MessageMungusBiomeChange.read(buf), sup);
-                case ID_KANGAROO_SYNC -> MessageKangarooInventorySync.Handler.handle(MessageKangarooInventorySync.read(buf), sup);
-                case ID_KANGAROO_EAT -> MessageKangarooEat.Handler.handle(MessageKangarooEat.read(buf), sup);
-                case ID_UPDATE_CAPSID -> MessageUpdateCapsid.Handler.handle(MessageUpdateCapsid.read(buf), sup);
-                case ID_SWING_ARM -> MessageSwingArm.Handler.handle(MessageSwingArm.read(buf), sup);
-                case ID_EAGLE_CONTROLS -> MessageUpdateEagleControls.Handler.handle(MessageUpdateEagleControls.read(buf), sup);
-                case ID_SYNC_ENTITY_POS -> MessageSyncEntityPos.Handler.handle(MessageSyncEntityPos.read(buf), sup);
-                case ID_TARANTULA_STING -> MessageTarantulaHawkSting.Handler.handle(MessageTarantulaHawkSting.read(buf), sup);
-                case ID_START_DANCING -> MessageStartDancing.Handler.handle(MessageStartDancing.read(buf), sup);
-                case ID_INTERACT_MULTIPART -> MessageInteractMultipart.Handler.handle(MessageInteractMultipart.read(buf), sup);
-                case ID_TRANSMUTE_MENU -> MessageTransmuteFromMenu.Handler.handle(MessageTransmuteFromMenu.read(buf), sup);
-                default -> {}
-            }
-        } finally {
-            buf.release();
-        }
-    }
-
     /** Called from client-only ClientNetworkInit when a server->client packet is received. */
-    public static void handleClientPacket(byte[] data) {
-        if (data == null || data.length == 0) {
-            return;
-        }
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.copiedBuffer(data));
-        try {
-            if (!buf.isReadable()) {
-                return;
-            }
-            int id = buf.readVarInt();
-            PacketContext ctx = new PacketContext(null, true);
-            Supplier<PacketContext> sup = () -> ctx;
-            switch (id) {
-                case ID_VISUAL_FLAG -> MessageSendVisualFlagFromServer.Handler.handle(MessageSendVisualFlagFromServer.read(buf), sup);
-                case ID_PUPFISH_CHUNK -> MessageSetPupfishChunkOnClient.Handler.handle(MessageSetPupfishChunkOnClient.read(buf), sup);
-                case ID_TRANSMUTABLES -> MessageUpdateTransmutablesToDisplay.Handler.handle(MessageUpdateTransmutablesToDisplay.read(buf), sup);
-                case ID_KANGAROO_SYNC -> MessageKangarooInventorySync.Handler.handle(MessageKangarooInventorySync.read(buf), sup);
-                case ID_KANGAROO_EAT -> MessageKangarooEat.Handler.handle(MessageKangarooEat.read(buf), sup);
-                case ID_HURT_MULTIPART -> MessageHurtMultipart.Handler.handle(MessageHurtMultipart.read(buf), sup);
-                case ID_SYNC_ENTITY_DATA -> MessageSyncEntityData.Handler.handle(MessageSyncEntityData.read(buf), sup);
-                default -> {}
-            }
-        } finally {
-            buf.release();
+    public static void handleClientPacket(FriendlyByteBuf buf) {
+        int id = buf.readVarInt();
+        PacketContext ctx = new PacketContext(null, true);
+        Supplier<PacketContext> sup = () -> ctx;
+        switch (id) {
+            case ID_MOSQUITO_MOUNT -> MessageMosquitoMountPlayer.Handler.handle(MessageMosquitoMountPlayer.read(buf), sup);
+            case ID_MOSQUITO_DISMOUNT -> MessageMosquitoDismount.Handler.handle(MessageMosquitoDismount.read(buf), sup);
+            case ID_HURT_MULTIPART -> MessageHurtMultipart.Handler.handle(MessageHurtMultipart.read(buf), sup);
+            case ID_CROW_MOUNT -> MessageCrowMountPlayer.Handler.handle(MessageCrowMountPlayer.read(buf), sup);
+            case ID_CROW_DISMOUNT -> MessageCrowDismount.Handler.handle(MessageCrowDismount.read(buf), sup);
+            case ID_MUNGUS_BIOME -> MessageMungusBiomeChange.Handler.handle(MessageMungusBiomeChange.read(buf), sup);
+            case ID_KANGAROO_SYNC -> MessageKangarooInventorySync.Handler.handle(MessageKangarooInventorySync.read(buf), sup);
+            case ID_KANGAROO_EAT -> MessageKangarooEat.Handler.handle(MessageKangarooEat.read(buf), sup);
+            case ID_UPDATE_CAPSID -> MessageUpdateCapsid.Handler.handle(MessageUpdateCapsid.read(buf), sup);
+            case ID_SYNC_ENTITY_POS -> MessageSyncEntityPos.Handler.handle(MessageSyncEntityPos.read(buf), sup);
+            case ID_TARANTULA_STING -> MessageTarantulaHawkSting.Handler.handle(MessageTarantulaHawkSting.read(buf), sup);
+            case ID_START_DANCING -> MessageStartDancing.Handler.handle(MessageStartDancing.read(buf), sup);
+            case ID_VISUAL_FLAG -> MessageSendVisualFlagFromServer.Handler.handle(MessageSendVisualFlagFromServer.read(buf), sup);
+            case ID_PUPFISH_CHUNK -> MessageSetPupfishChunkOnClient.Handler.handle(MessageSetPupfishChunkOnClient.read(buf), sup);
+            case ID_TRANSMUTABLES -> MessageUpdateTransmutablesToDisplay.Handler.handle(MessageUpdateTransmutablesToDisplay.read(buf), sup);
+            case ID_SYNC_ENTITY_DATA -> MessageSyncEntityData.Handler.handle(MessageSyncEntityData.read(buf), sup);
+            default -> {}
         }
     }
 

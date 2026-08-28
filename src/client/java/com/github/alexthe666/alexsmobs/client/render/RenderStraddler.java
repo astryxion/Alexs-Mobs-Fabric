@@ -14,7 +14,7 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.resources.ResourceLocation;
 
 public class RenderStraddler extends MobRenderer<EntityStraddler, ModelStraddler> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/straddler.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/straddler.png");
     private static final ModelStradpole STRADPOLE_MODEL = new ModelStradpole();
     public RenderStraddler(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new ModelStraddler(), 0.6F);
@@ -40,12 +40,15 @@ public class RenderStraddler extends MobRenderer<EntityStraddler, ModelStraddler
             int t = straddler.getAnimationTick();
             if(straddler.getAnimation() == EntityStraddler.ANIMATION_LAUNCH && t < 20 && t > 6){
                 matrixStackIn.pushPose();
-                translateToModel(matrixStackIn);
-                final float back = t <= 15 ? (t-6) * 0.05F : 0.25F;
-                matrixStackIn.translate(0F, -2.5F + back * 0.5F, 0.35F + back);
-                VertexConsumer ivertexbuilder = bufferIn.getBuffer(RenderType.entityTranslucent(RenderStradpole.TEXTURE));
-                STRADPOLE_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, LivingEntityRenderer.getOverlayCoords(straddler, 0.0F), 1.0F, 1.0F, 1.0F, 1.0F);
-                matrixStackIn.popPose();
+                try {
+                    translateToModel(matrixStackIn);
+                    final float back = t <= 15 ? (t-6) * 0.05F : 0.25F;
+                    matrixStackIn.translate(0F, -2.5F + back * 0.5F, 0.35F + back);
+                    VertexConsumer ivertexbuilder = bufferIn.getBuffer(RenderType.entityTranslucent(RenderStradpole.TEXTURE));
+                    STRADPOLE_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, LivingEntityRenderer.getOverlayCoords(straddler, 0.0F), 1.0F, 1.0F, 1.0F, 1.0F);
+                } finally {
+                    matrixStackIn.popPose();
+                }
             }
         }
 

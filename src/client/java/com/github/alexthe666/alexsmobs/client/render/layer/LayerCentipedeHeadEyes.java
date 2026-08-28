@@ -12,7 +12,7 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.resources.ResourceLocation;
 
 public class LayerCentipedeHeadEyes extends RenderLayer<EntityCentipedeHead, AdvancedEntityModel<EntityCentipedeHead>> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/cave_centipede_eyes.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/cave_centipede_eyes.png");
 
     public LayerCentipedeHeadEyes(RenderCentipedeHead render) {
         super(render);

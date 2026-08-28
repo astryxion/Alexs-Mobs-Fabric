@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.entity.ai.AMTagTemptGoal;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIWanderRanged;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
@@ -110,12 +112,9 @@ public class EntityBananaSlug extends Animal {
 
     }
 
-    public boolean canBreatheUnderwater() {
-        return true;
-    }
 
     @javax.annotation.Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @javax.annotation.Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @javax.annotation.Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setVariant(random.nextInt(4));
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
     }
@@ -156,7 +155,7 @@ public class EntityBananaSlug extends Animal {
 
     protected void registerGoals() {
         this.goalSelector.addGoal(1, new FloatGoal(this));
-        this.goalSelector.addGoal(2, new TemptGoal(this, 1.0D, Ingredient.of(AMTagRegistry.BANANA_SLUG_BREEDABLES), false));
+        this.goalSelector.addGoal(2, new AMTagTemptGoal(this, 1.0D, false, AMTagRegistry.BANANA_SLUG_BREEDABLES));
         this.goalSelector.addGoal(3, new BreedGoal(this, 1.0D));
         this.goalSelector.addGoal(4, new AnimalAIWanderRanged(this, 40, 1.0D, 10, 7));
         this.goalSelector.addGoal(5, new LookAtPlayerGoal(this, Player.class, 5.0F));

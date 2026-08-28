@@ -74,6 +74,7 @@ public class RenderUnderminer extends MobRenderer<EntityUnderminer, EntityModel<
 
     public void render(EntityUnderminer entityIn, float entityYaw, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn) {
         matrixStackIn.pushPose();
+        try {
         this.model.attackTime = this.getAttackAnim(entityIn, partialTicks);
 
         boolean shouldSit = entityIn.isPassenger() && (entityIn.getVehicle() != null && RenderUnderminer.getShouldRiderSit(entityIn.getVehicle()));
@@ -156,8 +157,9 @@ public class RenderUnderminer extends MobRenderer<EntityUnderminer, EntityModel<
                 layerrenderer.render(matrixStackIn, bufferIn, packedLightIn, entityIn, f5, f8, partialTicks, f7, f2, f6);
             }
         }
-
-        matrixStackIn.popPose();
+        } finally {
+            matrixStackIn.popPose();
+        }
         if (this.shouldShowName(entityIn)) {
             this.renderNameTag(entityIn, entityIn.getDisplayName(), matrixStackIn, bufferIn, packedLightIn);
         }
@@ -165,17 +167,20 @@ public class RenderUnderminer extends MobRenderer<EntityUnderminer, EntityModel<
         BlockPos miningPos = entityIn.getMiningPos();
         if (miningPos != null) {
             matrixStackIn.pushPose();
-            double d0 = Mth.lerp(partialTicks, entityIn.xo, entityIn.getX());
-            double d1 = Mth.lerp(partialTicks, entityIn.yo, entityIn.getY());
-            double d2 = Mth.lerp(partialTicks, entityIn.zo, entityIn.getZ());
+            try {
+                double d0 = Mth.lerp(partialTicks, entityIn.xo, entityIn.getX());
+                double d1 = Mth.lerp(partialTicks, entityIn.yo, entityIn.getY());
+                double d2 = Mth.lerp(partialTicks, entityIn.zo, entityIn.getZ());
 
-            matrixStackIn.translate((double) miningPos.getX() - d0, (double) miningPos.getY() - d1, (double) miningPos.getZ() - d2);
-            int progress = (int) Math.round((DESTROY_TYPES.size() - 1) * (float) Mth.clamp(entityIn.getMiningProgress(), 0F, 1.0F));
-            PoseStack.Pose posestack$pose = matrixStackIn.last();
-            VertexConsumer vertexconsumer1 = new SheetedDecalTextureGenerator(bufferIn.getBuffer(DESTROY_TYPES.get(progress)), posestack$pose.pose(), posestack$pose.normal(), 1.0F);
+                matrixStackIn.translate((double) miningPos.getX() - d0, (double) miningPos.getY() - d1, (double) miningPos.getZ() - d2);
+                int progress = (int) Math.round((DESTROY_TYPES.size() - 1) * (float) Mth.clamp(entityIn.getMiningProgress(), 0F, 1.0F));
+                PoseStack.Pose posestack$pose = matrixStackIn.last();
+                VertexConsumer vertexconsumer1 = new SheetedDecalTextureGenerator(bufferIn.getBuffer(DESTROY_TYPES.get(progress)), posestack$pose.pose(), posestack$pose.normal(), 1.0F);
 
-            Minecraft.getInstance().getBlockRenderer().renderBreakingTexture(entityIn.level().getBlockState(miningPos), miningPos, entityIn.level(), matrixStackIn, vertexconsumer1);
-            matrixStackIn.popPose();
+                Minecraft.getInstance().getBlockRenderer().renderBreakingTexture(entityIn.level().getBlockState(miningPos), miningPos, entityIn.level(), matrixStackIn, vertexconsumer1);
+            } finally {
+                matrixStackIn.popPose();
+            }
         }
     }
 

@@ -28,11 +28,14 @@ public class LayerRainbow extends RenderLayer {
         int i = RainbowUtil.getRainbowType((LivingEntity)entity);
         if(entity instanceof LivingEntity && i > 0) {
             ItemRainbowJelly.RainbowType rainbowType = ItemRainbowJelly.RainbowType.values()[Mth.clamp(i - 1, 0,ItemRainbowJelly.RainbowType.values().length - 1)];
-            VertexConsumer ivertexbuilder = bufferIn.getBuffer(getRenderType(rainbowType));
-            float alpha = 0.5F;
             matrixStackIn.pushPose();
-            this.getParentModel().renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, LivingEntityRenderer.getOverlayCoords((LivingEntity)entity, 0), 1, 1, 1, alpha);
-            matrixStackIn.popPose();
+            try {
+                VertexConsumer ivertexbuilder = bufferIn.getBuffer(getRenderType(rainbowType));
+                float alpha = 0.5F;
+                this.getParentModel().renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, LivingEntityRenderer.getOverlayCoords((LivingEntity)entity, 0), 1.0F, 1.0F, 1.0F, alpha);
+            } finally {
+                matrixStackIn.popPose();
+            }
         }
     }
 

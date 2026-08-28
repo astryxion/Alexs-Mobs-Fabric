@@ -217,9 +217,7 @@ public class ModelLaviathan extends AdvancedEntityModel<EntityLaviathan> {
     public Iterable<AdvancedModelBox> getAllParts() {
         return ImmutableList.of(root, body, leftArm, rightArm, leftLeg, rightLeg, tail, neck, neck2, head, bottom_jaw, top_jaw, shell, vent1, vent2, vent3, vent4);
     }
-
-    @Override
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.45F;
             head.setScale(f, f, f);

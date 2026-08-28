@@ -138,10 +138,7 @@ public class ModelMudskipper extends AdvancedEntityModel<EntityMudskipper> {
         this.swing(leftFin, walkSpeed, walkDegree, true, 2F, -0.3F, limbSwing, walkSwingAmount);
 
     }
-
-
-    @Override
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
         if (this.young) {
             float f = 1.45F;
             head.setScale(f, f, f);

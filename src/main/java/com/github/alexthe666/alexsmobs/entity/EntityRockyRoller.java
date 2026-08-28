@@ -38,6 +38,7 @@ import net.minecraft.world.level.block.Fallable;
 import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.level.pathfinder.PathFinder;
 import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
@@ -98,6 +99,7 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
         this.targetSelector.addGoal(3, new HurtByTargetGoal(this));
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(ANGRY, false);
@@ -147,9 +149,9 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
             if (this.rollCounter > 2 && !this.isMoving() || !this.isAlive()) {
                 this.setRolling(false);
             }
-            this.setMaxUpStep(1F);
+            this.setMaxUpStep((float)(1.0));
         } else {
-            this.setMaxUpStep(0.66F);
+            this.setMaxUpStep((float)(0.66));
             this.rollCounter = 0;
         }
         if (rollCooldown > 0) {
@@ -204,7 +206,7 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
             }
         }
         if(flag){
-            this.gameEvent(GameEvent.ENTITY_ROAR);
+            this.gameEvent(GameEvent.ENTITY_INTERACT);
             this.playSound(AMSoundRegistry.ROCKY_ROLLER_EARTHQUAKE, this.getSoundVolume(), this.getVoicePitch());
         }
     }
@@ -328,8 +330,10 @@ public class EntityRockyRoller extends Monster implements ICustomCollisions {
     }
 
     static class RockyRollerNodeEvaluator extends WalkNodeEvaluator {
-        protected BlockPathTypes evaluateBlockPathType(BlockGetter level, BlockPos pos, BlockPathTypes typeIn) {
-            return level.getBlockState(pos).getBlock() instanceof PointedDripstoneBlock ? BlockPathTypes.OPEN : super.evaluateBlockPathType(level, pos, typeIn);
+        @Override
+        public BlockPathTypes getBlockPathType(BlockGetter level, int x, int y, int z) {
+            BlockPathTypes type = super.getBlockPathType(level, x, y, z);
+            return level.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof PointedDripstoneBlock ? BlockPathTypes.OPEN : type;
         }
     }
 

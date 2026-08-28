@@ -20,11 +20,11 @@ public class AMTileEntityRegistry {
     public static BlockEntityType<TileEntityTransmutationTable> TRANSMUTATION_TABLE;
     public static BlockEntityType<TileEntitySculkBoomer> SCULK_BOOMER;
     //TODO reimplement
-    public static BlockEntityType<TileEntityEndPirateDoor> END_PIRATE_DOOR = null;
-    public static BlockEntityType<TileEntityEndPirateAnchor> END_PIRATE_ANCHOR = null;
-    public static BlockEntityType<TileEntityEndPirateAnchorWinch> END_PIRATE_ANCHOR_WINCH = null;
-    public static BlockEntityType<TileEntityEndPirateShipWheel> END_PIRATE_SHIP_WHEEL = null;
-    public static BlockEntityType<TileEntityEndPirateFlag> END_PIRATE_FLAG = null;
+    public static BlockEntityType<TileEntityEndPirateDoor> END_PIRATE_DOOR = null;//Registry.register(..., BlockEntityType.Builder.of(TileEntityEndPirateDoor::new, AMBlockRegistry.END_PIRATE_DOOR).build(null));
+    public static BlockEntityType<TileEntityEndPirateAnchor> END_PIRATE_ANCHOR = null;//Registry.register(..., BlockEntityType.Builder.of(TileEntityEndPirateAnchor::new, AMBlockRegistry.END_PIRATE_ANCHOR).build(null));
+    public static BlockEntityType<TileEntityEndPirateAnchorWinch> END_PIRATE_ANCHOR_WINCH = null;//Registry.register(..., BlockEntityType.Builder.of(TileEntityEndPirateAnchorWinch::new, AMBlockRegistry.END_PIRATE_ANCHOR_WINCH).build(null));
+    public static BlockEntityType<TileEntityEndPirateShipWheel> END_PIRATE_SHIP_WHEEL = null;//Registry.register(..., BlockEntityType.Builder.of(TileEntityEndPirateShipWheel::new, AMBlockRegistry.END_PIRATE_SHIP_WHEEL).build(null));
+    public static BlockEntityType<TileEntityEndPirateFlag> END_PIRATE_FLAG = null;//Registry.register(..., BlockEntityType.Builder.of(TileEntityEndPirateFlag::new, AMBlockRegistry.END_PIRATE_FLAG).build(null));
 
     public static void init() {
         LEAFCUTTER_ANTHILL = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, id("leafcutter_anthill_te"),

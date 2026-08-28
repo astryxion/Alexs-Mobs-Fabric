@@ -109,7 +109,7 @@ public class CrowAIFollowOwner extends Goal {
                 if (this.crow.isFlying()) {
                     circlingTime++;
                 }
-                if(circlingTime > maxCircleTime && crow.getRidingCrows(owner) < 2){
+                if(circlingTime > maxCircleTime && crow.canBoardOwner(owner) && crow.getRidingCrows(owner) < 2){
                     crow.getMoveControl().setWantedPosition(owner.getX(), owner.getY() + owner.getEyeHeight() + 0.2F, owner.getZ(), 0.7F);
                     if(crow.distanceTo(owner) < 2){
                         crow.startRiding(owner, true);
@@ -171,7 +171,7 @@ public class CrowAIFollowOwner extends Goal {
     }
 
     private boolean isTeleportFriendlyBlock(BlockPos p_226329_1_) {
-        BlockPathTypes lvt_2_1_ = WalkNodeEvaluator.getBlockPathTypeStatic(this.world, p_226329_1_.mutable());
+        BlockPathTypes lvt_2_1_ = WalkNodeEvaluator.getBlockPathTypeStatic(this.crow.level(), new net.minecraft.core.BlockPos.MutableBlockPos().set(p_226329_1_));
         if (lvt_2_1_ != BlockPathTypes.WALKABLE) {
             return false;
         } else {

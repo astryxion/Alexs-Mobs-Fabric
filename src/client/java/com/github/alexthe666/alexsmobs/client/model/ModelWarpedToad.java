@@ -247,8 +247,7 @@ public class ModelWarpedToad extends AdvancedEntityModel<EntityWarpedToad> {
         progressPositionPrev(right_arm, jumpProgress, 0, 1, 0, 5f);
 
     }
-
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             matrixStackIn.pushPose();
             matrixStackIn.scale(0.35F, 0.35F, 0.35F);

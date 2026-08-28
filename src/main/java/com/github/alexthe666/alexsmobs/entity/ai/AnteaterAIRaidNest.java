@@ -11,6 +11,8 @@ import com.github.alexthe666.alexsmobs.tileentity.TileEntityLeafcutterAnthill;
 import com.github.alexthe666.citadel.animation.IAnimatedEntity;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;

@@ -59,13 +59,10 @@ public class BoneSerpentNodeProcessor extends NodeEvaluator {
         return pathnodetype != BlockPathTypes.BREACH && pathnodetype != BlockPathTypes.WATER && pathnodetype != BlockPathTypes.LAVA ? null : this.getNode(p_186328_1_, p_186328_2_, p_186328_3_);
     }
 
-    /**
-     * Returns a mapped point or creates and adds one
-     */
     @Nullable
     protected Node getNode(int x, int y, int z) {
         Node pathpoint = null;
-        BlockPathTypes pathnodetype = this.getBlockPathType(this.mob.level(), x, y, z);
+        BlockPathTypes pathnodetype = this.getBlockPathType(this.level, x, y, z);
         float f = this.mob.getPathfindingMalus(pathnodetype);
         if (f >= 0.0F) {
             pathpoint = super.getNode(x, y, z);
@@ -99,6 +96,6 @@ public class BoneSerpentNodeProcessor extends NodeEvaluator {
         }
 
         BlockState blockstate1 = this.level.getBlockState(blockpos$mutable);
-        return blockstate1.getFluidState().is(FluidTags.LAVA) || blockstate1.isPathfindable(this.level, blockpos$mutable, PathComputationType.WATER) ? BlockPathTypes.WATER : BlockPathTypes.BLOCKED;
+        return !blockstate1.getFluidState().is(FluidTags.LAVA) && !blockstate1.isPathfindable(this.level, blockpos$mutable, PathComputationType.WATER) ? BlockPathTypes.BLOCKED : BlockPathTypes.WATER;
     }
 }

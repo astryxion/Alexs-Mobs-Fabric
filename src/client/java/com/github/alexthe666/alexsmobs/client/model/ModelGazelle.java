@@ -257,8 +257,7 @@ public class ModelGazelle extends AdvancedEntityModel<EntityGazelle> {
         }
         //previously the render function, render code was moved to a method below
     }
-
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.75F;
             head.setScale(f, f, f);

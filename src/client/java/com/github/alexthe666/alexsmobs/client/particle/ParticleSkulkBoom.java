@@ -84,10 +84,10 @@ public class ParticleSkulkBoom extends Particle {
         float f5 = 0;
         float f6 = 1;
         int j = 240;
-        portalStatic.vertex((double)avector3f[0].x(), (double)avector3f[0].y(), (double)avector3f[0].z()).color(this.rCol, this.gCol, this.bCol, alphaLerp).uv(f8, f6).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(j).normal(matrix3f, 0.0F, -1.0F, 0.0F).endVertex();
-        portalStatic.vertex((double)avector3f[1].x(), (double)avector3f[1].y(), (double)avector3f[1].z()).color(this.rCol, this.gCol, this.bCol, alphaLerp).uv(f8, f5).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(j).normal(matrix3f, 0.0F, -1.0F, 0.0F).endVertex();
-        portalStatic.vertex((double)avector3f[2].x(), (double)avector3f[2].y(), (double)avector3f[2].z()).color(this.rCol, this.gCol, this.bCol, alphaLerp).uv(f7, f5).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(j).normal(matrix3f, 0.0F, -1.0F, 0.0F).endVertex();
-        portalStatic.vertex((double)avector3f[3].x(), (double)avector3f[3].y(), (double)avector3f[3].z()).color(this.rCol, this.gCol, this.bCol, alphaLerp).uv(f7, f6).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(j).normal(matrix3f, 0.0F, -1.0F, 0.0F).endVertex();
+        portalStatic.vertex((float)avector3f[0].x(), (float)avector3f[0].y(), (float)avector3f[0].z()).color(this.rCol, this.gCol, this.bCol, alphaLerp).uv(f8, f6).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(j).normal(0.0F, -1.0F, 0.0F).endVertex();
+        portalStatic.vertex((float)avector3f[1].x(), (float)avector3f[1].y(), (float)avector3f[1].z()).color(this.rCol, this.gCol, this.bCol, alphaLerp).uv(f8, f5).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(j).normal(0.0F, -1.0F, 0.0F).endVertex();
+        portalStatic.vertex((float)avector3f[2].x(), (float)avector3f[2].y(), (float)avector3f[2].z()).color(this.rCol, this.gCol, this.bCol, alphaLerp).uv(f7, f5).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(j).normal(0.0F, -1.0F, 0.0F).endVertex();
+        portalStatic.vertex((float)avector3f[3].x(), (float)avector3f[3].y(), (float)avector3f[3].z()).color(this.rCol, this.gCol, this.bCol, alphaLerp).uv(f7, f6).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(j).normal(0.0F, -1.0F, 0.0F).endVertex();
 
         multibuffersource$buffersource.endBatch();
     }

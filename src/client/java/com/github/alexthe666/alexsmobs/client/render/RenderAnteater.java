@@ -1,18 +1,20 @@
 package com.github.alexthe666.alexsmobs.client.render;
 
+import com.github.alexthe666.alexsmobs.ClientProxy;
 import com.github.alexthe666.alexsmobs.client.model.ModelAnteater;
 import com.github.alexthe666.alexsmobs.client.render.layer.LayerAnteaterBaby;
 import com.github.alexthe666.alexsmobs.client.render.layer.LayerAnteaterTongueItem;
 import com.github.alexthe666.alexsmobs.entity.EntityAnteater;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.ResourceLocation;
 
 public class RenderAnteater extends MobRenderer<EntityAnteater, ModelAnteater> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/anteater.png");
-    private static final ResourceLocation TEXTURE_PETER = new ResourceLocation("alexsmobs:textures/entity/anteater_peter.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/anteater.png");
+    private static final ResourceLocation TEXTURE_PETER = new ResourceLocation("alexsmobs", "textures/entity/anteater_peter.png");
 
     public RenderAnteater(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new ModelAnteater(), 0.45F);
@@ -21,13 +23,19 @@ public class RenderAnteater extends MobRenderer<EntityAnteater, ModelAnteater> {
     }
 
     public boolean shouldRender(EntityAnteater anteater, Frustum p_225626_2_, double p_225626_3_, double p_225626_5_, double p_225626_7_) {
-        if(anteater.isBaby() && anteater.isPassenger() && anteater.getVehicle() instanceof EntityAnteater){
-            return false;
+        if (anteater.isBaby() && anteater.isPassenger()) {
+            Entity vehicle = anteater.getVehicle();
+            if (vehicle instanceof EntityAnteater parent && parent.isAlive()) {
+                return false;
+            }
         }
+        ClientProxy.currentUnrenderedEntities.remove(anteater.getUUID());
         return super.shouldRender(anteater, p_225626_2_, p_225626_3_, p_225626_5_, p_225626_7_);
     }
 
+    @Override
     protected void scale(EntityAnteater entitylivingbaseIn, PoseStack matrixStackIn, float partialTickTime) {
+        this.model.young = entitylivingbaseIn.isBaby();
     }
 
 

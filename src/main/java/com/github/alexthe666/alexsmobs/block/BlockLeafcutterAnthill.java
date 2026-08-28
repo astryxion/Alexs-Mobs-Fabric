@@ -7,6 +7,7 @@ import com.github.alexthe666.alexsmobs.misc.AMAdvancementTriggerRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityLeafcutterAnthill;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -15,6 +16,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -29,6 +31,8 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 
@@ -37,8 +41,8 @@ import java.util.List;
 
 public class BlockLeafcutterAnthill extends BaseEntityBlock {
 
-    public BlockLeafcutterAnthill() {
-        super(BlockBehaviour.Properties.of().sound(SoundType.GRAVEL).strength(0.75F));
+    public BlockLeafcutterAnthill(BlockBehaviour.Properties properties) {
+        super(properties);
     }
 
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
@@ -61,6 +65,7 @@ public class BlockLeafcutterAnthill extends BaseEntityBlock {
         return RenderShape.MODEL;
     }
 
+    @Override
     public void playerWillDestroy(Level worldIn, BlockPos pos, BlockState state, Player player) {
         if (!worldIn.isClientSide && player.isCreative() && worldIn.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)) {
             BlockEntity tileentity = worldIn.getBlockEntity(pos);
@@ -68,22 +73,16 @@ public class BlockLeafcutterAnthill extends BaseEntityBlock {
                 TileEntityLeafcutterAnthill anthivetileentity = (TileEntityLeafcutterAnthill) tileentity;
                 ItemStack itemstack = new ItemStack(this);
                 boolean flag = !anthivetileentity.hasNoAnts();
-                if (!flag) {
-                    return;
-                }
                 if (flag) {
                     CompoundTag compoundnbt = new CompoundTag();
                     compoundnbt.put("Ants", anthivetileentity.getAnts());
-                    itemstack.addTagElement("BlockEntityTag", compoundnbt);
+                    net.minecraft.world.item.BlockItem.setBlockEntityData(itemstack, AMTileEntityRegistry.LEAFCUTTER_ANTHILL, compoundnbt);
                 }
-                CompoundTag compoundnbt1 = new CompoundTag();
-                itemstack.addTagElement("BlockStateTag", compoundnbt1);
                 ItemEntity itementity = new ItemEntity(worldIn, pos.getX(), pos.getY(), pos.getZ(), itemstack);
                 itementity.setDefaultPickUpDelay();
                 worldIn.addFreshEntity(itementity);
             }
         }
-
         super.playerWillDestroy(worldIn, pos, state, player);
     }
 
@@ -111,6 +110,29 @@ public class BlockLeafcutterAnthill extends BaseEntityBlock {
                 this.angerNearbyAnts(worldIn, pos);
             }
         }
+    }
+
+    @Override
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
+        ItemStack tool = builder.getOptionalParameter(LootContextParams.TOOL);
+        BlockEntity blockEntity = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
+        boolean silkTouch = false;
+        if (tool != null) {
+            Level level = builder.getLevel();
+            silkTouch = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH,
+                tool
+            ) > 0;
+        }
+        if (silkTouch && blockEntity instanceof TileEntityLeafcutterAnthill anthill) {
+            ItemStack stack = new ItemStack(this);
+            if (!anthill.hasNoAnts()) {
+                CompoundTag tag = new CompoundTag();
+                tag.put("Ants", anthill.getAnts());
+                BlockItem.setBlockEntityData(stack, AMTileEntityRegistry.LEAFCUTTER_ANTHILL, tag);
+            }
+            return List.of(stack);
+        }
+        return List.of();
     }
 
     private void angerNearbyAnts(Level world, BlockPos pos) {

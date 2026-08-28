@@ -78,13 +78,9 @@ public class EntityMurmur extends Monster implements ISemiAquatic {
         return this.getHeadUUID() != null && entity.getUUID().equals(this.getHeadUUID()) || super.isAlliedTo(entity);
     }
 
-    public MobType getMobType() {
-        return MobType.UNDEAD;
-    }
-
     @Override
-    protected float getStandingEyeHeight(Pose pose, EntityDimensions dimensions) {
-        return dimensions.height * 1.2F;
+    public EntityDimensions getDimensions(Pose pose) {
+        return super.getDimensions(pose).scale(1.0F, 1.2F);
     }
 
     protected float getWaterSlowDown() {
@@ -94,7 +90,7 @@ public class EntityMurmur extends Monster implements ISemiAquatic {
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(HEAD_UUID, Optional.empty());
+        this.entityData.define(HEAD_UUID, Optional.<UUID>empty());
         this.entityData.define(HEAD_ID, -1);
     }
 

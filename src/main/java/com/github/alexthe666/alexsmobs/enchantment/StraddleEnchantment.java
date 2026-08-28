@@ -9,32 +9,42 @@ import net.minecraft.world.item.enchantment.EnchantmentCategory;
 
 public class StraddleEnchantment extends Enchantment {
 
-    protected StraddleEnchantment(Rarity r, EnchantmentCategory type, EquipmentSlot... types) {
-        super(r, type, types);
+    protected StraddleEnchantment(Rarity rarity, EnchantmentCategory category, EquipmentSlot... slots) {
+        super(rarity, category, slots);
     }
 
-    public int getMinCost(int i) {
-        return 6 + (i + 1) * 6;
+    @Override
+    public int getMinCost(int level) {
+        return 6 + (level + 1) * 6;
     }
 
-    public int getMaxCost(int i) {
-        return super.getMinCost(i) + 10;
+    @Override
+    public int getMaxCost(int level) {
+        return super.getMinCost(level) + 10;
     }
 
+    @Override
     public int getMaxLevel() {
         return 1;
     }
 
-    public boolean isTradeable() {
-        return super.isTradeable() && AMConfig.straddleboardEnchants;
+    @Override
+    public boolean isDiscoverable() {
+        return AMConfig.straddleboardEnchants;
     }
 
-    public boolean isDiscoverable() {
-        return super.isDiscoverable() && AMConfig.straddleboardEnchants;
+    @Override
+    public boolean isTreasureOnly() {
+        return false;
     }
 
     @Override
     public boolean canEnchant(ItemStack stack) {
-        return AMConfig.straddleboardEnchants && stack.getItem() instanceof ItemStraddleboard;
+        return stack.getItem() instanceof ItemStraddleboard;
+    }
+
+    @Override
+    public boolean isTradeable() {
+        return false;
     }
 }

@@ -113,8 +113,7 @@ public class ModelOrca extends AdvancedEntityModel<EntityOrca> {
         animator.resetKeyframe(12);
 
     }
-
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             matrixStackIn.pushPose();
             matrixStackIn.scale(0.35F, 0.35F, 0.35F);

@@ -56,7 +56,6 @@ public class ModelTarantulaHawkBaby extends AdvancedEntityModel<EntityTarantulaH
         return ImmutableList.of(root, body, head);
     }
 
-    @Override
     public void renderToBuffer(PoseStack matrixStack, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
         root.render(matrixStack, buffer, packedLight, packedOverlay);
     }

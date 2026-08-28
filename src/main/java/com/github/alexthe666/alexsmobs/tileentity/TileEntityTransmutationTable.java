@@ -7,9 +7,12 @@ import com.github.alexthe666.alexsmobs.misc.AMAdvancementTriggerRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.TransmutationData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
@@ -20,8 +23,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 
 import java.util.*;
 
@@ -51,15 +54,39 @@ public class TileEntityTransmutationTable  extends BlockEntity {
             return ItemStack.EMPTY;
         }else{
             LootTable loottable = player.level().getServer().getLootData().getLootTable(loc);
-            List<ItemStack> loots = loottable.getRandomItems((new LootParams.Builder((ServerLevel) player.level())).create(LootContextParamSets.EMPTY));
+            List<ItemStack> loots = loottable.getRandomItems((new LootParams.Builder((ServerLevel) player.level()))
+                    .withParameter(LootContextParams.ORIGIN, player.position())
+                    .withParameter(LootContextParams.THIS_ENTITY, player)
+                    .create(LootContextParamSets.CHEST));
             return loots.isEmpty() ? ItemStack.EMPTY : loots.get(0);
         }
     }
 
 
+    @Override
     public void load(CompoundTag tag) {
         super.load(tag);
         totalTransmuteCount = tag.getInt("TotalCount");
+        ListTag list = tag.getList("PlayerTransmutationData", 10);
+        playerToData.clear();
+        for(int i = 0; i < list.size(); ++i) {
+            CompoundTag compoundtag = list.getCompound(i);
+            UUID uuid = compoundtag.getUUID("UUID");
+            if(uuid != null){
+                playerToData.put(uuid, TransmutationData.fromNBT(compoundtag.getCompound("TransmutationData")));
+            }
+        }
+        for(int i = 0; i < 3; i++){
+            if(tag.contains("Possibility" + i)){
+                possiblities[i] = ItemStack.of(tag.getCompound("Possiblity" + i));
+            }
+        }
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        tag.putInt("TotalCount", totalTransmuteCount);
         ListTag list = new ListTag();
         for(Map.Entry<UUID, TransmutationData> entry : playerToData.entrySet()){
             CompoundTag innerTag = new CompoundTag();
@@ -69,29 +96,8 @@ public class TileEntityTransmutationTable  extends BlockEntity {
         }
         tag.put("PlayerTransmutationData", list);
         for(int i = 0; i < 3; i++){
-            if(tag.contains("Possibility" + i)){
-                possiblities[i] = ItemStack.of(tag.getCompound("Possiblity" + i));
-            }
-        }
-
-    }
-
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        tag.putInt("TotalCount", totalTransmuteCount);
-        ListTag list = tag.getList("PlayerTransmutationData", 10);
-        if(!list.isEmpty()){
-            for(int i = 0; i < list.size(); ++i) {
-                CompoundTag compoundtag = list.getCompound(i);
-                UUID uuid = compoundtag.getUUID("UUID");
-                if(uuid != null){
-                    playerToData.put(uuid, TransmutationData.fromNBT(compoundtag.getCompound("TransmutationData")));
-                }
-            }
-        }
-        for(int i = 0; i < 3; i++){
             if(possiblities[i] != null && !possiblities[i].isEmpty()){
-                tag.put("Possiblity" + i, possiblities[i].save(new net.minecraft.nbt.CompoundTag()));
+                tag.put("Possiblity" + i, possiblities[i].save(new CompoundTag()));
             }
         }
     }

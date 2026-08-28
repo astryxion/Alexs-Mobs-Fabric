@@ -195,8 +195,7 @@ public class ModelKomodoDragon extends AdvancedEntityModel<EntityKomodoDragon> {
 		}
 
 	}
-
-	public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
 		if (this.young) {
 			float f = 1.75F;
 			head.setScale(f, f, f);

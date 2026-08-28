@@ -92,8 +92,7 @@ public class ModelEndergrade extends AdvancedEntityModel<EntityEndergrade> {
 		tail.setTextureOffset(0, 20).addBox(-4.0F, -1.5F, -2.4F, 7.0F, 7.0F, 9.0F, 0.0F, false);
 		this.updateDefaultPose();
 	}
-
-	public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
 		if (this.young) {
 			float f = 1.75F;
 			head.setScale(f, f, f);

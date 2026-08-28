@@ -1,0 +1,8 @@
+{
+  "comparator_output": 14,
+  "description": {
+    "translate": "item.alexsmobs.music_disc_daze.desc"
+  },
+  "length_in_seconds": 191.0,
+  "sound_event": "alexsmobs:music_disc_daze"
+}

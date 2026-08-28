@@ -14,6 +14,7 @@ public class EffectEnderFlu extends MobEffect {
         super(MobEffectCategory.HARMFUL, 0X6836AA);
     }
 
+    @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
         if (lastDuration == 1) {
             int phages = amplifier + 1;
@@ -29,8 +30,10 @@ public class EffectEnderFlu extends MobEffect {
                 }
             }
         }
+
     }
 
+    @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         lastDuration = duration;
         return duration > 0;

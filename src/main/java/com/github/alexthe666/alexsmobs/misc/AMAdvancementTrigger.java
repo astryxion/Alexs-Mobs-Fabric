@@ -1,7 +1,11 @@
 package com.github.alexthe666.alexsmobs.misc;
 
 import com.google.gson.JsonObject;
-import net.minecraft.advancements.critereon.*;
+import net.minecraft.advancements.critereon.AbstractCriterionTriggerInstance;
+import net.minecraft.advancements.critereon.ContextAwarePredicate;
+import net.minecraft.advancements.critereon.DeserializationContext;
+import net.minecraft.advancements.critereon.SerializationContext;
+import net.minecraft.advancements.critereon.SimpleCriterionTrigger;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -12,37 +16,28 @@ public class AMAdvancementTrigger extends SimpleCriterionTrigger<AMAdvancementTr
         this.resourceLocation = resourceLocation;
     }
 
-    public AMAdvancementTrigger.Instance createInstance(JsonObject p_230241_1_, ContextAwarePredicate p_230241_2_, DeserializationContext p_230241_3_) {
-        return new AMAdvancementTrigger.Instance(p_230241_2_, resourceLocation);
+    @Override
+    public ResourceLocation getId() {
+        return this.resourceLocation;
     }
 
-    public void trigger(ServerPlayer p_192180_1_) {
-        this.trigger(p_192180_1_, (p_226308_1_) -> {
-            return true;
-        });
+    public void trigger(ServerPlayer player) {
+        this.trigger(player, instance -> true);
     }
 
     @Override
-    public ResourceLocation getId() {
-        return resourceLocation;
+    public Instance createInstance(JsonObject json, ContextAwarePredicate player, DeserializationContext context) {
+        return new Instance(player, this.resourceLocation);
     }
 
-
     public static class Instance extends AbstractCriterionTriggerInstance {
-
-        public Instance(ContextAwarePredicate p_i231507_1_, ResourceLocation res) {
-            super(res, p_i231507_1_);
+        public Instance(ContextAwarePredicate player, ResourceLocation id) {
+            super(id, player);
         }
 
-        public static ConstructBeaconTrigger.TriggerInstance forLevel(MinMaxBounds.Ints p_203912_0_) {
-            return new ConstructBeaconTrigger.TriggerInstance(ContextAwarePredicate.ANY, p_203912_0_);
-        }
-
-
-
-        public JsonObject serializeToJson(SerializationContext p_230240_1_) {
-            JsonObject lvt_2_1_ = super.serializeToJson(p_230240_1_);
-            return lvt_2_1_;
+        @Override
+        public JsonObject serializeToJson(SerializationContext context) {
+            return super.serializeToJson(context);
         }
     }
 }

@@ -5,6 +5,7 @@ import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import net.minecraft.BlockUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -20,6 +21,8 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
@@ -78,10 +81,11 @@ public class EntityStraddleboard extends Entity implements PlayerRideableJumping
         return (entity.canBeCollidedWith() || entity.isPushable()) && !p_242378_0_.isPassengerOfSameVehicle(entity);
     }
 
-    protected float getEyeHeight(Pose poseIn, EntityDimensions sizeIn) {
-        return sizeIn.height;
+    public float getEyeHeight(Pose poseIn) {
+        return this.getDimensions(poseIn).height * 0.85F;
     }
 
+    @Override
     protected void defineSynchedData() {
         this.entityData.define(TIME_SINCE_HIT, 0);
         this.entityData.define(ITEMSTACK, new ItemStack(AMItemRegistry.STRADDLEBOARD));
@@ -97,10 +101,6 @@ public class EntityStraddleboard extends Entity implements PlayerRideableJumping
 
     public boolean canCollideWith(Entity entity) {
         return canVehicleCollide(this, entity);
-    }
-
-    protected Vec3 getRelativePortalPosition(Direction.Axis axis, BlockUtil.FoundRectangle result) {
-        return LivingEntity.resetForwardDirectionOfRelativePortalPosition(super.getRelativePortalPosition(axis, result));
     }
 
     public double getPassengersRidingOffset() {
@@ -318,7 +318,6 @@ public class EntityStraddleboard extends Entity implements PlayerRideableJumping
         return this.level().getFluidState(underPos).is(FluidTags.LAVA) && !this.level().getFluidState(ourPos).is(FluidTags.LAVA);
     }
 
-    @Override
     public void lerpTo(double x, double y, double z, float yr, float xr, int steps, boolean b) {
         this.lx = x;
         this.ly = y;
@@ -329,7 +328,6 @@ public class EntityStraddleboard extends Entity implements PlayerRideableJumping
         this.setDeltaMovement(this.lxd, this.lyd, this.lzd);
     }
 
-    @Override
     public void lerpMotion(double lerpX, double lerpY, double lerpZ) {
         this.lxd = lerpX;
         this.lyd = lerpY;
@@ -438,7 +436,6 @@ public class EntityStraddleboard extends Entity implements PlayerRideableJumping
             this.getItemStack().save(stackTag);
             compound.put("BoardStack", stackTag);
         }
-
     }
 
     @Override

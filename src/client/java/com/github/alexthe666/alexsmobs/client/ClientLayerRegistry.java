@@ -5,7 +5,7 @@ import com.github.alexthe666.alexsmobs.mixin.LivingEntityRendererAccessor;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 
 /**
- * Fabric 1.20.1: AddLayers equivalent; called from LivingEntityRendererMixin to add LayerRainbow to every LivingEntityRenderer (1:1 with Forge EntityRenderersEvent.AddLayers).
+ * Fabric 1.21.1: AddLayers equivalent; called from LivingEntityRendererMixin.
  */
 public class ClientLayerRegistry {
 

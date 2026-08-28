@@ -24,13 +24,19 @@ public class MessageStartDancing {
     }
 
     public static MessageStartDancing read(FriendlyByteBuf buf) {
-        return new MessageStartDancing(buf.readInt(), buf.readBoolean(), buf.readBlockPos());
+        int entityId = buf.readInt();
+        boolean dance = buf.readBoolean();
+        BlockPos pos = buf.readBoolean() ? buf.readBlockPos() : BlockPos.ZERO;
+        return new MessageStartDancing(entityId, dance, pos);
     }
 
     public static void write(MessageStartDancing message, FriendlyByteBuf buf) {
         buf.writeInt(message.entityID);
         buf.writeBoolean(message.dance);
-        buf.writeBlockPos(message.jukeBox);
+        buf.writeBoolean(message.jukeBox != null);
+        if (message.jukeBox != null) {
+            buf.writeBlockPos(message.jukeBox);
+        }
     }
 
     public static class Handler {

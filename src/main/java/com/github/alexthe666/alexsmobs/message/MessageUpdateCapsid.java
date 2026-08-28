@@ -2,7 +2,6 @@ package com.github.alexthe666.alexsmobs.message;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityCapsid;
-import com.github.alexthe666.citadel.server.message.PacketBufferUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
@@ -24,12 +23,19 @@ public class MessageUpdateCapsid  {
     }
 
     public static MessageUpdateCapsid read(FriendlyByteBuf buf) {
-        return new MessageUpdateCapsid(buf.readLong(), PacketBufferUtils.readItemStack(buf));
+        long pos = buf.readLong();
+        net.minecraft.nbt.CompoundTag tag = buf.readNbt();
+        return new MessageUpdateCapsid(pos, tag != null ? ItemStack.of(tag) : ItemStack.EMPTY);
     }
 
     public static void write(MessageUpdateCapsid message, FriendlyByteBuf buf) {
         buf.writeLong(message.blockPos);
-        PacketBufferUtils.writeItemStack(buf, message.heldStack);
+        ItemStack stack = message.heldStack == null ? ItemStack.EMPTY : message.heldStack;
+        if (stack.isEmpty()) {
+            buf.writeNbt(new net.minecraft.nbt.CompoundTag());
+        } else {
+            buf.writeNbt(stack.save(new net.minecraft.nbt.CompoundTag()));
+        }
     }
 
     public static class Handler {

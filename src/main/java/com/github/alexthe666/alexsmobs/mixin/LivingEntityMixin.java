@@ -8,7 +8,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Fabric: per-entity armor tick logic (both sides; server-only work is guarded inside ServerEvents).
+ * Fabric: Invoke Alex's Mobs living-entity tick logic per entity when it ticks.
+ * Matches NeoForge EntityTickEvent.Post (both sides) so movement-based armor
+ * (rocky chestplate, centipede leggings, flying fish boots) applies on the client player.
  */
 @Mixin(LivingEntity.class)
 public class LivingEntityMixin {

@@ -8,6 +8,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+
+/** Animal Dictionary: Citadel {@link GuiBasicBook} handles book JSON and text layout; this class only wires assets and entity-render flags. */
 public class GUIAnimalDictionary extends GuiBasicBook {
 
     private static final ResourceLocation ROOT = new ResourceLocation("alexsmobs:book/animal_dictionary/root.json");
@@ -21,6 +23,11 @@ public class GUIAnimalDictionary extends GuiBasicBook {
         this.currentPageJSON = new ResourceLocation(this.getTextFileDirectory() + page + ".json");
     }
 
+    @Override
+    public void renderBackground(GuiGraphics guiGraphics) {
+    }
+
+    @Override
     public void render(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
         RenderLaviathan.renderWithoutShaking = true;
         RenderMurmurBody.renderWithHead = true;
@@ -31,8 +38,9 @@ public class GUIAnimalDictionary extends GuiBasicBook {
         RenderUnderminer.renderWithPickaxe = false;
     }
 
+    @Override
     protected int getBindingColor() {
-        return 0X606B26;
+        return 0x606B26;
     }
 
     public ResourceLocation getRootPage() {

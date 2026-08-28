@@ -1,7 +1,6 @@
 package com.github.alexthe666.alexsmobs.entity;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.github.alexthe666.alexsmobs.entity.util.MultipartEntityUtil;
 import com.github.alexthe666.alexsmobs.message.MessageHurtMultipart;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import net.minecraft.core.BlockPos;
@@ -58,10 +57,6 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
         return  source.is(DamageTypes.IN_WALL)  || super.isInvulnerableTo(source);
     }
 
-    public MobType getMobType() {
-        return MobType.ARTHROPOD;
-    }
-
     public boolean isNoGravity() {
         return false;
     }
@@ -69,14 +64,18 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
     @Override
     public void tick() {
         super.tick();
-        isInsidePortal = false;
+        this.isInsidePortal = false;
         this.setDeltaMovement(Vec3.ZERO);
         if (this.tickCount > 1) {
             final Entity parent = getParent();
             refreshDimensions();
             if (parent != null && !this.level().isClientSide) {
                 if (parent instanceof final LivingEntity parentEntity) {
-                    MultipartEntityUtil.syncHurtTimesFromParent(this, parentEntity);
+                    if ((parentEntity.hurtTime > 0 || parentEntity.deathTime > 0)) {
+                        AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), 0));
+                        this.hurtTime = parentEntity.hurtTime;
+                        this.deathTime = parentEntity.deathTime;
+                    }
                 }
                 if (parent.isRemoved()) {
                     this.remove(RemovalReason.DISCARDED);
@@ -120,8 +119,8 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(PARENT_UUID, Optional.empty());
-        this.entityData.define(CHILD_UUID, Optional.empty());
+        this.entityData.define(PARENT_UUID, Optional.<UUID>empty());
+        this.entityData.define(CHILD_UUID, Optional.<UUID>empty());
         this.entityData.define(BODYINDEX, 0);
         this.entityData.define(BODY_XROT, 0F);
     }
@@ -219,7 +218,10 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
         final Vec3 avg = new Vec3((parentButt.x + ourButt.x) / 2F, (parentButt.y + ourButt.y) / 2F, (parentButt.z + ourButt.z) / 2F);
         final double d0 = parentButt.x - ourButt.x;
         final double d2 = parentButt.z - ourButt.z;
-        final double d3 = Math.sqrt(d0 * d0 + d2 * d2);
+        double d3 = Math.sqrt(d0 * d0 + d2 * d2);
+        if (d3 < 1.0E-4D) {
+            d3 = 1.0E-4D;
+        }
         final double hgt = doHeight ? (getLowPartHeight(parentButt.x, parentButt.y, parentButt.z) + getHighPartHeight(ourButt.x, ourButt.y, ourButt.z)) : 0;
         if(Math.abs(prevHeight - hgt) > 0.2){
             prevHeight = hgt;
@@ -289,10 +291,6 @@ public class EntityCentipedeBody extends Mob implements IHurtableMultipart {
                 return p_185969_.isSuffocating(this.level(), blockpos) && Shapes.joinIsNotEmpty(p_185969_.getCollisionShape(this.level(), blockpos).move(vec3.x, vec3.y, vec3.z), Shapes.create(axisalignedbb), BooleanOp.AND);
             });
         }
-    }
-
-    public boolean canBreatheUnderwater() {
-        return true;
     }
 
     public float getBackOffset() {

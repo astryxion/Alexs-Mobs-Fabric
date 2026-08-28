@@ -105,6 +105,7 @@ public class EntityGrizzlyBear extends TamableAnimal implements NeutralMob, IAni
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 55.0D).add(Attributes.ATTACK_DAMAGE, 8.0D).add(Attributes.KNOCKBACK_RESISTANCE, 0.6F).add(Attributes.MOVEMENT_SPEED, 0.25F);
     }
 
+    @Override
     public EntityDimensions getDimensions(Pose poseIn) {
         return isStanding() ? STANDING_SIZE.scale(this.getScale()) : super.getDimensions(poseIn);
     }
@@ -285,7 +286,7 @@ public class EntityGrizzlyBear extends TamableAnimal implements NeutralMob, IAni
         if(item instanceof ShovelItem && this.isSnowy() && !this.level().isClientSide){
             this.permSnow = false;
             if(!player.isCreative()){
-                itemstack.hurt(1, this.getRandom(), player instanceof ServerPlayer ? (ServerPlayer)player : null);
+                itemstack.hurtAndBreak(1, player, (e) -> e.broadcastBreakEvent((hand == InteractionHand.MAIN_HAND ) ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
             }
             this.setSnowy(false);
             this.gameEvent(GameEvent.ENTITY_INTERACT);
@@ -333,7 +334,7 @@ public class EntityGrizzlyBear extends TamableAnimal implements NeutralMob, IAni
         if(player.zza != 0 || player.xxa != 0){
             this.setRot(player.getYRot(), player.getXRot() * 0.25F);
             this.yRotO = this.yBodyRot = this.yHeadRot = this.getYRot();
-            this.setMaxUpStep(1);
+            this.setMaxUpStep((float)(1.0));
             this.getNavigation().stop();
             this.setTarget(null);
             this.setSprinting(true);
@@ -697,7 +698,7 @@ public class EntityGrizzlyBear extends TamableAnimal implements NeutralMob, IAni
         return !isSitting();
     }
 
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         if (spawnDataIn == null) {
             spawnDataIn = new AgeableMob.AgeableMobGroupData(1.0F);
         }

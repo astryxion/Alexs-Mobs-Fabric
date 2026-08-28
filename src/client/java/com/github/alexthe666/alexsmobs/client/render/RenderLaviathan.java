@@ -24,11 +24,11 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 public class RenderLaviathan extends MobRenderer<EntityLaviathan, ModelLaviathan> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/laviathan.png");
-    private static final ResourceLocation TEXTURE_GLOW = new ResourceLocation("alexsmobs:textures/entity/laviathan_glow.png");
-    private static final ResourceLocation TEXTURE_OBSIDIAN = new ResourceLocation("alexsmobs:textures/entity/laviathan_obsidian.png");
-    private static final ResourceLocation TEXTURE_GEAR = new ResourceLocation("alexsmobs:textures/entity/laviathan_gear.png");
-    private static final ResourceLocation TEXTURE_HELMET = new ResourceLocation("alexsmobs:textures/entity/laviathan_helmet.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/laviathan.png");
+    private static final ResourceLocation TEXTURE_GLOW = new ResourceLocation("alexsmobs", "textures/entity/laviathan_glow.png");
+    private static final ResourceLocation TEXTURE_OBSIDIAN = new ResourceLocation("alexsmobs", "textures/entity/laviathan_obsidian.png");
+    private static final ResourceLocation TEXTURE_GEAR = new ResourceLocation("alexsmobs", "textures/entity/laviathan_gear.png");
+    private static final ResourceLocation TEXTURE_HELMET = new ResourceLocation("alexsmobs", "textures/entity/laviathan_helmet.png");
     private static final float REINS_COLOR_R = 98F / 255F;
     private static final float REINS_COLOR_G = 77F / 255F;
     private static final float REINS_COLOR_B = 52F / 255F;
@@ -79,14 +79,17 @@ public class RenderLaviathan extends MobRenderer<EntityLaviathan, ModelLaviathan
         super.render(mob, p_115456_, partialTick, ms, p_115459_, p_115460_);
         Entity entity = mob.getControllingPassenger();
         if (entity != null) {
-            double d0 = Mth.lerp(partialTick, mob.xOld, mob.getX());
-            double d1 = Mth.lerp(partialTick, mob.yOld, mob.getY());
-            double d2 = Mth.lerp(partialTick, mob.zOld, mob.getZ());
             ms.pushPose();
-            ms.translate(-d0, -d1, -d2);
-            this.renderRein(mob, partialTick, ms, p_115459_, entity, true);
-            this.renderRein(mob, partialTick, ms, p_115459_, entity, false);
-            ms.popPose();
+            try {
+                double d0 = Mth.lerp(partialTick, mob.xOld, mob.getX());
+                double d1 = Mth.lerp(partialTick, mob.yOld, mob.getY());
+                double d2 = Mth.lerp(partialTick, mob.zOld, mob.getZ());
+                ms.translate(-d0, -d1, -d2);
+                this.renderRein(mob, partialTick, ms, p_115459_, entity, true);
+                this.renderRein(mob, partialTick, ms, p_115459_, entity, false);
+            } finally {
+                ms.popPose();
+            }
         }
     }
 
@@ -130,11 +133,12 @@ public class RenderLaviathan extends MobRenderer<EntityLaviathan, ModelLaviathan
 
     private <E extends Entity> void renderRein(EntityLaviathan mob, float partialTick, PoseStack p_115464_, MultiBufferSource p_115465_, E rider, boolean left) {
         p_115464_.pushPose();
-        Entity head = mob.headPart;
-        if (head == null) {
-            return;
-        }
-        float limbSwingAmount = mob.walkAnimation.speed(partialTick);
+        try {
+            Entity head = mob.headPart;
+            if (head == null) {
+                return;
+            }
+            float limbSwingAmount = mob.walkAnimation.speed(partialTick);
         float shake = getHeadShakeForReins(mob, partialTick);
         float headYaw = Math.abs(mob.getHeadYaw(partialTick)) / 50F;
         float headPitch = 1F - Math.abs((mob.prevHeadHeight + (mob.getHeadHeight() - mob.prevHeadHeight) * partialTick) / 3F);
@@ -170,7 +174,9 @@ public class RenderLaviathan extends MobRenderer<EntityLaviathan, ModelLaviathan
         for (int j1 = 24; j1 >= 0; --j1) {
             addVertexPairAlex(vertexconsumer, matrix4f, f, f1, f2, i, j, k, l, width, width, f5, f6, j1, true);
         }
-        p_115464_.popPose();
+        } finally {
+            p_115464_.popPose();
+        }
     }
 
     private Vec3 getReinPosition(LivingEntity entity, float p_36374_, boolean left, float shake) {

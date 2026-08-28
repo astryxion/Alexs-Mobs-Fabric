@@ -285,7 +285,7 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
                 this.entityData.set(TENTACLING, true);
                 if (squishCooldown == 0 && this.isFlying()) {
                     squishCooldown = 10;
-                    this.gameEvent(GameEvent.ENTITY_ROAR);
+                    this.gameEvent(GameEvent.ENTITY_INTERACT);
                     this.playSound(AMSoundRegistry.FLUTTER_FLAP, 3F, 1.5F * this.getVoicePitch());
                 }
                 this.randomMotionSpeed = 0.8F;
@@ -599,7 +599,9 @@ public class EntityFlutter extends TamableAnimal implements IFollower, FlyingAni
         ItemStack stack = new ItemStack(AMItemRegistry.POTTED_FLUTTER);
         CompoundTag platTag = new CompoundTag();
         this.addAdditionalSaveData(platTag);
-        stack.getOrCreateTag().put("FlutterData", platTag);
+        CompoundTag compound = new CompoundTag();
+        compound.put("FlutterData", platTag);
+        stack.setTag(compound);
         if (this.hasCustomName()) {
             stack.setHoverName(this.getCustomName());
         }

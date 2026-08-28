@@ -11,9 +11,12 @@ public class EffectLavaVision extends MobEffect {
 
     }
 
+    @Override
     public void applyEffectTick(LivingEntity LivingEntityIn, int amplifier) {
+
     }
 
+    @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         return duration > 0;
     }

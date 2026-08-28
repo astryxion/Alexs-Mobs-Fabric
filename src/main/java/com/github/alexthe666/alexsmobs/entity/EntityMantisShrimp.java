@@ -93,7 +93,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         this.setPathfindingMalus(BlockPathTypes.WATER, 0.0F);
         this.setPathfindingMalus(BlockPathTypes.WATER_BORDER, 0.0F);
         switchNavigator(false);
-        this.setMaxUpStep(1);
+        this.setMaxUpStep((float)(1.0));
     }
 
     protected SoundEvent getHurtSound(DamageSource damageSourceIn) {
@@ -150,10 +150,6 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
 
     public boolean removeWhenFarAway(double distanceToClosestPlayer) {
         return !this.isTame();
-    }
-
-    public MobType getMobType() {
-        return MobType.ARTHROPOD;
     }
 
     public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
@@ -218,9 +214,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         return source.is(DamageTypes.DROWN) || source.is(DamageTypes.IN_WALL)  || super.isInvulnerableTo(source);
     }
 
-    public boolean canBreatheUnderwater() {
-        return true;
-    }
+    /** canBreatheUnderwater() is final in 1.21.1; MantisShrimp breathing is preserved via isInvulnerableTo(DROWN) and EntityMantisShrimpBreathingMixin. */
 
     protected void defineSynchedData() {
         super.defineSynchedData();
@@ -229,10 +223,10 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         this.entityData.define(LEFT_EYE_PITCH, 0F);
         this.entityData.define(LEFT_EYE_YAW, 0F);
         this.entityData.define(PUNCH_TICK, 0);
-        this.entityData.define(COMMAND, Integer.valueOf(0));
-        this.entityData.define(VARIANT, Integer.valueOf(0));
+        this.entityData.define(COMMAND, 0);
+        this.entityData.define(VARIANT, 0);
         this.entityData.define(SITTING, false);
-        this.entityData.define(MOISTNESS, Integer.valueOf(60000));
+        this.entityData.define(MOISTNESS, 60000);
     }
 
     public boolean isFood(ItemStack stack) {
@@ -353,6 +347,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
                     ItemStack cop = itemstack.copy();
                     cop.setCount(1);
                     this.setItemInHand(InteractionHand.MAIN_HAND, cop);
+                    this.setGuaranteedDrop(EquipmentSlot.MAINHAND);
                     itemstack.shrink(1);
                     return InteractionResult.SUCCESS;
                 } else {
@@ -442,7 +437,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
                 float knockbackResist = (float) Mth.clamp((1.0D - this.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE)), 0, 1);
                 this.getTarget().setDeltaMovement(this.getTarget().getDeltaMovement().add(0, knockbackResist * 0.8F, 0));
                 if (!this.getTarget().isInWater()) {
-                    this.getTarget().setSecondsOnFire(2);
+                    this.getTarget().setRemainingFireTicks(2 * 20);
                 }
                 this.getTarget().hurt(this.damageSources().mobAttack(this), (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE));
             }
@@ -556,7 +551,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         int i;
         if(reason == MobSpawnType.SPAWN_EGG){
             i = this.getRandom().nextInt(4);
@@ -718,7 +713,7 @@ public class EntityMantisShrimp extends TamableAnimal implements ISemiAquatic, I
         }
 
         private boolean isTeleportFriendlyBlock(BlockPos p_226329_1_) {
-            BlockPathTypes lvt_2_1_ = WalkNodeEvaluator.getBlockPathTypeStatic(this.world, p_226329_1_.mutable());
+            BlockPathTypes lvt_2_1_ = WalkNodeEvaluator.getBlockPathTypeStatic(this.tameable.level(), new net.minecraft.core.BlockPos.MutableBlockPos().set(p_226329_1_));
             if (world.getFluidState(p_226329_1_).is(FluidTags.WATER) || !world.getFluidState(p_226329_1_).is(FluidTags.WATER) && world.getFluidState(p_226329_1_.below()).is(FluidTags.WATER)) {
                 return true;
             }

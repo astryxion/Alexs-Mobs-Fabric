@@ -27,6 +27,7 @@ public class LivingEntityRendererMixin<T extends LivingEntity, M extends EntityM
         ClientLayerRegistry.addLayerToRenderer((LivingEntityRenderer<?, ?>) (Object) this);
     }
 
+    /** Citadel models use custom baby scaling in renderToBuffer when model.young is set (NeoForge sets this in each renderer's scale()). */
     @Inject(method = "render(Lnet/minecraft/world/entity/LivingEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at = @At("HEAD"))
     private void alexsmobs$setBabyModelFlag(T entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
         if (entity.getType().builtInRegistryHolder().key().location().getNamespace().equals(AlexsMobs.MODID)) {

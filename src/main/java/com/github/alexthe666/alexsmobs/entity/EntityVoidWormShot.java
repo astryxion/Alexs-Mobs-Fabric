@@ -8,6 +8,7 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
@@ -156,6 +157,7 @@ public class EntityVoidWormShot extends Entity {
         }
     }
 
+    @Override
     protected void defineSynchedData() {
         this.entityData.define(STOP_HOMING_PROGRESS, 0.0F);
     }

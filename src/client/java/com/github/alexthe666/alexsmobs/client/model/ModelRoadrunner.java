@@ -182,8 +182,7 @@ public class ModelRoadrunner extends AdvancedEntityModel<EntityRoadrunner> {
             this.bob(body, walkSpeed * 2F, walkDegree * 2F, false, limbSwing, limbSwingAmount);
         }
     }
-
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.75F;
             neck.setScale(f, f, f);

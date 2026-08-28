@@ -114,8 +114,7 @@ public class ModelManedWolf extends AdvancedEntityModel<EntityManedWolf> {
     public Iterable<AdvancedModelBox> getAllParts() {
         return ImmutableList.of(root, body, head_pivot, head, neck, tail, left_ear, right_ear, left_arm, right_arm, left_leg, right_leg, right_ear_pivot, left_ear_pivot);
     }
-
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.35F;
             float feet = 0.8F;

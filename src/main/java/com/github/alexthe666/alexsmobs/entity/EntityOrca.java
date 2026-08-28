@@ -28,6 +28,7 @@ import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
@@ -277,7 +278,9 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
                 }
                 boolean flag = attackTarget.hurt(this.damageSources().mobAttack(this), damage);
                 if (flag) {
-                    this.doEnchantDamageEffects(this, attackTarget);
+                    if (this.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+                        EnchantmentHelper.doPostDamageEffects(this, attackTarget);
+                    }
                     this.playSound(SoundEvents.DOLPHIN_ATTACK, 1.0F, 1.0F);
                 }
             }
@@ -288,7 +291,9 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
                 }
                 boolean flag = attackTarget.hurt(this.damageSources().mobAttack(this), damage);
                 if (flag) {
-                    this.doEnchantDamageEffects(this, attackTarget);
+                    if (this.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+                        EnchantmentHelper.doPostDamageEffects(this, attackTarget);
+                    }
                     this.playSound(SoundEvents.DOLPHIN_ATTACK, 1.0F, 1.0F);
                 }
                 final float yRotRad = this.getYRot() * Mth.DEG_TO_RAD;
@@ -372,9 +377,7 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
     }
 
-    public boolean canBreatheUnderwater() {
-        return false;
-    }
+    /** canBreatheUnderwater() is final in 1.21.1; Orca returns false (default). */
 
     public void baseTick() {
         int i = this.getAirSupply();
@@ -384,10 +387,6 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
 
     public boolean isPushedByFluid() {
         return false;
-    }
-
-    public MobType getMobType() {
-        return MobType.WATER;
     }
 
     public boolean checkSpawnObstruction(LevelReader worldIn) {
@@ -412,7 +411,9 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
     public void onJumpHit(LivingEntity entityIn) {
         boolean flag = entityIn.hurt(this.damageSources().mobAttack(this), (float) ((int) this.getAttributeValue(Attributes.ATTACK_DAMAGE)));
         if (flag) {
-            this.doEnchantDamageEffects(this, entityIn);
+            if (this.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+            EnchantmentHelper.doPostDamageEffects(this, entityIn);
+        }
             this.playSound(SoundEvents.DOLPHIN_ATTACK, 1.0F, 1.0F);
         }
     }

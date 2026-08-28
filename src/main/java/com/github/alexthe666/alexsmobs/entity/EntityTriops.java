@@ -78,6 +78,7 @@ public class EntityTriops extends WaterAnimal implements ITargetsDroppedItems, B
         prevTail2Yaw = this.getYRot();
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(FROM_BUCKET, false);
@@ -216,7 +217,7 @@ public class EntityTriops extends WaterAnimal implements ITargetsDroppedItems, B
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setTriopsScale(0.9F + random.nextFloat() * 0.2F);
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
     }
@@ -254,10 +255,6 @@ public class EntityTriops extends WaterAnimal implements ITargetsDroppedItems, B
         float f2 = Math.min(f1 * 6, 1.0F);
         this.walkAnimation.update(f2, 0.4F);
     }
-
-    public MobType getMobType() {
-        return MobType.ARTHROPOD;
-    }
     public void handleEntityEvent(byte id) {
         if (id == 67) {
             for (int i = 0; i < 5; i++) {
@@ -278,7 +275,7 @@ public class EntityTriops extends WaterAnimal implements ITargetsDroppedItems, B
     @Override
     public void onGetItem(ItemEntity e) {
         ItemStack stack = e.getItem();
-        if (stack.getItem().isEdible() && stack.getItem().getFoodProperties() != null) {
+        if (stack.isEdible()) {
             this.gameEvent(GameEvent.EAT);
             this.playSound(SoundEvents.CAT_EAT, this.getVoicePitch(), this.getSoundVolume());
             this.heal(5);
@@ -325,8 +322,10 @@ public class EntityTriops extends WaterAnimal implements ITargetsDroppedItems, B
         }
         CompoundTag platTag = new CompoundTag();
         this.addAdditionalSaveData(platTag);
-        CompoundTag compound = bucket.getOrCreateTag();
+        net.minecraft.nbt.CompoundTag existing = bucket.getTag();
+        CompoundTag compound = existing != null ? existing.copy() : new net.minecraft.nbt.CompoundTag();
         compound.put("TriopsTag", platTag);
+        bucket.setTag(compound);
     }
 
     @Override

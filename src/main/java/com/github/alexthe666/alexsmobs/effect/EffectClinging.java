@@ -20,6 +20,7 @@ public class EffectClinging extends MobEffect {
         return AMBlockPos.fromCoords(e.getX(), e.getBoundingBox().maxY + 1.51F, e.getZ());
     }
 
+    @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
         entity.refreshDimensions();
         entity.setNoGravity(false);
@@ -33,18 +34,25 @@ public class EffectClinging extends MobEffect {
                 entity.setDeltaMovement(entity.getDeltaMovement().multiply(0.998F, 1F, 0.998F));
             }
         }
+
     }
 
-    public static boolean isUpsideDown(LivingEntity entity){
+    public static boolean isUpsideDown(LivingEntity entity) {
         BlockPos pos = getPositionUnderneath(entity);
         BlockState ground = entity.level().getBlockState(pos);
         return (entity.verticalCollision || ground.isFaceSturdy(entity.level(), pos, Direction.DOWN)) && !entity.onGround();
     }
-    public void removeAttributeModifiers(LivingEntity entityLivingBaseIn, AttributeMap attributeMapIn, int amplifier) {
-        super.removeAttributeModifiers(entityLivingBaseIn, attributeMapIn, amplifier);
-        entityLivingBaseIn.refreshDimensions();
+
+    public static boolean isFlippedUpsideDown(LivingEntity entity) {
+        return entity.hasEffect(AMEffectRegistry.CLINGING) && isUpsideDown(entity);
     }
 
+    @Override
+    public void removeAttributeModifiers(LivingEntity entity, AttributeMap attributeMapIn, int amplifier) {
+        super.removeAttributeModifiers(entity, attributeMapIn, amplifier);
+    }
+
+    @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         return duration > 0;
     }
@@ -52,5 +60,4 @@ public class EffectClinging extends MobEffect {
     public String getDescriptionId() {
         return "alexsmobs.potion.clinging";
     }
-
 }

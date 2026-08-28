@@ -9,7 +9,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.level.block.Block;
 
-public class ItemsForEmeraldsTrade  implements VillagerTrades.ItemListing {
+public class ItemsForEmeraldsTrade implements VillagerTrades.ItemListing {
     private final ItemStack sellingItem;
     private final int emeraldCount;
     private final int sellingItemCount;

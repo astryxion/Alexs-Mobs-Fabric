@@ -5,7 +5,6 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
-import net.minecraft.world.level.chunk.PalettedContainerRO;
 
 /** Writes biome palettes into chunk sections (requires alexsmobs.accesswidener). */
 public final class AMChunkBiomeUtil {

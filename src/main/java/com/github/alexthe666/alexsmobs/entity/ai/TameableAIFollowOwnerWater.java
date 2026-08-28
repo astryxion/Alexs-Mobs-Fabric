@@ -131,7 +131,7 @@ public class TameableAIFollowOwnerWater extends Goal {
     }
 
     private boolean isTeleportFriendlyBlock(BlockPos pos) {
-        BlockPathTypes blockPathType = WalkNodeEvaluator.getBlockPathTypeStatic(this.world, pos.mutable());
+        BlockPathTypes blockPathType = WalkNodeEvaluator.getBlockPathTypeStatic(this.tameable.level(), new net.minecraft.core.BlockPos.MutableBlockPos().set(pos));
         if (world.getFluidState(pos).is(FluidTags.WATER) || !world.getFluidState(pos).is(FluidTags.WATER) && world.getFluidState(pos.below()).is(FluidTags.WATER)) {
             return true;
         }

@@ -16,8 +16,8 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public class RenderCosmaw extends MobRenderer<EntityCosmaw, ModelCosmaw> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/cosmaw.png");
-    private static final ResourceLocation TEXTURE_GLOW = new ResourceLocation("alexsmobs:textures/entity/cosmaw_glow.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/cosmaw.png");
+    private static final ResourceLocation TEXTURE_GLOW = new ResourceLocation("alexsmobs", "textures/entity/cosmaw_glow.png");
 
     public RenderCosmaw(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new ModelCosmaw(), 0.9F);
@@ -42,15 +42,18 @@ public class RenderCosmaw extends MobRenderer<EntityCosmaw, ModelCosmaw> {
         public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, EntityCosmaw entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
             ItemStack itemstack = entitylivingbaseIn.getMainHandItem();
             matrixStackIn.pushPose();
-            translateToHand(matrixStackIn);
-            matrixStackIn.translate(-0.0, 0.1F, -1.35F);
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-45F));
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(-180F));
-            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(135F));
-            matrixStackIn.scale(2, 2, 2);
-            ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-            renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
-            matrixStackIn.popPose();
+            try {
+                translateToHand(matrixStackIn);
+                matrixStackIn.translate(-0.0, 0.1F, -1.35F);
+                matrixStackIn.mulPose(Axis.XP.rotationDegrees(-45F));
+                matrixStackIn.mulPose(Axis.YP.rotationDegrees(-180F));
+                matrixStackIn.mulPose(Axis.ZP.rotationDegrees(135F));
+                matrixStackIn.scale(2, 2, 2);
+                ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
+                renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
+            } finally {
+                matrixStackIn.popPose();
+            }
         }
 
         protected void translateToHand(PoseStack matrixStack) {

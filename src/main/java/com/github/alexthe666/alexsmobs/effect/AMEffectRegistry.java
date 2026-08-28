@@ -1,7 +1,6 @@
 package com.github.alexthe666.alexsmobs.effect;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -12,9 +11,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.item.alchemy.PotionUtils;
-import net.minecraft.world.item.alchemy.Potions;
-import net.minecraft.world.item.crafting.Ingredient;
-import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistry;
 
 public class AMEffectRegistry {
     private static ResourceLocation id(String path) {
@@ -107,21 +103,8 @@ public class AMEffectRegistry {
         LONG_CLINGING_POTION = registerPotion("long_clinging", new Potion(new MobEffectInstance(CLINGING, 9600)));
     }
 
-    /** Call after AMItemRegistry.init() so item refs are non-null (1:1 behavior). */
+    /** Call after AMItemRegistry.init() so item refs are non-null. */
     public static void registerBrewing() {
-        FabricBrewingRecipeRegistry.registerPotionRecipe(Potions.STRENGTH, Ingredient.of(AMItemRegistry.BEAR_FUR), KNOCKBACK_RESISTANCE_POTION);
-        FabricBrewingRecipeRegistry.registerPotionRecipe(KNOCKBACK_RESISTANCE_POTION, Ingredient.of(Items.REDSTONE), LONG_KNOCKBACK_RESISTANCE_POTION);
-        FabricBrewingRecipeRegistry.registerPotionRecipe(KNOCKBACK_RESISTANCE_POTION, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_KNOCKBACK_RESISTANCE_POTION);
-        FabricBrewingRecipeRegistry.registerPotionRecipe(LAVA_VISION_POTION, Ingredient.of(Items.REDSTONE), LONG_LAVA_VISION_POTION);
-        FabricBrewingRecipeRegistry.registerPotionRecipe(POISON_RESISTANCE_POTION, Ingredient.of(AMItemRegistry.KOMODO_SPIT), LONG_POISON_RESISTANCE_POTION);
-        FabricBrewingRecipeRegistry.registerPotionRecipe(Potions.STRONG_SWIFTNESS, Ingredient.of(AMItemRegistry.GAZELLE_HORN), SPEED_III_POTION);
-        FabricBrewingRecipeRegistry.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(AMItemRegistry.COCKROACH_WING), BUG_PHEROMONES_POTION);
-        FabricBrewingRecipeRegistry.registerPotionRecipe(BUG_PHEROMONES_POTION, Ingredient.of(Items.REDSTONE), LONG_BUG_PHEROMONES_POTION);
-        FabricBrewingRecipeRegistry.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(AMItemRegistry.SOUL_HEART), SOULSTEAL_POTION);
-        FabricBrewingRecipeRegistry.registerPotionRecipe(SOULSTEAL_POTION, Ingredient.of(Items.REDSTONE), LONG_SOULSTEAL_POTION);
-        FabricBrewingRecipeRegistry.registerPotionRecipe(SOULSTEAL_POTION, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_SOULSTEAL_POTION);
-        FabricBrewingRecipeRegistry.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(AMItemRegistry.DROPBEAR_CLAW), CLINGING_POTION);
-        FabricBrewingRecipeRegistry.registerPotionRecipe(CLINGING_POTION, Ingredient.of(Items.REDSTONE), LONG_CLINGING_POTION);
         ProperBrewingRecipe.registerCustomRecipes();
     }
 }

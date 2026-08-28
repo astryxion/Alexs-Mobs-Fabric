@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.entity.ai.AMTagTemptGoal;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIHerdPanic;
@@ -107,8 +109,10 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.3D, true){
-            protected double getAttackReachSqr(LivingEntity attackTarget) {
-                return super.getAttackReachSqr(attackTarget) + 2.5D;
+            @Override
+            protected double getAttackReachSqr(LivingEntity target) {
+                double w = this.mob.getBbWidth() + target.getBbWidth() + 2.5;
+                return w * w;
             }
 
             @Override
@@ -124,7 +128,7 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
         this.goalSelector.addGoal(2, new AnimalAIHerdPanic(this, 1.5D));
         this.goalSelector.addGoal(3, new BreedGoal(this, 1.0D));
         this.goalSelector.addGoal(4, new FollowParentGoal(this, 1.1D));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.EMU_BREEDABLES), false));
+        this.goalSelector.addGoal(4, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.EMU_BREEDABLES));
         this.goalSelector.addGoal(5, new AnimalAIWanderRanged(this, 110, 1.0D, 10, 7));
         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 15.0F));
         this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
@@ -259,7 +263,7 @@ public class EntityEmu extends Animal implements IAnimatedEntity, IHerdPanic {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         if(this.random.nextInt(200) == 0){
             this.setVariant(2);
         }else if(random.nextInt(3) == 0){

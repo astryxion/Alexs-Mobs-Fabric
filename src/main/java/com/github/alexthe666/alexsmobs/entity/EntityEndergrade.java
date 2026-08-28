@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.entity.ai.AMTagTemptGoal;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.entity.ai.DirectPathNavigator;
@@ -108,7 +110,7 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
                 EntityEndergrade.this.stopWandering = false;
             }
         });
-        this.goalSelector.addGoal(3, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.ENDERGRADE_BREEDABLES), false) {
+        this.goalSelector.addGoal(3, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.ENDERGRADE_BREEDABLES) {
             public void start() {
                 super.start();
                 EntityEndergrade.this.stopWandering = true;
@@ -230,10 +232,6 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
         return false;
     }
 
-    public MobType getMobType() {
-        return MobType.ARTHROPOD;
-    }
-
     protected void checkFallDamage(double y, boolean onGroundIn, BlockState state, BlockPos pos) {
     }
 
@@ -304,7 +302,7 @@ public class EntityEndergrade extends Animal implements FlyingAnimal {
         if(player.zza != 0 || player.xxa != 0){
             this.setRot(player.getYRot(), player.getXRot() * 0.25F);
             this.yRotO = this.yBodyRot = this.yHeadRot = this.getYRot();
-            this.setMaxUpStep(1);
+            this.setMaxUpStep((float)(1.0));
             this.getNavigation().stop();
             this.setTarget(null);
             this.setSprinting(true);

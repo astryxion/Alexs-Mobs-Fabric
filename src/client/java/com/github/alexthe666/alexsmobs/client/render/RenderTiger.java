@@ -44,6 +44,7 @@ public class RenderTiger extends MobRenderer<EntityTiger, ModelTiger> {
 
     public void render(EntityTiger entityIn, float entityYaw, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn) {
         matrixStackIn.pushPose();
+        try {
         this.model.attackTime = this.getAttackAnim(entityIn, partialTicks);
 
         boolean shouldSit = entityIn.isPassenger() && (entityIn.getVehicle() != null && RenderUnderminer.getShouldRiderSit(entityIn.getVehicle()));
@@ -113,7 +114,8 @@ public class RenderTiger extends MobRenderer<EntityTiger, ModelTiger> {
             this.shadowRadius = 0.6F * (1 - stealthLevel * 0.1F);
             VertexConsumer ivertexbuilder = bufferIn.getBuffer(rendertype);
             int i = getOverlayCoords(entityIn, this.getWhiteOverlayProgress(entityIn, partialTicks));
-            this.model.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, i, 1.0F, 1.0F, 1.0F, flag1 ? 0.15F : Mth.clamp(1 - stealthLevel * 0.1F, 0, 1));
+            float alpha = flag1 ? 0.15F : Mth.clamp(1 - stealthLevel * 0.1F, 0, 1);
+            this.model.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, i, 1.0F, 1.0F, 1.0F, alpha);
         }
 
         if (!entityIn.isSpectator()) {
@@ -121,8 +123,9 @@ public class RenderTiger extends MobRenderer<EntityTiger, ModelTiger> {
                 layerrenderer.render(matrixStackIn, bufferIn, packedLightIn, entityIn, f5, f8, partialTicks, f7, f2, f6);
             }
         }
-
-        matrixStackIn.popPose();
+        } finally {
+            matrixStackIn.popPose();
+        }
         Entity entity = entityIn.getLeashHolder();
         if (entity != null) {
             this.renderLeash(entityIn, partialTicks, matrixStackIn, bufferIn, entity);
@@ -134,6 +137,7 @@ public class RenderTiger extends MobRenderer<EntityTiger, ModelTiger> {
 
     private <E extends Entity> void renderLeash(EntityTiger tiger, float p_115463_, PoseStack p_115464_, MultiBufferSource p_115465_, E p_115466_) {
         p_115464_.pushPose();
+        try {
         Vec3 vec3 = p_115466_.getRopeHoldPosition(p_115463_);
         double d0 = (double)(Mth.lerp(p_115463_, tiger.yBodyRot, tiger.yBodyRotO) * Mth.DEG_TO_RAD) + (Math.PI / 2D);
         Vec3 vec31 = tiger.getLeashOffset(p_115463_);
@@ -166,8 +170,9 @@ public class RenderTiger extends MobRenderer<EntityTiger, ModelTiger> {
         for(int j1 = 24; j1 >= 0; --j1) {
             addVertexPair(vertexconsumer, matrix4f, f, f1, f2, i, j, k, l, 0.025F, 0.0F, f5, f6, j1, true);
         }
-
-        p_115464_.popPose();
+        } finally {
+            p_115464_.popPose();
+        }
     }
 
     protected int getBlockLightLevel(EntityTiger p_114496_, BlockPos p_114497_) {

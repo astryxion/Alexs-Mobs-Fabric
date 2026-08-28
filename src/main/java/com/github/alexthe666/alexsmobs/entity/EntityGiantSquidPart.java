@@ -1,5 +1,6 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.network.syncher.SynchedEntityData;
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.message.MessageHurtMultipart;
 import com.github.alexthe666.alexsmobs.message.MessageInteractMultipart;
@@ -91,13 +92,13 @@ public class EntityGiantSquidPart extends PartEntity<EntityGiantSquid> implement
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public EntityDimensions getDimensions(Pose poseIn) {
         return this.size == null ? EntityDimensions.scalable(0, 0) : this.size.scale(scale);
     }
 
     @Override
     protected void defineSynchedData() {
-
     }
 
     public void tick(){

@@ -139,8 +139,7 @@ public class ModelAlligatorSnappingTurtle extends AdvancedEntityModel<EntityAlli
         this.swing(head, walkSpeed * 0.75F, walkDegree * 0.15F, false, -2, 0F, limbSwing, limbSwingAmount);
 
     }
-
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         this.head_inside.setScale(0.99F, 0.99F, 0.99F);
         if (this.young) {
             this.head.setScale(1.5F, 1.5F, 1.5F);

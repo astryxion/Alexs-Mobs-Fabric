@@ -1,7 +1,8 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.entity.util.AnacondaPartIndex;
-import com.github.alexthe666.alexsmobs.entity.util.MultipartEntityUtil;
+import com.github.alexthe666.alexsmobs.message.MessageHurtMultipart;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.core.BlockPos;
@@ -92,10 +93,10 @@ public class EntityAnacondaPart extends LivingEntity implements IHurtableMultipa
     @Override
     public void tick() {
         super.tick();
+        this.isInsidePortal = false;
 
         prevStrangleProgess = strangleProgess;
         prevSwell = this.getSwell();
-        isInsidePortal = false;
         this.setDeltaMovement(Vec3.ZERO);
         if (this.tickCount > 1) {
             final Entity parent = getParent();
@@ -106,7 +107,11 @@ public class EntityAnacondaPart extends LivingEntity implements IHurtableMultipa
                 }
                 if (parent != null) {
                     if (parent instanceof final LivingEntity livingEntityParent) {
-                        MultipartEntityUtil.syncHurtTimesFromParent(this, livingEntityParent);
+                        if (livingEntityParent.hurtTime > 0 || livingEntityParent.deathTime > 0) {
+                            AlexsMobs.sendMSGToAll(new MessageHurtMultipart(this.getId(), parent.getId(), 0));
+                            this.hurtTime = livingEntityParent.hurtTime;
+                            this.deathTime = livingEntityParent.deathTime;
+                        }
                     }
                     if (parent.isRemoved()) {
                         this.remove(RemovalReason.DISCARDED);
@@ -209,10 +214,6 @@ public class EntityAnacondaPart extends LivingEntity implements IHurtableMultipa
                 return p_185969_.isSuffocating(this.level(), blockpos) && Shapes.joinIsNotEmpty(p_185969_.getCollisionShape(this.level(), blockpos).move(vec3.x, vec3.y, vec3.z), Shapes.create(axisAlignedBB), BooleanOp.AND);
             });
         }
-    }
-
-    public boolean canBreatheUnderwater() {
-        return true;
     }
 
     public boolean isPushedByFluid() {

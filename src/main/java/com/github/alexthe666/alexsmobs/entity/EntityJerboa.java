@@ -304,15 +304,14 @@ public class EntityJerboa extends Animal {
         return reason == MobSpawnType.SPAWNER || iServerWorld.canSeeSky(pos.above()) && canMonsterSpawnInLight(entityType, iServerWorld, reason, pos, random);
     }
 
-    protected void jumpFromGround() {
-        super.jumpFromGround();
+    /** Called from tick when we detect a jump (cannot override final jumpFromGround in 1.21.1). */
+    private void onJerboaJump() {
         double d0 = this.moveControl.getSpeedModifier();
         if (d0 > 0.0D) {
             double d1 = this.getDeltaMovement().horizontalDistance();
             if (d1 < 0.01D) {
             }
         }
-
         if (!this.level().isClientSide) {
             this.level().broadcastEntityEvent(this, (byte) 1);
         }
@@ -328,6 +327,7 @@ public class EntityJerboa extends Animal {
         this.setJumping(true);
         this.jumpDuration = 10;
         this.jumpTicks = 0;
+        this.onJerboaJump();
     }
 
     private void checkLandingDelay() {

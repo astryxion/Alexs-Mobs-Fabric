@@ -20,12 +20,12 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public class RenderToucan extends MobRenderer<EntityToucan, ModelToucan> {
-    private static final ResourceLocation TEXTURE_0 = new ResourceLocation("alexsmobs:textures/entity/toucan/toucan_0.png");
-    private static final ResourceLocation TEXTURE_1 = new ResourceLocation("alexsmobs:textures/entity/toucan/toucan_1.png");
-    private static final ResourceLocation TEXTURE_2 = new ResourceLocation("alexsmobs:textures/entity/toucan/toucan_2.png");
-    private static final ResourceLocation TEXTURE_3 = new ResourceLocation("alexsmobs:textures/entity/toucan/toucan_3.png");
-    private static final ResourceLocation TEXTURE_GOLDEN = new ResourceLocation("alexsmobs:textures/entity/toucan/toucan_gold.png");
-    private static final ResourceLocation TEXTURE_SAM = new ResourceLocation("alexsmobs:textures/entity/toucan/toucan_sam.png");
+    private static final ResourceLocation TEXTURE_0 = new ResourceLocation("alexsmobs", "textures/entity/toucan/toucan_0.png");
+    private static final ResourceLocation TEXTURE_1 = new ResourceLocation("alexsmobs", "textures/entity/toucan/toucan_1.png");
+    private static final ResourceLocation TEXTURE_2 = new ResourceLocation("alexsmobs", "textures/entity/toucan/toucan_2.png");
+    private static final ResourceLocation TEXTURE_3 = new ResourceLocation("alexsmobs", "textures/entity/toucan/toucan_3.png");
+    private static final ResourceLocation TEXTURE_GOLDEN = new ResourceLocation("alexsmobs", "textures/entity/toucan/toucan_gold.png");
+    private static final ResourceLocation TEXTURE_SAM = new ResourceLocation("alexsmobs", "textures/entity/toucan/toucan_sam.png");
 
     public RenderToucan(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new ModelToucan(), 0.2F);
@@ -65,7 +65,7 @@ public class RenderToucan extends MobRenderer<EntityToucan, ModelToucan> {
         public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, EntityToucan entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
             if(entitylivingbaseIn.isEnchanted()){
                 VertexConsumer vertexconsumer = ItemRenderer.getArmorFoilBuffer(bufferIn, RenderType.armorCutoutNoCull(TEXTURE_GOLDEN), false, true);
-                this.getParentModel().renderToBuffer(matrixStackIn, vertexconsumer, packedLightIn, LivingEntityRenderer.getOverlayCoords(entitylivingbaseIn, 0.0F), 1, 1, 1, 1.0F);
+                this.getParentModel().renderToBuffer(matrixStackIn, vertexconsumer, packedLightIn, LivingEntityRenderer.getOverlayCoords(entitylivingbaseIn, 0.0F), 1.0F, 1.0F, 1.0F, 1.0F);
             }
         }
     }
@@ -79,19 +79,25 @@ public class RenderToucan extends MobRenderer<EntityToucan, ModelToucan> {
         public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, EntityToucan entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
             ItemStack itemstack = entitylivingbaseIn.getItemBySlot(EquipmentSlot.MAINHAND);
             matrixStackIn.pushPose();
-            if (entitylivingbaseIn.isBaby()) {
-                matrixStackIn.scale(0.5F, 0.5F, 0.5F);
-                matrixStackIn.translate(0.0D, 1.5D, 0D);
+            try {
+                if (entitylivingbaseIn.isBaby()) {
+                    matrixStackIn.scale(0.5F, 0.5F, 0.5F);
+                    matrixStackIn.translate(0.0D, 1.5D, 0D);
+                }
+                matrixStackIn.pushPose();
+                try {
+                    translateToHand(matrixStackIn);
+                    matrixStackIn.translate(-0.07F, -0.1F, -0.25F);
+                    matrixStackIn.mulPose(Axis.YP.rotationDegrees(-45F));
+                    matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
+                    ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
+                    renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
+                } finally {
+                    matrixStackIn.popPose();
+                }
+            } finally {
+                matrixStackIn.popPose();
             }
-            matrixStackIn.pushPose();
-            translateToHand(matrixStackIn);
-            matrixStackIn.translate(-0.07F, -0.1F, -0.25F);
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(-45F));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
-            ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-            renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
-            matrixStackIn.popPose();
-            matrixStackIn.popPose();
         }
 
         protected void translateToHand(PoseStack matrixStack) {

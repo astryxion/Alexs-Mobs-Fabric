@@ -79,7 +79,7 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
 
     protected EntityRhinoceros(EntityType type, Level level) {
         super(type, level);
-        this.setMaxUpStep(1.1F);
+        this.setMaxUpStep((float)(1.1));
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
@@ -88,8 +88,8 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(DATA_TRUSTED_ID_0, Optional.empty());
-        this.entityData.define(DATA_TRUSTED_ID_1, Optional.empty());
+        this.entityData.define(DATA_TRUSTED_ID_0, Optional.<UUID>empty());
+        this.entityData.define(DATA_TRUSTED_ID_1, Optional.<UUID>empty());
         this.entityData.define(APPLIED_POTION, "");
         this.entityData.define(POTION_LEVEL, 0);
         this.entityData.define(INFLICTED_COUNT, 0);
@@ -445,13 +445,13 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
     }
 
     public boolean applyPotion(Potion potion){
-        if(potion == null || potion == Potions.WATER){
+        if(potion == null || potion.getEffects().isEmpty()){
             resetPotion();
             return true;
         }else{
             if(potion.getEffects().size() >= 1){
                 MobEffectInstance first = potion.getEffects().get(0);
-                ResourceLocation loc = BuiltInRegistries.MOB_EFFECT.getKey(first.getEffect());
+                ResourceLocation loc = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getKey(first.getEffect());
                 if(loc != null){
                     this.setAppliedPotionId(loc.toString());
                     this.setPotionLevel(first.getAmplifier());

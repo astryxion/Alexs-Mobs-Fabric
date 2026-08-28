@@ -285,8 +285,10 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
             bucket.setHoverName(this.getCustomName());
         }
         Bucketable.saveDefaultDataToBucketTag(this, bucket);
-        CompoundTag compound = bucket.getOrCreateTag();
+        net.minecraft.nbt.CompoundTag existing = bucket.getTag();
+        CompoundTag compound = existing != null ? existing.copy() : new net.minecraft.nbt.CompoundTag();
         compound.putInt("Variant", this.getVariant());
+        bucket.setTag(compound);
     }
 
     @Override
@@ -298,7 +300,7 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance diff, MobSpawnType spawnType, @Nullable SpawnGroupData data, @Nullable CompoundTag tag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance diff, MobSpawnType spawnType, @Nullable SpawnGroupData data, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         int i;
         if (data instanceof FlyingFishGroupData) {
             i = ((FlyingFishGroupData)data).variant;
@@ -308,7 +310,7 @@ public class EntityFlyingFish extends WaterAnimal implements FlyingAnimal, Bucke
         }
 
         this.setVariant(i);
-        return super.finalizeSpawn(world, diff, spawnType, data, tag);
+        return super.finalizeSpawn(world, diff, spawnType, data, dataTag);
     }
 
     @Override

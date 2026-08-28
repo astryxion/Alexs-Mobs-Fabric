@@ -26,6 +26,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.SmoothSwimmingLookControl;
 import net.minecraft.world.entity.ai.goal.*;
@@ -56,6 +57,11 @@ import javax.annotation.Nullable;
 import java.util.EnumSet;
 
 public class EntityCachalotWhale extends Animal {
+
+    @Override
+    public boolean isFood(ItemStack stack) {
+        return stack.isEdible();
+    }
 
     private static final TargetingConditions REWARD_PLAYER_PREDICATE = TargetingConditions.forNonCombat().range(50.0D).ignoreLineOfSight();
     private static final EntityDataAccessor<Boolean> CHARGING = SynchedEntityData.defineId(EntityCachalotWhale.class, EntityDataSerializers.BOOLEAN);
@@ -620,7 +626,7 @@ public class EntityCachalotWhale extends Animal {
                         if (echoTimer % 10 == 0) {
                             if (echoTimer % 40 == 0) {
                                 this.playSound(AMSoundRegistry.CACHALOT_WHALE_CLICK, this.getSoundVolume(), this.getVoicePitch());
-                                this.gameEvent(GameEvent.ENTITY_ROAR);
+                                this.gameEvent(GameEvent.ENTITY_INTERACT);
                             }
                             final EntityCachalotEcho echo = new EntityCachalotEcho(this.level(), this);
                             final float radius = this.headPart.getBbWidth() * 0.5F;
@@ -829,7 +835,7 @@ public class EntityCachalotWhale extends Animal {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setAirSupply(this.getMaxAirSupply());
         this.setXRot(0.0F);
         if (spawnDataIn == null) {
@@ -837,10 +843,6 @@ public class EntityCachalotWhale extends Animal {
         }
         this.setAlbino(random.nextInt(100) == 0);
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
-    }
-
-    public boolean canBreatheUnderwater() {
-        return false;
     }
 
     public void baseTick() {
@@ -851,10 +853,6 @@ public class EntityCachalotWhale extends Animal {
 
     public boolean isPushedByFluid() {
         return this.isBeached();
-    }
-
-    public MobType getMobType() {
-        return MobType.WATER;
     }
 
     public boolean checkSpawnObstruction(LevelReader worldIn) {

@@ -1,7 +1,7 @@
 {
     "display": {
         "icon": {
-            "item": "citadel:fancy_item",
+            "item": "alexsmobs:fancy_item",
             "nbt": "{DisplayItem:\"alexsmobs:falconry_glove\", DisplayBob:1, DisplayZoom:0, DisplayScale:1, DisplaySpin:0, DisplayShake:0}"
         },
         "title": {

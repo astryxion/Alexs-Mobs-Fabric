@@ -106,10 +106,6 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
         this.targetSelector.addGoal(1, (new HurtByTargetGoal(this)));
     }
 
-    public MobType getMobType() {
-        return MobType.ARTHROPOD;
-    }
-
     public void travel(Vec3 travelVector) {
         if (this.isEffectiveAi() && this.isInWater()) {
             this.moveRelative(this.getSpeed(), travelVector);
@@ -154,6 +150,7 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
         Bucketable.saveDefaultDataToBucketTag(this, bucket);
         CompoundTag compoundnbt = bucket.getOrCreateTag();
         compoundnbt.putInt("BucketVariantTag", this.getVariant());
+        bucket.setTag(compoundnbt);
     }
 
     @Override
@@ -187,6 +184,15 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
         return super.doHurtTarget(entityIn);
     }
 
+    @Override
+    public void baseTick() {
+        int i = this.getAirSupply();
+        super.baseTick();
+        if (this.isInWater()) {
+            this.setAirSupply(i);
+        }
+    }
+
     public void tick() {
         super.tick();
         prevAttackProgress = attackProgress;
@@ -214,10 +220,6 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
             doHurtTarget(this.getTarget());
             attackCooldown = 20;
         }
-    }
-
-    protected void handleAirSupply(int air) {
-
     }
 
     public int getVariant() {
@@ -257,7 +259,7 @@ public class EntityLobster extends WaterAnimal implements ISemiAquatic, Bucketab
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         float variantChange = this.getRandom().nextFloat();
         if(variantChange <= 0.00001){
             this.setVariant(5);

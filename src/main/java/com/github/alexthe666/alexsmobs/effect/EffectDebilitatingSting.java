@@ -2,8 +2,12 @@ package com.github.alexthe666.alexsmobs.effect;
 
 import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityTarantulaHawk;
+import com.github.alexthe666.alexsmobs.entity.AMMobTypes;
+import net.minecraft.world.entity.MobType;
 import com.github.alexthe666.alexsmobs.misc.AMBlockPos;
+import com.github.alexthe666.alexsmobs.AlexsMobs;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.*;
@@ -29,20 +33,19 @@ public class EffectDebilitatingSting extends MobEffect {
         this.addAttributeModifier(Attributes.MOVEMENT_SPEED, "7107DE5E-7CE8-4030-940E-514C1F160890", -1.0F, AttributeModifier.Operation.MULTIPLY_BASE);
     }
 
-    public void removeAttributeModifiers(LivingEntity entityLivingBaseIn, AttributeMap attributeMapIn, int amplifier) {
-        if (entityLivingBaseIn.getMobType() == MobType.ARTHROPOD) {
-            super.removeAttributeModifiers(entityLivingBaseIn, attributeMapIn, amplifier);
-        }
+    @Override
+    public void removeAttributeModifiers(LivingEntity entity, AttributeMap attributeMapIn, int amplifier) {
+        super.removeAttributeModifiers(entity, attributeMapIn, amplifier);
     }
 
-    public void addAttributeModifiers(LivingEntity entityLivingBaseIn, AttributeMap attributeMapIn, int amplifier) {
-        if (entityLivingBaseIn.getMobType() == MobType.ARTHROPOD) {
-            super.addAttributeModifiers(entityLivingBaseIn, attributeMapIn, amplifier);
-        }
+    @Override
+    public void addAttributeModifiers(LivingEntity entity, AttributeMap attributeMapIn, int amplifier) {
+        super.addAttributeModifiers(entity, attributeMapIn, amplifier);
     }
 
+    @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
-        if (entity.getMobType() != MobType.ARTHROPOD) {
+        if (AMMobTypes.getMobType(entity) != MobType.ARTHROPOD) {
             if (entity.getHealth() > entity.getMaxHealth() * 0.5F) {
                 entity.hurt(entity.damageSources().magic(), 1.0F);
             }
@@ -76,6 +79,7 @@ public class EffectDebilitatingSting extends MobEffect {
                 entity.noPhysics = false;
             }
         }
+
     }
 
     public boolean isEntityInsideOpaqueBlock(Entity entity) {
@@ -88,6 +92,7 @@ public class EffectDebilitatingSting extends MobEffect {
         });
     }
 
+    @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         lastDuration = duration;
         return duration > 0;

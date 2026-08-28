@@ -19,7 +19,7 @@ import net.minecraft.world.item.ItemStack;
 
 public class LayerAnteaterTongueItem extends RenderLayer<EntityAnteater, ModelAnteater> {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/leafcutter_ant.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/leafcutter_ant.png");
     private final ModelLeafcutterAnt ANT_MODEL = new ModelLeafcutterAnt();
 
     public LayerAnteaterTongueItem(RenderAnteater render) {
@@ -33,11 +33,13 @@ public class LayerAnteaterTongueItem extends RenderLayer<EntityAnteater, ModelAn
             float scaleItem = -0.2F * (float) tongueM * (anteater.prevTongueProgress + (anteater.tongueProgress - anteater.prevTongueProgress) * partialTicks * 0.2F);
 
             matrixStackIn.pushPose();
+            try {
             if(anteater.isBaby()){
                 matrixStackIn.scale(0.35F, 0.35F, 0.35F);
                 matrixStackIn.translate(0.0D, 2.8D, 0D);
             }
             matrixStackIn.pushPose();
+            try {
             translateToTongue(matrixStackIn);
             if(anteater.isBaby()){
                 matrixStackIn.translate(0.0D, 0.2F, -0.22D);
@@ -46,19 +48,20 @@ public class LayerAnteaterTongueItem extends RenderLayer<EntityAnteater, ModelAn
             matrixStackIn.scale(scaleItem, scaleItem, scaleItem);
             if(anteater.hasAntOnTongue()){
                 matrixStackIn.pushPose();
-                matrixStackIn.translate(0F, -1.35F, -0.01F);
-                VertexConsumer ivertexbuilder = bufferIn.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
-                ANT_MODEL.animateAnteater(anteater, partialTicks);
-                ANT_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-                matrixStackIn.popPose();
+                try {
+                    matrixStackIn.translate(0F, -1.35F, -0.01F);
+                    VertexConsumer ivertexbuilder = bufferIn.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
+                    ANT_MODEL.animateAnteater(anteater, partialTicks);
+                    ANT_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+                } finally { matrixStackIn.popPose(); }
 
             }else{
                 matrixStackIn.mulPose(Axis.XP.rotationDegrees(90F));
                 ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
                 renderer.renderItem(anteater, itemstack, ItemDisplayContext.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
             }
-            matrixStackIn.popPose();
-            matrixStackIn.popPose();
+            } finally { matrixStackIn.popPose(); }
+            } finally { matrixStackIn.popPose(); }
         }
     }
 

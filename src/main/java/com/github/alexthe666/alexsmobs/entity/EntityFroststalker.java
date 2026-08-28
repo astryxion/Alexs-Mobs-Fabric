@@ -38,7 +38,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.item.enchantment.FrostWalkerEnchantment;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -114,10 +113,7 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
         return worldIn.getRawBrightness(pos, 0) > 8 && (worldIn.getBlockState(pos.below()).is(AMTagRegistry.FROSTSTALKER_SPAWNS) || worldIn.getBlockState(pos.below()).isSolid());
     }
 
-    @Nullable
-    protected ResourceLocation getDefaultLootTable() {
-        return this.hasSpikes() ? SPIKED_LOOT : super.getDefaultLootTable();
-    }
+    /** Loot table is overridden via EntityFroststalkerLootMixin because Mob.getLootTable() is final in 1.21.1. */
 
     public static AttributeSupplier.Builder bakeAttributes() {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 24D).add(Attributes.ARMOR, 2.0D).add(Attributes.ATTACK_DAMAGE, 4.5D).add(Attributes.MOVEMENT_SPEED, 0.3F);
@@ -459,8 +455,8 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
         return 0.52F * this.getBlockJumpFactor();
     }
 
-    @Override
-    protected void jumpFromGround() {
+    /** Custom jump with horizontal impulse; call from frostJump() since jumpFromGround is final in 1.21.1. */
+    private void frostJumpFromGround() {
         double d0 = (double) this.getJumpPower() + this.getJumpBoostPower();
         Vec3 vec3 = this.getDeltaMovement();
         this.setDeltaMovement(vec3.x, d0, vec3.z);
@@ -470,7 +466,7 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
     }
 
     public void frostJump() {
-        jumpFromGround();
+        frostJumpFromGround();
     }
 
     @Override
@@ -634,22 +630,39 @@ public class EntityFroststalker extends Animal implements IAnimatedEntity, ISemi
         }
     }
 
+    /** Replicates vanilla FrostWalkerEnchantment.onEntityMoved for 1.21.1 (frost walker logic moved). */
+    private static void applyFrostWalker(LivingEntity entity, Level level, BlockPos pos, int frostLevel) {
+        if (!level.isClientSide && level instanceof net.minecraft.server.level.ServerLevel) {
+            int r = frostLevel < 0 ? 2 : 2 + frostLevel;
+            BlockPos.MutableBlockPos mutable = pos.mutable();
+            for (int x = -r; x <= r; x++) {
+                for (int z = -r; z <= r; z++) {
+                    mutable.set(pos.getX() + x, pos.getY(), pos.getZ() + z);
+                    if (level.getBlockState(mutable).is(net.minecraft.tags.BlockTags.ICE)) {
+                        continue;
+                    }
+                    if (level.getBlockState(mutable).getBlock() == Blocks.WATER || level.getFluidState(mutable).is(net.minecraft.tags.FluidTags.WATER)) {
+                        level.setBlockAndUpdate(mutable, Blocks.FROSTED_ICE.defaultBlockState());
+                        level.scheduleTick(mutable, Blocks.FROSTED_ICE, Mth.nextInt(entity.getRandom(), 60, 120));
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     protected void onChangedBlock(BlockPos pos) {
         int i = EnchantmentHelper.getEnchantmentLevel(Enchantments.FROST_WALKER, this);
         if (i > 0 || this.hasSpikes()) {
-            FrostWalkerEnchantment.onEntityMoved(this, this.level(), pos, i == 0 ? -1 : i);
+            applyFrostWalker(this, this.level(), pos, i == 0 ? -1 : i);
         }
-        if (this.shouldRemoveSoulSpeed(this.getBlockStateOn())) {
-            this.removeSoulSpeed();
-        }
-        this.tryAddSoulSpeed();
+        super.onChangedBlock(pos);
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor p_27528_, DifficultyInstance p_27529_, MobSpawnType p_27530_, @Nullable SpawnGroupData p_27531_, @Nullable CompoundTag p_27532_) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor p_27528_, DifficultyInstance p_27529_, MobSpawnType p_27530_, @Nullable SpawnGroupData p_27531_, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         //do not call super here
-        this.getAttribute(Attributes.FOLLOW_RANGE).addPermanentModifier(new AttributeModifier("Random spawn bonus", this.random.nextGaussian() * 0.05D, AttributeModifier.Operation.MULTIPLY_BASE));
+        this.getAttribute(Attributes.FOLLOW_RANGE).addPermanentModifier(new AttributeModifier(java.util.UUID.nameUUIDFromBytes("alexsmobs:random_spawn_bonus".getBytes()), "random_spawn_bonus", this.random.nextGaussian() * 0.05D, AttributeModifier.Operation.MULTIPLY_BASE));
         if (p_27531_ == null) {
             p_27531_ = new SchoolSpawnGroupData(this);
         } else {

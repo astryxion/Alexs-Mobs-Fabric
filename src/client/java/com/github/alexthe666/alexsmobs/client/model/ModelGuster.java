@@ -146,7 +146,6 @@ public class ModelGuster extends AdvancedEntityModel<EntityGuster> {
         this.eye_left.showModel = true;
         this.eye_right.showModel = true;
     }
-    @Override
     public void renderToBuffer(PoseStack matrixStack, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
         root.render(matrixStack, buffer, packedLight, packedOverlay);
     }

@@ -50,6 +50,7 @@ public class RenderMurmurHead extends MobRenderer<EntityMurmurHead, ModelMurmurH
     public void render(EntityMurmurHead head, float entityYaw, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn) {
         super.render(head, entityYaw, partialTicks, matrixStackIn, bufferIn, packedLightIn);
         matrixStackIn.pushPose();
+        try {
         if (head.hasNeckBottom()) {
             float headYaw = Mth.rotLerp(partialTicks, head.yBodyRotO, head.yBodyRot);
             Vec3 renderingAt = new Vec3(Mth.lerp(partialTicks, head.xo, head.getX()), Mth.lerp(partialTicks, head.yo, head.getY()), Mth.lerp(partialTicks, head.zo, head.getZ()));
@@ -74,7 +75,9 @@ public class RenderMurmurHead extends MobRenderer<EntityMurmurHead, ModelMurmurH
                 segmentCount++;
             }
         }
-        matrixStackIn.popPose();
+        } finally {
+            matrixStackIn.popPose();
+        }
     }
 
 
@@ -90,10 +93,13 @@ public class RenderMurmurHead extends MobRenderer<EntityMurmurHead, ModelMurmurH
         float rotY = (float) (Mth.atan2(sub.x, sub.z) * (double) Mth.RAD_TO_DEG);
         float rotX = (float) (-(Mth.atan2(sub.y, d) * (double) Mth.RAD_TO_DEG)) - 90.0F;
         poseStack.pushPose();
-        poseStack.translate(from.x, from.y, from.z);
-        NECK_MODEL.setAttributes((float) sub.length(), rotX, rotY, additionalYaw);
-        NECK_MODEL.renderToBuffer(poseStack, buffer, packedLightIn, overlayCoords, 1, 1F, 1, 1);
-        poseStack.popPose();
+        try {
+            poseStack.translate(from.x, from.y, from.z);
+            NECK_MODEL.setAttributes((float) sub.length(), rotX, rotY, additionalYaw);
+            NECK_MODEL.renderToBuffer(poseStack, buffer, packedLightIn, overlayCoords, 1.0F, 1.0F, 1.0F, 1.0F);
+        } finally {
+            poseStack.popPose();
+        }
     }
 
     private int getLightColor(EntityMurmurHead head, Vec3 vec3) {

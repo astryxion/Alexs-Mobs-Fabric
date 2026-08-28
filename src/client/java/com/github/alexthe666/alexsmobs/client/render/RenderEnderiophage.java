@@ -15,12 +15,12 @@ import net.minecraft.resources.ResourceLocation;
 import javax.annotation.Nullable;
 
 public class RenderEnderiophage extends MobRenderer<EntityEnderiophage, ModelEnderiophage> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/enderiophage.png");
-    private static final ResourceLocation TEXTURE_GLOW = new ResourceLocation("alexsmobs:textures/entity/enderiophage_glow.png");
-    private static final ResourceLocation TEXTURE_OVERWORLD = new ResourceLocation("alexsmobs:textures/entity/enderiophage_overworld.png");
-    private static final ResourceLocation TEXTURE_OVERWORLD_GLOW = new ResourceLocation("alexsmobs:textures/entity/enderiophage_overworld_glow.png");
-    private static final ResourceLocation TEXTURE_NETHER = new ResourceLocation("alexsmobs:textures/entity/enderiophage_nether.png");
-    private static final ResourceLocation TEXTURE_NETHER_GLOW = new ResourceLocation("alexsmobs:textures/entity/enderiophage_nether_glow.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/enderiophage.png");
+    private static final ResourceLocation TEXTURE_GLOW = new ResourceLocation("alexsmobs", "textures/entity/enderiophage_glow.png");
+    private static final ResourceLocation TEXTURE_OVERWORLD = new ResourceLocation("alexsmobs", "textures/entity/enderiophage_overworld.png");
+    private static final ResourceLocation TEXTURE_OVERWORLD_GLOW = new ResourceLocation("alexsmobs", "textures/entity/enderiophage_overworld_glow.png");
+    private static final ResourceLocation TEXTURE_NETHER = new ResourceLocation("alexsmobs", "textures/entity/enderiophage_nether.png");
+    private static final ResourceLocation TEXTURE_NETHER_GLOW = new ResourceLocation("alexsmobs", "textures/entity/enderiophage_nether_glow.png");
 
     public RenderEnderiophage(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new ModelEnderiophage(), 0.5F);

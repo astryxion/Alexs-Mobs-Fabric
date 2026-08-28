@@ -3,7 +3,6 @@ package com.github.alexthe666.alexsmobs.client.render.layer;
 import com.github.alexthe666.alexsmobs.client.model.ModelMimicube;
 import com.github.alexthe666.alexsmobs.client.render.AMArmorLayerUtil;
 import com.github.alexthe666.alexsmobs.client.render.RenderMimicube;
-import com.github.alexthe666.alexsmobs.client.render.item.CustomArmorRenderProperties;
 import com.github.alexthe666.alexsmobs.entity.EntityMimicube;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -48,6 +47,7 @@ public class LayerMimicubeHelmet extends RenderLayer<EntityMimicube, ModelMimicu
                 boolean notAVanillaModel = a != defaultBipedModel;
 
                 this.setModelSlotVisible(a, EquipmentSlot.HEAD);
+                boolean flag = false;
                 this.renderer.getModel().root.translateAndRotate(matrixStackIn);
                 this.renderer.getModel().innerbody.translateAndRotate(matrixStackIn);
                 matrixStackIn.translate(0,  notAVanillaModel ? 0.25F : -0.75F, 0F);
@@ -55,15 +55,15 @@ public class LayerMimicubeHelmet extends RenderLayer<EntityMimicube, ModelMimicu
                 boolean flag1 = itemstack.hasFoil();
                 int clampedLight = helmetSwap > 0 ? (int) (-100 * helmetSwap) : packedLightIn;
                 matrixStackIn.mulPose(Axis.YP.rotationDegrees(360 * helmetSwap));
-                if (armoritem instanceof net.minecraft.world.item.DyeableLeatherItem) {
-                    int i = ((net.minecraft.world.item.DyeableLeatherItem) armoritem).getColor(itemstack);
+                if (itemstack.getItem() instanceof net.minecraft.world.item.DyeableLeatherItem dyeable) {
+                    int i = dyeable.getColor(itemstack);
                     float f = (float) (i >> 16 & 255) / 255.0F;
                     float f1 = (float) (i >> 8 & 255) / 255.0F;
                     float f2 = (float) (i & 255) / 255.0F;
-                    renderArmor(cube, matrixStackIn, bufferIn, clampedLight, flag1, a, f, f1, f2, AMArmorLayerUtil.getArmorResource(cube, itemstack, EquipmentSlot.HEAD, null), notAVanillaModel);
-                    renderArmor(cube, matrixStackIn, bufferIn, clampedLight, flag1, a, 1.0F, 1.0F, 1.0F, AMArmorLayerUtil.getArmorResource(cube, itemstack, EquipmentSlot.HEAD, "overlay"), notAVanillaModel);
+                    renderArmor(cube, matrixStackIn, bufferIn, clampedLight, flag1, a, f, f1, f2, AMArmorLayerUtil.getArmorResource(itemstack, null), notAVanillaModel);
+                    renderArmor(cube, matrixStackIn, bufferIn, clampedLight, flag1, a, 1.0F, 1.0F, 1.0F, AMArmorLayerUtil.getArmorResource(itemstack, "overlay"), notAVanillaModel);
                 } else {
-                    renderArmor(cube, matrixStackIn, bufferIn, clampedLight, flag1, a, 1.0F, 1.0F, 1.0F, AMArmorLayerUtil.getArmorResource(cube, itemstack, EquipmentSlot.HEAD, null), notAVanillaModel);
+                    renderArmor(cube, matrixStackIn, bufferIn, clampedLight, flag1, a, 1.0F, 1.0F, 1.0F, AMArmorLayerUtil.getArmorResource(itemstack, null), notAVanillaModel);
                 }
 
             }
@@ -122,9 +122,12 @@ public class LayerMimicubeHelmet extends RenderLayer<EntityMimicube, ModelMimicu
 
 
     protected HumanoidModel<?> getArmorModelHook(LivingEntity entity, ItemStack itemStack, EquipmentSlot slot, HumanoidModel model) {
-        CustomArmorRenderProperties.initializeModels();
-        CustomArmorRenderProperties armorProps = new CustomArmorRenderProperties();
-        HumanoidModel<?> resolved = armorProps.getHumanoidArmorModel(entity, itemStack, slot, model);
-        return resolved != null ? resolved : model;
+        try{
+            // Fabric: no ForgeHooksClient; use model as-is (1:1 when no other mod overrides)
+            Model basicModel = model;
+            return basicModel instanceof HumanoidModel ? (HumanoidModel<?>) basicModel : model;
+        }catch (Exception e){
+            return model;
+        }
     }
 }

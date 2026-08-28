@@ -109,7 +109,7 @@ public class EntityPlatypus extends Animal implements ISemiAquatic, ITargetsDrop
     @Nonnull
     public ItemStack getBucketItemStack() {
         ItemStack stack = new ItemStack(AMItemRegistry.PLATYPUS_BUCKET);
-        if (this.hasCustomName()) {
+        if (this.hasCustomName() && this.getCustomName() != null) {
             stack.setHoverName(this.getCustomName());
         }
         return stack;
@@ -117,13 +117,15 @@ public class EntityPlatypus extends Animal implements ISemiAquatic, ITargetsDrop
 
     @Override
     public void saveToBucketTag(@Nonnull ItemStack bucket) {
-        if (this.hasCustomName()) {
+        if (this.hasCustomName() && this.getCustomName() != null) {
             bucket.setHoverName(this.getCustomName());
         }
         CompoundTag platTag = new CompoundTag();
         this.addAdditionalSaveData(platTag);
-        CompoundTag compound = bucket.getOrCreateTag();
+        net.minecraft.nbt.CompoundTag customData = bucket.getTag();
+        CompoundTag compound = customData != null ? customData.copy() : new net.minecraft.nbt.CompoundTag();
         compound.put("PlatypusData", platTag);
+        bucket.setTag(compound);
     }
 
     @Override
@@ -163,7 +165,7 @@ public class EntityPlatypus extends Animal implements ISemiAquatic, ITargetsDrop
         this.goalSelector.addGoal(2, new LayEggGoal(this, 1.0D));
         this.goalSelector.addGoal(2, new BreedGoal(this, 0.8D));
         this.goalSelector.addGoal(3, new PanicGoal(this, 1.1D));
-        this.goalSelector.addGoal(3, new TemptGoal(this, 1.0D, Ingredient.of(AMTagRegistry.PLATYPUS_CHARGEABLES), false){
+        this.goalSelector.addGoal(3, new AMTagTemptGoal(this, 1.0D, false, AMTagRegistry.PLATYPUS_CHARGEABLES){
             public void start() {
                 super.start();
                 EntityPlatypus.this.setSensingVisual(true);
@@ -178,7 +180,7 @@ public class EntityPlatypus extends Animal implements ISemiAquatic, ITargetsDrop
                 EntityPlatypus.this.setSensingVisual(false);
             }
         });
-        this.goalSelector.addGoal(5, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.PLATYPUS_FOODSTUFFS), false){
+        this.goalSelector.addGoal(5, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.PLATYPUS_FOODSTUFFS){
             public boolean canUse(){
                 return super.canUse() && !EntityPlatypus.this.isSensing();
             }
@@ -377,9 +379,9 @@ public class EntityPlatypus extends Animal implements ISemiAquatic, ITargetsDrop
             spawnGroundEffects();
         }
         if (inWaterProgress > 0) {
-            this.setMaxUpStep(1);
+            this.setMaxUpStep((float)(1.0));
         } else {
-            this.setMaxUpStep(0.6F);
+            this.setMaxUpStep((float)(0.6));
         }
         if (!this.level().isClientSide) {
             if (isInWater()) {

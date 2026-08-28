@@ -28,11 +28,11 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 public class RenderMungus extends MobRenderer<EntityMungus, ModelMungus> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/mungus.png");
-    private static final ResourceLocation BEAM_TEXTURE = new ResourceLocation("alexsmobs:textures/entity/mungus_beam.png");
-    private static final ResourceLocation TEXTURE_BEAM_OVERLAY = new ResourceLocation("alexsmobs:textures/entity/mungus_beam_overlay.png");
-    private static final ResourceLocation TEXTURE_SACK_OVERLAY = new ResourceLocation("alexsmobs:textures/entity/mungus_sack.png");
-    private static final ResourceLocation TEXTURE_SHOES = new ResourceLocation("alexsmobs:textures/entity/mungus_shoes.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/mungus.png");
+    private static final ResourceLocation BEAM_TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/mungus_beam.png");
+    private static final ResourceLocation TEXTURE_BEAM_OVERLAY = new ResourceLocation("alexsmobs", "textures/entity/mungus_beam_overlay.png");
+    private static final ResourceLocation TEXTURE_SACK_OVERLAY = new ResourceLocation("alexsmobs", "textures/entity/mungus_sack.png");
+    private static final ResourceLocation TEXTURE_SHOES = new ResourceLocation("alexsmobs", "textures/entity/mungus_shoes.png");
     private static final RenderType beamType = AMRenderTypes.getEyesNoFog(BEAM_TEXTURE);
 
     public RenderMungus(EntityRendererProvider.Context renderManagerIn) {
@@ -46,7 +46,7 @@ public class RenderMungus extends MobRenderer<EntityMungus, ModelMungus> {
     }
 
     private static void vertex(VertexConsumer p_229108_0_, Matrix4f p_229108_1_, Matrix3f p_229108_2_, float p_229108_3_, float p_229108_4_, float p_229108_5_, int p_229108_6_, int p_229108_7_, int p_229108_8_, float p_229108_9_, float p_229108_10_) {
-        p_229108_0_.vertex(p_229108_1_, p_229108_3_, p_229108_4_, p_229108_5_).color(p_229108_6_, p_229108_7_, p_229108_8_, 255).uv(p_229108_9_, p_229108_10_).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(240).normal(p_229108_2_, 0.0F, 1.0F, 0.0F).endVertex();
+        p_229108_0_.vertex(p_229108_1_, p_229108_3_, p_229108_4_, p_229108_5_).color(p_229108_6_, p_229108_7_, p_229108_8_, 255).uv(p_229108_9_, p_229108_10_).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(240).normal(0.0F, 1.0F, 0.0F).endVertex();
     }
 
     protected void setupRotations(EntityMungus entityLiving, PoseStack matrixStackIn, float ageInTicks, float rotationYaw, float partialTicks) {
@@ -104,6 +104,8 @@ public class RenderMungus extends MobRenderer<EntityMungus, ModelMungus> {
         super.render(entityIn, entityYaw, partialTicks, matrixStackIn, bufferIn, packedLightIn);
         BlockPos target = entityIn.getBeamTarget();
         if (target != null) {
+            matrixStackIn.pushPose();
+            try {
             float f = 1.0F;
             float f1 = (float) entityIn.level().getGameTime() + partialTicks;
             float f2 = -1.0F * (f1 * 0.15F % 1.0F);
@@ -111,7 +113,6 @@ public class RenderMungus extends MobRenderer<EntityMungus, ModelMungus> {
             if(entityIn.isBaby()){
                 f3 = 0.555F;
             }
-            matrixStackIn.pushPose();
             matrixStackIn.translate(0.0D, f3, 0.0D);
             Vec3 vector3d = Vec3.upFromBottomCenterOf(target, 0.15F);
             Vec3 vector3d1 = this.getPosition(entityIn, f3, partialTicks);
@@ -171,7 +172,9 @@ public class RenderMungus extends MobRenderer<EntityMungus, ModelMungus> {
             vertex(ivertexbuilder, matrix4f, matrix3f, f13, f4, f14, j, k, l, 1.0F, f31 + 0.5F);
             vertex(ivertexbuilder, matrix4f, matrix3f, f17, f4, f18, j, k, l, 1.0F, f31);
             vertex(ivertexbuilder, matrix4f, matrix3f, f15, f4, f16, j, k, l, 0.5F, f31);
-            matrixStackIn.popPose();
+            } finally {
+                matrixStackIn.popPose();
+            }
         }
 
     }
@@ -197,12 +200,15 @@ public class RenderMungus extends MobRenderer<EntityMungus, ModelMungus> {
             }
             String s = ChatFormatting.stripFormatting(entitylivingbaseIn.getName().getString());
             if (s != null && s.toLowerCase().contains("drip")) {
-                VertexConsumer shoeBuffer = bufferIn.getBuffer(AMRenderTypes.entityCutoutNoCull(TEXTURE_SHOES));
                 matrixStackIn.pushPose();
-                this.getParentModel().renderShoes();
-                this.getParentModel().renderToBuffer(matrixStackIn, shoeBuffer, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-                this.getParentModel().postRenderShoes();
-                matrixStackIn.popPose();
+                try {
+                    VertexConsumer shoeBuffer = bufferIn.getBuffer(AMRenderTypes.entityCutoutNoCull(TEXTURE_SHOES));
+                    this.getParentModel().renderShoes();
+                    this.getParentModel().renderToBuffer(matrixStackIn, shoeBuffer, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+                    this.getParentModel().postRenderShoes();
+                } finally {
+                    matrixStackIn.popPose();
+                }
             }
         }
     }
@@ -219,62 +225,72 @@ public class RenderMungus extends MobRenderer<EntityMungus, ModelMungus> {
             if (blockstate == null) {
                 return;
             }
-            int i = LivingEntityRenderer.getOverlayCoords(entitylivingbaseIn, 0.0F);
-            boolean altOrder = entitylivingbaseIn.isAltOrderMushroom();
-            int mushroomCount = entitylivingbaseIn.getMushroomCount();
             matrixStackIn.pushPose();
-            if (entitylivingbaseIn.isBaby()) {
-                matrixStackIn.scale(0.5F, 0.5F, 0.5F);
-                matrixStackIn.translate(0.0D, 1.5D, 0D);
-            }
-            matrixStackIn.pushPose();
-            translateToBody(matrixStackIn);
-            if (mushroomCount == 1 && !altOrder || mushroomCount >= 2) {
+            try {
+                int i = LivingEntityRenderer.getOverlayCoords(entitylivingbaseIn, 0.0F);
+                boolean altOrder = entitylivingbaseIn.isAltOrderMushroom();
+                int mushroomCount = entitylivingbaseIn.getMushroomCount();
+                if (entitylivingbaseIn.isBaby()) {
+                    matrixStackIn.scale(0.5F, 0.5F, 0.5F);
+                    matrixStackIn.translate(0.0D, 1.5D, 0D);
+                }
                 matrixStackIn.pushPose();
-                matrixStackIn.translate(0.2F, -1.4F, 0.15D);
-                matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
-                matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
-                blockrendererdispatcher.renderSingleBlock(blockstate, matrixStackIn, bufferIn, packedLightIn, i);
+                try {
+                    translateToBody(matrixStackIn);
+                    if (mushroomCount == 1 && !altOrder || mushroomCount >= 2) {
+                        matrixStackIn.pushPose();
+                        try {
+                            matrixStackIn.translate(0.2F, -1.4F, 0.15D);
+                            matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
+                            matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
+                            blockrendererdispatcher.renderSingleBlock(blockstate, matrixStackIn, bufferIn, packedLightIn, i);
+                        } finally { matrixStackIn.popPose(); }
+                    }
+                    if (mushroomCount == 1 && altOrder || mushroomCount >= 2) {
+                        matrixStackIn.pushPose();
+                        try {
+                            matrixStackIn.translate(-0.2F, -1.5F, -0.2D);
+                            matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
+                            matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
+                            blockrendererdispatcher.renderSingleBlock(blockstate, matrixStackIn, bufferIn, packedLightIn, i);
+                        } finally { matrixStackIn.popPose(); }
+                    }
+                    if (mushroomCount >= 3) {
+                        matrixStackIn.pushPose();
+                        try {
+                            matrixStackIn.translate(0.76F, -0.4F, 0.1D);
+                            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(90F));
+                            matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
+                            matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
+                            blockrendererdispatcher.renderSingleBlock(blockstate, matrixStackIn, bufferIn, packedLightIn, i);
+                        } finally { matrixStackIn.popPose(); }
+                    }
+                    if (mushroomCount >= 4) {
+                        matrixStackIn.pushPose();
+                        try {
+                            matrixStackIn.translate(-0.76F, -1.0F, 0.1D);
+                            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(-60F));
+                            matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
+                            matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
+                            blockrendererdispatcher.renderSingleBlock(blockstate, matrixStackIn, bufferIn, packedLightIn, i);
+                        } finally { matrixStackIn.popPose(); }
+                    }
+                    if (mushroomCount >= 5) {
+                        matrixStackIn.pushPose();
+                        try {
+                            matrixStackIn.translate(-0.76F, -0.1F, 0.1D);
+                            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(-100F));
+                            matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
+                            matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
+                            blockrendererdispatcher.renderSingleBlock(blockstate, matrixStackIn, bufferIn, packedLightIn, i);
+                        } finally { matrixStackIn.popPose(); }
+                    }
+                } finally {
+                    matrixStackIn.popPose();
+                }
+            } finally {
                 matrixStackIn.popPose();
             }
-            if (mushroomCount == 1 && altOrder || mushroomCount >= 2) {
-                matrixStackIn.pushPose();
-                matrixStackIn.translate(-0.2F, -1.5F, -0.2D);
-                matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
-                matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
-                blockrendererdispatcher.renderSingleBlock(blockstate, matrixStackIn, bufferIn, packedLightIn, i);
-                matrixStackIn.popPose();
-            }
-            if (mushroomCount >= 3) {
-                matrixStackIn.pushPose();
-                matrixStackIn.translate(0.76F, -0.4F, 0.1D);
-                matrixStackIn.mulPose(Axis.ZP.rotationDegrees(90F));
-                matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
-                matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
-                blockrendererdispatcher.renderSingleBlock(blockstate, matrixStackIn, bufferIn, packedLightIn, i);
-                matrixStackIn.popPose();
-            }
-            if (mushroomCount >= 4) {
-                matrixStackIn.pushPose();
-                matrixStackIn.translate(-0.76F, -1.0F, 0.1D);
-                matrixStackIn.mulPose(Axis.ZP.rotationDegrees(-60F));
-                matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
-                matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
-                blockrendererdispatcher.renderSingleBlock(blockstate, matrixStackIn, bufferIn, packedLightIn, i);
-                matrixStackIn.popPose();
-            }
-            if (mushroomCount >= 5) {
-                matrixStackIn.pushPose();
-                matrixStackIn.translate(-0.76F, -0.1F, 0.1D);
-                matrixStackIn.mulPose(Axis.ZP.rotationDegrees(-100F));
-                matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
-                matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
-                blockrendererdispatcher.renderSingleBlock(blockstate, matrixStackIn, bufferIn, packedLightIn, i);
-                matrixStackIn.popPose();
-            }
-            matrixStackIn.popPose();
-            matrixStackIn.popPose();
-
         }
 
         protected void translateToBody(PoseStack matrixStack) {

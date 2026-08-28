@@ -95,9 +95,7 @@ public class ItemHemolymphBlaster extends Item {
                 if (!worldIn.isClientSide) {
                     worldIn.addFreshEntity(blood);
                 }
-                stack.hurtAndBreak(1, livingEntityIn, (player) -> {
-                    player.broadcastBreakEvent(livingEntityIn.getUsedItemHand());
-                });
+                stack.hurtAndBreak(1, livingEntityIn, (e) -> e.broadcastBreakEvent((livingEntityIn.getUsedItemHand() == net.minecraft.world.InteractionHand.MAIN_HAND ) ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
             }
         }else{
             if(livingEntityIn instanceof Player){

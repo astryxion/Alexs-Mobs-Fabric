@@ -138,8 +138,7 @@ public class ModelHummingbird extends AdvancedEntityModel<EntityHummingbird> {
     public Iterable<AdvancedModelBox> getAllParts() {
         return ImmutableList.of(root, body, head, wingL, wingL_r1, wingR, wingR_r1, tail, legL, legR);
     }
-
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.75F;
             head.setScale(f, f, f);

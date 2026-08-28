@@ -11,13 +11,16 @@ import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.animal.Sheep;
 import net.minecraft.world.item.DyeColor;
 
 public class RenderRaccoon extends MobRenderer<EntityRaccoon, ModelRaccoon> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/raccoon.png");
-    private static final ResourceLocation TEXTURE_RIGBY = new ResourceLocation("alexsmobs:textures/entity/raccoon_rigby.png");
-    private static final ResourceLocation TEXTURE_BANDANA = new ResourceLocation("alexsmobs:textures/entity/raccoon_bandana.png");
+
+    private static float[] getDyeColorComponents(DyeColor dyeColor) {
+        return dyeColor.getTextureDiffuseColors();
+    }
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/raccoon.png");
+    private static final ResourceLocation TEXTURE_RIGBY = new ResourceLocation("alexsmobs", "textures/entity/raccoon_rigby.png");
+    private static final ResourceLocation TEXTURE_BANDANA = new ResourceLocation("alexsmobs", "textures/entity/raccoon_bandana.png");
 
     public RenderRaccoon(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new ModelRaccoon(), 0.4F);
@@ -51,13 +54,13 @@ public class RenderRaccoon extends MobRenderer<EntityRaccoon, ModelRaccoon> {
                     int lvt_17_1_ = lvt_15_1_ % lvt_16_1_;
                     int lvt_18_1_ = (lvt_15_1_ + 1) % lvt_16_1_;
                     float lvt_19_1_ = ((float)(raccoon.tickCount % 25) + p_225628_7_) / 25.0F;
-                    float[] lvt_20_1_ = Sheep.getColorArray(DyeColor.byId(lvt_17_1_));
-                    float[] lvt_21_1_ = Sheep.getColorArray(DyeColor.byId(lvt_18_1_));
+                    float[] lvt_20_1_ = getDyeColorComponents(DyeColor.byId(lvt_17_1_));
+                    float[] lvt_21_1_ = getDyeColorComponents(DyeColor.byId(lvt_18_1_));
                     lvt_11_2_ = lvt_20_1_[0] * (1.0F - lvt_19_1_) + lvt_21_1_[0] * lvt_19_1_;
                     lvt_12_2_ = lvt_20_1_[1] * (1.0F - lvt_19_1_) + lvt_21_1_[1] * lvt_19_1_;
                     lvt_13_2_ = lvt_20_1_[2] * (1.0F - lvt_19_1_) + lvt_21_1_[2] * lvt_19_1_;
                 } else {
-                    float[] lvt_14_2_ = Sheep.getColorArray(raccoon.getColor());
+                    float[] lvt_14_2_ = getDyeColorComponents(raccoon.getColor());
                     lvt_11_2_ = lvt_14_2_[0];
                     lvt_12_2_ = lvt_14_2_[1];
                     lvt_13_2_ = lvt_14_2_[2];

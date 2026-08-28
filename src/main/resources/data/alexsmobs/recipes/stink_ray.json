@@ -10,7 +10,7 @@
       "item": "alexsmobs:stink_bottle"
     },
     "I": {
-      "item": "minecraft:iron_ingot"
+      "tag": "c:ingots/iron"
     },
     "H": {
       "item": "minecraft:hopper"

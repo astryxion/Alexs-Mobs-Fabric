@@ -41,10 +41,12 @@ public class ItemModFishBucket extends MobBucketItem {
         return fishTypeSupplier.get();
     }
 
+    @Override
     public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
         EntityType<?> fishType = getFishType();
+        net.minecraft.nbt.CompoundTag customData = stack.getTag();
+        CompoundTag compoundnbt = customData != null ? customData.copy() : null;
         if (fishType == AMEntityRegistry.LOBSTER) {
-            CompoundTag compoundnbt = stack.getTag();
             if (compoundnbt != null && compoundnbt.contains("BucketVariantTag", 3)) {
                 int i = compoundnbt.getInt("BucketVariantTag");
                 String s = "entity.alexsmobs.lobster.variant_" + EntityLobster.getVariantName(i);
@@ -52,14 +54,12 @@ public class ItemModFishBucket extends MobBucketItem {
             }
         }
         if (fishType == AMEntityRegistry.TERRAPIN) {
-            CompoundTag compoundnbt = stack.getTag();
             if (compoundnbt != null && compoundnbt.contains("TerrapinData")) {
                 int i = compoundnbt.getCompound("TerrapinData").getInt("TurtleType");
                 tooltip.add((Component.translatable(TerrapinTypes.values()[Mth.clamp(i, 0, TerrapinTypes.values().length - 1)].getTranslationName())).withStyle(ChatFormatting.GRAY).withStyle(ChatFormatting.ITALIC));
             }
         }
         if (fishType == AMEntityRegistry.COMB_JELLY) {
-            CompoundTag compoundnbt = stack.getTag();
             if (compoundnbt != null && compoundnbt.contains("BucketVariantTag", 3)) {
                 int i = compoundnbt.getInt("BucketVariantTag");
                 String s = "entity.alexsmobs.comb_jelly.variant_" + i;
@@ -80,7 +80,9 @@ public class ItemModFishBucket extends MobBucketItem {
         Entity entity = getFishType().spawn(serverLevel, stack, (Player)null, pos, MobSpawnType.BUCKET, true, false);
         if (entity instanceof Bucketable) {
             Bucketable bucketable = (Bucketable)entity;
-            bucketable.loadFromBucketTag(stack.getOrCreateTag());
+            net.minecraft.nbt.CompoundTag data = stack.getTag();
+            CompoundTag tag = data != null ? data.copy() : new net.minecraft.nbt.CompoundTag();
+            bucketable.loadFromBucketTag(tag);
             bucketable.setFromBucket(true);
         }
         addExtraAttributes(entity, stack);

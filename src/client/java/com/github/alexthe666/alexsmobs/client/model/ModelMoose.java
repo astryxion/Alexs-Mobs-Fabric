@@ -210,8 +210,7 @@ public class ModelMoose extends AdvancedEntityModel<EntityMoose> {
             this.faceTarget(netHeadYaw, headPitch, 2, neck, head);
         }
     }
-
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.35F;
             float feet = 1.45F;

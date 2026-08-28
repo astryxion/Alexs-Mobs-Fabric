@@ -1,0 +1,8 @@
+accessWidener v2 named
+
+# Mungus biome transformation writes the chunk section biome palette (Forge AT equivalent)
+accessible field net/minecraft/world/level/chunk/LevelChunkSection biomes Lnet/minecraft/world/level/chunk/PalettedContainerRO;
+mutable field net/minecraft/world/level/chunk/LevelChunkSection biomes Lnet/minecraft/world/level/chunk/PalettedContainerRO;
+
+# Flying fish boots need LivingEntity.jumping
+accessible field net/minecraft/world/entity/LivingEntity jumping Z

@@ -399,7 +399,7 @@ public class TileEntityLeafcutterAnthill extends BlockEntity {
     }
 
     @Override
-    public void saveAdditional(CompoundTag compound) {
+    protected void saveAdditional(CompoundTag compound) {
         super.saveAdditional(compound);
         compound.put("Ants", this.getAnts());
         compound.putInt("LeafFeedings", leafFeedings);

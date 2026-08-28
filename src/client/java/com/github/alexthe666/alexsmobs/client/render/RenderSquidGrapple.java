@@ -26,7 +26,7 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 public class RenderSquidGrapple extends EntityRenderer<EntitySquidGrapple> {
-    private static final ResourceLocation SQUID_TEXTURE = new ResourceLocation("alexsmobs:textures/entity/giant_squid.png");
+    private static final ResourceLocation SQUID_TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/giant_squid.png");
     private static final ModelSquidGrapple SQUID_MODEL = new ModelSquidGrapple();
     private static final float TENTACLES_COLOR_R = 181F / 255F;
     private static final float TENTACLES_COLOR_G = 87F / 255F;
@@ -61,6 +61,7 @@ public class RenderSquidGrapple extends EntityRenderer<EntitySquidGrapple> {
 
     public static <E extends Entity> void renderTentacle(Entity mob, float partialTick, PoseStack p_115464_, MultiBufferSource p_115465_, LivingEntity player, boolean left, float zOffset) {
         p_115464_.pushPose();
+        try {
         float bodyRot = mob instanceof LivingEntity ? ((LivingEntity) mob).yBodyRot : mob.getYRot();
         float bodyRot0 = mob instanceof LivingEntity ? ((LivingEntity) mob).yBodyRotO : mob.yRotO;
         Vec3 vec3 = player.getRopeHoldPosition(partialTick);
@@ -93,7 +94,9 @@ public class RenderSquidGrapple extends EntityRenderer<EntitySquidGrapple> {
         for (int j1 = 24; j1 >= 0; --j1) {
             addVertexPairAlex(vertexconsumer, matrix4f, f, f1, f2, i, j, k, l, width, width, f5, f6, j1, true);
         }
-        p_115464_.popPose();
+        } finally {
+            p_115464_.popPose();
+        }
     }
 
     protected static int getTentacleLightLevel(Entity p_114496_, BlockPos p_114497_) {
@@ -106,21 +109,27 @@ public class RenderSquidGrapple extends EntityRenderer<EntitySquidGrapple> {
 
     public void render(EntitySquidGrapple entityIn, float entityYaw, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn) {
         matrixStackIn.pushPose();
-        matrixStackIn.mulPose(Axis.YN.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot())));
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(180 + Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
-        matrixStackIn.translate(0, -1.5F, -0.25F);
-        VertexConsumer ivertexbuilder = bufferIn.getBuffer(RenderType.entityCutoutNoCull(getTextureLocation(entityIn)));
-        SQUID_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, 1, 1, 1, 1.0F);
-        matrixStackIn.popPose();
+        try {
+            matrixStackIn.mulPose(Axis.YN.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot())));
+            matrixStackIn.mulPose(Axis.XP.rotationDegrees(180 + Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+            matrixStackIn.translate(0, -1.5F, -0.25F);
+            VertexConsumer ivertexbuilder = bufferIn.getBuffer(RenderType.entityCutoutNoCull(getTextureLocation(entityIn)));
+            SQUID_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        } finally {
+            matrixStackIn.popPose();
+        }
         super.render(entityIn, entityYaw, partialTicks, matrixStackIn, bufferIn, packedLightIn);
         if (entityIn.getOwner() instanceof LivingEntity holder) {
-            final double d0 = Mth.lerp(partialTicks, entityIn.xOld, entityIn.getX());
-            final double d1 = Mth.lerp(partialTicks, entityIn.yOld, entityIn.getY());
-            final double d2 = Mth.lerp(partialTicks, entityIn.zOld, entityIn.getZ());
             matrixStackIn.pushPose();
-            matrixStackIn.translate(-d0, -d1, -d2);
-            renderTentacle(entityIn, partialTicks, matrixStackIn, bufferIn, holder, holder.getMainArm() != HumanoidArm.LEFT, -0.1F);
-            matrixStackIn.popPose();
+            try {
+                final double d0 = Mth.lerp(partialTicks, entityIn.xOld, entityIn.getX());
+                final double d1 = Mth.lerp(partialTicks, entityIn.yOld, entityIn.getY());
+                final double d2 = Mth.lerp(partialTicks, entityIn.zOld, entityIn.getZ());
+                matrixStackIn.translate(-d0, -d1, -d2);
+                renderTentacle(entityIn, partialTicks, matrixStackIn, bufferIn, holder, holder.getMainArm() != HumanoidArm.LEFT, -0.1F);
+            } finally {
+                matrixStackIn.popPose();
+            }
         }
     }
 
@@ -129,6 +138,6 @@ public class RenderSquidGrapple extends EntityRenderer<EntitySquidGrapple> {
     }
 
     public void drawVertex(Matrix4f p_229039_1_, Matrix3f p_229039_2_, VertexConsumer p_229039_3_, int p_229039_4_, int p_229039_5_, int p_229039_6_, float p_229039_7_, float p_229039_8_, int p_229039_9_, int p_229039_10_, int p_229039_11_, int p_229039_12_) {
-        p_229039_3_.vertex(p_229039_1_, (float) p_229039_4_, (float) p_229039_5_, (float) p_229039_6_).color(255, 255, 255, 255).uv(p_229039_7_, p_229039_8_).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(p_229039_12_).normal(p_229039_2_, (float) p_229039_9_, (float) p_229039_11_, (float) p_229039_10_).endVertex();
+        p_229039_3_.vertex(p_229039_1_, (float) p_229039_4_, (float) p_229039_5_, (float) p_229039_6_).color(255, 255, 255, 255).uv(p_229039_7_, p_229039_8_).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(p_229039_12_).normal((float) p_229039_9_, (float) p_229039_11_, (float) p_229039_10_).endVertex();
     }
 }

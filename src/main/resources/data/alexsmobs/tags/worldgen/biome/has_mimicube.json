@@ -3,7 +3,7 @@
     "#minecraft:is_end"
   ],
   "remove": [
-    "#forge:no_default_monsters",
+    "#c:no_default_monsters",
     "minecraft:the_end"
   ]
 }

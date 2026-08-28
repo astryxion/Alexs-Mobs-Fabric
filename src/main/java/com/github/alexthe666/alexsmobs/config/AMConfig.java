@@ -54,7 +54,7 @@ public class AMConfig {
     public static int blobfishSpawnWeight = 30;
     public static int blobfishSpawnRolls = 0;
     public static int blobfishSpawnHeight = 25;
-    public static int sealSpawnWeight = 35;
+    public static int sealSpawnWeight = 20;
     public static int sealSpawnRolls = 0;
     public static int cockroachSpawnWeight = 4;
     public static int cockroachSpawnRolls = 0;
@@ -92,7 +92,7 @@ public class AMConfig {
     public static int dropbearSpawnRolls = 1;
     public static int tasmanianDevilSpawnWeight = 10;
     public static int tasmanianDevilSpawnRolls = 0;
-    public static int kangarooSpawnWeight = 42;
+    public static int kangarooSpawnWeight = 25;
     public static int kangarooSpawnRolls = 0;
     public static int cachalotWhaleSpawnWeight = 2;
     public static int cachalotWhaleSpawnRolls = 0;
@@ -210,7 +210,7 @@ public class AMConfig {
     public static boolean limitElephantTraderBiomes = true;
     public static boolean wanderingTraderOffers = true;
     public static boolean soulVultureSpawnOnFossil = true;
-    public static int mungusBiomeTransformationType = 1;
+    public static int mungusBiomeTransformationType = 2;
     public static List<? extends String> mungusBiomeMatches = Lists.newArrayList(
             "minecraft:red_mushroom|minecraft:mushroom_fields|minecraft:mycelium",
             "minecraft:brown_mushroom|minecraft:mushroom_fields|minecraft:mycelium",
@@ -258,9 +258,15 @@ public class AMConfig {
     public static double rainbowGlassFidelity = 16.0F;
     public static boolean bunfungusTransformation = true;
     public static boolean superSecretSettings = false;
-    /** Temporary: when true, log biome/mob/weight in addBiomeSpawns and spawn predicate calls (Phase 1–4). Remove after diagnosis. */
+    /**
+     * When true, logs biome/mob/weight in {@code addBiomeSpawns} and some spawn predicates ({@code [SpawnDiag]}).
+     * <strong>Default {@code false}</strong> — leave off for normal play and release builds; enable only while diagnosing spawns.
+     */
     public static boolean debugSpawningDiagnostic = false;
-    /** Temporary: when true, override spawn weight to 100 during biome injection only for diagnostic (Phase 5). Remove after diagnosis. */
+    /**
+     * When true, overrides spawn weight to 100 during biome injection only (diagnostic).
+     * <strong>Default {@code false}</strong> — leave off for normal play.
+     */
     public static boolean debugForceHighSpawnWeight = false;
     public static boolean addLootToChests = true;
     public static List<? extends String> transmutationBlacklist = Lists.newArrayList("minecraft:beacon");

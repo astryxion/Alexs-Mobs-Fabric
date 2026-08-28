@@ -33,6 +33,7 @@ import net.minecraft.world.entity.animal.FlyingAnimal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.Phantom;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -81,6 +82,11 @@ public class EntitySunbird extends Animal implements FlyingAnimal {
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(SCORCHING, false);
+    }
+
+    @Override
+    public boolean isFood(ItemStack stack) {
+        return stack.isEdible();
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
@@ -246,7 +252,7 @@ public class EntitySunbird extends Animal implements FlyingAnimal {
                 this.setScorching(false);
             }else if(fullScorchTime % 5 == 0){
                 for (Entity e : getScorchingMobs()) {
-                    e.setSecondsOnFire(4);
+                    e.setRemainingFireTicks(4 * 20);
                     if (e instanceof Phantom) {
                         ((Phantom) e).addEffect(new MobEffectInstance(AMEffectRegistry.SUNBIRD_CURSE, 200, 0));
                     }

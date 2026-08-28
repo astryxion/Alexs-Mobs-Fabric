@@ -229,9 +229,7 @@ public class ModelBaldEagle extends AdvancedEntityModel<EntityBaldEagle> {
         this.body.rotateAngleX += birdPitch * flyProgress * 0.2F * Mth.DEG_TO_RAD;
 
     }
-
-    @Override
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
         if (this.young) {
             float f = 1.35F;
             head.setScale(f, f, f);

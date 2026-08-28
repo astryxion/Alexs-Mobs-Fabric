@@ -114,8 +114,7 @@ public class ModelFroststalker extends AdvancedEntityModel<EntityFroststalker> {
         this.updateDefaultPose();
         animator = ModelAnimator.create();
     }
-
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.5F;
             head.setScale(f, f, f);

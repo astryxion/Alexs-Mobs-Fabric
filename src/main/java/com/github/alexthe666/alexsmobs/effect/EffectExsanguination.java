@@ -13,13 +13,16 @@ public class EffectExsanguination extends MobEffect {
         super(MobEffectCategory.HARMFUL, 0XED5151);
     }
 
+    @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
-        entity.hurt(entity.damageSources().magic(), Math.min(amplifier + 1, Math.round(lastDuration / 20F)));
+        entity.hurt(entity.damageSources().magic(), Math.min(amplifier + 1, Math.round(this.lastDuration / 20.0F)));
         for(int i = 0; i < 3; i++){
             entity.level().addParticle(ParticleTypes.DAMAGE_INDICATOR, entity.getRandomX(1.0), entity.getRandomY(), entity.getRandomZ(1.0), 0, 0, 0);
         }
+
     }
 
+    @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         lastDuration = duration;
         return duration > 0 && duration % 20 == 0;

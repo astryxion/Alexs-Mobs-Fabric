@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.entity.ai.AMTagTemptGoal;
+
 import com.github.alexthe666.alexsmobs.block.AMBlockRegistry;
 import com.github.alexthe666.alexsmobs.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
@@ -61,6 +63,7 @@ public class EntitySkunk extends Animal {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 8.0D).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.25F);
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(SPRAY_YAW, 0F);
@@ -77,7 +80,7 @@ public class EntitySkunk extends Animal {
                 EntitySkunk.this.harassedTime += 10;
             }
         });
-        this.goalSelector.addGoal(3, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.SKUNK_BREEDABLES), false));
+        this.goalSelector.addGoal(3, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.SKUNK_BREEDABLES));
         this.goalSelector.addGoal(2, new BreedGoal(this, 1.0D));
         this.goalSelector.addGoal(4, new RandomStrollGoal(this, 1D, 60));
         this.goalSelector.addGoal(5, new FollowParentGoal(this, 1D));

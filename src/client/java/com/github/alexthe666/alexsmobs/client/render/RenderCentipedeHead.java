@@ -14,14 +14,13 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Pose;
 
 public class RenderCentipedeHead extends MobRenderer<EntityCentipedeHead, AdvancedEntityModel<EntityCentipedeHead>> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/cave_centipede.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/cave_centipede.png");
 
     public RenderCentipedeHead(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new ModelCaveCentipede<>(0), 0.5F);
         this.addLayer(new LayerCentipedeHeadEyes(this));
     }
 
-    @Override
     protected void setupRotations(EntityCentipedeHead entity, PoseStack stack, float pitchIn, float yawIn, float partialTickTime) {
         if (this.isShaking(entity)) {
             yawIn += (float) (Math.cos((double) entity.tickCount * 3.25D) * Math.PI * (double) 0.4F);

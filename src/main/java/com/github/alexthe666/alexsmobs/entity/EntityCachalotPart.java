@@ -14,6 +14,8 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
@@ -81,17 +83,18 @@ public class EntityCachalotPart extends PartEntity<EntityCachalotWhale> {
         return this == entityIn || this.getParent() == entityIn;
     }
 
+    @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public EntityDimensions getDimensions(Pose poseIn) {
         return this.size == null ? EntityDimensions.scalable(0, 0) : this.size.scale(scale);
     }
 
     @Override
     protected void defineSynchedData() {
-
     }
 
     public void tick(){

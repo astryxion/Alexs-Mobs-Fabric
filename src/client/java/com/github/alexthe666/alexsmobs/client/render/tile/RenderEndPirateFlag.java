@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 
 public class RenderEndPirateFlag<T extends TileEntityEndPirateFlag> implements BlockEntityRenderer<T> {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/end_pirate/flag.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/end_pirate/flag.png");
     private static final ModelEndPirateFlag FLAG_MODEL = new ModelEndPirateFlag();
 
 
@@ -24,20 +24,26 @@ public class RenderEndPirateFlag<T extends TileEntityEndPirateFlag> implements B
     @Override
     public void render(T tileEntityIn, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int combinedLightIn, int combinedOverlayIn) {
         matrixStackIn.pushPose();
-        Direction dir = tileEntityIn.getBlockState().getValue(BlockEndPirateFlag.FACING);
-        switch (dir) {
-            case NORTH -> matrixStackIn.translate(0.5, 1.5F, 0.5F);
-            case EAST -> matrixStackIn.translate(0.5F, 1.5F, 0.5F);
-            case SOUTH -> matrixStackIn.translate(0.5, 1.5F, 0.5F);
-            case WEST -> matrixStackIn.translate(0.5F, 1.5F, 0.5F);
+        try {
+            Direction dir = tileEntityIn.getBlockState().getValue(BlockEndPirateFlag.FACING);
+            switch (dir) {
+                case NORTH -> matrixStackIn.translate(0.5, 1.5F, 0.5F);
+                case EAST -> matrixStackIn.translate(0.5F, 1.5F, 0.5F);
+                case SOUTH -> matrixStackIn.translate(0.5, 1.5F, 0.5F);
+                case WEST -> matrixStackIn.translate(0.5F, 1.5F, 0.5F);
+            }
+            matrixStackIn.mulPose(dir.getOpposite().getRotation());
+            matrixStackIn.mulPose(Axis.XP.rotationDegrees(90.0F));
+            matrixStackIn.mulPose(Axis.YN.rotationDegrees(dir.getAxis() == Direction.Axis.Y ? -90.0F : 90.0F));
+            matrixStackIn.pushPose();
+            try {
+                FLAG_MODEL.renderFlag(tileEntityIn, partialTicks);
+                FLAG_MODEL.renderToBuffer(matrixStackIn, bufferIn.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), combinedLightIn, combinedOverlayIn, 1.0F, 1.0F, 1.0F, 1.0F);
+            } finally {
+                matrixStackIn.popPose();
+            }
+        } finally {
+            matrixStackIn.popPose();
         }
-        matrixStackIn.mulPose(dir.getOpposite().getRotation());
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(90.0F));
-        matrixStackIn.mulPose(Axis.YN.rotationDegrees(dir.getAxis() == Direction.Axis.Y ? -90.0F : 90.0F));
-        matrixStackIn.pushPose();
-        FLAG_MODEL.renderFlag(tileEntityIn, partialTicks);
-        FLAG_MODEL.renderToBuffer(matrixStackIn, bufferIn.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), combinedLightIn, combinedOverlayIn, 1, 1F, 1, 1);
-        matrixStackIn.popPose();
-        matrixStackIn.popPose();
     }
 }

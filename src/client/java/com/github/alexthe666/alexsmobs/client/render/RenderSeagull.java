@@ -16,8 +16,8 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public class RenderSeagull extends MobRenderer<EntitySeagull, ModelSeagull> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/seagull.png");
-    private static final ResourceLocation TEXTURE_WINGULL = new ResourceLocation("alexsmobs:textures/entity/seagull_wingull.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/seagull.png");
+    private static final ResourceLocation TEXTURE_WINGULL = new ResourceLocation("alexsmobs", "textures/entity/seagull_wingull.png");
 
     public RenderSeagull(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new ModelSeagull(), 0.2F);
@@ -40,19 +40,25 @@ public class RenderSeagull extends MobRenderer<EntitySeagull, ModelSeagull> {
         public void render(PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn, EntitySeagull entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
             ItemStack itemstack = entitylivingbaseIn.getItemBySlot(EquipmentSlot.MAINHAND);
             matrixStackIn.pushPose();
-            if (entitylivingbaseIn.isBaby()) {
-                matrixStackIn.scale(0.5F, 0.5F, 0.5F);
-                matrixStackIn.translate(0.0D, 1.5D, 0D);
+            try {
+                if (entitylivingbaseIn.isBaby()) {
+                    matrixStackIn.scale(0.5F, 0.5F, 0.5F);
+                    matrixStackIn.translate(0.0D, 1.5D, 0D);
+                }
+                matrixStackIn.pushPose();
+                try {
+                    translateToHand(matrixStackIn);
+                    matrixStackIn.translate(0, -0.24F, -0.25F);
+                    matrixStackIn.mulPose(Axis.YP.rotationDegrees(-2.5F));
+                    matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
+                    ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
+                    renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
+                } finally {
+                    matrixStackIn.popPose();
+                }
+            } finally {
+                matrixStackIn.popPose();
             }
-            matrixStackIn.pushPose();
-            translateToHand(matrixStackIn);
-            matrixStackIn.translate(0, -0.24F, -0.25F);
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(-2.5F));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
-            ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-            renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
-            matrixStackIn.popPose();
-            matrixStackIn.popPose();
         }
 
         protected void translateToHand(PoseStack matrixStack) {

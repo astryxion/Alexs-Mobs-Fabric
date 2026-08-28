@@ -220,10 +220,6 @@ public class EntityFly extends Animal implements FlyingAnimal {
         return true;
     }
 
-    public MobType getMobType() {
-        return MobType.ARTHROPOD;
-    }
-
     protected void jumpInLiquid(TagKey<Fluid> fluidTag) {
         this.setDeltaMovement(this.getDeltaMovement().add(0.0D, 0.01D, 0.0D));
     }

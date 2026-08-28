@@ -122,6 +122,7 @@ public class EntitySkreecher extends Monster {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 2D).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.2F).add(Attributes.FOLLOW_RANGE, 64F);
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(DIST_TO_CEILING, 0F);
@@ -224,7 +225,7 @@ public class EntitySkreecher extends Monster {
             float dir = this.isClinging() ? -0.5F : 0.1F;
             if(clapTick % 8 == 0){
                 this.playSound(AMSoundRegistry.SKREECHER_CLAP, this.getSoundVolume() * 3F, this.getVoicePitch());
-                this.gameEvent(GameEvent.ENTITY_ROAR);
+                this.gameEvent(GameEvent.ENTITY_INTERACT);
                 angerAllNearbyWardens();
                 this.level().addParticle(AMParticleRegistry.SKULK_BOOM, this.getX(), this.getEyeY(), this.getZ(), 0, dir, 0);
             }else if(clapTick % 15 == 0){
@@ -242,7 +243,7 @@ public class EntitySkreecher extends Monster {
                         Warden warden = EntityType.WARDEN.create(this.level());
 
                         warden.moveTo(this.getX(), spawnAt.getY() + 1, this.getZ(), this.getYRot(), 0.0F);
-                        warden.finalizeSpawn((ServerLevel)level(), level().getCurrentDifficultyAt(this.blockPosition()), MobSpawnType.TRIGGERED, (SpawnGroupData)null, (CompoundTag)null);
+                        warden.finalizeSpawn((ServerLevel)level(), level().getCurrentDifficultyAt(this.blockPosition()), MobSpawnType.TRIGGERED, null, null);
                         warden.setAttackTarget(this);
                         warden.increaseAngerAt(this, 79, false);
                         this.level().addFreshEntity(warden);
@@ -306,6 +307,7 @@ public class EntitySkreecher extends Monster {
     }
 
 
+    @Override
     public EntityDimensions getDimensions(Pose poseIn) {
         return isClinging() ? super.getDimensions(poseIn) : GROUND_SIZE.scale(this.getScale());
     }

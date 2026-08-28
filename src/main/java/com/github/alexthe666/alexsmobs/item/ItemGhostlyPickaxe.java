@@ -2,6 +2,7 @@ package com.github.alexthe666.alexsmobs.item;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -27,6 +28,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class ItemGhostlyPickaxe extends PickaxeItem {
+
+    
 
     public ItemGhostlyPickaxe(Properties props) {
         super(Tiers.IRON, 1, -2.8F, props);
@@ -65,7 +68,7 @@ public class ItemGhostlyPickaxe extends PickaxeItem {
     }
 
     private static void putItemInGhostInventoryOrDrop(LivingEntity user, ItemStack pickaxe, ItemStack item) {
-        CompoundTag compoundtag = pickaxe.getOrCreateTag();
+        CompoundTag compoundtag = getOrCreateCustomData(pickaxe);
         SimpleContainer container = new SimpleContainer(9);
         if(compoundtag.contains("Items")){
             container.fromTag(compoundtag.getList("Items", 10));
@@ -77,7 +80,7 @@ public class ItemGhostlyPickaxe extends PickaxeItem {
             }else if(container.canAddItem(item)){
                 ItemStack leftover = container.addItem(item);
                 compoundtag.put("Items", container.createTag());
-                pickaxe.setTag(compoundtag);
+                setCustomData(pickaxe, compoundtag);
                 item = leftover;
 
             }
@@ -107,7 +110,7 @@ public class ItemGhostlyPickaxe extends PickaxeItem {
         if(entity instanceof Player){
             Player player = (Player) entity;
             if(player.tickCount % 3 == 0){
-                CompoundTag compoundtag = stack.getOrCreateTag();
+                CompoundTag compoundtag = getOrCreateCustomData(stack);
                 SimpleContainer container = new SimpleContainer(9);
                 boolean flag = false;
                 if(compoundtag.contains("Items")){
@@ -123,7 +126,7 @@ public class ItemGhostlyPickaxe extends PickaxeItem {
                 }
                 if (flag) {
                     compoundtag.put("Items", container.createTag());
-                    stack.setTag(compoundtag);
+                    setCustomData(stack, compoundtag);
                 }
             }
         }
@@ -133,10 +136,19 @@ public class ItemGhostlyPickaxe extends PickaxeItem {
         return stack.is(Items.PHANTOM_MEMBRANE);
     }
 
+    private static CompoundTag getOrCreateCustomData(ItemStack stack) {
+        net.minecraft.nbt.CompoundTag data = stack.getTag();
+        return data != null ? data.copy() : new CompoundTag();
+    }
+
+    private static void setCustomData(ItemStack stack, CompoundTag tag) {
+        stack.setTag(tag);
+    }
+
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
         super.appendHoverText(stack, worldIn, tooltip, flagIn);
-        CompoundTag compoundtag = stack.getTag();
+        CompoundTag compoundtag = stack.hasTag() ? stack.getTag() : null;
         if (compoundtag != null && compoundtag.contains("Items", 9)) {
             SimpleContainer container = new SimpleContainer(9);
             container.fromTag(compoundtag.getList("Items", 10));
@@ -163,7 +175,7 @@ public class ItemGhostlyPickaxe extends PickaxeItem {
     }
 
     private void dropAllContents(Level level, Vec3 vec3, ItemStack pickaxe){
-        CompoundTag compoundtag = pickaxe.getTag();
+        CompoundTag compoundtag = pickaxe.hasTag() ? pickaxe.getTag() : null;
         if (compoundtag != null && compoundtag.contains("Items", 9)) {
             SimpleContainer container = new SimpleContainer(9);
             container.fromTag(compoundtag.getList("Items", 10));
@@ -177,7 +189,7 @@ public class ItemGhostlyPickaxe extends PickaxeItem {
                 }
             }
             compoundtag.put("Items", container.createTag());
-            pickaxe.setTag(compoundtag);
+            setCustomData(pickaxe, compoundtag);
         }
     }
 

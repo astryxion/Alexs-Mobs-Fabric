@@ -20,6 +20,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -145,8 +146,8 @@ public class EntityVoidPortal extends Entity {
                                 flag = false;
                             }
                         }
-                        if(flag){
-                            e.teleportToWithTicket(offsetPos.getX() + 0.5f, offsetPos.getY() + 0.5f, offsetPos.getZ() + 0.5f);
+                        if(flag && e.level() instanceof ServerLevel sl){
+                            e.teleportTo(sl, offsetPos.getX() + 0.5f, offsetPos.getY() + 0.5f, offsetPos.getZ() + 0.5f, java.util.Set.of(), e.getYRot(), e.getXRot());
                             e.setPortalCooldown();
                         }
                     }
@@ -256,7 +257,7 @@ public class EntityVoidPortal extends Entity {
         EntityVoidPortal portal = AMEntityRegistry.VOID_PORTAL.create(world);
         portal.setAttachmentFacing(dir != null ? dir : this.getAttachmentFacing().getOpposite());
         BlockPos safeDestination = this.getDestination();
-        portal.teleportToWithTicket(safeDestination.getX() + 0.5f, safeDestination.getY() + 0.5f, safeDestination.getZ() + 0.5f);
+        if (world instanceof ServerLevel sl) portal.teleportTo(sl, safeDestination.getX() + 0.5f, safeDestination.getY() + 0.5f, safeDestination.getZ() + 0.5f, java.util.Set.of(), portal.getYRot(), portal.getXRot());
         portal.link(this);
         portal.exitDimension = this.level().dimension();
         world.addFreshEntity(portal);
@@ -283,8 +284,8 @@ public class EntityVoidPortal extends Entity {
         this.entityData.define(ATTACHED_FACE, Direction.DOWN);
         this.entityData.define(LIFESPAN, 300);
         this.entityData.define(SHATTERED, false);
-        this.entityData.define(SISTER_UUID, Optional.empty());
-        this.entityData.define(DESTINATION, Optional.empty());
+        this.entityData.define(SISTER_UUID, Optional.<UUID>empty());
+        this.entityData.define(DESTINATION, Optional.<BlockPos>empty());
     }
 
     @Override

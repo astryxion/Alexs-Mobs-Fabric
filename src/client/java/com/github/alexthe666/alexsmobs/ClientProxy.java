@@ -32,6 +32,8 @@ import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
+import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.client.renderer.item.ItemProperties;
@@ -42,8 +44,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.DyeableLeatherItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.DyeableLeatherItem;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -61,7 +63,7 @@ public class ClientProxy extends CommonProxy {
     private int pupfishChunkZ = 0;
     private int singingBlueJayId = -1;
     private final ItemStack[] transmuteStacks = new ItemStack[3];
-    /** Vanilla inner leggings shell — same model HumanoidArmorLayer uses for the leggings slot. */
+    /** Vanilla inner leggings shell — same model HumanoidArmorLayer uses for the leggings slot (NeoForge default). */
     private static HumanoidModel<?> vanillaLeggingsArmorModel;
 
     private static HumanoidModel<LivingEntity> getVanillaLeggingsArmorModel() {
@@ -82,14 +84,27 @@ public class ClientProxy extends CommonProxy {
         ClientEvents.register();
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(ClientEvents::onClientTick);
         if (AMItemRegistry.STRADDLEBOARD != null) {
-            net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry.ITEM.register((stack, tint) -> tint < 1 ? -1 : ((DyeableLeatherItem) stack.getItem()).getColor(stack), AMItemRegistry.STRADDLEBOARD);
+            net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry.ITEM.register((stack, tint) -> {
+                if (tint < 1) return -1;
+                if (stack.getItem() instanceof DyeableLeatherItem dyeable) {
+                    return dyeable.hasCustomColor(stack) ? dyeable.getColor(stack) : 0xA06540;
+                }
+                return 0xA06540;
+            }, AMItemRegistry.STRADDLEBOARD);
         }
         net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry.BLOCK.register((state, world, pos, tint) -> world != null && pos != null ? RainbowUtil.calculateGlassColor(pos) : -1, AMBlockRegistry.RAINBOW_GLASS);
+        // NeoForge assigns translucent terrain layer from HalfTransparentBlock; Fabric needs explicit registration.
         net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.RAINBOW_GLASS, RenderType.translucent());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.CAPSID, RenderType.translucent());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.ENDER_RESIDUE, RenderType.translucent());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.TRANSMUTATION_TABLE, RenderType.translucent());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.SKUNK_SPRAY, RenderType.translucent());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.BANANA_SLUG_SLIME_BLOCK, RenderType.translucent());
+        net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap.INSTANCE.putBlock(AMBlockRegistry.CRYSTALIZED_BANANA_SLUG_MUCUS, RenderType.translucent());
         setupParticles();
         net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin.register(pluginContext ->
                 pluginContext.modifyModelAfterBake().register((model, context) -> {
-                    if (context.id().toString().contains("alexsmobs:ghostly_pickaxe")) {
+                    if (context.id() != null && context.id().toString().contains("alexsmobs:ghostly_pickaxe")) {
                         return new GhostlyPickaxeBakedModel(model);
                     }
                     return model;
@@ -217,25 +232,25 @@ public class ClientProxy extends CommonProxy {
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(AMEntityRegistry.CAIMAN, RenderCaiman::new);
         net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(AMEntityRegistry.TRIOPS, RenderTriops::new);
         try {
-            ItemProperties.register(AMItemRegistry.BLOOD_SPRAYER, new ResourceLocation("empty"), (stack, p_239428_1_, p_239428_2_, j) -> {
+            ItemProperties.register(AMItemRegistry.BLOOD_SPRAYER, new ResourceLocation("alexsmobs", "empty"), (stack, p_239428_1_, p_239428_2_, j) -> {
                 return !ItemBloodSprayer.isUsable(stack) || p_239428_2_ instanceof Player && ((Player) p_239428_2_).getCooldowns().isOnCooldown(AMItemRegistry.BLOOD_SPRAYER) ? 1.0F : 0.0F;
             });
-            ItemProperties.register(AMItemRegistry.HEMOLYMPH_BLASTER, new ResourceLocation("empty"), (stack, p_239428_1_, p_239428_2_, j) -> {
+            ItemProperties.register(AMItemRegistry.HEMOLYMPH_BLASTER, new ResourceLocation("alexsmobs", "empty"), (stack, p_239428_1_, p_239428_2_, j) -> {
                 return !ItemHemolymphBlaster.isUsable(stack) || p_239428_2_ instanceof Player && ((Player) p_239428_2_).getCooldowns().isOnCooldown(AMItemRegistry.HEMOLYMPH_BLASTER) ? 1.0F : 0.0F;
             });
-            ItemProperties.register(AMItemRegistry.TARANTULA_HAWK_ELYTRA, new ResourceLocation("broken"), (stack, p_239428_1_, p_239428_2_, j) -> {
+            ItemProperties.register(AMItemRegistry.TARANTULA_HAWK_ELYTRA, new ResourceLocation("alexsmobs", "broken"), (stack, p_239428_1_, p_239428_2_, j) -> {
                 return ItemTarantulaHawkElytra.isUsable(stack) ? 0.0F : 1.0F;
             });
-            ItemProperties.register(AMItemRegistry.SHIELD_OF_THE_DEEP, new ResourceLocation("blocking"), (stack, p_239421_1_, p_239421_2_, j) -> {
+            ItemProperties.register(AMItemRegistry.SHIELD_OF_THE_DEEP, new ResourceLocation("alexsmobs", "blocking"), (stack, p_239421_1_, p_239421_2_, j) -> {
                 return p_239421_2_ != null && p_239421_2_.isUsingItem() && p_239421_2_.getUseItem() == stack ? 1.0F : 0.0F;
             });
-            ItemProperties.register(AMItemRegistry.SOMBRERO, new ResourceLocation("silly"), (stack, p_239421_1_, p_239421_2_, j) -> {
+            ItemProperties.register(AMItemRegistry.SOMBRERO, new ResourceLocation("alexsmobs", "silly"), (stack, p_239421_1_, p_239421_2_, j) -> {
                 return AlexsMobs.isAprilFools() ? 1.0F : 0.0F;
             });
-            ItemProperties.register(AMItemRegistry.TENDON_WHIP, new ResourceLocation("active"), (stack, p_239421_1_, holder, j) -> {
+            ItemProperties.register(AMItemRegistry.TENDON_WHIP, new ResourceLocation("alexsmobs", "active"), (stack, p_239421_1_, holder, j) -> {
                 return ItemTendonWhip.isActive(stack, holder) ? 1.0F : 0.0F;
             });
-            ItemProperties.register(AMItemRegistry.PUPFISH_LOCATOR, new ResourceLocation("in_chunk"), (stack, world, entity, j) -> {
+            ItemProperties.register(AMItemRegistry.PUPFISH_LOCATOR, new ResourceLocation("alexsmobs", "in_chunk"), (stack, world, entity, j) -> {
                 int x = pupfishChunkX * 16;
                 int z = pupfishChunkZ * 16;
                 if (entity != null && entity.getX() >= x && entity.getX() <= x + 16 && entity.getZ() >= z && entity.getZ() <= z + 16) {
@@ -243,7 +258,7 @@ public class ClientProxy extends CommonProxy {
                 }
                 return 0.0F;
             });
-            ItemProperties.register(AMItemRegistry.SKELEWAG_SWORD, new ResourceLocation("blocking"), (stack, p_239421_1_, p_239421_2_, j) -> {
+            ItemProperties.register(AMItemRegistry.SKELEWAG_SWORD, new ResourceLocation("alexsmobs", "blocking"), (stack, p_239421_1_, p_239421_2_, j) -> {
                 return p_239421_2_ != null && p_239421_2_.isUsingItem() && p_239421_2_.getUseItem() == stack ? 1.0F : 0.0F;
             });
         } catch (Exception e) {
@@ -254,6 +269,7 @@ public class ClientProxy extends CommonProxy {
         net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry.register(AMTileEntityRegistry.TRANSMUTATION_TABLE, RenderTransmutationTable::new);
         //TODO reimplement end pirate block entity renderers
         MenuScreens.register(AMMenuRegistry.TRANSMUTATION_TABLE, GUITransmutationTable::new);
+        // Forge ISTER replacement: custom in-hand / GUI rendering for items that use AMItemstackRenderer
         registerBuiltinItemRenderer(AMBlockRegistry.TRANSMUTATION_TABLE.asItem());
         registerBuiltinItemRenderer(AMItemRegistry.SHATTERED_DIMENSIONAL_CARVER);
         registerBuiltinItemRenderer(AMItemRegistry.SHIELD_OF_THE_DEEP);
@@ -268,7 +284,7 @@ public class ClientProxy extends CommonProxy {
                 (matrices, vertexConsumers, stack, entity, slot, light, contextModel) -> {
                     ResourceLocation texture = getModArmorTexture(stack, entity, slot);
                     if (texture == null) return;
-                    HumanoidModel<?> model;
+                    net.minecraft.client.model.HumanoidModel<?> model;
                     if (slot == EquipmentSlot.LEGS && (stack.getItem() == AMItemRegistry.CENTIPEDE_LEGGINGS || stack.getItem() == AMItemRegistry.EMU_LEGGINGS)) {
                         model = getVanillaLeggingsArmorModel();
                         contextModel.copyPropertiesTo((HumanoidModel<LivingEntity>) model);
@@ -319,22 +335,26 @@ public class ClientProxy extends CommonProxy {
     }
 
     private void initRainbowBuffers() {
-        Object buffers = Minecraft.getInstance().renderBuffers();
+        net.minecraft.client.renderer.RenderBuffers buffers = Minecraft.getInstance().renderBuffers();
         if (buffers == null) return;
         try {
-            java.lang.reflect.Field f = buffers.getClass().getDeclaredField("fixedBuffers");
-            f.setAccessible(true);
+            java.lang.reflect.Field mapField = net.minecraft.client.renderer.RenderBuffers.class.getDeclaredField("fixedBuffers");
+            mapField.setAccessible(true);
             @SuppressWarnings("unchecked")
-            java.util.Map<net.minecraft.client.renderer.RenderType, BufferBuilder> map = (java.util.Map<net.minecraft.client.renderer.RenderType, BufferBuilder>) f.get(buffers);
-            map.put(AMRenderTypes.COMBJELLY_RAINBOW_GLINT, new BufferBuilder(AMRenderTypes.COMBJELLY_RAINBOW_GLINT.bufferSize()));
-            map.put(AMRenderTypes.VOID_WORM_PORTAL_OVERLAY, new BufferBuilder(AMRenderTypes.VOID_WORM_PORTAL_OVERLAY.bufferSize()));
-            map.put(AMRenderTypes.STATIC_PORTAL, new BufferBuilder(AMRenderTypes.STATIC_PORTAL.bufferSize()));
-            map.put(AMRenderTypes.STATIC_PARTICLE, new BufferBuilder(AMRenderTypes.STATIC_PARTICLE.bufferSize()));
-            map.put(AMRenderTypes.STATIC_ENTITY, new BufferBuilder(AMRenderTypes.STATIC_ENTITY.bufferSize()));
+            java.util.Map<net.minecraft.client.renderer.RenderType, BufferBuilder> map = (java.util.Map<net.minecraft.client.renderer.RenderType, BufferBuilder>) mapField.get(buffers);
+            putBuffer(map, AMRenderTypes.COMBJELLY_RAINBOW_GLINT);
+            putBuffer(map, AMRenderTypes.VOID_WORM_PORTAL_OVERLAY);
+            putBuffer(map, AMRenderTypes.STATIC_PORTAL);
+            putBuffer(map, AMRenderTypes.STATIC_PARTICLE);
+            putBuffer(map, AMRenderTypes.STATIC_ENTITY);
         } catch (Exception e) {
             AlexsMobs.LOGGER.warn("Could not register custom render type buffers", e);
         }
         initializedRainbowBuffers = true;
+    }
+
+    private static void putBuffer(java.util.Map<net.minecraft.client.renderer.RenderType, BufferBuilder> map, net.minecraft.client.renderer.RenderType renderType) {
+        map.put(renderType, new BufferBuilder(renderType.bufferSize()));
     }
 
     public void openBookGUI(ItemStack itemStackIn) {

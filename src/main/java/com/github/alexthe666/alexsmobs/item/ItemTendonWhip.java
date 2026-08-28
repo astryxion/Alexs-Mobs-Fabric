@@ -23,15 +23,17 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.UUID;
+
 public class ItemTendonWhip extends SwordItem implements ILeftClick {
 
-    private final ImmutableMultimap<Attribute, AttributeModifier> tendonModifiers;
+    private final Multimap<Attribute, AttributeModifier> tendonModifiers;
 
     public ItemTendonWhip(Item.Properties props) {
-        super(Tiers.IRON, 3, 0, props);
+        super(Tiers.IRON, 3, 0.0F, props);
         ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
-        builder.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(BASE_ATTACK_DAMAGE_UUID, "Weapon modifier", (double)4F, AttributeModifier.Operation.ADDITION));
-        builder.put(Attributes.ATTACK_SPEED, new AttributeModifier(BASE_ATTACK_SPEED_UUID, "Weapon modifier", (double)-3.0F, AttributeModifier.Operation.ADDITION));
+        builder.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(BASE_ATTACK_DAMAGE_UUID, "Weapon modifier", 4.0D, AttributeModifier.Operation.ADDITION));
+        builder.put(Attributes.ATTACK_SPEED, new AttributeModifier(BASE_ATTACK_SPEED_UUID, "Weapon modifier", -3.0D, AttributeModifier.Operation.ADDITION));
         this.tendonModifiers = builder.build();
     }
 
@@ -42,7 +44,7 @@ public class ItemTendonWhip extends SwordItem implements ILeftClick {
         return false;
     }
 
-
+    @Override
     public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
         return slot == EquipmentSlot.MAINHAND ? this.tendonModifiers : super.getDefaultAttributeModifiers(slot);
     }
@@ -52,12 +54,12 @@ public class ItemTendonWhip extends SwordItem implements ILeftClick {
         return super.hurtEnemy(stack, entity, player);
     }
 
-    private boolean isCharged(Player player, ItemStack stack){
+    private boolean isCharged(Player player, ItemStack stack) {
         return player.getAttackStrengthScale(0.5F) > 0.9F;
     }
 
-    public boolean onLeftClick(ItemStack stack, LivingEntity playerIn){
-        if(stack.is(AMItemRegistry.TENDON_WHIP) && (!(playerIn instanceof Player) || isCharged((Player)playerIn, stack))){
+    public boolean onLeftClick(ItemStack stack, LivingEntity playerIn) {
+        if (stack.is(AMItemRegistry.TENDON_WHIP) && (!(playerIn instanceof Player) || isCharged((Player) playerIn, stack))) {
             Level worldIn = playerIn.level();
             Entity closestValid = null;
             Vec3 playerEyes = playerIn.getEyePosition(1.0F);
@@ -76,10 +78,8 @@ public class ItemTendonWhip extends SwordItem implements ILeftClick {
                     }
                 }
             }
-            if(closestValid != null){
-                stack.hurtAndBreak(1, playerIn, (player) -> {
-                    player.broadcastBreakEvent(playerIn.getUsedItemHand());
-                });
+            if (closestValid != null) {
+                stack.hurtAndBreak(1, playerIn, (e) -> e.broadcastBreakEvent(playerIn.getUsedItemHand()));
             }
             return launchTendonsAt(stack, playerIn, closestValid);
         }
@@ -90,20 +90,18 @@ public class ItemTendonWhip extends SwordItem implements ILeftClick {
         Level worldIn = playerIn.level();
         if (TendonWhipUtil.canLaunchTendons(worldIn, playerIn)) {
             TendonWhipUtil.retractFarTendons(worldIn, playerIn);
-            if (!worldIn.isClientSide) {
-                if (closestValid != null) {
-                    EntityTendonSegment segment = AMEntityRegistry.TENDON_SEGMENT.create(worldIn);
-                    segment.copyPosition(playerIn);
-                    worldIn.addFreshEntity(segment);
-                    segment.setCreatorEntityUUID(playerIn.getUUID());
-                    segment.setFromEntityID(playerIn.getId());
-                    segment.setToEntityID(closestValid.getId());
-                    segment.copyPosition(playerIn);
-                    segment.setProgress(0.0F);
-                    segment.setHasGlint(stack.hasFoil());
-                    TendonWhipUtil.setLastTendon(playerIn, segment);
-                    return true;
-                }
+            if (!worldIn.isClientSide && closestValid != null) {
+                EntityTendonSegment segment = AMEntityRegistry.TENDON_SEGMENT.create(worldIn);
+                segment.copyPosition(playerIn);
+                worldIn.addFreshEntity(segment);
+                segment.setCreatorEntityUUID(playerIn.getUUID());
+                segment.setFromEntityID(playerIn.getId());
+                segment.setToEntityID(closestValid.getId());
+                segment.copyPosition(playerIn);
+                segment.setProgress(0.0F);
+                segment.setHasGlint(stack.hasFoil());
+                TendonWhipUtil.setLastTendon(playerIn, segment);
+                return true;
             }
         }
         return false;
@@ -120,5 +118,4 @@ public class ItemTendonWhip extends SwordItem implements ILeftClick {
     public boolean isValidRepairItem(ItemStack pickaxe, ItemStack stack) {
         return stack.is(AMItemRegistry.ELASTIC_TENDON);
     }
-
 }

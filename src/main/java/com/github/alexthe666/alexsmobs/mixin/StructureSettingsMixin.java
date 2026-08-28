@@ -24,7 +24,7 @@ public class StructureSettingsMixin implements StructureSettingsExtension {
     @Mutable
     @Shadow @Final private Map<MobCategory, StructureSpawnOverride> spawnOverrides;
 
-    /** Registry-loaded settings keep an immutable map; copy before first mutation. */
+    /** 1.21.1 registry-loaded settings keep an immutable map; copy before first mutation. */
     @Unique
     private void alexsmobs$ensureMutableSpawnOverrides() {
         if (!(this.spawnOverrides instanceof HashMap)) {

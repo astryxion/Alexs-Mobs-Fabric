@@ -32,12 +32,11 @@ import net.minecraft.world.phys.BlockHitResult;
 import java.util.ArrayList;
 
 public class BlockSkunkSpray extends MultifaceBlock implements SimpleWaterloggedBlock {
-
     public static final IntegerProperty AGE = BlockStateProperties.AGE_3;
     private static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
-    public BlockSkunkSpray() {
-        super(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_LIGHT_GREEN).noOcclusion().randomTicks().noCollission().instabreak().sound(SoundType.FROGSPAWN));
+    public BlockSkunkSpray(BlockBehaviour.Properties properties) {
+        super(properties);
         this.registerDefaultState(this.defaultBlockState().setValue(WATERLOGGED, Boolean.valueOf(false)).setValue(AGE, 0));
     }
 
@@ -74,9 +73,9 @@ public class BlockSkunkSpray extends MultifaceBlock implements SimpleWaterlogged
         definition.add(WATERLOGGED, AGE);
     }
 
-    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
-        ItemStack itemStack = player.getItemInHand(handIn);
-        int setContent = -1;
+    @Override
+    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        ItemStack itemStack = player.getMainHandItem();
         if(itemStack.is(Items.GLASS_BOTTLE)) {
            Direction dir = hit.getDirection().getOpposite();
            if(hasFace(state, dir)){
@@ -91,7 +90,7 @@ public class BlockSkunkSpray extends MultifaceBlock implements SimpleWaterlogged
                return InteractionResult.SUCCESS;
            }
         }
-        return super.use(state, worldIn, pos, player, handIn, hit);
+        return super.use(state, worldIn, pos, player, hand, hit);
     }
 
     public static BlockState removeStinkFace(BlockState state, Direction faceProperty) {

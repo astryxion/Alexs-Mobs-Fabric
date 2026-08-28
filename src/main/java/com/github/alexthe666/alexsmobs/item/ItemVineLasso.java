@@ -15,6 +15,7 @@ import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
+
 public class ItemVineLasso extends Item {
 
     public ItemVineLasso(Properties props) {
@@ -26,16 +27,15 @@ public class ItemVineLasso extends Item {
     }
 
     public static boolean isItemInUse(ItemStack stack){
-        return stack.getTag() != null && stack.getTag().contains("Swinging") && stack.getTag().getBoolean("Swinging");
+        net.minecraft.nbt.CompoundTag data = stack.getTag();
+        return data != null && data.copy().contains("Swinging") && data.copy().getBoolean("Swinging");
     }
 
     public void inventoryTick(ItemStack stack, Level world, Entity entity, int i, boolean b) {
         if(entity instanceof LivingEntity){
-            if(stack.getTag() != null){
-                stack.getTag().putBoolean("Swinging", ((LivingEntity) entity).getUseItem() == stack && ((LivingEntity) entity).isUsingItem());
-            }else{
-                stack.setTag(new CompoundTag());
-            }
+            CompoundTag tag = stack.hasTag() ? stack.getTag().copy() : new CompoundTag();
+            tag.putBoolean("Swinging", ((LivingEntity) entity).getUseItem() == stack && ((LivingEntity) entity).isUsingItem());
+            stack.setTag(tag);
         }
     }
 

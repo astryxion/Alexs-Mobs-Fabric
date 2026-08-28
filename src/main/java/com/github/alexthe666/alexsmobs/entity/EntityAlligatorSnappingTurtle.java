@@ -5,7 +5,6 @@ import com.github.alexthe666.alexsmobs.entity.ai.*;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
-import com.github.alexthe666.alexsmobs.entity.util.LivingEntityUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -18,6 +17,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -72,7 +73,7 @@ public class EntityAlligatorSnappingTurtle extends Animal implements ISemiAquati
         super(type, worldIn);
         this.setPathfindingMalus(BlockPathTypes.WATER, 0.0F);
         this.setPathfindingMalus(BlockPathTypes.WATER_BORDER, 0.0F);
-        this.setMaxUpStep(1);
+        this.setMaxUpStep((float)(1.0));
     }
 
     protected SoundEvent getAmbientSound() {
@@ -213,7 +214,7 @@ public class EntityAlligatorSnappingTurtle extends Animal implements ISemiAquati
                     chaseTime = -50;
                     this.setTarget(null);
                     this.setLastHurtByMob(null);
-                    LivingEntityUtil.clearLastHurtMob(this);
+                    this.setLastHurtMob(null);
                     this.lastHurtByPlayer = null;
                 }
             } else {
@@ -255,7 +256,7 @@ public class EntityAlligatorSnappingTurtle extends Animal implements ISemiAquati
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setMoss(random.nextInt(6));
         this.setTurtleScale(0.8F + random.nextFloat() * 0.2F);
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
@@ -338,10 +339,6 @@ public class EntityAlligatorSnappingTurtle extends Animal implements ISemiAquati
         return 10;
     }
 
-    public boolean canBreatheUnderwater() {
-        return true;
-    }
-
     public float getWalkTargetValue(BlockPos pos, LevelReader worldIn) {
         return worldIn.getFluidState(pos.below()).isEmpty() && worldIn.getFluidState(pos).is(FluidTags.WATER) ? 10.0F : super.getWalkTargetValue(pos, worldIn);
     }
@@ -403,6 +400,19 @@ public class EntityAlligatorSnappingTurtle extends Animal implements ISemiAquati
             }
             this.setMoss(0);
         }
+    }
+
+    @Override
+    public InteractionResult mobInteract(Player player, InteractionHand hand) {
+        ItemStack itemstack = player.getItemInHand(hand);
+        if (itemstack.is(Items.SHEARS) && this.readyForShearing()) {
+            if (!this.level().isClientSide) {
+                this.shear(SoundSource.PLAYERS);
+                itemstack.hurtAndBreak(1, player, (e) -> e.broadcastBreakEvent((hand == InteractionHand.MAIN_HAND ) ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
+            }
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
+        }
+        return super.mobInteract(player, hand);
     }
 
     @javax.annotation.Nonnull

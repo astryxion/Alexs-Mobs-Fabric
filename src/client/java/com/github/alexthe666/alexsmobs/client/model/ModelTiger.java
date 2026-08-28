@@ -338,9 +338,7 @@ public class ModelTiger extends AdvancedEntityModel<EntityTiger> {
     public Iterable<AdvancedModelBox> getAllParts() {
         return ImmutableList.of(root, body, head, tail, tail2, snout, earleft, earright, legleft, legright, armleft, armright);
     }
-
-    @Override
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.5F;
             head.setScale(f, f, f);

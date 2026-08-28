@@ -1,6 +1,7 @@
 package com.github.alexthe666.alexsmobs.mixin;
 
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
+import com.github.alexthe666.alexsmobs.entity.AMMobTypes;
 import com.github.alexthe666.alexsmobs.entity.EntityFroststalker;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
@@ -15,12 +16,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nullable;
 
-/** Fabric: replaces NeoForge LivingChangeTargetEvent for armor-based target blocking. */
+/** Block invalid mob targets at acquisition. */
 @Mixin(Mob.class)
 public class MobTargetMixin {
 
     @Inject(method = "setTarget", at = @At("HEAD"), cancellable = true)
-    private void alexsmobs$onSetTarget(@Nullable LivingEntity target, CallbackInfo ci) {
+    private void alexsmobs$blockInvalidTargets(@Nullable LivingEntity target, CallbackInfo ci) {
         if (target == null) {
             return;
         }
@@ -29,12 +30,13 @@ public class MobTargetMixin {
             ci.cancel();
             return;
         }
-        if (self.getMobType() == MobType.ARTHROPOD && target.hasEffect(AMEffectRegistry.BUG_PHEROMONES) && self.getLastHurtByMob() != target) {
+        if (AMMobTypes.getMobType(self) == MobType.ARTHROPOD && target.hasEffect(AMEffectRegistry.BUG_PHEROMONES) && self.getLastHurtByMob() != target) {
             ci.cancel();
             return;
         }
-        if (self.getMobType() == MobType.UNDEAD && !self.getType().is(AMTagRegistry.IGNORES_KIMONO)
-                && target.getItemBySlot(EquipmentSlot.CHEST).is(AMItemRegistry.UNSETTLING_KIMONO) && self.getLastHurtByMob() != target) {
+        if (AMMobTypes.getMobType(self) == MobType.UNDEAD && !self.getType().is(AMTagRegistry.IGNORES_KIMONO)
+                && target.getItemBySlot(EquipmentSlot.CHEST).is(AMItemRegistry.UNSETTLING_KIMONO)
+                && self.getLastHurtByMob() != target) {
             ci.cancel();
         }
     }

@@ -12,6 +12,7 @@ import com.github.alexthe666.citadel.server.entity.pathfinding.raycoms.AdvancedP
 import com.google.common.base.Predicates;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -19,7 +20,9 @@ import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.Mth;
@@ -92,11 +95,16 @@ public class EntityLeafcutterAnt extends Animal implements NeutralMob, IAnimated
     private boolean isUpsideDownNavigator;
     private static final Ingredient TEMPTATION_ITEMS = Ingredient.of(AMTagRegistry.LEAFCUTTER_ANT_FOODSTUFFS);
     private int haveBabyCooldown = 0;
-    public EntityLeafcutterAnt(EntityType type, Level world) {
+    public EntityLeafcutterAnt(EntityType<? extends EntityLeafcutterAnt> type, Level world) {
         super(type, world);
         this.setPathfindingMalus(BlockPathTypes.WATER, -1.0F);
         switchNavigator(true);
 
+    }
+
+    @Override
+    public boolean isFood(ItemStack stack) {
+        return stack.is(AMTagRegistry.LEAFCUTTER_ANT_FOODSTUFFS);
     }
 
     public void setTarget(@Nullable LivingEntity entitylivingbaseIn) {
@@ -109,10 +117,6 @@ public class EntityLeafcutterAnt extends Animal implements NeutralMob, IAnimated
     @Nullable
     protected ResourceLocation getDefaultLootTable() {
         return this.isQueen() ? QUEEN_LOOT : super.getDefaultLootTable();
-    }
-
-    public MobType getMobType() {
-        return MobType.ARTHROPOD;
     }
 
     private void switchNavigator(boolean rightsideUp) {
@@ -260,7 +264,7 @@ public class EntityLeafcutterAnt extends Animal implements NeutralMob, IAnimated
         if (attachChangeProgress > 0F) {
             attachChangeProgress -= 0.25F;
         }
-        this.setMaxUpStep(isQueen() ? 1F : 0.5F);
+        this.setMaxUpStep((float)(isQueen() ? 1.0 : 0.5));
         Vec3 vector3d = this.getDeltaMovement();
         if (!this.level().isClientSide && !this.isQueen()) {
             this.setBesideClimbableBlock(this.horizontalCollision || this.verticalCollision && !this.onGround());
@@ -415,13 +419,18 @@ public class EntityLeafcutterAnt extends Animal implements NeutralMob, IAnimated
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setAntScale(0.75F + random.nextFloat() * 0.3F);
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
     }
 
     public float getAntScale() {
         return this.entityData.get(ANT_SCALE);
+    }
+
+    @Override
+    public float getScale() {
+        return this.getAntScale() * (this.isBaby() ? 0.5F : 1.0F);
     }
 
     public void setAntScale(float scale) {
@@ -487,7 +496,10 @@ public class EntityLeafcutterAnt extends Animal implements NeutralMob, IAnimated
         this.haveBabyCooldown = compound.getInt("BabyCooldown");
         this.hivePos = null;
         if (compound.contains("HivePos")) {
-            this.hivePos = NbtUtils.readBlockPos(compound.getCompound("HivePos"));
+            CompoundTag posTag = compound.getCompound("HivePos");
+            if (posTag.contains("X") && posTag.contains("Y") && posTag.contains("Z")) {
+                this.hivePos = new BlockPos(posTag.getInt("X"), posTag.getInt("Y"), posTag.getInt("Z"));
+            }
         }
         this.setLeafHarvestedState(blockstate);
         if (compound.contains("HLPX")) {

@@ -131,6 +131,7 @@ public class EntityCosmicCod extends Mob implements Bucketable {
         this.addAdditionalSaveData(platTag);
         CompoundTag compound = bucket.getOrCreateTag();
         compound.put("CosmicCodData", platTag);
+        bucket.setTag(compound);
     }
 
     @Override
@@ -254,8 +255,9 @@ public class EntityCosmicCod extends Mob implements Bucketable {
         return true;
     }
 
-    public boolean canBreatheUnderwater() {
-        return true;
+    @Override
+    public boolean isInvulnerableTo(net.minecraft.world.damagesource.DamageSource source) {
+        return source.is(net.minecraft.world.damagesource.DamageTypes.DROWN) || super.isInvulnerableTo(source);
     }
 
     public boolean isPushedByWater() {
@@ -391,7 +393,7 @@ public class EntityCosmicCod extends Mob implements Bucketable {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         if (spawnDataIn == null) {
             spawnDataIn = new EntityCosmicCod.GroupData(this);
         } else {

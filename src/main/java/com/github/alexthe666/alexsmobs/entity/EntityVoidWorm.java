@@ -19,8 +19,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerBossEvent;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -84,6 +87,15 @@ public class EntityVoidWorm extends Monster {
     /** Fabric: vanilla has no captureDrops; use instance list to capture drops for placeDropsSafely (1:1 behavior). */
     private Collection<ItemEntity> captureDropsList = null;
 
+    /** 1.21.1: CombatTracker.getMostSignificantFall() is private; store last damage source in hurt() for tickDeath. */
+    private DamageSource lastDamageSource = null;
+
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        this.lastDamageSource = source;
+        return super.hurt(source, amount);
+    }
+
     /** Fabric: replacement for Forge captureDrops - set list to capture, pass null to stop and get collected drops. */
     private Collection<ItemEntity> captureDrops(Collection<ItemEntity> list) {
         Collection<ItemEntity> prev = captureDropsList;
@@ -125,7 +137,7 @@ public class EntityVoidWorm extends Monster {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, AMConfig.voidWormMaxHealth).add(Attributes.ARMOR, 4.0D).add(Attributes.FOLLOW_RANGE, 256.0D).add(Attributes.MOVEMENT_SPEED, 0.3F).add(Attributes.ATTACK_DAMAGE, 5);
     }
 
-    @Nullable
+    @Override
     protected ResourceLocation getDefaultLootTable() {
         return this.isSplitter() ? SPLITTER_LOOT : super.getDefaultLootTable();
     }
@@ -143,12 +155,10 @@ public class EntityVoidWorm extends Monster {
        }
     }
 
-    @Override
     public ItemEntity spawnAtLocation(ItemStack stack) {
         return spawnAtLocation(stack, 0.0F);
     }
 
-    @Override
     public ItemEntity spawnAtLocation(ItemStack stack, float offsetY) {
         if (captureDropsList != null) {
             ItemEntity itementity = new ItemEntity(level(), getX(), getY() + (double) offsetY, getZ(), stack);
@@ -340,14 +350,14 @@ public class EntityVoidWorm extends Monster {
                     launch(entity, false);
                 }
             }
-            this.setMaxUpStep(2F);
+            this.setMaxUpStep((float)(2.0));
         }else{
             this.setDeltaMovement(new Vec3(0, 0.03F, 0));
         }
         yBodyRot = getYRot();
         final float f2 = (float) -((float) this.getDeltaMovement().y * (double) Mth.RAD_TO_DEG);
         this.setXRot(f2);
-        this.setMaxUpStep(2F);
+        this.setMaxUpStep((float)(2.0));
         if (!this.level().isClientSide) {
             Entity child = getChild();
             if (child == null) {
@@ -414,20 +424,18 @@ public class EntityVoidWorm extends Monster {
 
     protected void tickDeath() {
         ++this.deathTime;
-        if (this.deathTime == (this.isSplitter() ? 20 : 80) && !this.level().isClientSide()) {
-            DamageSource source = this.getLastDamageSource() == null ? damageSources().generic() : this.getLastDamageSource();
+        if (this.deathTime == (this.isSplitter() ? 20 : 80) && !this.level().isClientSide) {
+            DamageSource source = this.lastDamageSource != null ? this.lastDamageSource : damageSources().generic();
             Entity entity = source.getEntity();
-
-            final int i = entity instanceof net.minecraft.world.entity.LivingEntity living ? net.minecraft.world.item.enchantment.EnchantmentHelper.getMobLooting(living) : 0;
             captureDrops(new java.util.ArrayList<>());
 
             final boolean flag = this.lastHurtByPlayerTime > 0;
             if (this.shouldDropLoot() && this.level().getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)) {
                 this.dropFromLootTable(source, flag);
-                this.dropCustomDeathLoot(source, i, flag);
+                this.dropCustomDeathLoot(source, 0, flag);
             }
             this.dropEquipment();
-            this.dropExperience();
+            if (source.getEntity() != null) this.dropExperience();
 
             Collection<ItemEntity> drops = captureDrops(null);
 
@@ -492,8 +500,7 @@ public class EntityVoidWorm extends Monster {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType
-            reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setSegmentCount(25 + random.nextInt(15));
         this.setXRot(0.0F);
         this.setBaseMaxHealth(AMConfig.voidWormMaxHealth, true);
@@ -503,8 +510,8 @@ public class EntityVoidWorm extends Monster {
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(SPLIT_FROM_UUID, Optional.empty());
-        this.entityData.define(CHILD_UUID, Optional.empty());
+        this.entityData.define(SPLIT_FROM_UUID, Optional.<UUID>empty());
+        this.entityData.define(CHILD_UUID, Optional.<UUID>empty());
         this.entityData.define(SEGMENT_COUNT, 10);
         this.entityData.define(JAW_TICKS, 0);
         this.entityData.define(WORM_ANGLE, 0F);

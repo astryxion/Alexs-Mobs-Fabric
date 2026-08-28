@@ -9,7 +9,7 @@
       "item": "alexsmobs:flying_fish"
     },
     "S": {
-      "item": "minecraft:string"
+      "tag": "c:strings"
     }
   },
   "result": {

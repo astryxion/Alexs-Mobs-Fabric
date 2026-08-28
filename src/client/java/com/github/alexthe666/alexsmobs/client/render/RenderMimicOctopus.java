@@ -22,14 +22,14 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 public class RenderMimicOctopus extends MobRenderer<EntityMimicOctopus, ModelMimicOctopus> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/mimic_octopus.png");
-    private static final ResourceLocation TEXTURE_OVERLAY = new ResourceLocation("alexsmobs:textures/entity/mimic_octopus_overlay.png");
-    private static final ResourceLocation TEXTURE_CREEPER = new ResourceLocation("alexsmobs:textures/entity/mimic_octopus_creeper.png");
-    private static final ResourceLocation TEXTURE_GUARDIAN = new ResourceLocation("alexsmobs:textures/entity/mimic_octopus_guardian.png");
-    private static final ResourceLocation TEXTURE_PUFFERFISH = new ResourceLocation("alexsmobs:textures/entity/mimic_octopus_pufferfish.png");
-    private static final ResourceLocation TEXTURE_MIMICUBE = new ResourceLocation("alexsmobs:textures/entity/mimic_octopus_mimicube.png");
-    private static final ResourceLocation TEXTURE_EYES = new ResourceLocation("alexsmobs:textures/entity/mimic_octopus_eyes.png");
-    private static final ResourceLocation GUARDIAN_BEAM_TEXTURE = new ResourceLocation("textures/entity/guardian_beam.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/mimic_octopus.png");
+    private static final ResourceLocation TEXTURE_OVERLAY = new ResourceLocation("alexsmobs", "textures/entity/mimic_octopus_overlay.png");
+    private static final ResourceLocation TEXTURE_CREEPER = new ResourceLocation("alexsmobs", "textures/entity/mimic_octopus_creeper.png");
+    private static final ResourceLocation TEXTURE_GUARDIAN = new ResourceLocation("alexsmobs", "textures/entity/mimic_octopus_guardian.png");
+    private static final ResourceLocation TEXTURE_PUFFERFISH = new ResourceLocation("alexsmobs", "textures/entity/mimic_octopus_pufferfish.png");
+    private static final ResourceLocation TEXTURE_MIMICUBE = new ResourceLocation("alexsmobs", "textures/entity/mimic_octopus_mimicube.png");
+    private static final ResourceLocation TEXTURE_EYES = new ResourceLocation("alexsmobs", "textures/entity/mimic_octopus_eyes.png");
+    private static final ResourceLocation GUARDIAN_BEAM_TEXTURE = new ResourceLocation("minecraft", "textures/entity/guardian_beam.png");
     private static final RenderType BEAM_RENDER_TYPE = RenderType.entityCutoutNoCull(GUARDIAN_BEAM_TEXTURE);
 
     public RenderMimicOctopus(EntityRendererProvider.Context renderManagerIn) {
@@ -38,17 +38,18 @@ public class RenderMimicOctopus extends MobRenderer<EntityMimicOctopus, ModelMim
     }
 
     private static void vertex(VertexConsumer p_229108_0_, Matrix4f p_229108_1_, Matrix3f p_229108_2_, float p_229108_3_, float p_229108_4_, float p_229108_5_, int p_229108_6_, int p_229108_7_, int p_229108_8_, float p_229108_9_, float p_229108_10_) {
-        p_229108_0_.vertex(p_229108_1_, p_229108_3_, p_229108_4_, p_229108_5_).color(p_229108_6_, p_229108_7_, p_229108_8_, 255).uv(p_229108_9_, p_229108_10_).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(p_229108_2_, 0.0F, 1.0F, 0.0F).endVertex();
+        p_229108_0_.vertex(p_229108_1_, p_229108_3_, p_229108_4_, p_229108_5_).color(p_229108_6_, p_229108_7_, p_229108_8_, 255).uv(p_229108_9_, p_229108_10_).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(0.0F, 1.0F, 0.0F).endVertex();
     }
 
     public void render(EntityMimicOctopus entityIn, float entityYaw, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn) {
         LivingEntity livingentity = entityIn.getGuardianLaser();
         if (livingentity != null) {
+            matrixStackIn.pushPose();
+            try {
             float f = entityIn.getLaserAttackAnimationScale(partialTicks);
             float f1 = (float) entityIn.level().getGameTime() + partialTicks;
             float f2 = f1 * 0.5F % 1.0F;
             float f3 = entityIn.getEyeHeight();
-            matrixStackIn.pushPose();
             matrixStackIn.translate(0.0D, f3, 0.0D);
             Vec3 vector3d = this.getPosition(livingentity, (double) livingentity.getBbHeight() * 0.5D, partialTicks);
             Vec3 vector3d1 = this.getPosition(entityIn, f3, partialTicks);
@@ -108,7 +109,9 @@ public class RenderMimicOctopus extends MobRenderer<EntityMimicOctopus, ModelMim
             vertex(ivertexbuilder, matrix4f, matrix3f, f13, f4, f14, j, k, l, 1.0F, f31 + 0.5F);
             vertex(ivertexbuilder, matrix4f, matrix3f, f17, f4, f18, j, k, l, 1.0F, f31);
             vertex(ivertexbuilder, matrix4f, matrix3f, f15, f4, f16, j, k, l, 0.5F, f31);
-            matrixStackIn.popPose();
+            } finally {
+                matrixStackIn.popPose();
+            }
         }
         super.render(entityIn, entityYaw, partialTicks, matrixStackIn, bufferIn, packedLightIn);
 
@@ -203,10 +206,12 @@ public class RenderMimicOctopus extends MobRenderer<EntityMimicOctopus, ModelMim
                 if(entitylivingbaseIn.getPrevMimicState() == entitylivingbaseIn.getMimicState()){
                     alphaPrev *= a;
                 }
-                this.getParentModel().renderToBuffer(matrixStackIn, prev, packedLightIn, getOverlayCoords(entitylivingbaseIn, 0), r, g, b, alphaPrev);
+                int packedPrev = ((int)(alphaPrev * 255) << 24) | ((int)(r * 255) << 16) | ((int)(g * 255) << 8) | (int)(b * 255);
+            this.getParentModel().renderToBuffer(matrixStackIn, prev, packedLightIn, getOverlayCoords(entitylivingbaseIn, 0), r, g, b, alphaPrev);
             }
             float alphaCurrent = transProgress * 0.2F;
             VertexConsumer current = buffer.getBuffer(AMRenderTypes.entityTranslucent(getFor(entitylivingbaseIn.getMimicState())));
+            int packedCur = ((int)((a * alphaCurrent) * 255) << 24) | ((int)(r * 255) << 16) | ((int)(g * 255) << 8) | (int)(b * 255);
             this.getParentModel().renderToBuffer(matrixStackIn, current, packedLightIn, getOverlayCoords(entitylivingbaseIn, 0), r, g, b, a * alphaCurrent);
             VertexConsumer eyes = buffer.getBuffer(AMRenderTypes.entityTranslucent(TEXTURE_EYES));
             this.getParentModel().renderToBuffer(matrixStackIn, eyes, packedLightIn, getOverlayCoords(entitylivingbaseIn, 0), 1.0F, 1.0F, 1.0F, 1.0F);

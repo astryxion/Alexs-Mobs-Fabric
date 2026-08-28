@@ -10,6 +10,7 @@ import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import com.github.alexthe666.citadel.animation.Animation;
 import com.github.alexthe666.citadel.animation.AnimationHandler;
 import com.github.alexthe666.citadel.animation.IAnimatedEntity;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import net.minecraft.ChatFormatting;
@@ -122,41 +123,35 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
     public LivingEntity getControllingPassenger() {
         return null;
     }
-    protected void tickLeash() {
-        super.tickLeash();
-        Entity lvt_1_1_ = this.getLeashHolder();
-        if (lvt_1_1_ != null && lvt_1_1_.level() == this.level()) {
-            this.restrictTo(lvt_1_1_.blockPosition(), 5);
-            float lvt_2_1_ = this.distanceTo(lvt_1_1_);
+    /** Custom leash logic (1.21.1: Mob.tickLeash/onLeashDistance not overridable); called from tick(). */
+    private void tickKangarooLeash() {
+        Entity leashHolder = this.getLeashHolder();
+        if (leashHolder != null && leashHolder.level() == this.level()) {
+            this.restrictTo(leashHolder.blockPosition(), 5);
+            float dist = this.distanceTo(leashHolder);
             if (this.isSitting()) {
-                if (lvt_2_1_ > 10.0F) {
+                if (dist > 10.0F) {
                     this.dropLeash(true, true);
                 }
-
                 return;
             }
-
-            this.onLeashDistance(lvt_2_1_);
-            if (lvt_2_1_ > 10.0F) {
+            if (dist > 10.0F) {
                 this.dropLeash(true, true);
                 this.goalSelector.disableControlFlag(Goal.Flag.MOVE);
-            } else if (lvt_2_1_ > 6.0F) {
-                double lvt_3_1_ = (lvt_1_1_.getX() - this.getX()) / (double) lvt_2_1_;
-                double lvt_5_1_ = (lvt_1_1_.getY() - this.getY()) / (double) lvt_2_1_;
-                double lvt_7_1_ = (lvt_1_1_.getZ() - this.getZ()) / (double) lvt_2_1_;
-                this.setDeltaMovement(this.getDeltaMovement().add(Math.copySign(lvt_3_1_ * lvt_3_1_ * 0.4D, lvt_3_1_), Math.copySign(lvt_5_1_ * lvt_5_1_ * 0.4D, lvt_5_1_), Math.copySign(lvt_7_1_ * lvt_7_1_ * 0.4D, lvt_7_1_)));
+            } else if (dist > 6.0F) {
+                double dx = (leashHolder.getX() - this.getX()) / (double) dist;
+                double dy = (leashHolder.getY() - this.getY()) / (double) dist;
+                double dz = (leashHolder.getZ() - this.getZ()) / (double) dist;
+                this.setDeltaMovement(this.getDeltaMovement().add(Math.copySign(dx * dx * 0.4D, dx), Math.copySign(dy * dy * 0.4D, dy), Math.copySign(dz * dz * 0.4D, dz)));
             } else {
                 this.goalSelector.enableControlFlag(Goal.Flag.MOVE);
-                float lvt_3_2_ = 2.0F;
                 try {
-                    Vec3 lvt_4_1_ = (new Vec3(lvt_1_1_.getX() - this.getX(), lvt_1_1_.getY() - this.getY(), lvt_1_1_.getZ() - this.getZ())).normalize().scale(Math.max(lvt_2_1_ - 2.0F, 0.0F));
-                    this.getNavigation().moveTo(this.getX() + lvt_4_1_.x, this.getY() + lvt_4_1_.y, this.getZ() + lvt_4_1_.z, this.followLeashSpeed());
+                    Vec3 toHolder = (new Vec3(leashHolder.getX() - this.getX(), leashHolder.getY() - this.getY(), leashHolder.getZ() - this.getZ())).normalize().scale(Math.max(dist - 2.0F, 0.0F));
+                    this.getNavigation().moveTo(this.getX() + toHolder.x, this.getY() + toHolder.y, this.getZ() + toHolder.z, this.followLeashSpeed());
                 } catch (Exception e) {
-
                 }
             }
         }
-
     }
 
     public boolean forcedSit() {
@@ -189,7 +184,7 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
             }
 
             public boolean stillValid(Player player) {
-                return EntityKangaroo.this.isAlive() && !EntityKangaroo.this.isInsidePortal;
+                return EntityKangaroo.this.isAlive() && EntityKangaroo.this.getPortalCooldown() <= 0;
             }
         };
         kangarooInventory.addListener(this);
@@ -217,37 +212,45 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
 
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
-        Item item = itemstack.getItem();
-        InteractionResult type = super.mobInteract(player, hand);
         if (!isTame() && itemstack.is(AMTagRegistry.KANGAROO_TAMEABLES)) {
-            this.usePlayerItem(player, hand, itemstack);
-            this.gameEvent(GameEvent.EAT);
-            this.playSound(SoundEvents.HORSE_EAT, this.getSoundVolume(), this.getVoicePitch());
-            carrotFeedings++;
-            if (carrotFeedings > 10 && getRandom().nextInt(2) == 0 || carrotFeedings > 15) {
-                this.tame(player);
-                this.level().broadcastEntityEvent(this, (byte) 7);
-            } else {
-                this.level().broadcastEntityEvent(this, (byte) 6);
+            if (!this.level().isClientSide) {
+                this.usePlayerItem(player, hand, itemstack);
+                this.gameEvent(GameEvent.EAT);
+                this.playSound(SoundEvents.HORSE_EAT, this.getSoundVolume(), this.getVoicePitch());
+                carrotFeedings++;
+                if (carrotFeedings > 10 && getRandom().nextInt(2) == 0 || carrotFeedings > 15) {
+                    this.tame(player);
+                    this.level().broadcastEntityEvent(this, (byte) 7);
+                } else {
+                    this.level().broadcastEntityEvent(this, (byte) 6);
+                }
             }
-            return InteractionResult.SUCCESS;
+            return InteractionResult.sidedSuccess(this.level().isClientSide);
         }
-        if (isTame() && this.getHealth() < this.getMaxHealth() && item.isEdible() && item.getFoodProperties() != null && !item.getFoodProperties().isMeat()) {
-            this.usePlayerItem(player, hand, itemstack);
-            this.gameEvent(GameEvent.EAT);
-            this.playSound(SoundEvents.HORSE_EAT, this.getSoundVolume(), this.getVoicePitch());
-            this.heal(item.getFoodProperties().getNutrition());
-            return InteractionResult.SUCCESS;
+        InteractionResult type = super.mobInteract(player, hand);
+        if (isTame() && this.getHealth() < this.getMaxHealth() && itemstack.isEdible()) {
+            net.minecraft.world.food.FoodProperties food = itemstack.getItem().getFoodProperties();
+            if (food != null && !(itemstack.getItem().getFoodProperties() != null && itemstack.getItem().getFoodProperties().isMeat())) {
+                if (!this.level().isClientSide) {
+                    this.usePlayerItem(player, hand, itemstack);
+                    this.gameEvent(GameEvent.EAT);
+                    this.playSound(SoundEvents.HORSE_EAT, this.getSoundVolume(), this.getVoicePitch());
+                    this.heal(food.getNutrition());
+                }
+                return InteractionResult.sidedSuccess(this.level().isClientSide);
+            }
         }
         InteractionResult interactionresult = itemstack.interactLivingEntity(player, this, hand);
         if (interactionresult != InteractionResult.SUCCESS && type != InteractionResult.SUCCESS && isTame() && isOwnedBy(player) && !isFood(itemstack)) {
             if (player.isShiftKeyDown()) {
-                if(!this.isBaby()){
-                    this.openGUI(player);
+                if (!this.isBaby()) {
+                    if (!this.level().isClientSide) {
+                        this.openGUI(player);
+                    }
                     this.ejectPassengers();
                     this.entityData.set(POUCH_TICK, -1);
                 }
-                return InteractionResult.SUCCESS;
+                return InteractionResult.sidedSuccess(this.level().isClientSide);
             } else {
                 this.setCommand(this.getCommand() + 1);
                 if (this.getCommand() == 3) {
@@ -379,12 +382,12 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
         this.entityData.define(STANDING, false);
         this.entityData.define(SITTING, false);
         this.entityData.define(FORCED_SIT, false);
-        this.entityData.define(COMMAND, Integer.valueOf(0));
-        this.entityData.define(VISUAL_FLAG, Integer.valueOf(0));
-        this.entityData.define(POUCH_TICK, Integer.valueOf(0));
-        this.entityData.define(CHEST_INDEX, Integer.valueOf(-1));
-        this.entityData.define(HELMET_INDEX, Integer.valueOf(-1));
-        this.entityData.define(SWORD_INDEX, Integer.valueOf(-1));
+        this.entityData.define(COMMAND, 0);
+        this.entityData.define(VISUAL_FLAG, 0);
+        this.entityData.define(POUCH_TICK, 0);
+        this.entityData.define(CHEST_INDEX, -1);
+        this.entityData.define(HELMET_INDEX, -1);
+        this.entityData.define(SWORD_INDEX, -1);
     }
 
     @Override
@@ -399,7 +402,7 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
         this.goalSelector.addGoal(2, new TameableAIFollowOwner(this, 1.2D, 5.0F, 2.0F, false));
         this.goalSelector.addGoal(3, new BreedGoal(this, 1D));
         this.goalSelector.addGoal(4, new AnimalAIRideParent(this, 1.25D));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.2D, Ingredient.of(AMTagRegistry.KANGAROO_TAMEABLES), false));
+        this.goalSelector.addGoal(4, new AMTagTemptGoal(this, 1.2D, false, AMTagRegistry.KANGAROO_TAMEABLES));
         this.goalSelector.addGoal(5, new AnimalAIWanderRanged(this, 110, 1.2D, 10, 7));
         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 10.0F));
         this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
@@ -422,6 +425,9 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
             updateClientInventory();
         }
         super.tick();
+        if (!this.level().isClientSide) {
+            this.tickKangarooLeash();
+        }
         boolean moving = this.getDeltaMovement().lengthSqr() > 0.03D;
         int pouchTick = this.entityData.get(POUCH_TICK);
         this.prevTotalMovingProgress = totalMovingProgress;
@@ -513,13 +519,15 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
                     ItemStack foodStack = ItemStack.EMPTY;
                     for (int i = 0; i < this.kangarooInventory.getContainerSize(); i++) {
                         ItemStack stack = this.kangarooInventory.getItem(i);
-                        if (stack.getItem().isEdible() && stack.getItem().getFoodProperties() != null && !stack.getItem().getFoodProperties().isMeat()) {
+                        net.minecraft.world.food.FoodProperties fp = stack.getItem().getFoodProperties();
+                        if (fp != null && !(stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat())) {
                             foodStack = stack;
                         }
                     }
-                    if (!foodStack.isEmpty() && foodStack.getItem().getFoodProperties() != null) {
+                    net.minecraft.world.food.FoodProperties foodProps = foodStack.getItem().getFoodProperties();
+                    if (!foodStack.isEmpty() && foodProps != null) {
                         AlexsMobs.sendMSGToAll(new MessageKangarooEat(this.getId(), foodStack));
-                        this.heal(foodStack.getItem().getFoodProperties().getNutrition() * 2);
+                        this.heal(foodProps.getNutrition() * 2);
                         foodStack.shrink(1);
                         this.gameEvent(GameEvent.EAT);
                         this.playSound(SoundEvents.GENERIC_EAT, this.getSoundVolume(), this.getVoicePitch());
@@ -588,7 +596,7 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
         boolean prev = super.doHurtTarget(entityIn);
         if (prev) {
             if (!this.getMainHandItem().isEmpty()) {
-                damageItem(this.getMainHandItem());
+                damageItem(this.getMainHandItem(), EquipmentSlot.MAINHAND);
             }
         }
         return prev;
@@ -598,21 +606,18 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
         boolean prev = super.hurt(src, amount);
         if (prev) {
             if (!this.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
-                damageItem(this.getItemBySlot(EquipmentSlot.HEAD));
+                damageItem(this.getItemBySlot(EquipmentSlot.HEAD), EquipmentSlot.HEAD);
             }
             if (!this.getItemBySlot(EquipmentSlot.CHEST).isEmpty()) {
-                damageItem(this.getItemBySlot(EquipmentSlot.CHEST));
+                damageItem(this.getItemBySlot(EquipmentSlot.CHEST), EquipmentSlot.CHEST);
             }
         }
         return prev;
     }
 
-    private void damageItem(ItemStack stack) {
-        if (stack != null) {
-            stack.hurt(1, this.getRandom(), null);
-            if (stack.getDamageValue() <= 0) {
-                stack.shrink(1);
-            }
+    private void damageItem(ItemStack stack, EquipmentSlot slot) {
+        if (stack != null && !stack.isEmpty()) {
+            stack.hurtAndBreak(1, this, (e) -> e.broadcastBreakEvent(slot));
         }
     }
 
@@ -819,14 +824,13 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
                         swordDamage = dmg;
                         swordIndex = i;
                     }
-                    if (stack.getItem() instanceof ArmorItem ai && ai.getEquipmentSlot() == EquipmentSlot.HEAD && !this.isBaby() && helmetIndex == -1) {
-                        helmetIndex = i;
-                    }
-                    if (stack.getItem() instanceof ArmorItem ai && ai.getEquipmentSlot() == EquipmentSlot.CHEST && !this.isBaby() && chestplateIndex == -1) {
-                        chestplateIndex = i;
-                    }
-                    if (stack.getItem() instanceof ArmorItem && !this.isBaby()) {
-                        ArmorItem armorItem = (ArmorItem) stack.getItem();
+                    if (!this.isBaby() && stack.getItem() instanceof ArmorItem armorItem) {
+                        if (armorItem.getEquipmentSlot() == EquipmentSlot.HEAD && helmetIndex == -1) {
+                            helmetIndex = i;
+                        }
+                        if (armorItem.getEquipmentSlot() == EquipmentSlot.CHEST && chestplateIndex == -1) {
+                            chestplateIndex = i;
+                        }
                         if (armorItem.getEquipmentSlot() == EquipmentSlot.HEAD) {
                             double prot = getProtectionForItem(stack, EquipmentSlot.HEAD);
                             if (prot > 0 && prot > helmetArmor) {
@@ -851,18 +855,6 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
         }
     }
 
-    public void syncInventoryToClients() {
-        updateClientInventory();
-    }
-
-    public void syncInventoryToPlayer(ServerPlayer player) {
-        if (!this.level().isClientSide) {
-            for (int i = 0; i < 9; i++) {
-                AlexsMobs.sendNonLocal(new MessageKangarooInventorySync(this.getId(), i, kangarooInventory.getItem(i)), player);
-            }
-        }
-    }
-
     private void updateClientInventory() {
         if (!this.level().isClientSide) {
             for (int i = 0; i < 9; i++) {
@@ -872,14 +864,18 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
     }
 
     @Nullable
+    private static Multimap<Attribute, AttributeModifier> getAttributeModifiersForSlot(ItemStack stack, EquipmentSlot slot) {
+        return stack.getAttributeModifiers(slot);
+    }
+
     private Map<EquipmentSlot, ItemStack> collectEquipmentChanges() {
         Map<EquipmentSlot, ItemStack> map = null;
 
         for (EquipmentSlot equipmentslottype : EquipmentSlot.values()) {
             ItemStack itemstack;
-            switch (equipmentslottype.getType()) {
-                case HAND -> itemstack = this.getItemInHand(equipmentslottype);
-                case ARMOR -> itemstack = this.getArmorInSlot(equipmentslottype);
+            switch (equipmentslottype) {
+                case MAINHAND, OFFHAND -> itemstack = this.getItemInHand(equipmentslottype);
+                case HEAD, CHEST, LEGS, FEET -> itemstack = this.getArmorInSlot(equipmentslottype);
                 default -> {
                     continue;
                 }
@@ -893,11 +889,11 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
 
                 map.put(equipmentslottype, itemstack1);
                 if (!itemstack.isEmpty()) {
-                    this.getAttributes().removeAttributeModifiers(itemstack.getAttributeModifiers(equipmentslottype));
+                    this.getAttributes().removeAttributeModifiers(getAttributeModifiersForSlot(itemstack, equipmentslottype));
                 }
 
                 if (!itemstack1.isEmpty()) {
-                    this.getAttributes().addTransientAttributeModifiers(itemstack1.getAttributeModifiers(equipmentslottype));
+                    this.getAttributes().addTransientAttributeModifiers(getAttributeModifiersForSlot(itemstack1, equipmentslottype));
                 }
             }
         }
@@ -906,9 +902,9 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
     }
 
     public ItemStack getItemBySlot(EquipmentSlot slotIn) {
-        return switch (slotIn.getType()) {
-            case HAND -> getItemInHand(slotIn);
-            case ARMOR -> getArmorInSlot(slotIn);
+        return switch (slotIn) {
+            case MAINHAND, OFFHAND -> getItemInHand(slotIn);
+            case HEAD, CHEST, LEGS, FEET -> getArmorInSlot(slotIn);
             default -> ItemStack.EMPTY;
         };
     }
@@ -923,48 +919,54 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
     }
 
     private ItemStack getItemInHand(EquipmentSlot slot) {
+        if (kangarooInventory == null) {
+            return ItemStack.EMPTY;
+        }
         int index = entityData.get(SWORD_INDEX);
         return slot == EquipmentSlot.MAINHAND && index >= 0 ? kangarooInventory.getItem(index) : ItemStack.EMPTY;
     }
 
     public double getDamageForItem(ItemStack itemStack) {
-        Multimap<Attribute, AttributeModifier> map = itemStack.getAttributeModifiers(EquipmentSlot.MAINHAND);
-        if (!map.isEmpty()) {
-            double d = 0;
-            for (AttributeModifier mod : map.get(Attributes.ATTACK_DAMAGE)) {
-                d += mod.getAmount();
-            }
-            return d;
-        }
-        return 0;
+        return sumAttributeAmount(itemStack, Attributes.ATTACK_DAMAGE);
     }
-
 
     public double getProtectionForItem(ItemStack itemStack, EquipmentSlot type) {
-        Multimap<Attribute, AttributeModifier> map = itemStack.getAttributeModifiers(type);
-        if (!map.isEmpty()) {
-            double d = 0;
-            for (AttributeModifier mod : map.get(Attributes.ARMOR)) {
-                d += mod.getAmount();
-            }
-            return d;
-        }
-        return 0;
+        return sumAttributeAmount(itemStack, Attributes.ARMOR);
     }
 
-    protected void jumpFromGround() {
-        super.jumpFromGround();
+    private static double sumAttributeAmount(ItemStack itemStack, Attribute attribute) {
+        Multimap<Attribute, AttributeModifier> map = itemStack.getAttributeModifiers(EquipmentSlot.MAINHAND);
+        if (attribute == Attributes.ARMOR) {
+            // Armor can be on any slot; callers pass the relevant item already.
+            map = itemStack.getAttributeModifiers(EquipmentSlot.CHEST);
+            if (map.isEmpty()) {
+                map = itemStack.getAttributeModifiers(EquipmentSlot.HEAD);
+            }
+            if (map.isEmpty()) {
+                map = itemStack.getAttributeModifiers(EquipmentSlot.LEGS);
+            }
+            if (map.isEmpty()) {
+                map = itemStack.getAttributeModifiers(EquipmentSlot.FEET);
+            }
+        }
+        double total = 0;
+        for (AttributeModifier mod : map.get(attribute)) {
+            total += mod.getAmount();
+        }
+        return total;
+    }
+
+    /** Called when kangaroo jumps (cannot override final jumpFromGround in 1.21.1). */
+    private void onKangarooJump() {
         double d0 = this.moveControl.getSpeedModifier();
         if (d0 > 0.0D) {
             double d1 = this.getDeltaMovement().horizontalDistanceSqr();
             if (d1 < 0.01D) {
             }
         }
-
         if (!this.level().isClientSide) {
             this.level().broadcastEntityEvent(this, (byte) 1);
         }
-
     }
 
     public boolean hasJumper() {
@@ -976,6 +978,7 @@ public class EntityKangaroo extends TamableAnimal implements ContainerListener, 
             this.setJumping(true);
             this.jumpDuration = 16;
             this.jumpTicks = 0;
+            this.onKangarooJump();
         }
 
     }

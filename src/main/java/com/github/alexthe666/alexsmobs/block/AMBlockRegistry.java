@@ -65,32 +65,31 @@ public class AMBlockRegistry {
      */
 
     public static void init() {
-        BANANA_PEEL = registerBlockAndItem("banana_peel", new BlockBananaPeel());
+        BANANA_PEEL = registerBlockAndItem("banana_peel", new BlockBananaPeel(BlockBehaviour.Properties.of().dynamicShape().sound(SoundType.WET_GRASS).noCollission().requiresCorrectToolForDrops().strength(0.2F).friction(0.9999999999F)));
         HUMMINGBIRD_FEEDER = registerBlockAndItem("hummingbird_feeder", new BlockHummingbirdFeeder());
         CROCODILE_EGG = registerBlockAndItem("crocodile_egg", new BlockReptileEgg(AMEntityRegistry.CROCODILE));
         GUSTMAKER = registerBlockAndItem("gustmaker", new BlockGustmaker());
         STRADDLITE_BLOCK = registerBlockAndItem("straddlite_block", new Block(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(1.0F, 1200.0F).sound(SoundType.ANCIENT_DEBRIS)), new Item.Properties().fireResistant(), false);
         PLATYPUS_EGG = registerBlockAndItem("platypus_egg", new BlockReptileEgg(AMEntityRegistry.PLATYPUS));
-        LEAFCUTTER_ANTHILL = registerBlockAndItem("leafcutter_anthill", new BlockLeafcutterAnthill());
+        LEAFCUTTER_ANTHILL = registerBlockAndItem("leafcutter_anthill", new BlockLeafcutterAnthill(BlockBehaviour.Properties.of().sound(SoundType.GRAVEL).strength(0.75F)));
         LEAFCUTTER_ANT_CHAMBER = registerBlockAndItem("leafcutter_ant_chamber", new BlockLeafcutterAntChamber());
-        CAPSID = registerBlockAndItem("capsid", new BlockCapsid());
-        VOID_WORM_BEAK = registerBlockAndItem("void_worm_beak", new BlockVoidWormBeak());
+        CAPSID = registerBlockAndItem("capsid", new BlockCapsid(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).noOcclusion().isValidSpawn((state, reader, pos, entityType) -> Boolean.TRUE.equals(BlockCapsid.spawnOption(state, reader, pos, entityType))).isRedstoneConductor(BlockCapsid::isntSolid).sound(SoundType.GLASS).lightLevel((state) -> 5).requiresCorrectToolForDrops().strength(1.5F)));
+        VOID_WORM_BEAK = registerBlockAndItem("void_worm_beak", new BlockVoidWormBeak(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).noOcclusion().sound(SoundType.ANCIENT_DEBRIS).strength(1F).noCollission().requiresCorrectToolForDrops()));
         VOID_WORM_EFFIGY = registerBlockAndItem("void_worm_effigy", new BlockVoidWormEffigy());
-        TERRAPIN_EGG = registerBlockAndItem("terrapin_egg", new BlockTerrapinEgg());
+        TERRAPIN_EGG = registerBlockAndItem("terrapin_egg", new BlockTerrapinEgg(BlockBehaviour.Properties.of().mapColor(MapColor.SAND).strength(0.5F).sound(SoundType.METAL).randomTicks().noOcclusion()));
         RAINBOW_GLASS = registerBlockAndItem("rainbow_glass", new BlockRainbowGlass());
         BISON_FUR_BLOCK = registerBlockAndItem("bison_fur_block", new Block(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BROWN).strength(0.6F, 1.0F).sound(SoundType.WOOL)));
         BISON_CARPET = registerBlockAndItem("bison_carpet", new BlockBisonCarpet());
         SAND_CIRCLE = registerBlockAndItem("sand_circle", new SandBlock(14406560, BlockBehaviour.Properties.copy(Blocks.SAND)), new Item.Properties(), false);
         RED_SAND_CIRCLE = registerBlockAndItem("red_sand_circle", new SandBlock(11098145, BlockBehaviour.Properties.copy(Blocks.RED_SAND)), new Item.Properties(), false);
         ENDER_RESIDUE = registerBlockAndItem("ender_residue", new BlockEnderResidue());
-        TRANSMUTATION_TABLE = registerBlockAndItem("transmutation_table", new BlockTransmutationTable(), new Item.Properties().rarity(Rarity.EPIC).fireResistant(), true);
-        SCULK_BOOMER = registerBlockAndItem("sculk_boomer", new BlockSculkBoomer());
-        SKUNK_SPRAY = Registry.register(BuiltInRegistries.BLOCK, id("skunk_spray"), new BlockSkunkSpray());
+        TRANSMUTATION_TABLE = registerBlockAndItem("transmutation_table", new BlockTransmutationTable(BlockBehaviour.Properties.of().pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK).mapColor(MapColor.COLOR_BLACK).noOcclusion().lightLevel((block) -> 2).emissiveRendering((block, world, pos) -> true).sound(SoundType.STONE).strength(1F).requiresCorrectToolForDrops()), new Item.Properties().rarity(Rarity.EPIC).fireResistant(), true);
+        SCULK_BOOMER = registerBlockAndItem("sculk_boomer", new BlockSculkBoomer(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLUE).strength(3.0F, 12.0F).sound(SoundType.SCULK_CATALYST)));
+        SKUNK_SPRAY = Registry.register(BuiltInRegistries.BLOCK, id("skunk_spray"), new BlockSkunkSpray(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_LIGHT_GREEN).noOcclusion().randomTicks().noCollission().instabreak().sound(SoundType.FROGSPAWN)));
         BANANA_SLUG_SLIME_BLOCK = registerBlockAndItem("banana_slug_slime_block", new BlockBananaSlugSlime());
         CRYSTALIZED_BANANA_SLUG_MUCUS = registerBlockAndItem("crystalized_banana_slug_mucus", new BlockCrystalizedMucus());
         CAIMAN_EGG = registerBlockAndItem("caiman_egg", new BlockReptileEgg(AMEntityRegistry.CAIMAN));
         TRIOPS_EGGS = registerBlockAndItem("triops_eggs", new BlockTriopsEggs());
-        //TODO reimplement end pirate blocks
     }
 
     private static Block registerBlockAndItem(String name, Block block) {

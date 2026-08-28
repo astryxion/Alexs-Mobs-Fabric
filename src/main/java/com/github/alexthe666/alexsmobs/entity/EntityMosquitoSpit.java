@@ -4,6 +4,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -28,6 +30,11 @@ public class EntityMosquitoSpit extends Entity {
 
     public EntityMosquitoSpit(EntityType p_i50162_1_, Level p_i50162_2_) {
         super(p_i50162_1_, p_i50162_2_);
+    }
+
+    @Override
+    protected void defineSynchedData() {
+        // Entity.defineSynchedData is abstract; only register our own data here
     }
 
     public EntityMosquitoSpit(Level worldIn, EntityCrimsonMosquito p_i47273_2_) {
@@ -100,9 +107,6 @@ public class EntityMosquitoSpit extends Entity {
         if (!this.level().isClientSide) {
             this.remove(RemovalReason.DISCARDED);
         }
-    }
-
-    protected void defineSynchedData() {
     }
 
     public void setShooter(@Nullable Entity entityIn) {

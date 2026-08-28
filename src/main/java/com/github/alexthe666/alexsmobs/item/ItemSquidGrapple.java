@@ -66,9 +66,7 @@ public class ItemSquidGrapple extends Item {
             if (!worldIn.isClientSide) {
                 worldIn.addFreshEntity(hook);
             }
-            stack.hurtAndBreak(1, livingEntityIn, (playerIn) -> {
-                livingEntityIn.broadcastBreakEvent(playerIn.getUsedItemHand());
-            });
+            stack.hurtAndBreak(1, livingEntityIn, (e) -> e.broadcastBreakEvent((livingEntityIn.getUsedItemHand() == net.minecraft.world.InteractionHand.MAIN_HAND ) ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
             SquidGrappleUtil.onFireHook(livingEntityIn, hook.getUUID());
         }
     }
@@ -90,6 +88,5 @@ public class ItemSquidGrapple extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
         tooltip.add(Component.translatable("item.alexsmobs.squid_grapple.desc").withStyle(ChatFormatting.GRAY));
-
     }
 }

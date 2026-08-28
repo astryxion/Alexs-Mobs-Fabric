@@ -2,9 +2,6 @@ package com.github.alexthe666.alexsmobs.misc;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
 import net.fabricmc.fabric.api.loot.v2.LootTableEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -14,7 +11,6 @@ import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import net.minecraft.world.level.storage.loot.predicates.LootItemConditionType;
-import net.minecraft.world.level.storage.loot.Serializer;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -91,42 +87,29 @@ public class AMLootRegistry {
         public LootItemConditionType getType() { return PIGSHOES_CONDITION_TYPE; }
     }
 
-    /** Serializers for custom conditions (no JSON data; 1:1 with Forge). */
-    private static final Serializer<BananaCondition> BANANA_SERIALIZER = new Serializer<>() {
-        @Override
-        public void serialize(JsonObject json, BananaCondition condition, JsonSerializationContext context) {}
-        @Override
-        public BananaCondition deserialize(JsonObject json, JsonDeserializationContext context) { return new BananaCondition(); }
-    };
-    private static final Serializer<BlossomCondition> BLOSSOM_SERIALIZER = new Serializer<>() {
-        @Override
-        public void serialize(JsonObject json, BlossomCondition condition, JsonSerializationContext context) {}
-        @Override
-        public BlossomCondition deserialize(JsonObject json, JsonDeserializationContext context) { return new BlossomCondition(); }
-    };
-    private static final Serializer<AncientDartCondition> ANCIENT_DART_SERIALIZER = new Serializer<>() {
-        @Override
-        public void serialize(JsonObject json, AncientDartCondition condition, JsonSerializationContext context) {}
-        @Override
-        public AncientDartCondition deserialize(JsonObject json, JsonDeserializationContext context) { return new AncientDartCondition(); }
-    };
-    private static final Serializer<PigshoesCondition> PIGSHOES_SERIALIZER = new Serializer<>() {
-        @Override
-        public void serialize(JsonObject json, PigshoesCondition condition, JsonSerializationContext context) {}
-        @Override
-        public PigshoesCondition deserialize(JsonObject json, JsonDeserializationContext context) { return new PigshoesCondition(); }
-    };
+    private static boolean initialized;
+
+    private static <T extends LootItemCondition> LootItemConditionType typeOf(java.util.function.Supplier<T> factory) {
+        return new LootItemConditionType(new net.minecraft.world.level.storage.loot.Serializer<T>() {
+            @Override
+            public void serialize(com.google.gson.JsonObject json, T value, com.google.gson.JsonSerializationContext context) {
+            }
+
+            @Override
+            public T deserialize(com.google.gson.JsonObject json, com.google.gson.JsonDeserializationContext context) {
+                return factory.get();
+            }
+        });
+    }
 
     public static void init() {
-        BANANA_CONDITION_TYPE = Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, id("banana_drop"), new LootItemConditionType(BANANA_SERIALIZER));
-        BLOSSOM_CONDITION_TYPE = Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, id("blossom_drop"), new LootItemConditionType(BLOSSOM_SERIALIZER));
-        ANCIENT_DART_CONDITION_TYPE = Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, id("ancient_dart"), new LootItemConditionType(ANCIENT_DART_SERIALIZER));
-        PIGSHOES_CONDITION_TYPE = Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, id("pigshoes"), new LootItemConditionType(PIGSHOES_SERIALIZER));
+        if (initialized) return;
+        BANANA_CONDITION_TYPE = Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, id("banana_drop"), typeOf(BananaCondition::new));
+        BLOSSOM_CONDITION_TYPE = Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, id("blossom_drop"), typeOf(BlossomCondition::new));
+        ANCIENT_DART_CONDITION_TYPE = Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, id("ancient_dart"), typeOf(AncientDartCondition::new));
+        PIGSHOES_CONDITION_TYPE = Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, id("pigshoes"), typeOf(PigshoesCondition::new));
 
-        LootTableEvents.MODIFY.register((resourceManager, lootManager, id, tableBuilder, source) -> {
-            if (!source.isBuiltin()) return;
-            ResourceLocation tableId = id;
-
+        LootTableEvents.MODIFY.register((resourceManager, lootManager, tableId, tableBuilder, source) -> {
             if (BANANA_LOOT_TABLES.contains(tableId)) {
                 tableBuilder.pool(LootPool.lootPool()
                         .when(BananaCondition::new)
@@ -152,5 +135,6 @@ public class AMLootRegistry {
                         .build());
             }
         });
+        initialized = true;
     }
 }

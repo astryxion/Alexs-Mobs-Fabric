@@ -150,16 +150,25 @@ public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, I
         return worldIn.isUnobstructed(this);
     }
 
+    @Override
+    public boolean canBreatheUnderwater() {
+        return true;
+    }
+
     public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.mimicOctopusSpawnRolls, this.getRandom(), spawnReasonIn);
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.entityData.set(PREV_MIMIC_ORDINAL, 0);
         this.setMimickedBlock(null);
         this.setMimicState(MimicState.OVERLAY);
-        return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
+        SpawnGroupData data = super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
+        if (!this.isStopChange() && this.isInWaterOrBubble()) {
+            this.mimicEnvironment();
+        }
+        return data;
     }
 
     public void readAdditionalSaveData(CompoundTag compound) {
@@ -223,8 +232,10 @@ public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, I
         }
         CompoundTag platTag = new CompoundTag();
         this.addAdditionalSaveData(platTag);
-        CompoundTag compound = bucket.getOrCreateTag();
+        net.minecraft.nbt.CompoundTag existing = bucket.getTag();
+        CompoundTag compound = existing != null ? existing.copy() : new net.minecraft.nbt.CompoundTag();
         compound.put("MimicOctopusData", platTag);
+        bucket.setTag(compound);
     }
 
     @Override
@@ -452,10 +463,6 @@ public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, I
         this.walkAnimation.update(f2, 0.4F);
     }
 
-    public boolean canBreatheUnderwater() {
-        return true;
-    }
-
     private void switchNavigator(boolean onLand) {
         if (onLand) {
             this.moveControl = new MoveControl(this);
@@ -470,6 +477,9 @@ public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, I
 
     public void tick() {
         super.tick();
+        if (this.isInWaterOrBubble() || this.getMainHandItem().getItem() == Items.WATER_BUCKET) {
+            this.setAirSupply(this.getMaxAirSupply());
+        }
         if (localMimic != this.getPrevMimickedBlock()) {
             localMimic = this.getPrevMimickedBlock();
             colorShiftProgress = 0.0F;
@@ -544,7 +554,7 @@ public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, I
                 }
             }
         }
-        if (camoCooldown <= 0 && random.nextInt(300) == 0) {
+        if (camoCooldown <= 0 && (random.nextInt(300) == 0 || (this.tickCount < 40 && this.getMimickedBlock() == null && !this.isStopChange()))) {
             mimicEnvironment();
             camoCooldown = this.getRandom().nextInt(2200) + 200;
         }
@@ -642,8 +652,8 @@ public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, I
     }
 
     private BlockPos getPositionDown() {
-        BlockPos pos = AMBlockPos.fromCoords(this.getX(), this.getEyeY(), this.getZ());
-        while (pos.getY() > 1 && (level().isEmptyBlock(pos) || level().isWaterAt(pos))) {
+        BlockPos pos = this.blockPosition().below();
+        while (pos.getY() > level().getMinBuildHeight() && (level().isEmptyBlock(pos) || level().getFluidState(pos).is(net.minecraft.tags.FluidTags.WATER))) {
             pos = pos.below();
         }
         return pos;
@@ -747,6 +757,7 @@ public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, I
         return !this.isTame() && !this.fromBucket();
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(MIMIC_ORDINAL, 0);
@@ -867,7 +878,7 @@ public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, I
     }
 
     private void creeperExplode() {
-        Explosion explosion = new Explosion(level(), this,  this.damageSources().mobAttack(this), (ExplosionDamageCalculator)null, this.getX(), this.getY(), this.getZ(), 1 + random.nextFloat(), false, Explosion.BlockInteraction.KEEP);
+        Explosion explosion = new Explosion(level(), this, this.damageSources().mobAttack(this), (ExplosionDamageCalculator)null, this.getX(), this.getY(), this.getZ(), 1 + random.nextFloat(), false, Explosion.BlockInteraction.KEEP);
         explosion.explode();
         explosion.finalizeExplosion(true);
     }

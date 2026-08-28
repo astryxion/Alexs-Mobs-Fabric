@@ -47,6 +47,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.pathfinder.BlockPathTypes;
@@ -137,6 +138,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         this.setWhite(compound.getBoolean("White"));
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(WHITE, false);
@@ -355,13 +357,13 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         if (!this.level().isClientSide) {
             if (isRunning() && !hasSpedUp) {
                 hasSpedUp = true;
-                this.setMaxUpStep(1F);
+                this.setMaxUpStep((float)(1.0));
                 this.setSprinting(true);
                 this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.4F);
             }
             if (!isRunning() && hasSpedUp) {
                 hasSpedUp = false;
-                this.setMaxUpStep(0.6F);
+                this.setMaxUpStep((float)(0.6));
                 this.setSprinting(false);
                 this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.25F);
             }
@@ -526,7 +528,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
 
     @Override
     public boolean canTargetItem(ItemStack stack) {
-        return stack.getItem().isEdible() && stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat() && stack.getItem() != Items.ROTTEN_FLESH;
+        return stack.isEdible() && stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat() && stack.getItem() != Items.ROTTEN_FLESH;
     }
 
     public double getMaxDistToItem() {
@@ -537,7 +539,7 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
     public void onGetItem(ItemEntity e) {
         this.dontSitFlag = false;
         ItemStack stack = e.getItem();
-        if (stack.getItem().isEdible() && stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat() && stack.getItem() != Items.ROTTEN_FLESH) {
+        if (stack.isEdible() && stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat() && stack.getItem() != Items.ROTTEN_FLESH) {
             this.gameEvent(GameEvent.EAT);
             this.playSound(SoundEvents.CAT_EAT, this.getVoicePitch(), this.getSoundVolume());
             this.heal(5);
@@ -567,15 +569,11 @@ public class EntityTiger extends Animal implements ICustomCollisions, IAnimatedE
         return 0.1F;
     }
 
-    protected void jumpFromGround() {
-        if (!this.isSleeping() && !this.isSitting()) {
-            super.jumpFromGround();
-        }
-    }
-
     static class TigerNodeEvaluator extends WalkNodeEvaluator {
-        protected BlockPathTypes evaluateBlockPathType(BlockGetter level, BlockPos pos, BlockPathTypes typeIn) {
-            return typeIn == BlockPathTypes.LEAVES || level.getBlockState(pos).getBlock() == Blocks.BAMBOO ? BlockPathTypes.OPEN : super.evaluateBlockPathType(level, pos, typeIn);
+        @Override
+        public BlockPathTypes getBlockPathType(BlockGetter level, int x, int y, int z) {
+            BlockPathTypes type = super.getBlockPathType(level, x, y, z);
+            return type == BlockPathTypes.LEAVES || level.getBlockState(new BlockPos(x, y, z)).getBlock() == Blocks.BAMBOO ? BlockPathTypes.OPEN : type;
         }
     }
 

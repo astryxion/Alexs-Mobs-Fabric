@@ -10,7 +10,7 @@
       "item": "alexsmobs:shark_tooth"
     },
     "S": {
-      "item": "minecraft:stick"
+      "tag": "c:rods/wooden"
     },
     "K": {
       "item": "minecraft:kelp"

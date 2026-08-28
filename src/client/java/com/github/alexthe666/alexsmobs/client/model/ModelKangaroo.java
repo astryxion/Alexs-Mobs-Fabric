@@ -330,9 +330,7 @@ public class ModelKangaroo extends AdvancedEntityModel<EntityKangaroo> {
 			progressPositionPrev(head, 1F, 0, 0F, -2F, 1F);
 		}
 	}
-
-	@Override
-	public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
 		if (this.young) {
 			float f = 1.65F;
 			head.setScale(f, f, f);

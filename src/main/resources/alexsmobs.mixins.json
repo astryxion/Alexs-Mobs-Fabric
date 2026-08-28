@@ -3,25 +3,31 @@
   "minVersion": "0.8",
   "package": "com.github.alexthe666.alexsmobs.mixin",
   "compatibilityLevel": "JAVA_17",
-  "mixins": [
-    "AnvilMenuMixin",
-    "BrewingStandBlockEntityMixin",
-    "BrewingStandMenuIngredientsSlotMixin",
-    "BrewingStandMenuPotionSlotMixin",
+    "mixins": [
     "DamageSourceMixin",
-    "EnchantmentHelperMixin",
-    "LevelChunkSectionBiomesAccessor",
+    "EnchantmentCanEnchantMixin",
+    "EntityFroststalkerLootMixin",
+    "ItemEntityMixin",
     "LivingEntityMixin",
+    "LivingEntityJumpMixin",
+    "BrewingStandBlockEntityMixin",
+    "BrewingStandMenuMixin",
+    "BrewingStandIngredientsSlotMixin",
     "MobTargetMixin",
+    "PotionBrewingMixin",
+    "PowderSnowBlockMixin",
+    "PlayerAttributesMixin",
+    "PlayerBlockReachMixin",
+    "ServerGamePacketListenerImplReachMixin",
     "StructureSettingsMixin",
-    "StructureAccessor"
-  ],
-  "client": [
-    "LivingEntityRendererMixin",
-    "LivingEntityRendererAccessor",
-    "client.FogRendererMixin"
+    "StructureAccessor",
+    "LevelChunkSectionBiomesAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
   }
 }
+

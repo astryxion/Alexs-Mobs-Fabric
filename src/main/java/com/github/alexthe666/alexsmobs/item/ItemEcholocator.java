@@ -98,7 +98,8 @@ public class ItemEcholocator extends Item {
                     }
                 }
             }else{
-                CompoundTag nbt = stack.getOrCreateTag();
+                net.minecraft.nbt.CompoundTag data = stack.getTag();
+                CompoundTag nbt = data != null ? data.copy() : new net.minecraft.nbt.CompoundTag();
                 if(nbt.contains("CavePos") && nbt.getBoolean("ValidCavePos")){
                     pos = BlockPos.of(nbt.getLong("CavePos"));
                     if(isCaveAir(worldIn, pos) || 1000000 < pos.distSqr(playerPos)){
@@ -127,9 +128,11 @@ public class ItemEcholocator extends Item {
                 worldIn.addFreshEntity(whaleEcho);
                 livingEntityIn.gameEvent(GameEvent.ITEM_INTERACT_START);
                 worldIn.playSound((Player)null, whaleEcho.getX(), whaleEcho.getY(), whaleEcho.getZ(), AMSoundRegistry.CACHALOT_WHALE_CLICK, SoundSource.PLAYERS, 1.0F, 1.0F);
-                stack.hurtAndBreak(1, livingEntityIn, (player) -> {
-                    player.broadcastBreakEvent(livingEntityIn.getUsedItemHand());
-                });
+                stack.hurtAndBreak(1, livingEntityIn, (e) -> e.broadcastBreakEvent((livingEntityIn.getUsedItemHand() == net.minecraft.world.InteractionHand.MAIN_HAND ) ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
+            } else {
+                // Still play feedback when no target (e.g. pupfish chunk not generated yet)
+                livingEntityIn.gameEvent(GameEvent.ITEM_INTERACT_START);
+                worldIn.playSound((Player)null, livingEntityIn.getX(), livingEntityIn.getY(), livingEntityIn.getZ(), AMSoundRegistry.CACHALOT_WHALE_CLICK, SoundSource.PLAYERS, 0.6F, 0.7F);
             }
         }
         livingEntityIn.getCooldowns().addCooldown(this, 5);

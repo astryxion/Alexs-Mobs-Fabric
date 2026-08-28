@@ -89,7 +89,7 @@ public class EntityMurmurHead extends Monster implements FlyingAnimal {
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.entityData.define(BODY_UUID, Optional.empty());
+        this.entityData.define(BODY_UUID, Optional.<UUID>empty());
         this.entityData.define(BODY_ID, -1);
         this.entityData.define(PULLED_IN, true);
         this.entityData.define(ANGRY, false);
@@ -159,10 +159,6 @@ public class EntityMurmurHead extends Monster implements FlyingAnimal {
         return true;
     }
 
-    public MobType getMobType() {
-        return MobType.UNDEAD;
-    }
-
     @Nullable
     public UUID getBodyId() {
         return this.entityData.get(BODY_UUID).orElse(null);
@@ -198,8 +194,8 @@ public class EntityMurmurHead extends Monster implements FlyingAnimal {
     }
 
     @Override
-    protected float getStandingEyeHeight(Pose pose, EntityDimensions dimensions) {
-        return dimensions.height * 0.35F;
+    public EntityDimensions getDimensions(Pose pose) {
+        return super.getDimensions(pose).scale(1.0F, 0.35F);
     }
 
     public void tick(){
@@ -461,7 +457,7 @@ public class EntityMurmurHead extends Monster implements FlyingAnimal {
                     if(time > 30){
                         if(!EntityMurmurHead.this.isAngry()){
                             EntityMurmurHead.this.playSound(AMSoundRegistry.MURMUR_ANGER, 1.5F * EntityMurmurHead.this.getSoundVolume(), EntityMurmurHead.this.getVoicePitch());
-                            EntityMurmurHead.this.gameEvent(GameEvent.ENTITY_ROAR);
+                            EntityMurmurHead.this.gameEvent(GameEvent.ENTITY_INTERACT);
                         }
                         EntityMurmurHead.this.setAngry(true);
                         EntityMurmurHead.this.getNavigation().moveTo(moveTo.x, moveTo.y, moveTo.z, 1.3D);

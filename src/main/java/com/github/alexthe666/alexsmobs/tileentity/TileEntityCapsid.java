@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -53,6 +54,14 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
         super(AMTileEntityRegistry.CAPSID, pos, state);
     }
 
+    public void setItems(NonNullList<ItemStack> items) {
+        this.stacks = items;
+    }
+
+    public NonNullList<ItemStack> getItems() {
+        return this.stacks;
+    }
+
     public static void commonTick(Level level, BlockPos pos, BlockState state, TileEntityCapsid entity) {
         entity.tick();
     }
@@ -67,9 +76,10 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
             if (up instanceof Container container) {
                 if (floatUpProgress >= 1) {
                     ItemStack toInsert = this.getItem(0).copy();
-                    ItemStack remainder = insertItemIntoContainer(container, toInsert);
-                    if (remainder.getCount() < this.getItem(0).getCount()) {
-                        this.setItem(0, remainder.isEmpty() ? ItemStack.EMPTY : remainder);
+                    ItemStack simulated = insertItemIntoContainer(container, toInsert.copy(), true);
+                    if (simulated.isEmpty()) {
+                        insertItemIntoContainer(container, toInsert, false);
+                        this.setItem(0, ItemStack.EMPTY);
                     }
                     yawTarget = 0F;
                     floatUpProgress = 0F;
@@ -133,7 +143,7 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
         }
     }
     public net.minecraft.world.phys.AABB getRenderBoundingBox() {
-        return new net.minecraft.world.phys.AABB(worldPosition, worldPosition.offset(1, 2, 1));
+        return new net.minecraft.world.phys.AABB(Vec3.atLowerCornerOf(worldPosition), Vec3.atLowerCornerOf(worldPosition.offset(1, 2, 1)));
     }
 
     @Override
@@ -187,7 +197,7 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
             stack.setCount(this.getMaxStackSize());
         }
         lastRecipe = AlexsMobs.PROXY.getCapsidRecipeManager().getRecipeFor(stack);
-        this.saveAdditional(this.getUpdateTag());
+        this.setChanged();
         if (!level.isClientSide) {
             AlexsMobs.sendMSGToAll(new MessageUpdateCapsid(this.getBlockPos().asLong(), stacks.get(0)));
         }
@@ -201,7 +211,7 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
     }
 
     @Override
-    public void saveAdditional(CompoundTag compound) {
+    protected void saveAdditional(CompoundTag compound) {
         super.saveAdditional(compound);
         ContainerHelper.saveAllItems(compound, this.stacks);
     }
@@ -260,14 +270,15 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
     }
 
     public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
-        if (packet != null && packet.getTag() != null) {
+        if (packet != null && packet.getTag() != null && level != null) {
             this.stacks = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY);
             ContainerHelper.loadAllItems(packet.getTag(), this.stacks);
         }
     }
 
+    @Override
     public CompoundTag getUpdateTag() {
-        return this.saveWithoutMetadata();
+        return saveWithoutMetadata();
     }
 
     @Override
@@ -314,21 +325,29 @@ public class TileEntityCapsid extends BaseContainerBlockEntity implements Worldl
         return 0.0F;
     }
 
-    /** Fabric: 1:1 replacement for IItemHandler insert; inserts into vanilla Container and returns remainder. */
-    private static ItemStack insertItemIntoContainer(Container container, ItemStack stack) {
+    /** Inserts into a vanilla Container; returns remainder. When simulate is true, does not mutate. */
+    private static ItemStack insertItemIntoContainer(Container container, ItemStack stack, boolean simulate) {
         ItemStack remainder = stack.copy();
         for (int i = 0; i < container.getContainerSize() && !remainder.isEmpty(); i++) {
             if (!container.canPlaceItem(i, remainder)) continue;
             ItemStack inSlot = container.getItem(i);
             if (inSlot.isEmpty()) {
                 int toAdd = Math.min(remainder.getCount(), container.getMaxStackSize());
-                container.setItem(i, remainder.split(toAdd));
-            } else if (ItemStack.isSameItemSameTags(inSlot, remainder)) {
-                int toAdd = Math.min(remainder.getCount(), container.getMaxStackSize() - inSlot.getCount());
-                if (toAdd > 0) {
-                    inSlot.grow(toAdd);
+                if (!simulate) {
+                    container.setItem(i, remainder.split(toAdd));
+                } else {
                     remainder.shrink(toAdd);
-                    container.setItem(i, inSlot);
+                }
+            } else if (ItemStack.isSameItemSameTags(inSlot, remainder)) {
+                int toAdd = Math.min(remainder.getCount(), Math.min(inSlot.getMaxStackSize(), container.getMaxStackSize()) - inSlot.getCount());
+                if (toAdd > 0) {
+                    if (!simulate) {
+                        inSlot.grow(toAdd);
+                        remainder.shrink(toAdd);
+                        container.setItem(i, inSlot);
+                    } else {
+                        remainder.shrink(toAdd);
+                    }
                 }
             }
         }

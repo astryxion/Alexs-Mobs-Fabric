@@ -7,8 +7,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.SpawnGroupData;
@@ -53,7 +54,7 @@ public class EntityCockroachEgg extends ThrowableItemProjectile {
                 final EntityCockroach croc = AMEntityRegistry.COCKROACH.create(this.level());
                 croc.setAge(-24000);
                 croc.moveTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), 0.0F);
-                croc.finalizeSpawn((ServerLevel)level(), level().getCurrentDifficultyAt(this.blockPosition()), MobSpawnType.TRIGGERED, (SpawnGroupData)null, (CompoundTag)null);
+                croc.finalizeSpawn((ServerLevelAccessor)level(), level().getCurrentDifficultyAt(this.blockPosition()), MobSpawnType.TRIGGERED, null, null);
                 croc.restrictTo(this.blockPosition(), 20);
                 this.level().addFreshEntity(croc);
             }

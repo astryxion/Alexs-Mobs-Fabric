@@ -10,6 +10,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.minecraft.world.level.levelgen.structure.BuiltinStructures;
@@ -17,7 +18,7 @@ import net.minecraft.world.level.levelgen.structure.Structure;
 
 /** Forge {@code AMMobSpawnStructureModifier} parity for Fabric via structure spawn override mixin. */
 public final class AMSpawnStructureRegistry {
-    private static final ResourceKey<Structure> END_CITY_KEY = ResourceKey.create(Registries.STRUCTURE, new ResourceLocation("end_city"));
+    private static final ResourceKey<Structure> END_CITY_KEY = ResourceKey.create(Registries.STRUCTURE, new ResourceLocation("minecraft", "end_city"));
 
     private AMSpawnStructureRegistry() {}
 

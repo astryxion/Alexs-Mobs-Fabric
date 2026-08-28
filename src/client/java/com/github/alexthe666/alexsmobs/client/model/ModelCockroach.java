@@ -175,10 +175,12 @@ public class ModelCockroach extends AdvancedEntityModel<EntityCockroach> {
             head.showModel = false;
             left_antenna.showModel = false;
             right_antenna.showModel = false;
+            head.setScale(0.0F, 0.0F, 0.0F);
         }else{
             head.showModel = true;
             left_antenna.showModel = true;
             right_antenna.showModel = true;
+            head.setScale(1.0F, 1.0F, 1.0F);
         }
         if(entity.isBaby()){
             left_wing.showModel = false;
@@ -188,8 +190,7 @@ public class ModelCockroach extends AdvancedEntityModel<EntityCockroach> {
             right_wing.showModel = true;
         }
     }
-
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             this.head.setScale(1.5F, 1.5F, 1.5F);
             matrixStackIn.pushPose();

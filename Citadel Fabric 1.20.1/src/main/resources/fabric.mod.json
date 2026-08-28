@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "citadel",
+  "version": "${version}",
+  "name": "Citadel",
+  "description": "A shared code library for many of Alexthe666's mods. Code used from LLibrary with permission.",
+  "authors": [
+    "Astryxion"
+  ],
+  "contributors": [
+    "Alexthe668"
+  ],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/citadel-fabric",
+    "issues": "https://github.com/astryxion/Citadel-Fabric/issues"
+  },
+  "license": "LGPL-3.0-or-later",
+  "icon": "assets/citadel/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.github.alexthe666.citadel.Citadel"
+    ]
+  },
+  "mixins": [
+    "citadel.mixins.json"
+  ],
+  "accessWidener": "citadel.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "fabric-api": "*"
+  }
+}

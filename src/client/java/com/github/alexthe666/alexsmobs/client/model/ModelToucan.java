@@ -96,9 +96,7 @@ public class ModelToucan extends AdvancedEntityModel<EntityToucan> {
     public Iterable<AdvancedModelBox> getAllParts() {
         return ImmutableList.of(root, body, tail, left_wing, left_wingtip, right_wing, right_wingtip, right_leg, left_leg, head, beak);
     }
-
-    @Override
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
         if (this.young) {
             float f = 1.24F;
             head.setScale(f, f, f);

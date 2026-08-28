@@ -93,7 +93,7 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
         super(type, worldIn);
         this.setPathfindingMalus(BlockPathTypes.WATER, -1.0F);
         this.setPathfindingMalus(BlockPathTypes.LEAVES, 0.0F);
-        this.setMaxUpStep(1.1F);
+        this.setMaxUpStep((float)(1.1));
     }
 
     protected PathNavigation createNavigation(Level worldIn) {
@@ -193,7 +193,7 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         if (spawnDataIn instanceof AgeableMob.AgeableMobGroupData) {
             AgeableMob.AgeableMobGroupData lvt_6_1_ = (AgeableMob.AgeableMobGroupData) spawnDataIn;
             if (lvt_6_1_.getGroupSize() == 0) {
@@ -226,6 +226,7 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
         return gorilla;
     }
 
+    @Override
     public EntityDimensions getDimensions(Pose poseIn) {
         return isSilverback() && !isBaby() ? SILVERBACK_SIZE.scale(this.getScale()) : super.getDimensions(poseIn);
     }
@@ -233,10 +234,9 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
     public void positionRider(Entity passenger, Entity.MoveFunction moveFunc) {
         if (this.hasPassenger(passenger)) {
             this.setOrderedToSit(false);
-            if (passenger instanceof EntityGorilla) {
-                EntityGorilla babyGorilla = (EntityGorilla) passenger;
-                babyGorilla.setStanding(this.isStanding());
-                babyGorilla.setOrderedToSit(this.isSitting());
+            if (passenger instanceof EntityGorilla babyGorilla && babyGorilla.isBaby()) {
+                babyGorilla.setStanding(false);
+                babyGorilla.setOrderedToSit(false);
                 babyGorilla.yBodyRot = this.yBodyRot;
             }
             float sitAdd = -0.03F * this.sitProgress;
@@ -245,7 +245,7 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
             float angle = (Maths.STARTING_ANGLE * this.yBodyRot);
             double extraX = radius * Mth.sin(Mth.PI + angle);
             double extraZ = radius * Mth.cos(angle);
-            passenger.setPos(this.getX() + extraX, this.getY() + this.getPassengersRidingOffset() + passenger.getMyRidingOffset(), this.getZ() + extraZ);
+            passenger.setPos(this.getX() + extraX, this.getY() + this.getBbHeight() * 0.75F + passenger.getMyRidingOffset(), this.getZ() + extraZ);
         }
     }
 
@@ -435,6 +435,8 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
                 this.removeVehicle();
             }else{
                 EntityGorilla mount = (EntityGorilla) this.getVehicle();
+                this.setStanding(false);
+                this.setOrderedToSit(false);
                 this.setYRot( mount.yBodyRot);
                 this.yHeadRot = mount.yBodyRot;
                 this.yBodyRot = mount.yBodyRot;
@@ -569,7 +571,7 @@ public class EntityGorilla extends TamableAnimal implements IAnimatedEntity, ITa
     }
 
     public float getGorillaScale() {
-        return isBaby() ? 0.5F : isSilverback() ? 1.3F : 1.0F;
+        return isBaby() ? 0.5F : isSilverback() ? 1.3F : 1.15F;
     }
 
     public boolean isDonkeyKong() {

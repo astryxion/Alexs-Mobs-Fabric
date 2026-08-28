@@ -23,7 +23,7 @@ public class CapuchinAIMelee extends MeleeAttackGoal {
     }
 
     protected void checkAndPerformAttack(LivingEntity enemy, double distToEnemySqr) {
-        double d0 = this.getAttackReachSqr(enemy);
+        double d0 = (this.mob.getBbWidth() * 2.0F * this.mob.getBbWidth() * 2.0F) + (double)enemy.getBbWidth();
         if (distToEnemySqr <= d0) {
             this.resetAttackCooldown();
             this.mob.swing(InteractionHand.MAIN_HAND);

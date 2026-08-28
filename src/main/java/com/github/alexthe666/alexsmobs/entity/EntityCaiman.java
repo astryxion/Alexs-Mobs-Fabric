@@ -96,7 +96,7 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
         this.goalSelector.addGoal(3, new BreathAirGoal(this));
         this.goalSelector.addGoal(4, new TameableAIFollowOwnerWater(this, 1.1D, 4.0F, 2.0F, false));
         this.goalSelector.addGoal(5, new MeleeAttackGoal(this, 1.2F, false));
-        this.goalSelector.addGoal(6, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.CAIMAN_BREEDABLES), false));
+        this.goalSelector.addGoal(6, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.CAIMAN_BREEDABLES));
         this.goalSelector.addGoal(7, new AnimalAIFindWater(this));
         this.goalSelector.addGoal(7, new AnimalAILeaveWater(this));
         this.goalSelector.addGoal(8, new CaimanAIBellow(this));
@@ -363,8 +363,9 @@ public class EntityCaiman extends TamableAnimal implements ISemiAquatic,IFollowe
         this.walkAnimation.update(f2, 0.4F);
     }
 
-    public boolean canBreatheUnderwater() {
-        return true;
+    @Override
+    public boolean isInvulnerableTo(net.minecraft.world.damagesource.DamageSource source) {
+        return source.is(net.minecraft.world.damagesource.DamageTypes.DROWN) || super.isInvulnerableTo(source);
     }
 
     @Override

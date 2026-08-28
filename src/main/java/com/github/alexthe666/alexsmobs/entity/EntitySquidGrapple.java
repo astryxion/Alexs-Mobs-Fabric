@@ -9,6 +9,7 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -96,10 +97,15 @@ public class EntitySquidGrapple extends Entity {
 
     @Override
     protected void defineSynchedData() {
-        this.entityData.define(OWNER_UUID, Optional.empty());
+        this.entityData.define(OWNER_UUID, Optional.<UUID>empty());
         this.entityData.define(ATTACHED_FACE, Direction.DOWN);
-        this.entityData.define(ATTACHED_POS, Optional.empty());
+        this.entityData.define(ATTACHED_POS, Optional.<BlockPos>empty());
         this.entityData.define(WITHDRAWING, false);
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+        return new ClientboundAddEntityPacket(this);
     }
 
     public Entity getOwner() {
@@ -274,9 +280,4 @@ public class EntitySquidGrapple extends Entity {
         }
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return new ClientboundAddEntityPacket(this);
     }
-
-}

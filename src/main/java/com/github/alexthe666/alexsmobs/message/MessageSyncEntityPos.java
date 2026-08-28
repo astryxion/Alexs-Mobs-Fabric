@@ -52,7 +52,7 @@ public class MessageSyncEntityPos {
                         Entity entity = player.level().getEntity(message.eagleId);
                         if (entity instanceof IFalconry || entity instanceof EntityStraddleboard) {
                             entity.setPos(message.posX, message.posY, message.posZ);
-                            entity.teleportToWithTicket(message.posX, message.posY, message.posZ);
+                            entity.teleportTo(message.posX, message.posY, message.posZ);
                         }
                     }
                 }

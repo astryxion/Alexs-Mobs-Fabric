@@ -3,6 +3,8 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 import com.github.alexthe666.alexsmobs.entity.EntityPlatypus;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
@@ -38,7 +40,8 @@ public class PlatypusAIDigForItems extends Goal {
     }
 
     private static List<ItemStack> getItemStacks(EntityPlatypus platypus) {
-        LootTable loottable = platypus.level().getServer().getLootData().getLootTable(platypus.superCharged ? PLATYPUS_REWARD_CHARGED : PLATYPUS_REWARD);
+        ResourceLocation key = platypus.superCharged ? PLATYPUS_REWARD_CHARGED : PLATYPUS_REWARD;
+        LootTable loottable = platypus.level().getServer().getLootData().getLootTable(key);
         return loottable.getRandomItems((new LootParams.Builder((ServerLevel) platypus.level())).withParameter(LootContextParams.THIS_ENTITY, platypus).create(LootContextParamSets.PIGLIN_BARTER));
     }
 

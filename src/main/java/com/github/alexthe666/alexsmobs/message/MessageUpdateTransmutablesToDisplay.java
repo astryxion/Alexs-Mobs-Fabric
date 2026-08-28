@@ -1,7 +1,6 @@
 package com.github.alexthe666.alexsmobs.message;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.github.alexthe666.citadel.server.message.PacketBufferUtils;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -25,14 +24,20 @@ public class MessageUpdateTransmutablesToDisplay {
     }
 
     public static MessageUpdateTransmutablesToDisplay read(FriendlyByteBuf buf) {
-        return new MessageUpdateTransmutablesToDisplay(buf.readInt(), PacketBufferUtils.readItemStack(buf), PacketBufferUtils.readItemStack(buf), PacketBufferUtils.readItemStack(buf));
+        int playerId = buf.readInt();
+        net.minecraft.nbt.CompoundTag t1 = buf.readNbt(), t2 = buf.readNbt(), t3 = buf.readNbt();
+        return new MessageUpdateTransmutablesToDisplay(
+                playerId,
+                t1 != null ? ItemStack.of(t1) : ItemStack.EMPTY,
+                t2 != null ? ItemStack.of(t2) : ItemStack.EMPTY,
+                t3 != null ? ItemStack.of(t3) : ItemStack.EMPTY);
     }
 
     public static void write(MessageUpdateTransmutablesToDisplay message, FriendlyByteBuf buf) {
         buf.writeInt(message.playerId);
-        PacketBufferUtils.writeItemStack(buf, message.stack1);
-        PacketBufferUtils.writeItemStack(buf, message.stack2);
-        PacketBufferUtils.writeItemStack(buf, message.stack3);
+        buf.writeNbt(message.stack1.isEmpty() ? null : message.stack1.save(new net.minecraft.nbt.CompoundTag()));
+        buf.writeNbt(message.stack2.isEmpty() ? null : message.stack2.save(new net.minecraft.nbt.CompoundTag()));
+        buf.writeNbt(message.stack3.isEmpty() ? null : message.stack3.save(new net.minecraft.nbt.CompoundTag()));
     }
 
     public static class Handler {

@@ -152,8 +152,7 @@ public class ModelJerboa extends AdvancedEntityModel<EntityJerboa> {
         }
 
     }
-
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.75F;
             matrixStackIn.pushPose();

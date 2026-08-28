@@ -1,5 +1,5 @@
 plugins {
-	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+	id 'fabric-loom' version "${loom_version}"
 	id 'maven-publish'
 }
 
@@ -11,17 +11,25 @@ base {
 }
 
 repositories {
-	maven { name = "Jared's maven"; url = "https://maven.blamejared.com/" }
-	maven { name = "ModMaven"; url = "https://modmaven.dev" }
+	// Add repositories to retrieve artifacts from in here.
+	// You should only use this when depending on other mods because
+	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
+	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
+	// for more information about repositories.
+	maven { url = "https://maven.blamejared.com/" }
 }
 
 loom {
+	accessWidenerPath = file("src/main/resources/alexsmobs.accesswidener")
 	splitEnvironmentSourceSets()
 
 	mods {
-		"template-mod" {
+		"alexsmobs" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
+		}
+		"citadel" {
+			sourceSet project(':citadel').sourceSets.main
 		}
 	}
 
@@ -36,15 +44,19 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	// Citadel (local Fabric port JAR in project root)
-	modImplementation(files("citadel-1.20.1-1.0.0.jar"))
-
-	// JEI (optional, client-only compat)
-	modCompileOnlyApi("mezz.jei:jei-1.20.1-fabric-api:15.2.0.27")
-	modLocalRuntime("mezz.jei:jei-1.20.1-fabric:15.2.0.27")
-
-	// javax.annotation (Nullable, etc.) for migration compatibility
+	// JSR305 for javax.annotation.Nullable/Nonnull (not on JDK classpath in Java 21)
 	compileOnly "com.google.code.findbugs:jsr305:3.0.2"
+
+	implementation project(path: ':citadel', configuration: 'namedElements')
+	clientImplementation project(path: ':citadel', configuration: 'namedElements')
+
+	// JEI: optional — API for compile; full mod only in local runs (not bundled in jar)
+	modCompileOnly "mezz.jei:jei-${minecraft_version}-fabric-api:${jei_version}"
+	modLocalRuntime("mezz.jei:jei-${minecraft_version}-fabric:${jei_version}") {
+		exclude group: "mezz.jei", module: "jei-${minecraft_version}-common-api"
+		exclude group: "mezz.jei", module: "jei-${minecraft_version}-fabric-api"
+		exclude group: "mezz.jei", module: "jei-${minecraft_version}-common-api-intermediary"
+	}
 }
 
 processResources {

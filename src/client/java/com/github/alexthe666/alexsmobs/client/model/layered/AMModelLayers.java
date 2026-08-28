@@ -27,8 +27,6 @@ public class AMModelLayers {
     public static final ModelLayerLocation FLYING_FISH_BOOTS = createLocation("flying_fish_boots", "main");
     public static final ModelLayerLocation NOVELTY_HAT = createLocation("novelty_hat", "main");
     public static final ModelLayerLocation CROCODILE_CHESTPLATE = createLocation("crocodile_chestplate", "main");
-    public static final ModelLayerLocation CENTIPEDE_LEGGINGS = createLocation("centipede_leggings", "main");
-    public static final ModelLayerLocation EMU_LEGGINGS = createLocation("emu_leggings", "main");
     public static final ModelLayerLocation UNDERMINER = createLocation("underminer", "main");
     public static final ModelLayerLocation UNSETTLING_KIMONO = createLocation("unsettling_kimono", "main");
 
@@ -48,8 +46,6 @@ public class AMModelLayers {
         EntityModelLayerRegistry.registerModelLayer(FLYING_FISH_BOOTS, () -> ModelFlyingFishBoots.createArmorLayer(new CubeDeformation(0.5F)));
         EntityModelLayerRegistry.registerModelLayer(NOVELTY_HAT, () -> ModelNoveltyHat.createArmorLayer(new CubeDeformation(0.5F)));
         EntityModelLayerRegistry.registerModelLayer(CROCODILE_CHESTPLATE, () -> ModelCrocodileChestplate.createArmorLayer(new CubeDeformation(0.5F)));
-        EntityModelLayerRegistry.registerModelLayer(CENTIPEDE_LEGGINGS, () -> ModelCentipedeLeggings.createArmorLayer(new CubeDeformation(0.5F)));
-        EntityModelLayerRegistry.registerModelLayer(EMU_LEGGINGS, () -> ModelEmuLeggings.createArmorLayer(new CubeDeformation(0.5F)));
         EntityModelLayerRegistry.registerModelLayer(UNSETTLING_KIMONO, () -> ModelUnsettlingKimono.createArmorLayer(new CubeDeformation(0.5F)));
     }
 

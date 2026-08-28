@@ -10,9 +10,12 @@ public class EffectMosquitoRepellent extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0XCC7E70);
     }
 
+    @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
+
     }
 
+    @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         return duration > 0;
     }

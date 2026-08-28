@@ -249,9 +249,11 @@ public class EntityCombJelly extends WaterAnimal implements Bucketable {
             bucket.setHoverName(this.getCustomName());
         }
         Bucketable.saveDefaultDataToBucketTag(this, bucket);
-        CompoundTag compoundnbt = bucket.getOrCreateTag();
+        net.minecraft.nbt.CompoundTag existing = bucket.getTag();
+        CompoundTag compoundnbt = existing != null ? existing.copy() : new net.minecraft.nbt.CompoundTag();
         compoundnbt.putFloat("BucketScale", this.getJellyScale());
         compoundnbt.putInt("BucketVariantTag", this.getVariant());
+        bucket.setTag(compoundnbt);
     }
 
     @Override
@@ -266,7 +268,7 @@ public class EntityCombJelly extends WaterAnimal implements Bucketable {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setVariant(random.nextInt(3));
         this.setJellyScale(0.8F + random.nextFloat() * 0.4F);
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
@@ -299,10 +301,6 @@ public class EntityCombJelly extends WaterAnimal implements Bucketable {
         }
 
         return f1;
-    }
-
-    public MobType getMobType() {
-        return MobType.WATER;
     }
 
     public boolean checkSpawnObstruction(LevelReader worldIn) {

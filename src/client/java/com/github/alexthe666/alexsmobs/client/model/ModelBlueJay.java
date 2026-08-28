@@ -146,9 +146,7 @@ public class ModelBlueJay extends AdvancedEntityModel<EntityBlueJay> {
             head.rotationPointZ +=  (float) (Math.sin(ageInTicks * -0.4 - 1F));
         }
     }
-
-    @Override
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
         if (this.young) {
             float f = 1.35F;
             head.setScale(f, f, f);

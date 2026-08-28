@@ -133,7 +133,8 @@ public class BlockHummingbirdFeeder extends Block {
         return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
     }
 
-    public boolean isPathfindable(BlockState state, BlockGetter worldIn, BlockPos pos, PathComputationType type) {
+    @Override
+    public boolean isPathfindable(BlockState state, net.minecraft.world.level.BlockGetter level, net.minecraft.core.BlockPos pos, PathComputationType type) {
         return false;
     }
 

@@ -82,7 +82,6 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(ATTACK_TICK, 0);
-
     }
 
     public boolean doHurtTarget(Entity entityIn) {
@@ -256,50 +255,57 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
         if(this.isInWater()){
             this.setDeltaMovement(this.getDeltaMovement().add(0, 0.05D, 0));
         }
-        if (this.getOffhandItem().getItem().isEdible() && this.getHealth() < this.getMaxHealth()) {
-            if (eatingTicks < 100) {
+        if (this.getOffhandItem().isEdible() && this.getHealth() < this.getMaxHealth()) {
+            if (this.level().isClientSide) {
                 for (int i = 0; i < 3; i++) {
                     double d2 = this.random.nextGaussian() * 0.02D;
                     double d0 = this.random.nextGaussian() * 0.02D;
                     double d1 = this.random.nextGaussian() * 0.02D;
                     this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, this.getItemInHand(InteractionHand.OFF_HAND)), this.getX() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, this.getY() + this.getBbHeight() * 0.5F + (double) (this.random.nextFloat() * this.getBbHeight() * 0.5F), this.getZ() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, d0, d1, d2);
                 }
-                if (eatingTicks % 6 == 0) {
-                    this.gameEvent(GameEvent.EAT);
-                    this.playSound(SoundEvents.GENERIC_EAT, this.getSoundVolume(), this.getVoicePitch());
+            }
+            if (!this.level().isClientSide) {
+                if (eatingTicks < 100) {
+                    if (eatingTicks % 6 == 0) {
+                        this.gameEvent(GameEvent.EAT);
+                        this.playSound(SoundEvents.GENERIC_EAT, this.getSoundVolume(), this.getVoicePitch());
+                    }
+                    eatingTicks++;
                 }
-                eatingTicks++;
+                if (eatingTicks == 100) {
+                    this.gameEvent(GameEvent.EAT);
+                    this.playSound(SoundEvents.PLAYER_BURP, this.getSoundVolume(), this.getVoicePitch());
+                    this.getOffhandItem().shrink(1);
+                    this.heal(5);
+                    eatingTicks = 0;
+                }
             }
-            if (eatingTicks == 100) {
-                this.gameEvent(GameEvent.EAT);
-                this.playSound(SoundEvents.PLAYER_BURP, this.getSoundVolume(), this.getVoicePitch());
-                this.getOffhandItem().shrink(1);
-                this.heal(5);
-                eatingTicks = 0;
-            }
-        } else if (this.getMainHandItem().getItem().isEdible() && this.getHealth() < this.getMaxHealth()) {
-            if (eatingTicks < 100) {
+        } else if (this.getMainHandItem().isEdible() && this.getHealth() < this.getMaxHealth()) {
+            if (this.level().isClientSide) {
                 for (int i = 0; i < 3; i++) {
                     double d2 = this.random.nextGaussian() * 0.02D;
                     double d0 = this.random.nextGaussian() * 0.02D;
                     double d1 = this.random.nextGaussian() * 0.02D;
                     this.level().addParticle(new ItemParticleOption(ParticleTypes.ITEM, this.getItemInHand(InteractionHand.MAIN_HAND)), this.getX() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, this.getY() + this.getBbHeight() * 0.5F + (double) (this.random.nextFloat() * this.getBbHeight() * 0.5F), this.getZ() + (double) (this.random.nextFloat() * this.getBbWidth()) - (double) this.getBbWidth() * 0.5F, d0, d1, d2);
                 }
-                this.gameEvent(GameEvent.EAT);
-                this.playSound(SoundEvents.GENERIC_EAT, this.getSoundVolume(), this.getVoicePitch());
-                if (eatingTicks % 6 == 0) {
-                    this.gameEvent(GameEvent.EAT);
-                    this.playSound(SoundEvents.GENERIC_EAT, this.getSoundVolume(), this.getVoicePitch());
+            }
+            if (!this.level().isClientSide) {
+                if (eatingTicks < 100) {
+                    if (eatingTicks % 6 == 0) {
+                        this.gameEvent(GameEvent.EAT);
+                        this.playSound(SoundEvents.GENERIC_EAT, this.getSoundVolume(), this.getVoicePitch());
+                    }
+                    eatingTicks++;
                 }
-                eatingTicks++;
+                if (eatingTicks == 100) {
+                    this.gameEvent(GameEvent.EAT);
+                    this.playSound(SoundEvents.PLAYER_BURP, this.getSoundVolume(), this.getVoicePitch());
+                    this.getMainHandItem().shrink(1);
+                    this.heal(5);
+                    eatingTicks = 0;
+                }
             }
-            if (eatingTicks == 100) {
-                this.gameEvent(GameEvent.EAT);
-                this.playSound(SoundEvents.PLAYER_BURP, this.getSoundVolume(), this.getVoicePitch());
-                this.getMainHandItem().shrink(1);
-                this.heal(5);
-            }
-        } else {
+        } else if (!this.level().isClientSide) {
             eatingTicks = 0;
         }
         this.wasOnGround = this.onGround();
@@ -337,7 +343,8 @@ public class EntityMimicube extends Monster implements RangedAttackMob {
         return AMSoundRegistry.MIMICUBE_JUMP;
     }
 
-    protected void jumpFromGround() {
+    /** Custom jump; LivingEntity.jumpFromGround() is final in 1.21.1. Called from LivingEntityJumpMixin. */
+    public void applyMimicubeJump() {
         Vec3 vector3d = this.getDeltaMovement();
         this.setDeltaMovement(vector3d.x, this.getJumpPower(), vector3d.z);
         this.hasImpulse = true;

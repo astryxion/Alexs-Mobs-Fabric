@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.entity.ai.AMTagTemptGoal;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.AnimalAIWanderRanged;
@@ -24,6 +26,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -77,7 +80,7 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
 
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
-        this.goalSelector.addGoal(1, new TemptGoal(this, 1.0D, Ingredient.of(AMTagRegistry.RAIN_FROG_BREEDABLES), false));
+        this.goalSelector.addGoal(1, new AMTagTemptGoal(this, 1.0D, false, AMTagRegistry.RAIN_FROG_BREEDABLES));
         this.goalSelector.addGoal(2, new BreedGoal(this, 1.0D));
         this.goalSelector.addGoal(3, new AvoidEntityGoal(this, EntityRattlesnake.class, 9, 1.3D, 1.0D));
         this.goalSelector.addGoal(5, new AIBurrow());
@@ -273,7 +276,8 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
     }
 
     @javax.annotation.Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @javax.annotation.Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable CompoundTag dataTag) {
+    @Override
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @javax.annotation.Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setVariant(random.nextInt(3));
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
     }
@@ -299,7 +303,7 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
         if (item instanceof ShovelItem && (this.isBurrowed() || !this.isDisturbed()) && !this.level().isClientSide) {
             this.ambientSoundTime = 1000;
             if (!player.isCreative()) {
-                itemstack.hurt(1, this.getRandom(), player instanceof ServerPlayer ? (ServerPlayer) player : null);
+                itemstack.hurtAndBreak(1, player, (e) -> e.broadcastBreakEvent((hand == InteractionHand.MAIN_HAND ) ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
             }
             this.setStanceTime(20 + random.nextInt(30));
             this.setBurrowed(false);

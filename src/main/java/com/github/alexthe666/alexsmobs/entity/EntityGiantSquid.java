@@ -119,7 +119,7 @@ public class EntityGiantSquid extends WaterAnimal {
 
 
     @javax.annotation.Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @javax.annotation.Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @javax.annotation.Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         if (reason == MobSpawnType.NATURAL) {
             doInitialPosing(worldIn);
         }
@@ -405,16 +405,8 @@ public class EntityGiantSquid extends WaterAnimal {
         }
     }
 
-    public boolean canBreatheUnderwater() {
-        return true;
-    }
-
     public boolean isPushedByFluid() {
         return false;
-    }
-
-    public MobType getMobType() {
-        return MobType.WATER;
     }
 
     public void readAdditionalSaveData(CompoundTag compound) {

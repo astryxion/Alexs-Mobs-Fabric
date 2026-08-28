@@ -173,9 +173,7 @@ public class ModelTasmanianDevil extends AdvancedEntityModel<EntityTasmanianDevi
 		this.faceTarget(netHeadYaw, headPitch, 1, head);
 
 	}
-
-	@Override
-	public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
 		if (this.young) {
 			float f = 1.65F;
 			head.setScale(f, f, f);

@@ -159,9 +159,7 @@ public class ModelSeagull extends AdvancedEntityModel<EntitySeagull> {
 		head.rotateAngleX += headPitch / 57.295776F * groundProgress * 0.2F;
 
 	}
-
-	@Override
-	public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
 		if (this.young) {
 			float f = 1.45F;
 			head.setScale(f, f, f);

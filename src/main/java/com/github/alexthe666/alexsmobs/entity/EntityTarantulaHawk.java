@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+
+import net.minecraft.world.entity.MobType;
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
@@ -114,7 +116,7 @@ public class EntityTarantulaHawk extends TamableAnimal implements IFollower {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         if(this.isBiomeNether(worldIn, this.blockPosition())){
             this.setNether(true);
         }
@@ -188,14 +190,10 @@ public class EntityTarantulaHawk extends TamableAnimal implements IFollower {
     }
 
     public boolean hurt(DamageSource source, float amount) {
-        if (source.getEntity() instanceof LivingEntity && ((LivingEntity) source.getEntity()).getMobType() == MobType.ARTHROPOD && ((LivingEntity) source.getEntity()).hasEffect(AMEffectRegistry.DEBILITATING_STING)) {
+        if (source.getEntity() instanceof LivingEntity && AMMobTypes.getMobType((LivingEntity) source.getEntity()) == MobType.ARTHROPOD && ((LivingEntity) source.getEntity()).hasEffect(AMEffectRegistry.DEBILITATING_STING)) {
             return false;
         }
         return super.hurt(source, amount);
-    }
-
-    public MobType getMobType() {
-        return MobType.ARTHROPOD;
     }
 
     public void addAdditionalSaveData(CompoundTag compound) {
@@ -296,6 +294,7 @@ public class EntityTarantulaHawk extends TamableAnimal implements IFollower {
         this.entityData.set(DIGGING, Boolean.valueOf(sit));
     }
 
+    @Override
     public EntityDimensions getDimensions(Pose poseIn) {
         return isFlying() && !isBaby() ? FLIGHT_SIZE : super.getDimensions(poseIn);
     }
@@ -738,7 +737,7 @@ public class EntityTarantulaHawk extends TamableAnimal implements IFollower {
         @Override
         public void tick() {
             LivingEntity target = hawk.getTarget();
-            boolean paralized = target != null && target.getMobType() == MobType.ARTHROPOD && !target.noPhysics && target.hasEffect(AMEffectRegistry.DEBILITATING_STING);
+            boolean paralized = target != null && AMMobTypes.getMobType(target) == MobType.ARTHROPOD && !target.noPhysics && target.hasEffect(AMEffectRegistry.DEBILITATING_STING);
             boolean paralizedWithChild = paralized && target.getEffect(AMEffectRegistry.DEBILITATING_STING).getAmplifier() > 0;
             if (sandPos == null || !level().getBlockState(sandPos).is(BlockTags.SAND)) {
                 sandPos = hawk.genSandPos(target.blockPosition());
@@ -792,11 +791,11 @@ public class EntityTarantulaHawk extends TamableAnimal implements IFollower {
                                     target.heal(5);
                                 }
                             }
-                            target.addEffect(new MobEffectInstance(AMEffectRegistry.DEBILITATING_STING, target.getMobType() == MobType.ARTHROPOD ? EntityTarantulaHawk.STING_DURATION : 600, hawk.bredBuryFlag ? 1 : 0));
-                            if (!hawk.level().isClientSide && target.getMobType() == MobType.ARTHROPOD) {
+                            target.addEffect(new MobEffectInstance(AMEffectRegistry.DEBILITATING_STING, AMMobTypes.getMobType(target) == MobType.ARTHROPOD ? EntityTarantulaHawk.STING_DURATION : 600, hawk.bredBuryFlag ? 1 : 0));
+                            if (!hawk.level().isClientSide && AMMobTypes.getMobType(target) == MobType.ARTHROPOD) {
                                 AlexsMobs.sendMSGToAll(new MessageTarantulaHawkSting(hawk.getId(), target.getId()));
                             }
-                            orbitCooldown = target.getMobType() == MobType.ARTHROPOD ? 200 + random.nextInt(200) : 10 + random.nextInt(20);
+                            orbitCooldown = AMMobTypes.getMobType(target) == MobType.ARTHROPOD ? 200 + random.nextInt(200) : 10 + random.nextInt(20);
                         }
                     }
                 }

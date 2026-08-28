@@ -16,10 +16,10 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.resources.ResourceLocation;
 
 public class RenderGrizzlyBear extends MobRenderer<EntityGrizzlyBear, ModelGrizzlyBear> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/grizzly_bear.png");
-    private static final ResourceLocation TEXTURE_SNOWY = new ResourceLocation("alexsmobs:textures/entity/grizzly_bear_snowy.png");
-    public static final ResourceLocation TEXTURE_FREDDY = new ResourceLocation("alexsmobs:textures/entity/grizzly_bear_freddy.png");
-    private static final ResourceLocation TEXTURE_FREDDY_EYES = new ResourceLocation("alexsmobs:textures/entity/grizzly_bear_freddy_eyes.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/grizzly_bear.png");
+    private static final ResourceLocation TEXTURE_SNOWY = new ResourceLocation("alexsmobs", "textures/entity/grizzly_bear_snowy.png");
+    public static final ResourceLocation TEXTURE_FREDDY = new ResourceLocation("alexsmobs", "textures/entity/grizzly_bear_freddy.png");
+    private static final ResourceLocation TEXTURE_FREDDY_EYES = new ResourceLocation("alexsmobs", "textures/entity/grizzly_bear_freddy_eyes.png");
 
     public RenderGrizzlyBear(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new ModelGrizzlyBear(), 0.8F);
@@ -27,6 +27,11 @@ public class RenderGrizzlyBear extends MobRenderer<EntityGrizzlyBear, ModelGrizz
         this.addLayer(new LayerGrizzlyHoney(this));
         this.addLayer(new LayerSnow());
         this.addLayer(new LayerGrizzlyItem(this));
+    }
+
+    @Override
+    protected void scale(EntityGrizzlyBear entitylivingbaseIn, PoseStack matrixStackIn, float partialTickTime) {
+        this.model.young = entitylivingbaseIn.isBaby();
     }
 
     public boolean shouldRender(EntityGrizzlyBear livingEntityIn, Frustum camera, double camX, double camY, double camZ) {

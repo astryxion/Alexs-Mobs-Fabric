@@ -74,9 +74,8 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
     private UUID lastHurtBy;
     private static final UniformInt ANGRY_TIMER = TimeUtil.rangeOfSeconds(30, 60);
 
-    protected EntityAnteater(EntityType type, Level world) {
+    protected EntityAnteater(EntityType<? extends EntityAnteater> type, Level world) {
         super(type, world);
-        this.setMaxUpStep(1);
     }
 
     public static AttributeSupplier.Builder bakeAttributes() {
@@ -97,7 +96,7 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
         this.goalSelector.addGoal(3, new AnteaterAIRaidNest(this));
         this.goalSelector.addGoal(4, new BreedGoal(this, 1D));
         this.goalSelector.addGoal(5, new AnimalAIRideParent(this, 1.25D));
-        this.goalSelector.addGoal(6, new TemptGoal(this, 1.2D, Ingredient.of(AMTagRegistry.ANTEATER_FOODSTUFFS), false));
+        this.goalSelector.addGoal(6, new AMTagTemptGoal(this, 1.2D, false, AMTagRegistry.ANTEATER_FOODSTUFFS));
         this.goalSelector.addGoal(7, new AnimalAIWanderRanged(this, 110, 1.0D, 10, 7));
         this.goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 10.0F));
         this.goalSelector.addGoal(9, new RandomLookAroundGoal(this));
@@ -266,7 +265,9 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
         }
 
         if (this.isPassenger() && this.getVehicle() instanceof final EntityAnteater mount) {
-            if (this.isBaby()) {
+            if (!mount.isAlive()) {
+                this.stopRiding();
+            } else if (this.isBaby()) {
                 this.setYRot(mount.yBodyRot);
                 this.yHeadRot = mount.yBodyRot;
                 this.yBodyRot = mount.yBodyRot;
@@ -427,7 +428,7 @@ public class EntityAnteater extends Animal implements NeutralMob, IAnimatedEntit
         return lowercaseName.contains("peter") || lowercaseName.contains("petr") || lowercaseName.contains("zot");
     }
 
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         if (spawnDataIn == null)
             spawnDataIn = new AgeableMob.AgeableMobGroupData(0.5F);
 

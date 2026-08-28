@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import com.github.alexthe666.alexsmobs.entity.ai.AMTagTemptGoal;
+
 import com.github.alexthe666.alexsmobs.block.BlockHummingbirdFeeder;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.FlightMoveController;
@@ -116,7 +118,7 @@ public class EntityHummingbird extends Animal {
 
     protected void registerGoals() {
         this.goalSelector.addGoal(1, new BreedGoal(this, 1));
-        this.goalSelector.addGoal(2, new TemptGoal(this, 1, Ingredient.of(AMTagRegistry.HUMMINGBIRD_BREEDABLES), false));
+        this.goalSelector.addGoal(2, new AMTagTemptGoal(this, 1D, false, AMTagRegistry.HUMMINGBIRD_BREEDABLES));
         this.goalSelector.addGoal(3, new FollowParentGoal(this, 1));
         this.goalSelector.addGoal(4, new AIUseFeeder(this));
         this.goalSelector.addGoal(4, new HummingbirdAIPollinate(this));
@@ -149,8 +151,8 @@ public class EntityHummingbird extends Animal {
         return true;
     }
 
-    protected float getStandingEyeHeight(Pose poseIn, EntityDimensions sizeIn) {
-        return this.isBaby() ? sizeIn.height * 0.5F : sizeIn.height * 0.5F;
+    public float getEyeHeight(Pose poseIn) {
+        return this.getDimensions(poseIn).height * 0.85F;
     }
 
 
@@ -201,11 +203,11 @@ public class EntityHummingbird extends Animal {
         this.entityData.define(FLYING, false);
         this.entityData.define(VARIANT, 0);
         this.entityData.define(CROPS_POLLINATED, 0);
-        this.entityData.define(FEEDER_POS, Optional.empty());
+        this.entityData.define(FEEDER_POS, Optional.<BlockPos>empty());
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setVariant(this.getRandom().nextInt(3));
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
     }

@@ -10,7 +10,9 @@ import net.minecraft.world.entity.player.Player;
 
 import java.util.function.Supplier;
 
-/** Syncs Citadel entity data from server to client (vine lasso, etc.). */
+/**
+ * Syncs Citadel entity data from server to client (vine lasso, tendon whip, etc.).
+ */
 public class MessageSyncEntityData {
 
     public int entityId;

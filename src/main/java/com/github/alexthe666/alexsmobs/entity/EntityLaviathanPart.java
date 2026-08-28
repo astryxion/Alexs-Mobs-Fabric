@@ -1,5 +1,6 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -79,13 +80,13 @@ public class EntityLaviathanPart extends PartEntity<EntityLaviathan> {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public EntityDimensions getDimensions(Pose poseIn) {
         return this.size == null ? EntityDimensions.scalable(0, 0) : this.size.scale(scale);
     }
 
     @Override
     protected void defineSynchedData() {
-
     }
 
     public void tick(){

@@ -64,10 +64,6 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
         return new SemiAquaticPathNavigator(this, worldIn);
     }
 
-    public MobType getMobType() {
-        return MobType.UNDEAD;
-    }
-
     public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
         return AMEntityRegistry.rollSpawn(AMConfig.skelewagSpawnRolls, this.getRandom(), spawnReasonIn);
     }
@@ -106,6 +102,7 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
 
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(VARIANT, Integer.valueOf(0));
@@ -121,6 +118,9 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
 
     public void tick(){
         super.tick();
+        if (this.isInWaterOrBubble()) {
+            this.setAirSupply(this.getMaxAirSupply());
+        }
         this.prevOnLandProgress = onLandProgress;
         boolean onLand = !this.isInWaterOrBubble() && this.onGround();
         if (onLand && onLandProgress < 5F) {
@@ -211,9 +211,20 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
     public void positionRider(Entity passenger, Entity.MoveFunction moveFunc) {
         if (this.hasPassenger(passenger)) {
             passenger.setYBodyRot(this.yBodyRot);
+            passenger.setYRot(this.getYRot());
+            passenger.setXRot(this.getXRot());
+            if (passenger instanceof LivingEntity living) {
+                living.yBodyRot = this.yBodyRot;
+                living.yHeadRot = this.getYRot();
+            }
             Vec3 vec = new Vec3(0, this.getBbHeight() * 0.4F, this.getBbWidth() * -0.2F).xRot(-this.getXRot() * Mth.DEG_TO_RAD).yRot(-this.getYRot() * Mth.DEG_TO_RAD);
-            passenger.setPos(this.getX() + vec.x, this.getY() + vec.y + passenger.getMyRidingOffset(), this.getZ() + vec.z);
+            moveFunc.accept(passenger, this.getX() + vec.x, this.getY() + vec.y + passenger.getMyRidingOffset(), this.getZ() + vec.z);
         }
+    }
+
+    @Override
+    public boolean canBreatheUnderwater() {
+        return true;
     }
 
     public boolean canBeRiddenUnderFluidType(Fluid fluid, Entity rider) {
@@ -221,11 +232,12 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    @Override
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setVariant(this.getRandom().nextFloat() < 0.3F ? 1 : 0);
         if (this.random.nextFloat() < 0.2F) {
             Drowned drowned = EntityType.DROWNED.create(level());
-            drowned.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
+            drowned.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, null);
             drowned.copyPosition(this);
             drowned.startRiding(this);
             worldIn.addFreshEntityWithPassengers(drowned);
@@ -234,10 +246,6 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity {
             this.restrictTo(this.blockPosition(), 15);
         }
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
-    }
-
-    public boolean canBreatheUnderwater() {
-        return true;
     }
 
     @Override

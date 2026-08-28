@@ -4,9 +4,11 @@ import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityTerrapin;
 import com.github.alexthe666.alexsmobs.entity.util.TerrapinTypes;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
+import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityTerrapinEgg;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -26,10 +28,12 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -53,8 +57,8 @@ public class BlockTerrapinEgg extends BaseEntityBlock {
     private static final VoxelShape ONE_EGG_SHAPE = Block.box(3.0D, 0.0D, 3.0D, 12.0D, 7.0D, 12.0D);
     private static final VoxelShape MULTI_EGG_SHAPE = Block.box(1.0D, 0.0D, 1.0D, 15.0D, 7.0D, 15.0D);
 
-    public BlockTerrapinEgg() {
-        super(Properties.of().mapColor(MapColor.SAND).strength(0.5F).sound(SoundType.METAL).randomTicks().noOcclusion());
+    public BlockTerrapinEgg(BlockBehaviour.Properties properties) {
+        super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(HATCH, Integer.valueOf(0)).setValue(EGGS, Integer.valueOf(1)));
     }
 
@@ -190,12 +194,13 @@ public class BlockTerrapinEgg extends BaseEntityBlock {
         BlockEntity blockentity = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         boolean silkTouch = false;
         if(pickaxe != null){
+            net.minecraft.server.level.ServerLevel level = builder.getLevel();
             silkTouch = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, pickaxe) > 0;
         }
         if (silkTouch && blockentity instanceof TileEntityTerrapinEgg) {
             ItemStack stack = new ItemStack(AMBlockRegistry.TERRAPIN_EGG);
             TileEntityTerrapinEgg egg = (TileEntityTerrapinEgg)blockentity;
-            CompoundTag tag = stack.getOrCreateTagElement("BlockEntityTag");
+            CompoundTag tag = new CompoundTag();
             CompoundTag parent1 = new CompoundTag();
             CompoundTag parent2 = new CompoundTag();
             boolean flag = false;
@@ -211,13 +216,15 @@ public class BlockTerrapinEgg extends BaseEntityBlock {
                 tag.put("Parent1Data", parent1);
                 tag.put("Parent2Data", parent2);
             }
+            BlockItem.setBlockEntityData(stack, AMTileEntityRegistry.TERRAPIN_EGG, tag);
             return List.of(stack);
         }
         return List.of();
     }
 
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter w, List<Component> list, TooltipFlag flags) {
-        super.appendHoverText(stack, w, list, flags);
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> list, TooltipFlag flags) {
+        super.appendHoverText(stack, worldIn, list, flags);
         CompoundTag compoundtag = BlockItem.getBlockEntityData(stack);
         if (compoundtag != null && compoundtag.contains("Parent1Data") && compoundtag.contains("Parent2Data")) {
             TerrapinTypes parent1Type = TerrapinTypes.values()[Mth.clamp(compoundtag.getCompound("Parent1Data").getInt("TerrapinType"), 0, TerrapinTypes.values().length - 1)];

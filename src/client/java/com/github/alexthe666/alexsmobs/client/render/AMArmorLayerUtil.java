@@ -1,10 +1,7 @@
 package com.github.alexthe666.alexsmobs.client.render;
 
-import com.github.alexthe666.alexsmobs.item.ItemModArmor;
 import com.google.common.collect.Maps;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 
@@ -18,16 +15,6 @@ public final class AMArmorLayerUtil {
     }
 
     public static ResourceLocation getArmorResource(ItemStack stack, @Nullable String overlaySuffix) {
-        return getArmorResource(null, stack, null, overlaySuffix);
-    }
-
-    public static ResourceLocation getArmorResource(@Nullable Entity entity, ItemStack stack, @Nullable EquipmentSlot slot, @Nullable String overlaySuffix) {
-        if (entity != null && slot != null && stack.getItem() instanceof ItemModArmor armor) {
-            String custom = armor.getArmorTexture(stack, entity, slot, overlaySuffix);
-            if (custom != null) {
-                return ARMOR_TEXTURE_RES_MAP.computeIfAbsent(custom, ResourceLocation::new);
-            }
-        }
         ArmorItem item = (ArmorItem) stack.getItem();
         String texture = item.getMaterial().getName();
         String domain = "minecraft";

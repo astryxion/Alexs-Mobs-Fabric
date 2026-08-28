@@ -80,6 +80,7 @@ public class RenderFarseer extends MobRenderer<EntityFarseer, ModelFarseer> {
         Quaternionf camera = this.entityRenderDispatcher.cameraOrientation();
 
         matrixStackIn.pushPose();
+        try {
         this.model.attackTime = this.getAttackAnim(entityIn, partialTicks);
 
         boolean shouldSit = entityIn.isPassenger() && (entityIn.getVehicle() != null && RenderUnderminer.getShouldRiderSit(entityIn.getVehicle()));
@@ -162,8 +163,9 @@ public class RenderFarseer extends MobRenderer<EntityFarseer, ModelFarseer> {
                 layerrenderer.render(matrixStackIn, bufferIn, packedLightIn, entityIn, f5, f8, partialTicks, f7, f2, f6);
             }
         }
-
-        matrixStackIn.popPose();
+        } finally {
+            matrixStackIn.popPose();
+        }
         if (this.shouldShowName(entityIn)) {
             this.renderNameTag(entityIn, entityIn.getDisplayName(), matrixStackIn, bufferIn, packedLightIn);
         }
@@ -171,20 +173,25 @@ public class RenderFarseer extends MobRenderer<EntityFarseer, ModelFarseer> {
         //emergence portal
         if(entityIn.getAnimation() == EntityFarseer.ANIMATION_EMERGE){
             matrixStackIn.pushPose();
-            matrixStackIn.scale(3.0F, 3.0F, 3.0F);
-            matrixStackIn.mulPose(camera);
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(180.0F));
-            PoseStack.Pose posestack$pose = matrixStackIn.last();
-            Matrix4f matrix4f = posestack$pose.pose();
-            Matrix3f matrix3f = posestack$pose.normal();
-            int portalTexture = Mth.clamp(entityIn.getPortalFrame(), 0, PORTAL_TEXTURES.length - 1);
-            VertexConsumer portalStatic = AMRenderTypes.createMergedVertexConsumer(bufferIn.getBuffer(AMRenderTypes.STATIC_PORTAL), bufferIn.getBuffer(RenderType.entityTranslucent(PORTAL_TEXTURES[portalTexture])));
-            float portalAlpha =  entityIn.getPortalOpacity(partialTicks);
-            portalVertex(portalStatic, matrix4f, matrix3f, packedLightIn, 0.0F, 0, 0, 1, portalAlpha);
-            portalVertex(portalStatic, matrix4f, matrix3f, packedLightIn, 1.0F, 0, 1, 1, portalAlpha);
-            portalVertex(portalStatic, matrix4f, matrix3f, packedLightIn, 1.0F, 1, 1, 0, portalAlpha);
-            portalVertex(portalStatic, matrix4f, matrix3f, packedLightIn, 0.0F, 1, 0, 0, portalAlpha);
-            matrixStackIn.popPose();
+            try {
+                matrixStackIn.scale(3.0F, 3.0F, 3.0F);
+                matrixStackIn.mulPose(camera);
+                matrixStackIn.mulPose(Axis.YP.rotationDegrees(180.0F));
+                PoseStack.Pose posestack$pose = matrixStackIn.last();
+                Matrix4f matrix4f = posestack$pose.pose();
+                Matrix3f matrix3f = posestack$pose.normal();
+                int portalTexture = Mth.clamp(entityIn.getPortalFrame(), 0, PORTAL_TEXTURES.length - 1);
+                try {
+                    VertexConsumer portalStatic = AMRenderTypes.createMergedVertexConsumer(bufferIn.getBuffer(AMRenderTypes.STATIC_PORTAL), bufferIn.getBuffer(RenderType.entityTranslucent(PORTAL_TEXTURES[portalTexture])));
+                    float portalAlpha =  entityIn.getPortalOpacity(partialTicks);
+                    portalVertex(portalStatic, matrix4f, matrix3f, packedLightIn, 0.0F, 0, 0, 1, portalAlpha);
+                    portalVertex(portalStatic, matrix4f, matrix3f, packedLightIn, 1.0F, 0, 1, 1, portalAlpha);
+                    portalVertex(portalStatic, matrix4f, matrix3f, packedLightIn, 1.0F, 1, 1, 0, portalAlpha);
+                    portalVertex(portalStatic, matrix4f, matrix3f, packedLightIn, 0.0F, 1, 0, 0, portalAlpha);
+                } catch (IllegalStateException ignored) {}
+            } finally {
+                matrixStackIn.popPose();
+            }
         }
         //laser target
         if(entityIn.hasLaser() && laserTarget != null && !laserTarget.isRemoved()){
@@ -198,37 +205,42 @@ public class RenderFarseer extends MobRenderer<EntityFarseer, ModelFarseer> {
             double d4 = Math.sqrt(d0 * d0 + d2 * d2);
             float laserY = (float) (Mth.atan2(d2, d0) * (double) Mth.RAD_TO_DEG) - 90.0F;
             float laserX = (float) (-(Mth.atan2(d1, d4) * (double) Mth.RAD_TO_DEG));
-            VertexConsumer beamStatic = bufferIn.getBuffer(AMRenderTypes.getFarseerBeam());
-            matrixStackIn.pushPose();
-            matrixStackIn.translate(0, laserHeight, 0);
-            matrixStackIn.mulPose(Axis.YN.rotationDegrees(laserY));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(laserX));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(90));
-            float length = entityIn.getLaserDistance() * laserProgress;
-            float width = (1.5F - laserProgress) * 2F;
-            float speed = 1F + laserProgress * laserProgress * 5F;
-            PoseStack.Pose posestack$pose = matrixStackIn.last();
-            Matrix4f matrix4f = posestack$pose.pose();
-            Matrix3f matrix3f = posestack$pose.normal();
-            int j = 255;
-            //apparently its static? should be moving so has to be moved manually through UV
-            long systemTime = Util.getMillis() * 7L;
-            float u = (float)(systemTime % 30000L) / 30000.0F;
-            float v = (float)Math.floor((systemTime % 3000L) / 3000.0F * 4.0F) * 0.25F + (float)Math.sin(systemTime / 30000F) * 0.05F + ((float)(systemTime % 20000L) / 20000.0F * speed);
-            laserOriginVertex(beamStatic, matrix4f, matrix3f, j, u, v);
-            laserLeftCornerVertex(beamStatic, matrix4f, matrix3f, length, width,  u, v);
-            laserRightCornerVertex(beamStatic, matrix4f, matrix3f, length, width,  u, v);
-            laserLeftCornerVertex(beamStatic, matrix4f, matrix3f, length, width,  u, v);
-
-            matrixStackIn.popPose();
+            try {
+                VertexConsumer beamStatic = bufferIn.getBuffer(AMRenderTypes.getFarseerBeam());
+                matrixStackIn.pushPose();
+                try {
+                    matrixStackIn.translate(0, laserHeight, 0);
+                    matrixStackIn.mulPose(Axis.YN.rotationDegrees(laserY));
+                    matrixStackIn.mulPose(Axis.XP.rotationDegrees(laserX));
+                    matrixStackIn.mulPose(Axis.XP.rotationDegrees(90));
+                    float length = entityIn.getLaserDistance() * laserProgress;
+                    float width = (1.5F - laserProgress) * 2F;
+                    float speed = 1F + laserProgress * laserProgress * 5F;
+                    PoseStack.Pose posestack$pose = matrixStackIn.last();
+                    Matrix4f matrix4f = posestack$pose.pose();
+                    Matrix3f matrix3f = posestack$pose.normal();
+                    int j = 255;
+                    long systemTime = Util.getMillis() * 7L;
+                    float u = (float)(systemTime % 30000L) / 30000.0F;
+                    float v = (float)Math.floor((systemTime % 3000L) / 3000.0F * 4.0F) * 0.25F + (float)Math.sin(systemTime / 30000F) * 0.05F + ((float)(systemTime % 20000L) / 20000.0F * speed);
+                    laserOriginVertex(beamStatic, matrix4f, matrix3f, j, u, v);
+                    laserLeftCornerVertex(beamStatic, matrix4f, matrix3f, length, width,  u, v);
+                    laserRightCornerVertex(beamStatic, matrix4f, matrix3f, length, width,  u, v);
+                    laserLeftCornerVertex(beamStatic, matrix4f, matrix3f, length, width,  u, v);
+                } finally {
+                    matrixStackIn.popPose();
+                }
+            } catch (IllegalStateException ignored) {}
         }
 
     }
 
     private void renderFarseerModel(PoseStack matrixStackIn, MultiBufferSource source, RenderType defRenderType, float partialTicks, int packedLightIn, int overlayColors, float alphaIn, EntityFarseer entityIn) {
         if(entityIn.hasLaser()){
-            VertexConsumer staticyInsides = AMRenderTypes.createMergedVertexConsumer(source.getBuffer(AMRenderTypes.STATIC_ENTITY), source.getBuffer(RenderType.entityTranslucent(TEXTURE_EYE)));
-            EYE_MODEL.renderToBuffer(matrixStackIn, staticyInsides, packedLightIn, NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1F);
+            try {
+                VertexConsumer staticyInsides = AMRenderTypes.createMergedVertexConsumer(source.getBuffer(AMRenderTypes.STATIC_ENTITY), source.getBuffer(RenderType.entityTranslucent(TEXTURE_EYE)));
+                EYE_MODEL.renderToBuffer(matrixStackIn, staticyInsides, packedLightIn, NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            } catch (IllegalStateException ignored) {}
         }
         VertexConsumer consumer;
         float hurt = Math.max(entityIn.hurtTime, entityIn.deathTime);
@@ -236,8 +248,10 @@ public class RenderFarseer extends MobRenderer<EntityFarseer, ModelFarseer> {
         float afterimageSpeed = 0.3F;
         if(hurt > 0){
             afterimageSpeed = Math.min(hurt / 20F, 1F) + 0.3F;
-            VertexConsumer staticyScars = AMRenderTypes.createMergedVertexConsumer(source.getBuffer(AMRenderTypes.STATIC_ENTITY), source.getBuffer(RenderType.entityTranslucent(TEXTURE_SCARS)));
-            SCARS_MODEL.renderToBuffer(matrixStackIn, staticyScars, packedLightIn, overlayColors, 1.0F, 1.0F, 1.0F, 0.3F);
+            try {
+                VertexConsumer staticyScars = AMRenderTypes.createMergedVertexConsumer(source.getBuffer(AMRenderTypes.STATIC_ENTITY), source.getBuffer(RenderType.entityTranslucent(TEXTURE_SCARS)));
+                SCARS_MODEL.renderToBuffer(matrixStackIn, staticyScars, packedLightIn, overlayColors, 1.0F, 1.0F, 1.0F, 0.3F);
+            } catch (IllegalStateException ignored) {}
         }
         this.model.renderToBuffer(matrixStackIn, source.getBuffer(defRenderType), packedLightIn, overlayColors, 1.0F, 1.0F, 1.0F, alphaIn);
 
@@ -255,33 +269,43 @@ public class RenderFarseer extends MobRenderer<EntityFarseer, ModelFarseer> {
         float afterimageAlpha2 = defAlpha * Math.max(((float) Math.cos((entityIn.tickCount + partialTicks) * 0.2F) + 1F) * 0.3F, angryProgress * 0.2F);
 
         matrixStackIn.pushPose();
-        matrixStackIn.scale(scale + 1F, scale + 1F, scale + 1F);
-        matrixStackIn.pushPose();
-        matrixStackIn.translate(redOffset.x, redOffset.y, redOffset.z);
-        AFTERIMAGE_MODEL.renderToBuffer(matrixStackIn, source.getBuffer(afterimage), 240, overlayColors, 1.0F, 0F, 0F, afterimageAlpha1);
-        matrixStackIn.popPose();
-        matrixStackIn.pushPose();
-        matrixStackIn.translate(blueOffset.x, blueOffset.y, blueOffset.z);
-        AFTERIMAGE_MODEL.renderToBuffer(matrixStackIn, source.getBuffer(afterimage), 240, overlayColors, 0F, 0F, 1.0F, afterimageAlpha2);
-        matrixStackIn.popPose();
-        matrixStackIn.popPose();
+        try {
+            matrixStackIn.scale(scale + 1F, scale + 1F, scale + 1F);
+            matrixStackIn.pushPose();
+            try {
+                matrixStackIn.translate(redOffset.x, redOffset.y, redOffset.z);
+                AFTERIMAGE_MODEL.renderToBuffer(matrixStackIn, source.getBuffer(afterimage), 240, overlayColors, 1.0F, 0.0F, 0.0F, afterimageAlpha1);
+            } finally {
+                matrixStackIn.popPose();
+            }
+            matrixStackIn.pushPose();
+            try {
+                matrixStackIn.translate(blueOffset.x, blueOffset.y, blueOffset.z);
+                AFTERIMAGE_MODEL.renderToBuffer(matrixStackIn, source.getBuffer(afterimage), 240, overlayColors, 0.0F, 0.0F, 1.0F, afterimageAlpha2);
+            } finally {
+                matrixStackIn.popPose();
+            }
+        } finally {
+            matrixStackIn.popPose();
+        }
         AFTERIMAGE_MODEL.eye.showModel = true;
     }
 
     private static void laserOriginVertex(VertexConsumer p_114220_, Matrix4f p_114221_, Matrix3f p_114092_, int p_114222_, float xOffset, float yOffset) {
-        p_114220_.vertex(p_114221_, 0.0F, 0.0F, 0.0F).color(255, 255, 255, 255).uv(xOffset + 0.5F, yOffset).overlayCoords(NO_OVERLAY).uv2(240).normal(p_114092_, 0.0F, 1.0F, 0.0F).endVertex();
+        p_114220_.vertex(p_114221_, 0.0F, 0.0F, 0.0F).color(255, 255, 255, 255).uv(xOffset + 0.5F, yOffset).overlayCoords(NO_OVERLAY).uv2(240).normal(0.0F, 1.0F, 0.0F).endVertex();
     }
 
     private static void laserLeftCornerVertex(VertexConsumer p_114215_, Matrix4f p_114216_, Matrix3f p_114092_, float p_114217_, float p_114218_, float xOffset, float yOffset) {
-        p_114215_.vertex(p_114216_, -HALF_SQRT_3 * p_114218_, p_114217_, 0).color(255, 255, 255, 0).uv(xOffset, yOffset + 1).overlayCoords(NO_OVERLAY).uv2(240).normal(p_114092_, 0.0F, -1.0F, 0.0F).endVertex();
+        p_114215_.vertex(p_114216_, -HALF_SQRT_3 * p_114218_, p_114217_, 0.0F).color(255, 255, 255, 0).uv(xOffset, yOffset + 1).overlayCoords(NO_OVERLAY).uv2(240).normal(0.0F, -1.0F, 0.0F).endVertex();
     }
 
     private static void laserRightCornerVertex(VertexConsumer p_114224_, Matrix4f p_114225_, Matrix3f p_114092_, float p_114226_, float p_114227_, float xOffset, float yOffset) {
-        p_114224_.vertex(p_114225_, HALF_SQRT_3 * p_114227_, p_114226_, 0).color(255, 255, 255, 0).uv(xOffset + 1, yOffset + 1).overlayCoords(NO_OVERLAY).uv2(240).normal(p_114092_, 0.0F, -1.0F, 0.0F).endVertex();
+        p_114224_.vertex(p_114225_, HALF_SQRT_3 * p_114227_, p_114226_, 0.0F).color(255, 255, 255, 0).uv(xOffset + 1, yOffset + 1).overlayCoords(NO_OVERLAY).uv2(240).normal(0.0F, -1.0F, 0.0F).endVertex();
     }
 
     private static void portalVertex(VertexConsumer p_114090_, Matrix4f p_114091_, Matrix3f p_114092_, int p_114093_, float p_114094_, int p_114095_, int p_114096_, int p_114097_, float alpha) {
-        p_114090_.vertex(p_114091_, p_114094_ - 0.5F, (float)p_114095_ - 0.25F, 0.0F).color(1F, 1F, 1F,  alpha).uv((float)p_114096_, (float)p_114097_).overlayCoords(NO_OVERLAY).uv2(240).normal(p_114092_, 0.0F, -1.0F, 0.0F).endVertex();
+        int packed = ((int)(alpha * 255) << 24) | 0x00FFFFFF;
+        p_114090_.vertex(p_114091_, p_114094_ - 0.5F, (float)p_114095_ - 0.25F, 0.0F).color((packed >> 16) & 255, (packed >> 8) & 255, packed & 255, (packed >>> 24) & 255).uv((float)p_114096_, (float)p_114097_).overlayCoords(NO_OVERLAY).uv2(240).normal(0.0F, -1.0F, 0.0F).endVertex();
     }
     @Override
     protected void setupRotations(EntityFarseer farseer, PoseStack matrixStackIn, float f1, float f2, float f3) {

@@ -243,6 +243,7 @@ public class EntityDropBear extends Monster implements IAnimatedEntity {
         }
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(UPSIDE_DOWN, false);
@@ -299,7 +300,7 @@ public class EntityDropBear extends Monster implements IAnimatedEntity {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         if (reason == MobSpawnType.NATURAL) {
             doInitialPosing(worldIn);
         }

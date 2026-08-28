@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.*;
 import net.minecraft.world.level.material.MapColor;
@@ -33,7 +34,6 @@ import java.util.Collections;
 import java.util.List;
 
 public class BlockEndPirateDoor extends BaseEntityBlock {
-
     public static final DirectionProperty HORIZONTAL_FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty OPEN = BooleanProperty.create("open");
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
@@ -45,8 +45,8 @@ public class BlockEndPirateDoor extends BaseEntityBlock {
     protected static final VoxelShape WEST_AABB = Block.box(14.0D, 0.0D, 0.0D, 16.0D, 16.0D, 16.0D);
     protected static final VoxelShape EAST_AABB = Block.box(0.0D, 0.0D, 0.0D, 2.0D, 16.0D, 16.0D);
 
-    public BlockEndPirateDoor() {
-        super(Properties.of().mapColor(MapColor.COLOR_PURPLE).noOcclusion().sound(SoundType.GLASS).lightLevel((state) -> 3).requiresCorrectToolForDrops().strength(1.5F));
+    public BlockEndPirateDoor(BlockBehaviour.Properties properties) {
+        super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(SEGMENT, 0).setValue(OPEN, false).setValue(HINGE, DoorHingeSide.RIGHT).setValue(HORIZONTAL_FACING, Direction.NORTH));
     }
 

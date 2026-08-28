@@ -72,6 +72,7 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 20D).add(Attributes.ARMOR, 0.0D).add(Attributes.ATTACK_DAMAGE, 3.0D).add(Attributes.MOVEMENT_SPEED, 0.2F);
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(DEPRESSURIZED, false);
@@ -86,6 +87,7 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
         this.goalSelector.addGoal(5, new RandomLookAroundGoal(this));
         this.goalSelector.addGoal(6, new FollowBoatGoal(this));
         this.targetSelector.addGoal(1, (new HurtByTargetGoal(this)));
+        this.targetSelector.addGoal(2, new EntityAINearestTarget3D(this, Player.class, 50, false, true, null));
         this.targetSelector.addGoal(2, new EntityAINearestTarget3D(this, Squid.class, 40, false, true, null));
         this.targetSelector.addGoal(2, new EntityAINearestTarget3D(this, EntityMimicOctopus.class, 70, false, true, null));
         this.targetSelector.addGoal(3, new EntityAINearestTarget3D(this, AbstractSchoolingFish.class, 100, false, true, null));
@@ -146,7 +148,7 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         if (reason == MobSpawnType.NATURAL) {
             doInitialPosing(worldIn);
         }
@@ -194,8 +196,10 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
         }
         CompoundTag platTag = new CompoundTag();
         this.addAdditionalSaveData(platTag);
-        CompoundTag compound = bucket.getOrCreateTag();
+        net.minecraft.nbt.CompoundTag existing = bucket.getTag();
+        CompoundTag compound = existing != null ? existing.copy() : new net.minecraft.nbt.CompoundTag();
         compound.put("FrilledSharkData", platTag);
+        bucket.setTag(compound);
     }
 
     @Override

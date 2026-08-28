@@ -215,7 +215,7 @@ public class SnowLeopardAIMelee extends Goal {
                     }
 
                     if (p_226339_5_ || !creature.level().getFluidState(lvt_25_2_).is(FluidTags.WATER)) {
-                        BlockPathTypes lvt_26_1_ = WalkNodeEvaluator.getBlockPathTypeStatic(creature.level(), lvt_25_2_.mutable());
+                        BlockPathTypes lvt_26_1_ = WalkNodeEvaluator.getBlockPathTypeStatic(creature.level(), new net.minecraft.core.BlockPos.MutableBlockPos().set(lvt_25_2_));
                         if (leopard.getPathfindingMalus(lvt_26_1_) == 0.0F) {
                             double lvt_27_1_ = p_226339_8_.applyAsDouble(lvt_25_2_);
                             if (lvt_27_1_ > lvt_17_1_) {

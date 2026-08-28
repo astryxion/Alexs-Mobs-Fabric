@@ -136,7 +136,7 @@ public class EntityShoebill extends Animal implements IAnimatedEntity, ITargetsD
         this.goalSelector.addGoal(1, new ShoebillAIFish(this));
         this.goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.2D, true));
         this.goalSelector.addGoal(4, new ShoebillAIFlightFlee(this));
-        this.goalSelector.addGoal(5, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.SHOEBILL_FOODSTUFFS), false));
+        this.goalSelector.addGoal(5, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.SHOEBILL_FOODSTUFFS));
         this.goalSelector.addGoal(6, new RandomStrollGoal(this, 1D, 1400));
         this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
         this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 6.0F));
@@ -165,9 +165,9 @@ public class EntityShoebill extends Animal implements IAnimatedEntity, ITargetsD
     public void tick() {
         super.tick();
         if(this.isInWater()){
-            this.setMaxUpStep(1.2F);
+            this.setMaxUpStep((float)(1.2));
         }else{
-            this.setMaxUpStep(0.6F);
+            this.setMaxUpStep((float)(0.6));
         }
         prevFlyProgress = flyProgress;
 

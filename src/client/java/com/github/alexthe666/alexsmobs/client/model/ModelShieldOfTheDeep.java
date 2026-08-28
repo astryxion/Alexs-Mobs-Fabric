@@ -38,7 +38,6 @@ public class ModelShieldOfTheDeep extends AdvancedEntityModel<Entity> {
 		//previously the render function, render code was moved to a method below
 	}
 
-	@Override
 	public void renderToBuffer(PoseStack matrixStack, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
 		shield.render(matrixStack, buffer, packedLight, packedOverlay);
 	}

@@ -17,7 +17,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -80,15 +83,17 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
         map.put(Blocks.MANGROVE_LEAVES, Items.MANGROVE_PROPAGULE);
     });
     private static Map<Block, List<Item>> LEAF_TO_RARES;
-    private static Map<Block, List<Item>> getLeafToRares() {
-        if (LEAF_TO_RARES == null) {
-            LEAF_TO_RARES = Util.make(Maps.newHashMap(), (map) -> {
-                map.put(Blocks.OAK_LEAVES, List.of(Items.APPLE));
-                map.put(Blocks.JUNGLE_LEAVES, List.of(AMItemRegistry.BANANA, AMItemRegistry.LEAFCUTTER_ANT_PUPA, Items.COCOA_BEANS));
-                map.put(Blocks.ACACIA_LEAVES, List.of(AMItemRegistry.ACACIA_BLOSSOM));
-            });
+
+    /** Call from {@link AMItemRegistry#init()} after mod items are registered. */
+    public static void initLeafToRares() {
+        if (LEAF_TO_RARES != null) {
+            return;
         }
-        return LEAF_TO_RARES;
+        LEAF_TO_RARES = Util.make(Maps.newHashMap(), (map) -> {
+            map.put(Blocks.OAK_LEAVES, List.of(Items.APPLE));
+            map.put(Blocks.JUNGLE_LEAVES, List.of(AMItemRegistry.BANANA, AMItemRegistry.LEAFCUTTER_ANT_PUPA, Items.COCOA_BEANS));
+            map.put(Blocks.ACACIA_LEAVES, List.of(AMItemRegistry.ACACIA_BLOSSOM));
+        });
     }
 
     private static final EntityDataAccessor<Direction> ATTACHED_FACE = SynchedEntityData.defineId(EntitySugarGlider.class, EntityDataSerializers.DIRECTION);
@@ -210,7 +215,7 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
 
     public void tick() {
         super.tick();
-        this.setMaxUpStep(1F);
+        this.setMaxUpStep((float)(1.0));
         prevGlideProgress = glideProgress;
         prevAttachChangeProgress = attachChangeProgress;
         prevForageProgress = forageProgress;
@@ -248,9 +253,12 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
         Vec3 vector3d = this.getDeltaMovement();
         if (!this.level().isClientSide) {
             this.setBesideClimbableBlock(this.horizontalCollision);
-            if (this.onGround() || this.isOrderedToSit() || this.isInWaterOrBubble() || this.isInLava() || this.isGliding() || this.isPassenger()) {
+            Direction currentFace = this.getAttachmentFacing();
+            boolean keepWall = currentFace.getAxis().isHorizontal()
+                    && level().loadedAndEntityCanStandOnFace(this.blockPosition().relative(currentFace), this, currentFace.getOpposite());
+            if (this.isOrderedToSit() || this.isInWaterOrBubble() || this.isInLava() || this.isGliding() || this.isPassenger()) {
                 this.entityData.set(ATTACHED_FACE, Direction.DOWN);
-            } else {
+            } else if (this.horizontalCollision) {
                 Direction closestDirection = Direction.DOWN;
                 double closestDistance = 100;
                 for (Direction dir : POSSIBLE_DIRECTIONS) {
@@ -262,14 +270,24 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
                         closestDirection = dir;
                     }
                 }
-                this.entityData.set(ATTACHED_FACE, closestDistance > this.getBbWidth() * 0.5F + 0.7F ? Direction.DOWN : closestDirection);
+                this.entityData.set(ATTACHED_FACE, closestDistance > this.getBbWidth() * 0.5F + 0.7F ? (keepWall ? currentFace : Direction.DOWN) : closestDirection);
+            } else if (this.onGround() && !keepWall) {
+                this.entityData.set(ATTACHED_FACE, Direction.DOWN);
+            }
+            if (this.getAttachmentFacing().getAxis().isHorizontal()) {
+                this.alignToAttachedFace();
             }
         }
         boolean flag = false;
         if (this.getAttachmentFacing() != Direction.DOWN) {
             if (!this.horizontalCollision && this.getAttachmentFacing() != Direction.UP) {
-                Vec3 vec = Vec3.atLowerCornerOf(this.getAttachmentFacing().getNormal());
-                this.setDeltaMovement(vector3d.add(vec.normalize().multiply(0.1F, 0.1F, 0.1F)));
+                Direction face = this.getAttachmentFacing();
+                BlockPos wall = this.blockPosition().relative(face);
+                boolean alreadyAgainstWall = this.getBoundingBox().inflate(0.05).intersects(new net.minecraft.world.phys.AABB(wall));
+                if (!alreadyAgainstWall) {
+                    Vec3 vec = Vec3.atLowerCornerOf(face.getNormal());
+                    this.setDeltaMovement(this.getDeltaMovement().add(vec.normalize().multiply(0.05F, 0, 0.05F)));
+                }
             }
             if (!this.onGround() && vector3d.y < 0.0D) {
                 this.setDeltaMovement(vector3d.multiply(1.0D, 0.5D, 1.0D));
@@ -367,19 +385,31 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
     }
 
     private List<ItemStack> getForageLoot(BlockState leafState) {
+        if (!(this.level() instanceof ServerLevel serverLevel)) {
+            return List.of();
+        }
+        MinecraftServer server = serverLevel.getServer();
+        if (server == null) {
+            return List.of();
+        }
+        initLeafToRares();
         Item sapling = LEAF_TO_SAPLING.get(leafState.getBlock());
-        List<Item> rares = getLeafToRares().get(leafState.getBlock());
+        List<Item> rares = LEAF_TO_RARES.get(leafState.getBlock());
         final float rng = this.getRandom().nextFloat();
-        if (rng < 0.1F && rares != null) {
+        if (rng < 0.1F && rares != null && !rares.isEmpty()) {
             Item item = rares.size() <= 1 ? rares.get(0) : rares.get(this.getRandom().nextInt(rares.size()));
-            return List.of(new ItemStack(item));
+            if (item != null) {
+                return List.of(new ItemStack(item));
+            }
         }
         if (rng < 0.25F && sapling != null) {
             return List.of(new ItemStack(sapling));
         }
-        LootTable loottable = this.level().getServer().getLootData().getLootTable(SUGAR_GLIDER_REWARD);
-        return loottable.getRandomItems((new LootParams.Builder((ServerLevel) this.level())).withParameter(LootContextParams.THIS_ENTITY, this).withParameter(LootContextParams.BLOCK_STATE, leafState).create(LootContextParamSets.PIGLIN_BARTER));
-
+        LootTable loottable = server.getLootData().getLootTable(SUGAR_GLIDER_REWARD);
+        return loottable.getRandomItems(
+                (new LootParams.Builder(serverLevel))
+                        .withParameter(LootContextParams.THIS_ENTITY, this)
+                        .create(LootContextParamSets.PIGLIN_BARTER));
     }
 
     public void travel(Vec3 travelVector) {
@@ -451,6 +481,64 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
 
     public Direction getAttachmentFacing() {
         return this.entityData.get(ATTACHED_FACE);
+    }
+
+    public void setAttachmentFacing(Direction direction) {
+        this.entityData.set(ATTACHED_FACE, direction);
+    }
+
+    public void placeAgainstWall(BlockPos wallPos, Direction clickedFace) {
+        Direction attach = clickedFace.getOpposite();
+        this.setAttachmentFacing(attach);
+        this.setBesideClimbableBlock(true);
+        this.setOnGround(false);
+        this.setDeltaMovement(Vec3.ZERO);
+        this.alignToAttachedFace(wallPos);
+    }
+
+    private void alignToAttachedFace() {
+        Direction attach = this.getAttachmentFacing();
+        if (!attach.getAxis().isHorizontal()) {
+            return;
+        }
+        BlockPos probe = BlockPos.containing(
+                this.getX() + attach.getStepX() * (this.getBbWidth() * 0.5 + 0.15),
+                this.getY() + this.getBbHeight() * 0.5,
+                this.getZ() + attach.getStepZ() * (this.getBbWidth() * 0.5 + 0.15));
+        if (!this.level().getBlockState(probe).isSolid()) {
+            probe = this.blockPosition().relative(attach);
+        }
+        if (this.level().loadedAndEntityCanStandOnFace(probe, this, attach.getOpposite())) {
+            this.alignToAttachedFace(probe);
+        }
+    }
+
+    private void alignToAttachedFace(BlockPos wallPos) {
+        Direction attach = this.getAttachmentFacing();
+        if (!attach.getAxis().isHorizontal()) {
+            return;
+        }
+        double pad = this.getBbWidth() * 0.5 + 0.05;
+        double x = this.getX();
+        double y = this.getY();
+        double z = this.getZ();
+        if (attach.getAxis() == Direction.Axis.X) {
+            double face = attach.getStepX() > 0 ? wallPos.getX() : wallPos.getX() + 1.0;
+            x = face - attach.getStepX() * pad;
+        } else {
+            double face = attach.getStepZ() > 0 ? wallPos.getZ() : wallPos.getZ() + 1.0;
+            z = face - attach.getStepZ() * pad;
+        }
+        if (y < wallPos.getY()) {
+            y = wallPos.getY();
+        } else if (y + this.getBbHeight() > wallPos.getY() + 1.0) {
+            y = wallPos.getY() + 1.0 - this.getBbHeight();
+        }
+        this.setPos(x, y, z);
+        this.setDeltaMovement(this.getDeltaMovement().multiply(
+                attach.getAxis() == Direction.Axis.X ? 0 : 1,
+                1,
+                attach.getAxis() == Direction.Axis.Z ? 0 : 1));
     }
 
     public boolean isGliding() {
@@ -669,8 +757,7 @@ public class EntitySugarGlider extends TamableAnimal implements IFollower {
                     EntitySugarGlider.this.stopClimbing = true;
                 }
                 if (xzDistSqr < 3 && EntitySugarGlider.this.getAttachmentFacing() != Direction.DOWN) {
-                    Vec3 silly = new Vec3(d0, 0, d2).normalize().scale(0.1);
-                    EntitySugarGlider.this.setDeltaMovement(EntitySugarGlider.this.getDeltaMovement().add(silly));
+                    EntitySugarGlider.this.setDeltaMovement(EntitySugarGlider.this.getDeltaMovement().multiply(0.2, 1, 0.2).add(0, 0.08, 0));
                 } else {
                     EntitySugarGlider.this.getNavigation().moveTo(offset.x, offset.y, offset.z, 1F);
                 }

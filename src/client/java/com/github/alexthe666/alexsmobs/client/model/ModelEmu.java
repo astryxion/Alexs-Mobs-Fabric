@@ -298,8 +298,7 @@ public class ModelEmu extends AdvancedEntityModel<EntityEmu> {
         progressRotationPrev(neck2, runProgress, Maths.rad(-60), 0, 0, 5F);
         progressRotationPrev(headPivot, runProgress, Maths.rad(-50), 0, 0, 5F);
     }
-
-    public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+public void renderToBuffer(PoseStack matrixStackIn, VertexConsumer bufferIn, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
         if (this.young) {
             float f = 1.5F;
             head.setScale(f, f, f);

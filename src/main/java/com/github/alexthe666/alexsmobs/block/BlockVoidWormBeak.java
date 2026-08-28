@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -25,14 +26,13 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import javax.annotation.Nullable;
 
 public class BlockVoidWormBeak extends BaseEntityBlock {
-
     public static final DirectionProperty FACING = DirectionalBlock.FACING;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     private static final VoxelShape AABB = Block.box(0, 4, 0, 16, 12, 16);
     private static final VoxelShape AABB_VERTICAL = Block.box(0, 0, 4, 16, 16, 12);
 
-    public BlockVoidWormBeak() {
-        super(Properties.of().mapColor(MapColor.COLOR_PURPLE).noOcclusion().sound(SoundType.ANCIENT_DEBRIS).strength(1F).noCollission().requiresCorrectToolForDrops());
+    public BlockVoidWormBeak(BlockBehaviour.Properties properties) {
+        super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(POWERED, false));
     }
 

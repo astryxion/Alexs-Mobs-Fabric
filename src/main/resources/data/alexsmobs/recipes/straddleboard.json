@@ -10,7 +10,7 @@
       "item": "alexsmobs:straddlite"
     },
     "N": {
-      "item": "minecraft:netherite_ingot"
+      "tag": "c:ingots/netherite"
     }
   },
   "result": {

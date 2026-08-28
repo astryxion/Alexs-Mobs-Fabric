@@ -24,19 +24,23 @@ import java.util.function.Predicate;
 
 public class ItemStraddleboard extends Item implements DyeableLeatherItem {
 
+    private static final int DEFAULT_COLOR = 0xADC3D7;
     private static final Predicate<Entity> ENTITY_PREDICATE = EntitySelector.NO_SPECTATORS.and(Entity::isPickable);
 
     public ItemStraddleboard(Item.Properties properties) {
         super(properties);
     }
 
-    public int getColor(ItemStack p_200886_1_) {
-        CompoundTag lvt_2_1_ = p_200886_1_.getTagElement("display");
-        return lvt_2_1_ != null && lvt_2_1_.contains("color", 99) ? lvt_2_1_.getInt("color") : 0XADC3D7;
+    @Override
+    public int getColor(ItemStack stack) {
+        CompoundTag display = stack.getTagElement("display");
+        return display != null && display.contains("color", 99) ? display.getInt("color") : DEFAULT_COLOR;
     }
 
     public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
-        return enchantment.canEnchant(stack) && enchantment != Enchantments.UNBREAKING && enchantment != Enchantments.MENDING;
+        return enchantment.category.canEnchant(stack.getItem())
+                && enchantment != Enchantments.UNBREAKING
+                && enchantment != Enchantments.MENDING;
     }
 
     public int getEnchantmentValue() {
@@ -50,11 +54,9 @@ public class ItemStraddleboard extends Item implements DyeableLeatherItem {
             return InteractionResultHolder.pass(itemstack);
         } else {
             Vec3 vector3d = playerIn.getViewVector(1.0F);
-            double d0 = 5.0D;
             List<Entity> list = worldIn.getEntities(playerIn, playerIn.getBoundingBox().expandTowards(vector3d.scale(5.0D)).inflate(1.0D), ENTITY_PREDICATE);
             if (!list.isEmpty()) {
                 Vec3 vector3d1 = playerIn.getEyePosition(1.0F);
-
                 for (Entity entity : list) {
                     AABB axisalignedbb = entity.getBoundingBox().inflate(entity.getPickRadius());
                     if (axisalignedbb.contains(vector3d1)) {
@@ -65,7 +67,7 @@ public class ItemStraddleboard extends Item implements DyeableLeatherItem {
 
             if (raytraceresult.getType() == HitResult.Type.BLOCK) {
                 EntityStraddleboard boatentity = new EntityStraddleboard(worldIn, raytraceresult.getLocation().x, raytraceresult.getLocation().y, raytraceresult.getLocation().z);
-                boatentity.setDefaultColor(!this.hasCustomColor(itemstack));
+                boatentity.setDefaultColor(!hasCustomColor(itemstack));
                 boatentity.setItemStack(itemstack.copy());
                 boatentity.setColor(this.getColor(itemstack));
                 boatentity.setYRot(playerIn.getYRot());
@@ -78,7 +80,6 @@ public class ItemStraddleboard extends Item implements DyeableLeatherItem {
                             itemstack.shrink(1);
                         }
                     }
-
                     playerIn.awardStat(Stats.ITEM_USED.get(this));
                     return InteractionResultHolder.sidedSuccess(itemstack, worldIn.isClientSide());
                 }

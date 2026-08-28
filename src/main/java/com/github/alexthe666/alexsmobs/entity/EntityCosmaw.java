@@ -84,13 +84,13 @@ public class EntityCosmaw extends TamableAnimal implements ITargetsDroppedItems,
         return !worldIn.getBlockState(pos.below()).isAir();
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(COSMAW_PITCH, 0.0F);
         this.entityData.define(ATTACK_TICK, 0);
         this.entityData.define(COMMAND, Integer.valueOf(0));
         this.entityData.define(SITTING, false);
-
     }
 
     @Override
@@ -201,7 +201,7 @@ public class EntityCosmaw extends TamableAnimal implements ITargetsDroppedItems,
             final float f = this.walkAnimation.position();
             final float f1 = this.walkAnimation.speed();
             final float bob = (float) (Math.sin(f * 0.7F) * (double) f1 * 0.0625F * 1.6F - (f1 * 0.0625F * 1.6F));
-            passenger.setPos(this.getX(), this.getY() - bob + 0.3F - this.getPassengersRidingOffset(), this.getZ());
+            passenger.setPos(this.getX(), this.getY() - bob + 0.3F, this.getZ());
         }
     }
 

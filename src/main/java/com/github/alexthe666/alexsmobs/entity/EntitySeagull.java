@@ -1,6 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
 import com.github.alexthe666.alexsmobs.config.AMConfig;
+import com.github.alexthe666.alexsmobs.entity.ai.AMTagTemptGoal;
 import com.github.alexthe666.alexsmobs.entity.ai.CreatureAITargetItems;
 import com.github.alexthe666.alexsmobs.entity.ai.DirectPathNavigator;
 import com.github.alexthe666.alexsmobs.entity.ai.SeagullAIRevealTreasure;
@@ -151,7 +152,7 @@ public class EntitySeagull extends Animal implements ITargetsDroppedItems {
         this.targetSelector.addGoal(1, new SeagullAIRevealTreasure(this));
         this.targetSelector.addGoal(2, new SeagullAIStealFromPlayers(this));
         this.goalSelector.addGoal(3, new BreedGoal(this, 1.0D));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.0D, AMTagRegistry.ingredientFromTags(AMTagRegistry.SEAGULL_BREEDABLES, AMTagRegistry.SEAGULL_OFFERINGS), false){
+        this.goalSelector.addGoal(4, new AMTagTemptGoal(this, 1.0D, false, AMTagRegistry.SEAGULL_BREEDABLES, AMTagRegistry.SEAGULL_OFFERINGS){
             public boolean canUse(){
                 return !EntitySeagull.this.aiItemFlag && super.canUse();
             }
@@ -201,7 +202,7 @@ public class EntitySeagull extends Animal implements ITargetsDroppedItems {
         this.entityData.define(FLYING, false);
         this.entityData.define(SITTING, false);
         this.entityData.define(ATTACK_TICK, 0);
-        this.entityData.define(TREASURE_POS, Optional.empty());
+        this.entityData.define(TREASURE_POS, Optional.<BlockPos>empty());
         this.entityData.define(FLIGHT_LOOK_YAW, 0F);
     }
 
@@ -377,7 +378,7 @@ public class EntitySeagull extends Animal implements ITargetsDroppedItems {
     }
     @Override
     public boolean canTargetItem(ItemStack stack) {
-        return stack.getItem().isEdible() && !this.isSitting();
+        return stack.isEdible() && !this.isSitting();
     }
 
     private void eatItemEffect(ItemStack heldItemMainhand) {
@@ -400,19 +401,17 @@ public class EntitySeagull extends Animal implements ITargetsDroppedItems {
     public void setDataFromTreasureMap(Player player){
         boolean flag = false;
         for(ItemStack map : player.getHandSlots()){
-            if(map.getItem() == Items.FILLED_MAP || map.getItem() == Items.MAP){
-                if (map.hasTag() && map.getTag().contains("Decorations", 9)) {
-                    ListTag listnbt = map.getTag().getList("Decorations", 10);
-                    for(int i = 0; i < listnbt.size(); i++){
-                        CompoundTag nbt = listnbt.getCompound(i);
-                        byte type = nbt.getByte("type");
-                        if(type == MapDecoration.Type.RED_X.getIcon() || type == MapDecoration.Type.TARGET_X.getIcon()){
-                            int x = nbt.getInt("x");
-                            int z = nbt.getInt("z");
-                            if(this.distanceToSqr(x, this.getY(), z) <= 400){
-                                flag = true;
-                                this.setTreasurePos(new BlockPos(x, 0, z));
-                            }
+            if((map.getItem() == Items.FILLED_MAP || map.getItem() == Items.MAP) && map.hasTag() && map.getTag().contains("Decorations", 9)){
+                net.minecraft.nbt.ListTag listnbt = map.getTag().getList("Decorations", 10);
+                for(int i = 0; i < listnbt.size(); ++i){
+                    CompoundTag nbt = listnbt.getCompound(i);
+                    byte type = nbt.getByte("type");
+                    if(type == MapDecoration.Type.RED_X.getIcon() || type == MapDecoration.Type.TARGET_X.getIcon()){
+                        int x = nbt.getInt("x");
+                        int z = nbt.getInt("z");
+                        if(this.distanceToSqr(x, this.getY(), z) <= 400){
+                            flag = true;
+                            this.setTreasurePos(new BlockPos(x, 0, z));
                         }
                     }
                 }

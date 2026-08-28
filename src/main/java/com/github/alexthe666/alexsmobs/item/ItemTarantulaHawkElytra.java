@@ -34,7 +34,7 @@ public class ItemTarantulaHawkElytra extends ArmorItem implements FabricElytraIt
 
     public boolean elytraFlightTick(ItemStack stack, LivingEntity entity, int flightTicks) {
         if (!entity.level().isClientSide && (flightTicks + 1) % 20 == 0) {
-            stack.hurtAndBreak(1, entity, e -> e.broadcastBreakEvent(EquipmentSlot.CHEST));
+            stack.hurtAndBreak(1, entity, (e) -> e.broadcastBreakEvent(net.minecraft.world.entity.EquipmentSlot.CHEST));
         }
         return true;
     }

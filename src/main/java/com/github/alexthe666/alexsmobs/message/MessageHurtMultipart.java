@@ -61,32 +61,26 @@ public class MessageHurtMultipart {
                     player = AlexsMobs.PROXY.getClientSidePlayer();
                 }
 
-                if (player != null && player.level() != null) {
-                    Entity part = player.level().getEntity(message.part);
-                    Entity parent = player.level().getEntity(message.parent);
-                    if (message.damageType.isEmpty() && message.damage == 0) {
-                        if (part instanceof IHurtableMultipart && parent instanceof LivingEntity livingParent) {
-                            ((IHurtableMultipart) part).onAttackedFromServer(livingParent, 0, livingParent.damageSources().generic());
-                        }
-                        return;
-                    }
-                    Registry<DamageType> registry = player.level().registryAccess().registry(Registries.DAMAGE_TYPE).get();
-                    ResourceLocation damageId = ResourceLocation.tryParse(message.damageType);
-                    if (damageId == null) {
-                        return;
-                    }
-                    DamageType dmg = registry.get(damageId);
-                    if (dmg != null) {
-                        Holder<DamageType> holder = registry.getHolder(registry.getId(dmg)).orElse(null);
-                        if (holder != null) {
-                            DamageSource source = new DamageSource(holder);
-                            if (part instanceof IHurtableMultipart && parent instanceof LivingEntity) {
-                                ((IHurtableMultipart) part).onAttackedFromServer((LivingEntity) parent, message.damage, source);
-                            }
-                            if (part == null && parent != null && isMultipartEntity(parent)) {
-                                parent.hurt(source, message.damage);
+                if (player != null) {
+                    if (player.level() != null) {
+                        Entity part = player.level().getEntity(message.part);
+                        Entity parent = player.level().getEntity(message.parent);
+                        Registry<DamageType> registry = player.level().registryAccess().registry(Registries.DAMAGE_TYPE).get();
+                        DamageType dmg = registry.get(new ResourceLocation(message.damageType));
+                        if (dmg != null) {
+                            Holder<DamageType> holder = registry.getHolder(registry.getId(dmg)).orElseGet(null);
+                            if (holder != null) {
+                                DamageSource source = new DamageSource(registry.getHolder(registry.getId(dmg)).get());
+                                if (part instanceof IHurtableMultipart && parent instanceof LivingEntity) {
+                                    ((IHurtableMultipart) part).onAttackedFromServer((LivingEntity) parent, message.damage, source);
+                                }
+                                if (part == null && parent != null && isMultipartEntity(parent)) {
+                                    parent.hurt(source, message.damage);
+                                }
+
                             }
                         }
+
                     }
                 }
             });

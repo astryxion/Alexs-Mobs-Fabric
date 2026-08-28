@@ -6,11 +6,14 @@ import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRe
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.SpawnPlacements;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.animal.WaterAnimal;
 import net.minecraft.world.entity.monster.Monster;
@@ -31,9 +34,10 @@ public class AMEntityRegistry {
     }
 
     private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {
+        ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, id(name));
         @SuppressWarnings("unchecked")
         EntityType<T> type = (EntityType<T>) builder.build(id(name).toString());
-        return Registry.register(BuiltInRegistries.ENTITY_TYPE, id(name), type);
+        return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, type);
     }
 
     public static EntityType<EntityGrizzlyBear> GRIZZLY_BEAR;
@@ -164,7 +168,7 @@ public class AMEntityRegistry {
         HUMMINGBIRD = register("hummingbird", EntityType.Builder.of(EntityHummingbird::new, MobCategory.CREATURE).sized(0.45F, 0.45F).clientTrackingRange(5));
         ORCA = register("orca", EntityType.Builder.of(EntityOrca::new, MobCategory.WATER_CREATURE).sized(3.75F, 1.75F).clientTrackingRange(10));
         SUNBIRD = register("sunbird", EntityType.Builder.of(EntitySunbird::new, MobCategory.CREATURE).sized(2.75F, 1.5F).fireImmune().clientTrackingRange(12).updateInterval(1));
-        GORILLA = register("gorilla", EntityType.Builder.of(EntityGorilla::new, MobCategory.CREATURE).sized(1.15F, 1.35F).clientTrackingRange(10));
+        GORILLA = register("gorilla", EntityType.Builder.of(EntityGorilla::new, MobCategory.CREATURE).sized(1.25F, 1.5F).clientTrackingRange(10));
         CRIMSON_MOSQUITO = register("crimson_mosquito", EntityType.Builder.of(EntityCrimsonMosquito::new, MobCategory.MONSTER).sized(1.25F, 1.15F).fireImmune().clientTrackingRange(8));
         MOSQUITO_SPIT = register("mosquito_spit", EntityType.Builder.<EntityMosquitoSpit>of(EntityMosquitoSpit::new, MobCategory.MISC).sized(0.5F, 0.5F).fireImmune());
         RATTLESNAKE = register("rattlesnake", EntityType.Builder.of(EntityRattlesnake::new, MobCategory.CREATURE).sized(0.95F, 0.35F).clientTrackingRange(10));
@@ -218,7 +222,7 @@ public class AMEntityRegistry {
         TIGER = register("tiger", EntityType.Builder.of(EntityTiger::new, MobCategory.CREATURE).sized(1.45F, 1.2F).clientTrackingRange(10));
         TARANTULA_HAWK = register("tarantula_hawk", EntityType.Builder.of(EntityTarantulaHawk::new, MobCategory.CREATURE).sized(1.2F, 0.9F).clientTrackingRange(10));
         VOID_WORM = register("void_worm", EntityType.Builder.of(EntityVoidWorm::new, MobCategory.MONSTER).sized(3.4F, 3F).fireImmune().clientTrackingRange(20).updateInterval(1));
-        VOID_WORM_PART = register("void_worm_part", EntityType.Builder.<EntityVoidWormPart>of(EntityVoidWormPart::new, MobCategory.MONSTER).sized(1.2F, 1.35F).fireImmune().clientTrackingRange(20).updateInterval(2));
+        VOID_WORM_PART = register("void_worm_part", EntityType.Builder.<EntityVoidWormPart>of(EntityVoidWormPart::new, MobCategory.MONSTER).sized(1.2F, 1.35F).fireImmune().clientTrackingRange(20).updateInterval(1));
         VOID_WORM_SHOT = register("void_worm_shot", EntityType.Builder.<EntityVoidWormShot>of(EntityVoidWormShot::new, MobCategory.MISC).sized(0.5F, 0.5F).fireImmune());
         VOID_PORTAL = register("void_portal", EntityType.Builder.<EntityVoidPortal>of(EntityVoidPortal::new, MobCategory.MISC).sized(0.5F, 0.5F).fireImmune());
         FRILLED_SHARK = register("frilled_shark", EntityType.Builder.of(EntityFrilledShark::new, MobCategory.WATER_CREATURE).sized(1.3F, 0.4F).clientTrackingRange(8));
@@ -232,7 +236,7 @@ public class AMEntityRegistry {
         TOUCAN = register("toucan", EntityType.Builder.of(EntityToucan::new, MobCategory.CREATURE).sized(0.45F, 0.45F).clientTrackingRange(10));
         MANED_WOLF = register("maned_wolf", EntityType.Builder.of(EntityManedWolf::new, MobCategory.CREATURE).sized(0.9F, 1.26F).clientTrackingRange(10));
         ANACONDA = register("anaconda", EntityType.Builder.of(EntityAnaconda::new, MobCategory.CREATURE).sized(0.8F, 0.8F).clientTrackingRange(10));
-        ANACONDA_PART = register("anaconda_part", EntityType.Builder.<EntityAnacondaPart>of(EntityAnacondaPart::new, MobCategory.MISC).sized(0.8F, 0.8F).updateInterval(2).clientTrackingRange(10));
+        ANACONDA_PART = register("anaconda_part", EntityType.Builder.<EntityAnacondaPart>of(EntityAnacondaPart::new, MobCategory.MISC).sized(0.8F, 0.8F).updateInterval(1).clientTrackingRange(10));
         VINE_LASSO = register("vine_lasso", EntityType.Builder.<EntityVineLasso>of(EntityVineLasso::new, MobCategory.MISC).sized(0.85F, 0.2F).fireImmune());
         ANTEATER = register("anteater", EntityType.Builder.of(EntityAnteater::new, MobCategory.CREATURE).sized(1.3F, 1.1F).clientTrackingRange(10));
         ROCKY_ROLLER = register("rocky_roller", EntityType.Builder.of(EntityRockyRoller::new, MobCategory.MONSTER).sized(1.2F, 1.45F).clientTrackingRange(8));
@@ -403,6 +407,7 @@ public class AMEntityRegistry {
         SpawnPlacements.register(SHOEBILL, SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Animal::checkAnimalSpawnRules);
         SpawnPlacements.register(ELEPHANT, SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Animal::checkAnimalSpawnRules);
         SpawnPlacements.register(SOUL_VULTURE, SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, EntitySoulVulture::canVultureSpawn);
+        SpawnPlacements.register(SPECTRE, SpawnPlacements.Type.NO_RESTRICTIONS, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, EntitySpectre::canSpectreSpawn);
         SpawnPlacements.register(SNOW_LEOPARD, SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, EntitySnowLeopard::canSnowLeopardSpawn);
         SpawnPlacements.register(CROW, SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING, EntityCrow::canCrowSpawn);
         SpawnPlacements.register(ALLIGATOR_SNAPPING_TURTLE, SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, EntityAlligatorSnappingTurtle::canTurtleSpawn);
@@ -441,6 +446,7 @@ public class AMEntityRegistry {
         SpawnPlacements.register(JERBOA, SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, EntityJerboa::canJerboaSpawn);
         SpawnPlacements.register(TERRAPIN, SpawnPlacements.Type.IN_WATER, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, EntityTerrapin::canTerrapinSpawn);
         SpawnPlacements.register(COMB_JELLY, SpawnPlacements.Type.IN_WATER, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, EntityCombJelly::canCombJellySpawn);
+        SpawnPlacements.register(COSMIC_COD, SpawnPlacements.Type.NO_RESTRICTIONS, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (type, level, reason, pos, random) -> true);
         SpawnPlacements.register(BUNFUNGUS, SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, EntityBunfungus::canBunfungusSpawn);
         SpawnPlacements.register(BISON, SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, EntityBison::checkAnimalSpawnRules);
         SpawnPlacements.register(GIANT_SQUID, SpawnPlacements.Type.IN_WATER, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, EntityGiantSquid::canGiantSquidSpawn);
@@ -518,15 +524,9 @@ public class AMEntityRegistry {
         }
     }
 
-    /** Fabric: LivingEntity.jumping is protected in 1.20.1; use reflection for cross-class access (1:1 behavior). */
+    /** Fabric 1.21.1: LivingEntity.jumping is not reliably accessible; use upward velocity when jumping. */
     public static boolean getLivingJumping(LivingEntity living) {
-        try {
-            java.lang.reflect.Field f = LivingEntity.class.getDeclaredField("jumping");
-            f.setAccessible(true);
-            return f.getBoolean(living);
-        } catch (Exception e) {
-            return false;
-        }
+        return living.getDeltaMovement().y > 0.0D && !living.onGround();
     }
 
 }

@@ -15,7 +15,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.projectile.LlamaSpit;
 
 public class RenderMosquitoSpit extends EntityRenderer<EntityMosquitoSpit> {
-    private static final ResourceLocation SPIT_TEXTURE = new ResourceLocation("alexsmobs:textures/entity/mosquito_spit.png");
+    private static final ResourceLocation SPIT_TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/mosquito_spit.png");
     private final LlamaSpitModel<LlamaSpit> model;
 
     public RenderMosquitoSpit(EntityRendererProvider.Context renderManagerIn) {
@@ -25,12 +25,15 @@ public class RenderMosquitoSpit extends EntityRenderer<EntityMosquitoSpit> {
 
     public void render(EntityMosquitoSpit entityIn, float entityYaw, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn) {
         matrixStackIn.pushPose();
-        matrixStackIn.translate(0.0D, (double)0.15F, 0.0D);
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 90.0F));
-        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
-        VertexConsumer ivertexbuilder = bufferIn.getBuffer(this.model.renderType(SPIT_TEXTURE));
-        this.model.renderToBuffer(matrixStackIn, ivertexbuilder, 240, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-        matrixStackIn.popPose();
+        try {
+            matrixStackIn.translate(0.0D, (double)0.15F, 0.0D);
+            matrixStackIn.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 90.0F));
+            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+            VertexConsumer ivertexbuilder = bufferIn.getBuffer(this.model.renderType(SPIT_TEXTURE));
+            this.model.renderToBuffer(matrixStackIn, ivertexbuilder, 240, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        } finally {
+            matrixStackIn.popPose();
+        }
         super.render(entityIn, entityYaw, partialTicks, matrixStackIn, bufferIn, packedLightIn);
     }
 

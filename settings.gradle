@@ -8,3 +8,8 @@ pluginManagement {
 		gradlePluginPortal()
 	}
 }
+
+rootProject.name = 'alexsmobs'
+
+include('citadel')
+project(':citadel').projectDir = file('Citadel Fabric 1.20.1')

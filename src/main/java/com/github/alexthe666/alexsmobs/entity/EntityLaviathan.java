@@ -16,8 +16,11 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.tags.FluidTags;
@@ -47,6 +50,7 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -112,7 +116,7 @@ public class EntityLaviathan extends Animal implements ISemiAquatic, IHerdPanic 
 
     protected EntityLaviathan(EntityType<? extends Animal> entityType, Level level) {
         super(entityType, level);
-        this.setMaxUpStep(1.3F);
+        this.setMaxUpStep((float)(1.3));
         this.setPathfindingMalus(BlockPathTypes.WATER, 0.0F);
         this.setPathfindingMalus(BlockPathTypes.WATER_BORDER, 0.0F);
         this.setPathfindingMalus(BlockPathTypes.LAVA, 0.0F);
@@ -158,7 +162,7 @@ public class EntityLaviathan extends Animal implements ISemiAquatic, IHerdPanic 
         return AMSoundRegistry.LAVIATHAN_HURT;
     }
 
-    @Nullable
+    @Override
     protected ResourceLocation getDefaultLootTable() {
         return this.isObsidian() ? OBSIDIAN_LOOT : super.getDefaultLootTable();
     }
@@ -409,7 +413,7 @@ public class EntityLaviathan extends Animal implements ISemiAquatic, IHerdPanic 
     }
 
     protected float getBlockSpeedFactor() {
-        return shouldSwim() || this.onSoulSpeedBlock() ? 1.0F : super.getBlockSpeedFactor();
+        return shouldSwim() || this.level().getBlockState(this.blockPosition().below()).is(BlockTags.SOUL_SPEED_BLOCKS) ? 1.0F : super.getBlockSpeedFactor();
     }
 
     public float getWalkTargetValue(BlockPos pos, LevelReader worldIn) {
@@ -460,7 +464,7 @@ public class EntityLaviathan extends Animal implements ISemiAquatic, IHerdPanic 
         super.tickRidden(player, vec3);
         this.setRot(player.getYRot(), player.getXRot() * 0.5F);
         this.setYHeadRot(player.getYHeadRot());
-        this.setMaxUpStep(1.3F);
+        this.setMaxUpStep((float)(1.3));
         this.setTarget(null);
     }
 
@@ -483,6 +487,7 @@ public class EntityLaviathan extends Animal implements ISemiAquatic, IHerdPanic 
         return prev;
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(OBSIDIAN, false);
@@ -528,16 +533,8 @@ public class EntityLaviathan extends Animal implements ISemiAquatic, IHerdPanic 
         return 4;
     }
 
-    public boolean canBreatheUnderwater() {
-        return true;
-    }
-
     public boolean isPushedByFluid() {
         return false;
-    }
-
-    public MobType getMobType() {
-        return MobType.WATER;
     }
 
     public void tick() {

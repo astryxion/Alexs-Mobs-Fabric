@@ -76,8 +76,8 @@ public class LayerKangarooArmor extends RenderLayer<EntityKangaroo, ModelKangaro
                         matrixStackIn.scale(0.7F, 0.7F, 0.7F);
                         final boolean flag1 = itemstack.hasFoil();
                         int clampedLight = packedLightIn;
-                        if (armoritem instanceof net.minecraft.world.item.DyeableLeatherItem) { // Allow this for anything, not only cloth
-                            final int i = ((net.minecraft.world.item.DyeableLeatherItem) armoritem).getColor(itemstack);
+                        if (itemstack.getItem() instanceof net.minecraft.world.item.DyeableLeatherItem dyeable) {
+                            final int i = dyeable.getColor(itemstack);
                             final float f = (float) (i >> 16 & 255) / 255.0F;
                             final float f1 = (float) (i >> 8 & 255) / 255.0F;
                             final float f2 = (float) (i & 255) / 255.0F;
@@ -113,8 +113,8 @@ public class LayerKangarooArmor extends RenderLayer<EntityKangaroo, ModelKangaro
                         matrixStackIn.scale(1F, 1F, 1F);
                         boolean flag1 = itemstack.hasFoil();
                         int clampedLight = packedLightIn;
-                        if (armoritem instanceof net.minecraft.world.item.DyeableLeatherItem) { // Allow this for anything, not only cloth
-                            int i = ((net.minecraft.world.item.DyeableLeatherItem) armoritem).getColor(itemstack);
+                        if (itemstack.getItem() instanceof net.minecraft.world.item.DyeableLeatherItem dyeableChest) {
+                            int i = dyeableChest.getColor(itemstack);
                             float f = (float) (i >> 16 & 255) / 255.0F;
                             float f1 = (float) (i >> 8 & 255) / 255.0F;
                             float f2 = (float) (i & 255) / 255.0F;
@@ -241,6 +241,7 @@ public class LayerKangarooArmor extends RenderLayer<EntityKangaroo, ModelKangaro
 
 
     protected HumanoidModel<?> getArmorModelHook(LivingEntity entity, ItemStack itemStack, EquipmentSlot slot, HumanoidModel model) {
+         // Fabric: no ForgeHooksClient; use model as-is (1:1 when no other mod overrides)
          return model;
     }
 

@@ -14,6 +14,9 @@ import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -114,7 +117,7 @@ public class EntityCrimsonMosquito extends Monster {
         this.setMosquitoScale(0.2F);
         this.setFromFly(true);
         for (int j = 0; j < 4; ++j) {
-            this.level().addParticle(ParticleTypes.ENTITY_EFFECT, this.getX() + this.random.nextDouble() / 2.0D, this.getY(0.5D), this.getZ() + this.random.nextDouble() / 2.0D, this.random.nextDouble() * 0.5F + 0.5F, 0, 0.0D);
+            this.level().addParticle(ParticleTypes.ENTITY_EFFECT, this.getX() + this.random.nextDouble() / 2.0D, this.getY(0.5D), this.getZ() + this.random.nextDouble() / 2.0D, this.random.nextDouble() * 0.5 + 0.5, 0.0D, 0.0D);
         }
     }
 
@@ -134,7 +137,7 @@ public class EntityCrimsonMosquito extends Monster {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 10.0D).add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.ARMOR, 0.0D).add(Attributes.ATTACK_DAMAGE, 5.0D).add(Attributes.MOVEMENT_SPEED, 0.25F);
     }
 
-    @Nullable
+    @Override
     protected ResourceLocation getDefaultLootTable() {
         if (this.getBloodLevel() > 0) {
             return this.isFromFly() ? FROM_FLY_FULL_LOOT : FULL_LOOT;
@@ -506,7 +509,7 @@ public class EntityCrimsonMosquito extends Monster {
         }
         if (isFlying()) {
             if (loopSoundTick == 0) {
-                this.gameEvent(GameEvent.ENTITY_ROAR);
+                this.gameEvent(GameEvent.ENTITY_INTERACT);
                 this.playSound(AMSoundRegistry.MOSQUITO_LOOP, this.getSoundVolume(), this.getVoicePitch());
             }
             loopSoundTick++;
@@ -569,13 +572,10 @@ public class EntityCrimsonMosquito extends Monster {
         return false;
     }
 
-    public MobType getMobType() {
-        return MobType.ARTHROPOD;
-    }
-
     protected void checkFallDamage(double y, boolean onGroundIn, BlockState state, BlockPos pos) {
     }
 
+    @Override
     public EntityDimensions getDimensions(Pose poseIn) {
         return isFlying() ? FLIGHT_SIZE : super.getDimensions(poseIn);
     }
@@ -788,8 +788,9 @@ public class EntityCrimsonMosquito extends Monster {
         public void tick() {
             if (parentEntity.getTarget() != null) {
                 this.parentEntity.getMoveControl().setWantedPosition(parentEntity.getTarget().getX(), parentEntity.getTarget().getY(), parentEntity.getTarget().getZ(), 1.0D);
-                if (parentEntity.getBoundingBox().inflate(0.3F, 0.3F, 0.3F).intersects(parentEntity.getTarget().getBoundingBox()) && !isBittenByMosquito(parentEntity.getTarget()) && parentEntity.drinkTime == 0) {
+                if (parentEntity.getBoundingBox().inflate(0.75F, 0.75F, 0.75F).intersects(parentEntity.getTarget().getBoundingBox()) && !isBittenByMosquito(parentEntity.getTarget()) && parentEntity.drinkTime == 0) {
                     parentEntity.startRiding(parentEntity.getTarget(), true);
+                    parentEntity.drinkTime = 1;
                     if (!parentEntity.level().isClientSide) {
                         AlexsMobs.sendMSGToAll(new MessageMosquitoMountPlayer(parentEntity.getId(), parentEntity.getTarget().getId()));
                     }

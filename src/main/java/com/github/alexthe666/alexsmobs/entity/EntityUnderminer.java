@@ -124,7 +124,7 @@ public class EntityUnderminer extends PathfinderMob {
         this.entityData.define(DWARF, true);
         this.entityData.define(HIDING, false);
         this.entityData.define(VISUALLY_MINING, false);
-        this.entityData.define(TARGETED_BLOCK_POS, Optional.empty());
+        this.entityData.define(TARGETED_BLOCK_POS, Optional.<BlockPos>empty());
         this.entityData.define(MINING_PROGRESS, 0.0F);
         this.entityData.define(VARIANT, 0);
     }
@@ -138,18 +138,6 @@ public class EntityUnderminer extends PathfinderMob {
         compound.putInt("MineCooldown", mineCooldown);
         if(lastGivenStack != null){
             compound.put("MineStack", lastGivenStack.save(new CompoundTag()));
-        }
-    }
-
-    public void readAdditionalSaveData(CompoundTag compound) {
-        super.readAdditionalSaveData(compound);
-        this.setDwarf(compound.getBoolean("Dwarf"));
-        this.setHiding(compound.getBoolean("Hiding"));
-        this.setVariant(compound.getInt("Variant"));
-        this.resetStackTime = compound.getInt("ResetItemTime");
-        this.mineCooldown = compound.getInt("MineCooldown");
-        if(compound.contains("MineStack")){
-            this.lastGivenStack = ItemStack.of(compound.getCompound("MineStack"));
         }
     }
 
@@ -250,8 +238,8 @@ public class EntityUnderminer extends PathfinderMob {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficultyInstance, MobSpawnType mobSpawnType, @Nullable SpawnGroupData spawnData, @Nullable CompoundTag tag) {
-        spawnData = super.finalizeSpawn(level, difficultyInstance, mobSpawnType, spawnData, tag);
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficultyInstance, MobSpawnType mobSpawnType, @Nullable SpawnGroupData spawnData, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
+        spawnData = super.finalizeSpawn(level, difficultyInstance, mobSpawnType, spawnData, dataTag);
         RandomSource randomsource = level.getRandom();
         this.populateDefaultEquipmentSlots(randomsource, difficultyInstance);
         if(random.nextFloat() < 0.3F){
@@ -339,16 +327,12 @@ public class EntityUnderminer extends PathfinderMob {
             this.take(itemEntity, itemstack.getCount());
             itemEntity.discard();
             this.mineAIFlag = this.lastGivenStack == null || !ItemStack.isSameItem(this.lastGivenStack, itemEntity.getItem());
-            this.lastGivenStack = itemEntity.getItem();
+            this.lastGivenStack = itemEntity.getItem().copy();
             this.resetStackTime = 2000 + random.nextInt(1200);
             this.mineCooldown = 0;
         }else{
             super.pickUpItem(itemEntity);
         }
-
-    }
-
-    protected void jumpFromGround() {
 
     }
 
@@ -546,7 +530,7 @@ public class EntityUnderminer extends PathfinderMob {
                         EntityUnderminer.this.setXRot((float) (Mth.atan2(d3, f) * (double) Mth.RAD_TO_DEG) + (float) Math.sin(EntityUnderminer.this.tickCount * 0.1F));
                         EntityUnderminer.this.entityData.set(VISUALLY_MINING, true);
                         if (mineTime % 10 == 0) {
-                            SoundType soundType = minePretendStartState.getBlock().getSoundType(minePretendStartState);
+                            SoundType soundType = minePretendStartState.getSoundType();
                             EntityUnderminer.this.playSound(soundType.getHitSound());
                         }
                     }

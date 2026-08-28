@@ -66,10 +66,11 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(EntityCapuchinMonkey.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> VARIANT = SynchedEntityData.defineId(EntityCapuchinMonkey.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DART_TARGET = SynchedEntityData.defineId(EntityCapuchinMonkey.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> ANIMATION_ORDINAL = SynchedEntityData.defineId(EntityCapuchinMonkey.class, EntityDataSerializers.INT);
     public float prevSitProgress;
     public float sitProgress;
     public boolean forcedSit = false;
-    public boolean attackDecision = false;//true for ranged, false for melee
+    public boolean attackDecision = true;//true for ranged, false for melee
     private int animationTick;
     private Animation currentAnimation;
     private int sittingTime = 0;
@@ -141,10 +142,11 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
         this.goalSelector.addGoal(3, new CapuchinAIMelee(this, 1, true));
         this.goalSelector.addGoal(3, new CapuchinAIRangedAttack(this, 1, 20, 15));
         this.goalSelector.addGoal(6, new TameableAIFollowOwner(this, 1.0D, 10.0F, 2.0F, false));
-        this.goalSelector.addGoal(4, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.CAPUCHIN_MONKEY_TAMEABLES), true) {
+        this.goalSelector.addGoal(4, new AMTagTemptGoal(this, 1.1D, true, AMTagRegistry.CAPUCHIN_MONKEY_TAMEABLES) {
             public void tick() {
                 super.tick();
-                if (this.mob.distanceToSqr(this.player) < 6.25D && this.mob.getRandom().nextInt(14) == 0) {
+                Player tempting = this.getTemptingPlayer();
+                if (tempting != null && this.mob.distanceToSqr(tempting) < 6.25D && this.mob.getRandom().nextInt(14) == 0) {
                     ((EntityCapuchinMonkey) this.mob).setAnimation(ANIMATION_HEADTILT);
                 }
             }
@@ -227,7 +229,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
             maxSitTime = 300 + random.nextInt(250);
             this.setOrderedToSit(true);
         }
-        this.setMaxUpStep(2);
+        this.setMaxUpStep((float)(2.0));
         if (!forcedSit && this.isSitting() && (this.getDartTarget() != null || this.getCommand() == 1)) {
             this.setOrderedToSit(false);
         }
@@ -389,6 +391,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
         super.defineSynchedData();
         this.entityData.define(COMMAND, 0);
         this.entityData.define(DART_TARGET, -1);
+        this.entityData.define(ANIMATION_ORDINAL, -1);
         this.entityData.define(SITTING, false);
         this.entityData.define(DART, false);
         this.entityData.define(VARIANT, 0);
@@ -400,6 +403,25 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
 
     public void setDart(boolean dart) {
         this.entityData.set(DART, dart);
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
+        super.onSyncedDataUpdated(key);
+        if (ANIMATION_ORDINAL.equals(key) && this.level().isClientSide) {
+            int idx = this.entityData.get(ANIMATION_ORDINAL);
+            Animation next = NO_ANIMATION;
+            if (idx >= 0) {
+                Animation[] anims = getAnimations();
+                if (idx < anims.length) {
+                    next = anims[idx];
+                }
+            }
+            if (next != currentAnimation) {
+                this.animationTick = 0;
+            }
+            currentAnimation = next;
+        }
     }
 
     public int getVariant() {
@@ -425,7 +447,21 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
 
     @Override
     public void setAnimation(Animation animation) {
+        if (animation != currentAnimation) {
+            this.animationTick = 0;
+        }
         currentAnimation = animation;
+        if (!this.level().isClientSide) {
+            int idx = -1;
+            Animation[] anims = getAnimations();
+            for (int i = 0; i < anims.length; i++) {
+                if (anims[i] == animation) {
+                    idx = i;
+                    break;
+                }
+            }
+            this.entityData.set(ANIMATION_ORDINAL, idx);
+        }
     }
 
     @Override
@@ -475,8 +511,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
             }
             if (this.hasDart() && itemstack.is(Items.SHEARS)) {
                 this.setDart(false);
-                itemstack.hurtAndBreak(1, this, (p_233654_0_) -> {
-                });
+                itemstack.hurtAndBreak(1, this, (e) -> e.broadcastBreakEvent(net.minecraft.world.entity.EquipmentSlot.MAINHAND));
                 return InteractionResult.SUCCESS;
             }
             if (player.isShiftKeyDown() && player.getPassengers().isEmpty()) {
@@ -505,7 +540,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
 
     @Override
     public Animation[] getAnimations() {
-        return new Animation[]{ANIMATION_THROW, ANIMATION_SCRATCH};
+        return new Animation[]{ANIMATION_THROW, ANIMATION_SCRATCH, ANIMATION_HEADTILT};
     }
 
     @Override
@@ -547,7 +582,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance diff, MobSpawnType spawnType, @Nullable SpawnGroupData data, @Nullable CompoundTag tag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance diff, MobSpawnType spawnType, @Nullable SpawnGroupData data, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         int i;
         if (data instanceof CapuchinGroupData) {
             i = ((CapuchinGroupData)data).variant;
@@ -557,7 +592,7 @@ public class EntityCapuchinMonkey extends TamableAnimal implements IAnimatedEnti
         }
 
         this.setVariant(i);
-        return super.finalizeSpawn(world, diff, spawnType, data, tag);
+        return super.finalizeSpawn(world, diff, spawnType, data, dataTag);
     }
 
     public static class CapuchinGroupData extends AgeableMobGroupData {

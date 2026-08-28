@@ -1,5 +1,9 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+
+import net.minecraft.world.entity.MobType;
+import com.github.alexthe666.alexsmobs.entity.ai.AMTagTemptGoal;
+
 import com.github.alexthe666.alexsmobs.entity.ai.CreatureAITargetItems;
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
@@ -81,7 +85,7 @@ public class EntityTasmanianDevil extends Animal implements IAnimatedEntity, ITa
         super.registerGoals();
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.5D, true));
-        this.goalSelector.addGoal(2, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.TASMANIAN_DEVIL_HOWLING_FOODS), false){
+        this.goalSelector.addGoal(2, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.TASMANIAN_DEVIL_HOWLING_FOODS){
             public void tick(){
                 super.tick();
                 if(EntityTasmanianDevil.this.getAnimation() == NO_ANIMATION){
@@ -102,7 +106,7 @@ public class EntityTasmanianDevil extends Animal implements IAnimatedEntity, ITa
     }
 
     public void killed(ServerLevel world, LivingEntity entity) {
-        if(this.getRandom().nextBoolean() && (entity instanceof Animal || entity.getMobType() == MobType.UNDEAD)){
+        if(this.getRandom().nextBoolean() && (entity instanceof Animal || AMMobTypes.getMobType(entity) == MobType.UNDEAD)){
             entity.spawnAtLocation(new ItemStack(Items.BONE));
         }
     }
@@ -149,7 +153,7 @@ public class EntityTasmanianDevil extends Animal implements IAnimatedEntity, ITa
     }
 
     public boolean isFood(ItemStack stack) {
-        return stack.getItem().isEdible() && stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat() && !stack.is(AMTagRegistry.TASMANIAN_DEVIL_HOWLING_FOODS);
+        return stack.isEdible() && stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat() && !stack.is(AMTagRegistry.TASMANIAN_DEVIL_HOWLING_FOODS);
     }
 
     public void tick(){
@@ -199,7 +203,7 @@ public class EntityTasmanianDevil extends Animal implements IAnimatedEntity, ITa
             }
         }
         if(this.getAnimation() == ANIMATION_HOWL && this.getAnimationTick() == 1){
-            this.gameEvent(GameEvent.ENTITY_ROAR);
+            this.gameEvent(GameEvent.ENTITY_INTERACT);
             this.playSound(AMSoundRegistry.TASMANIAN_DEVIL_ROAR, this.getSoundVolume() * 2F, this.getVoicePitch());
         }
         if(this.getAnimation() == ANIMATION_HOWL && this.getAnimationTick() > 3){
@@ -296,7 +300,7 @@ public class EntityTasmanianDevil extends Animal implements IAnimatedEntity, ITa
 
     @Override
     public boolean canTargetItem(ItemStack stack) {
-        return stack.getItem().isEdible() && stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat() || stack.getItem() == Items.BONE;
+        return stack.isEdible() && stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat() || stack.getItem() == Items.BONE;
     }
 
     @Override

@@ -19,6 +19,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.BlockPositionSource;
+import net.minecraft.core.Holder;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.gameevent.GameEventListener;
 import net.minecraft.world.level.gameevent.PositionSource;
@@ -78,6 +79,7 @@ public class TileEntitySculkBoomer extends BlockEntity implements GameEventListe
 
     }
 
+    @Override
     public void load(CompoundTag tag) {
         super.load(tag);
         if (tag.contains("ScreamCooldown", 99)) {
@@ -85,6 +87,7 @@ public class TileEntitySculkBoomer extends BlockEntity implements GameEventListe
         }
     }
 
+    @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putInt("ScreamCooldown", this.screamTime);
@@ -101,8 +104,13 @@ public class TileEntitySculkBoomer extends BlockEntity implements GameEventListe
     }
 
     @Override
+    public GameEventListener.DeliveryMode getDeliveryMode() {
+        return GameEventListener.DeliveryMode.BY_DISTANCE;
+    }
+
+    @Override
     public boolean handleGameEvent(ServerLevel serverLevel, GameEvent event, GameEvent.Context message, Vec3 from) {
-        if(event == GameEvent.SCULK_SENSOR_TENDRILS_CLICKING && !isOccluded(serverLevel, Vec3.atCenterOf(this.getBlockPos()), from)){
+        if (event == GameEvent.SCULK_SENSOR_TENDRILS_CLICKING && !isOccluded(serverLevel, Vec3.atCenterOf(this.getBlockPos()), from)) {
             double distance = from.distanceTo(Vec3.atCenterOf(this.getBlockPos()));
             serverLevel.sendParticles(new VibrationParticleOption(new BlockPositionSource(this.getBlockPos()), Mth.floor(distance)), from.x, from.y, from.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
             if(screamTime == 0){

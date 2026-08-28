@@ -10,9 +10,12 @@ public class EffectTigersBlessing extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0XFFD75E);
     }
 
+    @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
+
     }
 
+    @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         return duration > 0;
     }

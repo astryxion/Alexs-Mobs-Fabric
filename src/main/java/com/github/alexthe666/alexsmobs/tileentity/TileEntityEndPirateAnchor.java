@@ -7,6 +7,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
 
@@ -40,7 +41,7 @@ public class TileEntityEndPirateAnchor extends BlockEntity {
         entity.tick();
     }
     public AABB getRenderBoundingBox() {
-        return new AABB(worldPosition.offset(-1, 0, -1), worldPosition.offset(1, 3, 1));
+        return new AABB(Vec3.atLowerCornerOf(worldPosition.offset(-1, 0, -1)), Vec3.atLowerCornerOf(worldPosition.offset(1, 3, 1)));
     }
 
     public static List<BlockPos> getValidBBPositions(boolean eastOrWest){

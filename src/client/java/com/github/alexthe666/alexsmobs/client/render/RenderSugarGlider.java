@@ -20,7 +20,7 @@ import net.minecraft.world.entity.player.Player;
 import org.joml.Quaternionf;
 
 public class RenderSugarGlider extends MobRenderer<EntitySugarGlider, ModelSugarGlider> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/sugar_glider.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/sugar_glider.png");
 
     public RenderSugarGlider(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new ModelSugarGlider(), 0.35F);
@@ -60,12 +60,10 @@ public class RenderSugarGlider extends MobRenderer<EntitySugarGlider, ModelSugar
             }
 
             matrixStackIn.translate(0.0D, trans, 0.0D);
-            Quaternionf current = rotate(entityLiving.getAttachmentFacing()).getRotation();
-            current.mul(1F - prevProg);
-            matrixStackIn.mulPose(current);
-            //Quaternionf prev = rotate(entityLiving.prevAttachDir).getRotation();
-            //prev.mul(prevProg);
-            //matrixStackIn.mulPose(prev);
+            float lerp = Mth.clamp(prevProg, 0.0F, 1.0F);
+            float factor = 1.0F - lerp;
+            Quaternionf rot = rotate(entityLiving.getAttachmentFacing()).getRotation();
+            matrixStackIn.mulPose(new Quaternionf(rot.x() * factor, rot.y() * factor, rot.z() * factor, rot.w() * factor));
             matrixStackIn.translate(0.0D, -trans, 0.0D);
         }
 

@@ -18,7 +18,7 @@ import net.minecraft.world.item.ItemDisplayContext;
 import org.joml.Quaternionf;
 
 public class RenderTossedItem  extends EntityRenderer<EntityTossedItem> {
-    public static final ResourceLocation DART_TEXTURE = new ResourceLocation("alexsmobs:textures/entity/ancient_dart.png");
+    public static final ResourceLocation DART_TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/ancient_dart.png");
     public static final ModelAncientDart DART_MODEL = new ModelAncientDart();
 
     public RenderTossedItem(EntityRendererProvider.Context renderManager) {
@@ -33,26 +33,32 @@ public class RenderTossedItem  extends EntityRenderer<EntityTossedItem> {
     @Override
     public void render(EntityTossedItem entityIn, float entityYaw, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int packedLightIn) {
         matrixStackIn.pushPose();
-        if(entityIn.isDart()){
-            matrixStackIn.translate(0.0D, (double)-0.15F, 0.0D);
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 180F));
-            matrixStackIn.pushPose();
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
-            matrixStackIn.translate(0, 0.5F, 0);
-            matrixStackIn.scale(1F, 1F, 1F);
-            VertexConsumer ivertexbuilder = bufferIn.getBuffer(DART_MODEL.renderType(DART_TEXTURE));
-            DART_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        try {
+            if(entityIn.isDart()){
+                matrixStackIn.translate(0.0D, (double)-0.15F, 0.0D);
+                matrixStackIn.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 180F));
+                matrixStackIn.pushPose();
+                try {
+                    matrixStackIn.mulPose(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+                    matrixStackIn.translate(0, 0.5F, 0);
+                    matrixStackIn.scale(1F, 1F, 1F);
+                    VertexConsumer ivertexbuilder = bufferIn.getBuffer(DART_MODEL.renderType(DART_TEXTURE));
+                    DART_MODEL.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+                } finally {
+                    matrixStackIn.popPose();
+                }
+            }else{
+                matrixStackIn.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 90.0F));
+                matrixStackIn.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+                matrixStackIn.translate(0, 0.5F, 0);
+                matrixStackIn.scale(1F, 1F, 1F);
+                matrixStackIn.mulPose((new Quaternionf()).rotateZ(Maths.rad(-(entityIn.tickCount + partialTicks) * 30F)));
+                matrixStackIn.translate(0, -0.15F, 0);
+                Minecraft.getInstance().getItemRenderer().renderStatic(entityIn.getItem(), ItemDisplayContext.GROUND, packedLightIn, OverlayTexture.NO_OVERLAY, matrixStackIn, bufferIn, entityIn.level(), 0);
+            }
+        } finally {
             matrixStackIn.popPose();
-        }else{
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 90.0F));
-            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
-            matrixStackIn.translate(0, 0.5F, 0);
-            matrixStackIn.scale(1F, 1F, 1F);
-            matrixStackIn.mulPose((new Quaternionf()).rotateZ(Maths.rad(-(entityIn.tickCount + partialTicks) * 30F)));
-            matrixStackIn.translate(0, -0.15F, 0);
-            Minecraft.getInstance().getItemRenderer().renderStatic(entityIn.getItem(), ItemDisplayContext.GROUND, packedLightIn, OverlayTexture.NO_OVERLAY, matrixStackIn, bufferIn, entityIn.level(), 0);
         }
-        matrixStackIn.popPose();
     }
 
 }

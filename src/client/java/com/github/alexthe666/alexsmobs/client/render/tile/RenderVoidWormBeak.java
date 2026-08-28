@@ -13,7 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 
 public class RenderVoidWormBeak<T extends TileEntityVoidWormBeak> implements BlockEntityRenderer<T> {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs:textures/entity/void_worm/void_worm_beak.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation("alexsmobs", "textures/entity/void_worm/void_worm_beak.png");
     private static final ModelVoidWormBeak HEAD_MODEL = new ModelVoidWormBeak();
 
     public RenderVoidWormBeak(BlockEntityRendererProvider.Context rendererDispatcherIn) {
@@ -22,21 +22,27 @@ public class RenderVoidWormBeak<T extends TileEntityVoidWormBeak> implements Blo
     @Override
     public void render(T tileEntityIn, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int combinedLightIn, int combinedOverlayIn) {
         matrixStackIn.pushPose();
-        Direction dir = tileEntityIn.getBlockState().getValue(BlockVoidWormBeak.FACING);
-        switch (dir) {
-            case UP -> matrixStackIn.translate(0.5F, 1.5F, 0.5F);
-            case DOWN -> matrixStackIn.translate(0.5F, -0.5F, 0.5F);
-            case NORTH -> matrixStackIn.translate(0.5, 0.5F, -0.5F);
-            case EAST -> matrixStackIn.translate(1.5F, 0.5F, 0.5F);
-            case SOUTH -> matrixStackIn.translate(0.5, 0.5F, 1.5F);
-            case WEST -> matrixStackIn.translate(-0.5F, 0.5F, 0.5F);
+        try {
+            Direction dir = tileEntityIn.getBlockState().getValue(BlockVoidWormBeak.FACING);
+            switch (dir) {
+                case UP -> matrixStackIn.translate(0.5F, 1.5F, 0.5F);
+                case DOWN -> matrixStackIn.translate(0.5F, -0.5F, 0.5F);
+                case NORTH -> matrixStackIn.translate(0.5, 0.5F, -0.5F);
+                case EAST -> matrixStackIn.translate(1.5F, 0.5F, 0.5F);
+                case SOUTH -> matrixStackIn.translate(0.5, 0.5F, 1.5F);
+                case WEST -> matrixStackIn.translate(-0.5F, 0.5F, 0.5F);
+            }
+            matrixStackIn.mulPose(dir.getOpposite().getRotation());
+            matrixStackIn.pushPose();
+            try {
+                matrixStackIn.translate(0, -0.01F, 0.0F);
+                HEAD_MODEL.renderBeak(tileEntityIn, partialTicks);
+                HEAD_MODEL.renderToBuffer(matrixStackIn, bufferIn.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), combinedLightIn, combinedOverlayIn, 1.0F, 1.0F, 1.0F, 1.0F);
+            } finally {
+                matrixStackIn.popPose();
+            }
+        } finally {
+            matrixStackIn.popPose();
         }
-        matrixStackIn.mulPose(dir.getOpposite().getRotation());
-        matrixStackIn.pushPose();
-        matrixStackIn.translate(0, -0.01F, 0.0F);
-        HEAD_MODEL.renderBeak(tileEntityIn, partialTicks);
-        HEAD_MODEL.renderToBuffer(matrixStackIn, bufferIn.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), combinedLightIn, combinedOverlayIn, 1, 1F, 1, 1);
-        matrixStackIn.popPose();
-        matrixStackIn.popPose();
     }
 }

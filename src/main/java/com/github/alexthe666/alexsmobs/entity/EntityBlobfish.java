@@ -104,6 +104,7 @@ public class EntityBlobfish extends WaterAnimal implements FlyingAnimal, Bucketa
         return 4;
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(FROM_BUCKET, false);
@@ -112,6 +113,7 @@ public class EntityBlobfish extends WaterAnimal implements FlyingAnimal, Bucketa
         this.entityData.define(SLIMED, false);
     }
 
+    @Override
     public EntityDimensions getDimensions(Pose poseIn) {
         return super.getDimensions(poseIn).scale(this.getBlobfishScale());
     }
@@ -250,6 +252,7 @@ public class EntityBlobfish extends WaterAnimal implements FlyingAnimal, Bucketa
         CompoundTag compound = bucket.getOrCreateTag();
         compound.putFloat("BucketScale", this.getBlobfishScale());
         compound.putBoolean("Slimed", this.isSlimed());
+        bucket.setTag(compound);
     }
 
     @Override
@@ -264,7 +267,7 @@ public class EntityBlobfish extends WaterAnimal implements FlyingAnimal, Bucketa
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setBlobfishScale(0.75F + random.nextFloat() * 0.5F);
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
     }

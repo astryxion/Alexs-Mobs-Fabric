@@ -11,6 +11,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -27,14 +28,13 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import javax.annotation.Nullable;
 
 public class BlockEndPirateAnchorWinch extends BaseEntityBlock implements AMSpecialRenderBlock{
-
     public static final BooleanProperty EASTORWEST = BooleanProperty.create("eastorwest");
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     protected static final VoxelShape FULL_AABB_EW = Block.box(3.0D, 3.0D, 0.0D, 13.0D, 13.0D, 16.0D);
     protected static final VoxelShape FULL_AABB_NS = Block.box(0.0D, 3.0D, 3.0D, 16.0D, 13.0D, 13.0D);
 
-    protected BlockEndPirateAnchorWinch() {
-        super(Properties.of().mapColor(MapColor.COLOR_BLACK).friction(0.97F).strength(10.0F).lightLevel((i) -> 6).sound(SoundType.STONE).noOcclusion());
+    public BlockEndPirateAnchorWinch(BlockBehaviour.Properties properties) {
+        super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(EASTORWEST, Boolean.valueOf(false)).setValue(POWERED, Boolean.valueOf(false)));
     }
 

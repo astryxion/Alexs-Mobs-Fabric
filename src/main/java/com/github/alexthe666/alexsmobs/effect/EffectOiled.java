@@ -11,6 +11,7 @@ public class EffectOiled extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0XFFE89C);
     }
 
+    @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
        if(entity.isInWaterRainOrBubble()){
            if(!entity.isShiftKeyDown()){
@@ -24,8 +25,10 @@ public class EffectOiled extends MobEffect {
 
            }
        }
+
     }
 
+    @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         return duration > 0;
     }

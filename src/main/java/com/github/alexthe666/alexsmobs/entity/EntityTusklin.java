@@ -66,7 +66,7 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
 
     protected EntityTusklin(EntityType<? extends Animal> type, Level level) {
         super(type, level);
-        this.setMaxUpStep(1.1F);
+        this.setMaxUpStep((float)(1.1));
     }
 
     public boolean checkSpawnRules(LevelAccessor worldIn, MobSpawnType spawnReasonIn) {
@@ -136,7 +136,7 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
         super.tickRidden(player, vec3);
         this.setRot(player.getYRot(), player.getXRot() * 0.25F);
         this.yRotO = this.yBodyRot = this.yHeadRot = this.getYRot();
-        this.setMaxUpStep(1);
+        this.setMaxUpStep((float)(1.0));
         this.getNavigation().stop();
         this.setTarget(null);
         this.setSprinting(true);
@@ -267,10 +267,11 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
         return stack.is(AMTagRegistry.TUSKLIN_BREEDABLES);
     }
 
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
-        this.getEntityData().define(SADDLED, false);
-        this.getEntityData().define(PASSIVETICKS, 0);
+        this.entityData.define(SADDLED, false);
+        this.entityData.define(PASSIVETICKS, 0);
     }
 
     public void addAdditionalSaveData(CompoundTag p_31808_) {
@@ -403,9 +404,9 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
                         }
                     }
                 }
-                this.setMaxUpStep(2F);
+                this.setMaxUpStep((float)(2.0));
             }else{
-                this.setMaxUpStep(1.1F);
+                this.setMaxUpStep((float)(1.1));
             }
             if (this.getTarget() != null && this.hasLineOfSight(this.getTarget()) && distanceTo(this.getTarget()) < this.getTarget().getBbWidth() + this.getBbWidth() + 1.8F) {
                 if (this.getAnimation() == ANIMATION_FLING && this.getAnimationTick() == 6) {
@@ -479,7 +480,7 @@ public class EntityTusklin extends Animal implements IAnimatedEntity {
         currentAnimation = animation;
     }
 
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         if (spawnDataIn == null) {
             spawnDataIn = new AgeableMob.AgeableMobGroupData(0.34F);
         }

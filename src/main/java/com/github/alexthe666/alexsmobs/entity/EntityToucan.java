@@ -295,7 +295,7 @@ public class EntityToucan extends Animal implements ITargetsDroppedItems {
         } else {
             heldItemTime = 0;
         }
-        if (this.isFlying() && this.getFeetBlockState().is(Blocks.VINE)) {
+        if (this.isFlying() && this.level().getBlockState(this.blockPosition()).is(Blocks.VINE)) {
             float f = this.getYRot() * Mth.DEG_TO_RAD;
             this.setDeltaMovement(this.getDeltaMovement().add(-Mth.sin(f) * 0.2F, 0.4F, Mth.cos(f) * 0.2F));
         }
@@ -477,7 +477,7 @@ public class EntityToucan extends Animal implements ITargetsDroppedItems {
     }
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setVariant(this.getRandom().nextInt(4));
         return super.finalizeSpawn(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
     }

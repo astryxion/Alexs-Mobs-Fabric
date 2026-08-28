@@ -2,30 +2,56 @@ package com.github.alexthe666.alexsmobs.client.render.item;
 
 import com.github.alexthe666.alexsmobs.client.render.AMRenderTypes;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
+import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.block.model.ItemOverrides;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.client.renderer.block.model.ItemOverrides;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
-/** Fabric 1.20.1: No BakedModelWrapper/ModelData; delegate to wrapped model (1:1 behavior). */
-public class GhostlyPickaxeBakedModel implements BakedModel {
+/** Fullbright translucent ghost pickaxe model for Fabric 1.20.1 item rendering. */
+public class GhostlyPickaxeBakedModel implements BakedModel, FabricBakedModel {
 
     private final BakedModel originalModel;
 
     public GhostlyPickaxeBakedModel(BakedModel bakedModel) {
         this.originalModel = bakedModel;
+    }
+
+    @Override
+    public boolean isVanillaAdapter() {
+        return false;
+    }
+
+    @Override
+    public void emitItemQuads(ItemStack stack, Supplier<RandomSource> randomSupplier, RenderContext context) {
+        context.pushTransform(quad -> {
+            // Fullbright lightmap on each vertex
+            for (int i = 0; i < 4; i++) {
+                quad.lightmap(i, 0x00F000F0);
+            }
+            return true;
+        });
+        context.bakedModelConsumer().accept(originalModel);
+        context.popTransform();
+    }
+
+    @Override
+    public void emitBlockQuads(net.minecraft.world.level.BlockAndTintGetter blockView, BlockState state, net.minecraft.core.BlockPos pos, Supplier<RandomSource> randomSupplier, RenderContext context) {
+        context.bakedModelConsumer().accept(originalModel);
     }
 
     @Override
@@ -43,13 +69,13 @@ public class GhostlyPickaxeBakedModel implements BakedModel {
     }
 
     @Override
-    public boolean useAmbientOcclusion() { return originalModel.useAmbientOcclusion(); }
+    public boolean useAmbientOcclusion() { return false; }
 
     @Override
     public boolean isGui3d() { return originalModel.isGui3d(); }
 
     @Override
-    public boolean usesBlockLight() { return originalModel.usesBlockLight(); }
+    public boolean usesBlockLight() { return false; }
 
     @Override
     public boolean isCustomRenderer() { return originalModel.isCustomRenderer(); }
@@ -65,7 +91,7 @@ public class GhostlyPickaxeBakedModel implements BakedModel {
 
     private static List<BakedQuad> transformQuads(List<BakedQuad> oldQuads) {
         List<BakedQuad> quads = new ArrayList<>();
-        for(BakedQuad quad : oldQuads){
+        for (BakedQuad quad : oldQuads) {
             quads.add(setFullbright(quad));
         }
         return quads;
@@ -79,7 +105,7 @@ public class GhostlyPickaxeBakedModel implements BakedModel {
         vertexData[6 + step] = 0x00F000F0;
         vertexData[6 + 2 * step] = 0x00F000F0;
         vertexData[6 + 3 * step] = 0x00F000F0;
-        return new BakedQuad(vertexData, quad.getTintIndex(), quad.getDirection(), quad.getSprite(), quad.isShade());
+        return new BakedQuad(vertexData, quad.getTintIndex(), quad.getDirection(), quad.getSprite(), false);
     }
 
     public List<BakedModel> getRenderPasses(ItemStack itemStack, boolean fabulous) {

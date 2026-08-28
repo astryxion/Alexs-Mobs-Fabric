@@ -60,7 +60,7 @@ public class EntitySnowLeopard extends Animal implements IAnimatedEntity, ITarge
 
     protected EntitySnowLeopard(EntityType type, Level worldIn) {
         super(type, worldIn);
-        this.setMaxUpStep(2F);
+        this.setMaxUpStep((float)(2.0));
     }
 
     protected PathNavigation createNavigation(Level worldIn) {
@@ -320,7 +320,7 @@ public class EntitySnowLeopard extends Animal implements IAnimatedEntity, ITarge
 
     @Override
     public boolean canTargetItem(ItemStack stack) {
-        return stack.getItem().isEdible() && stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat();
+        return stack.isEdible() && stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat();
     }
 
     @Override

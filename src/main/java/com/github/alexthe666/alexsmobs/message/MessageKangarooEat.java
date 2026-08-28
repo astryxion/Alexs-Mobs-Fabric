@@ -24,12 +24,14 @@ public class MessageKangarooEat {
     }
 
     public static MessageKangarooEat read(FriendlyByteBuf buf) {
-        return new MessageKangarooEat(buf.readInt(), buf.readItem());
+        int kangaroo = buf.readInt();
+        net.minecraft.nbt.CompoundTag tag = buf.readNbt();
+        return new MessageKangarooEat(kangaroo, tag != null ? ItemStack.of(tag) : ItemStack.EMPTY);
     }
 
     public static void write(MessageKangarooEat message, FriendlyByteBuf buf) {
         buf.writeInt(message.kangaroo);
-        buf.writeItem(message.stack);
+        buf.writeNbt(message.stack.isEmpty() ? null : message.stack.save(new net.minecraft.nbt.CompoundTag()));
     }
 
     public static class Handler {

@@ -24,7 +24,7 @@ public class LayerCockroachMaracas extends RenderLayer<EntityCockroach, ModelCoc
 
     private final ItemStack stack;
     private final ModelSombrero sombrero;
-    private static final ResourceLocation SOMBRERO_TEX = new ResourceLocation("alexsmobs:textures/armor/sombrero.png");
+    private static final ResourceLocation SOMBRERO_TEX = new ResourceLocation("alexsmobs", "textures/armor/sombrero.png");
 
     public LayerCockroachMaracas(RenderCockroach render, EntityRendererProvider.Context renderManagerIn) {
         super(render);
@@ -37,44 +37,50 @@ public class LayerCockroachMaracas extends RenderLayer<EntityCockroach, ModelCoc
         if(entitylivingbaseIn.hasMaracas()){
             ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
             matrixStackIn.pushPose();
+            try {
             if (entitylivingbaseIn.isBaby()) {
                 matrixStackIn.scale(0.65F, 0.65F, 0.65F);
                 matrixStackIn.translate(0.0D, 0.815D, 0.125D);
             }
             matrixStackIn.pushPose();
+            try {
             translateToHand(0, matrixStackIn);
             matrixStackIn.translate(-0.25F, 0.0F, 0);
             matrixStackIn.scale(1.4F, 1.4F, 1.4F);
             matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
             matrixStackIn.mulPose(Axis.ZP.rotationDegrees(60F));
             renderer.renderItem(entitylivingbaseIn, stack, ItemDisplayContext.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
-            matrixStackIn.popPose();
+            } finally { matrixStackIn.popPose(); }
             matrixStackIn.pushPose();
+            try {
             translateToHand(1, matrixStackIn);
             matrixStackIn.translate(0.25F, 0.0F, 0);
             matrixStackIn.scale(1.4F, 1.4F, 1.4F);
             matrixStackIn.mulPose(Axis.XP.rotationDegrees(90F));
             matrixStackIn.mulPose(Axis.ZP.rotationDegrees(-120F));
             renderer.renderItem(entitylivingbaseIn, stack, ItemDisplayContext.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
-            matrixStackIn.popPose();
+            } finally { matrixStackIn.popPose(); }
             matrixStackIn.pushPose();
+            try {
             translateToHand(2, matrixStackIn);
             matrixStackIn.translate(-0.35F, 0.0F, 0);
             matrixStackIn.scale(1.4F, 1.4F, 1.4F);
             matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
             matrixStackIn.mulPose(Axis.ZP.rotationDegrees(60F));
             renderer.renderItem(entitylivingbaseIn, stack, ItemDisplayContext.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
-            matrixStackIn.popPose();
+            } finally { matrixStackIn.popPose(); }
             matrixStackIn.pushPose();
+            try {
             translateToHand(3, matrixStackIn);
             matrixStackIn.translate(0.35F, 0.0F, 0);
             matrixStackIn.scale(1.4F, 1.4F, 1.4F);
             matrixStackIn.mulPose(Axis.XP.rotationDegrees(90F));
             matrixStackIn.mulPose(Axis.ZP.rotationDegrees(-120F));
             renderer.renderItem(entitylivingbaseIn, stack, ItemDisplayContext.GROUND, false, matrixStackIn, bufferIn, packedLightIn);
-            matrixStackIn.popPose();
+            } finally { matrixStackIn.popPose(); }
             if(!entitylivingbaseIn.isHeadless()){
                 matrixStackIn.pushPose();
+                try {
                 translateToHand(4, matrixStackIn);
                 matrixStackIn.translate(0F, -0.4F, -0.01F);
                 matrixStackIn.translate(0F, entitylivingbaseIn.danceProgress * 0.045F, entitylivingbaseIn.danceProgress * -0.09F);
@@ -82,9 +88,9 @@ public class LayerCockroachMaracas extends RenderLayer<EntityCockroach, ModelCoc
                 matrixStackIn.mulPose(Axis.XP.rotationDegrees(60F * entitylivingbaseIn.danceProgress * 0.2F));
                 VertexConsumer ivertexbuilder = bufferIn.getBuffer(RenderType.entityCutoutNoCull(SOMBRERO_TEX));
                 sombrero.renderToBuffer(matrixStackIn, ivertexbuilder, packedLightIn, LivingEntityRenderer.getOverlayCoords(entitylivingbaseIn, 0.0F), 1.0F, 1.0F, 1.0F, 1.0F);
-                matrixStackIn.popPose();
+                } finally { matrixStackIn.popPose(); }
             }
-            matrixStackIn.popPose();
+            } finally { matrixStackIn.popPose(); }
         }
     }
 

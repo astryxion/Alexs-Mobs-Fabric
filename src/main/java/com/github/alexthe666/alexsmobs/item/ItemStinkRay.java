@@ -71,9 +71,7 @@ public class ItemStinkRay extends Item {
                 if (!level.isClientSide) {
                     level.addFreshEntity(blood);
                 }
-                itemStack.hurtAndBreak(1, entity, (breaker) -> {
-                    breaker.broadcastBreakEvent(entity.getUsedItemHand());
-                });
+                itemStack.hurtAndBreak(1, entity, (e) -> e.broadcastBreakEvent((entity.getUsedItemHand() == net.minecraft.world.InteractionHand.MAIN_HAND ) ? net.minecraft.world.entity.EquipmentSlot.MAINHAND : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
 
             }
 

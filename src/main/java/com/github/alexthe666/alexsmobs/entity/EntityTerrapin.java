@@ -116,7 +116,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
         this.goalSelector.addGoal(0, new BreathAirGoal(this));
         this.goalSelector.addGoal(1, new MateGoal(this, 1.0D));
         this.goalSelector.addGoal(1, new LayEggGoal(this, 1.0D));
-        this.goalSelector.addGoal(2, new TemptGoal(this, 1.1D, Ingredient.of(AMTagRegistry.TERRAPIN_BREEDABLES), false));
+        this.goalSelector.addGoal(2, new AMTagTemptGoal(this, 1.1D, false, AMTagRegistry.TERRAPIN_BREEDABLES));
         this.goalSelector.addGoal(3, new AnimalAIFindWater(this));
         this.goalSelector.addGoal(3, new AnimalAILeaveWater(this));
         this.goalSelector.addGoal(4, new SemiAquaticAIRandomSwimming(this, 1.0D, 30));
@@ -216,9 +216,9 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
             }
 
             if (swimProgress > 0) {
-                this.setMaxUpStep(1);
+                this.setMaxUpStep((float)(1.0));
             } else {
-                this.setMaxUpStep(0.6F);
+                this.setMaxUpStep((float)(0.6));
             }
             if (hideInShellTimer > 0) {
                 hideInShellTimer--;
@@ -465,7 +465,7 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
 
 
     @Nullable
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @Nullable CompoundTag dataTag) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor worldIn, DifficultyInstance difficultyIn, MobSpawnType reason, @Nullable SpawnGroupData spawnDataIn, @javax.annotation.Nullable net.minecraft.nbt.CompoundTag dataTag) {
         this.setAirSupply(this.getMaxAirSupply());
         this.setTurtleType(TerrapinTypes.getRandomType(random));
         this.setShellType(random.nextInt(7));
@@ -545,8 +545,10 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
         }
         CompoundTag platTag = new CompoundTag();
         this.addAdditionalSaveData(platTag);
-        CompoundTag compound = bucket.getOrCreateTag();
+        net.minecraft.nbt.CompoundTag existing = bucket.getTag();
+        CompoundTag compound = existing != null ? existing.copy() : new net.minecraft.nbt.CompoundTag();
         compound.put("TerrapinData", platTag);
+        bucket.setTag(compound);
     }
 
     @Override
@@ -576,10 +578,6 @@ public class EntityTerrapin extends Animal implements ISemiAquatic, Bucketable {
     public boolean isKoopa() {
         String s = ChatFormatting.stripFormatting(this.getName().getString());
         return s != null && s.toLowerCase().contains("koopa");
-    }
-
-    public MobType getMobType() {
-        return MobType.WATER;
     }
 
     public boolean checkSpawnObstruction(LevelReader worldIn) {

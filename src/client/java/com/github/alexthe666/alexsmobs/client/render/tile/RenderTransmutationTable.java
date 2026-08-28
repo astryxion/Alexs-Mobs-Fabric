@@ -31,31 +31,34 @@ public class RenderTransmutationTable<T extends TileEntityTransmutationTable> im
     @Override
     public void render(T tileEntityIn, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int combinedLightIn, int combinedOverlayIn) {
         matrixStackIn.pushPose();
-        Direction dir = tileEntityIn.getBlockState().getValue(BlockTransmutationTable.FACING);
-        switch (dir) {
-            case NORTH -> matrixStackIn.translate(0.5, 1.5F, 0.5F);
-            case EAST -> matrixStackIn.translate(0.5F, 1.5F, 0.5F);
-            case SOUTH -> matrixStackIn.translate(0.5, 1.5F, 0.5F);
-            case WEST -> matrixStackIn.translate(0.5F, 1.5F, 0.5F);
+        try {
+            Direction dir = tileEntityIn.getBlockState().getValue(BlockTransmutationTable.FACING);
+            switch (dir) {
+                case NORTH -> matrixStackIn.translate(0.5, 1.5F, 0.5F);
+                case EAST -> matrixStackIn.translate(0.5F, 1.5F, 0.5F);
+                case SOUTH -> matrixStackIn.translate(0.5, 1.5F, 0.5F);
+                case WEST -> matrixStackIn.translate(0.5F, 1.5F, 0.5F);
+            }
+            matrixStackIn.mulPose(dir.getOpposite().getRotation());
+            matrixStackIn.mulPose(Axis.XP.rotationDegrees(90.0F));
+            matrixStackIn.pushPose();
+            try {
+                MODEL.animate(tileEntityIn, partialTicks);
+                MODEL.renderToBuffer(matrixStackIn, bufferIn.getBuffer(RenderType.entityTranslucent(TEXTURE)), combinedLightIn, combinedOverlayIn, 1.0F, 1.0F, 1.0F, 1.0F);
+                MODEL.renderToBuffer(matrixStackIn, bufferIn.getBuffer(AMRenderTypes.getEyesAlphaEnabled(GLOW_TEXTURE)), 240, combinedOverlayIn, 1.0F, 1.0F, 1.0F, 1.0F);
+                // In 1.21, VertexMultiConsumer doesn't work with entity rendering - use single render type
+                VertexConsumer overlayBuffer = bufferIn.getBuffer(RenderType.entityTranslucentEmissive(OVERLAY));
+                OVERLAY_MODEL.animate(tileEntityIn, partialTicks);
+                OVERLAY_MODEL.renderToBuffer(matrixStackIn, overlayBuffer, combinedLightIn, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            } finally {
+                matrixStackIn.popPose();
+            }
+        } finally {
+            matrixStackIn.popPose();
         }
-        float ageInTicks = partialTicks + tileEntityIn.ticksExisted;
-        
-        matrixStackIn.mulPose(dir.getOpposite().getRotation());
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(90.0F));
-        matrixStackIn.pushPose();
-        MODEL.animate(tileEntityIn, partialTicks);
-        MODEL.renderToBuffer(matrixStackIn, bufferIn.getBuffer(RenderType.entityTranslucent(TEXTURE)), combinedLightIn, combinedOverlayIn, 1, 1, 1, 1);
-        MODEL.renderToBuffer(matrixStackIn, bufferIn.getBuffer(AMRenderTypes.getEyesAlphaEnabled(GLOW_TEXTURE)), 240, combinedOverlayIn, 1, 1, 1, 0.5F + (float)Math.sin(ageInTicks * 0.05F) * 0.25F);
-        VertexConsumer staticyOverlay = AMRenderTypes.createMergedVertexConsumer(bufferIn.getBuffer(AMRenderTypes.STATIC_PORTAL), bufferIn.getBuffer(RenderType.entityCutoutNoCull(OVERLAY)));
-        OVERLAY_MODEL.animate(tileEntityIn, partialTicks);
-        OVERLAY_MODEL.renderToBuffer(matrixStackIn, staticyOverlay, combinedLightIn, OverlayTexture.NO_OVERLAY, 1, 1, 1, 1);
-        matrixStackIn.popPose();
-        matrixStackIn.popPose();
     }
-
 
     private static void vertex(VertexConsumer p_114090_, Matrix4f p_114091_, Matrix3f p_114092_, int p_114093_, float p_114094_, float p_114095_, int p_114096_, int p_114097_) {
-        p_114090_.vertex(p_114091_, p_114094_, p_114095_, 0.0F).color(255, 255, 255, 100).uv((float) p_114096_, (float) p_114097_).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(p_114093_).normal(p_114092_, 0.0F, 1.0F, 0.0F).endVertex();
+        p_114090_.vertex(p_114091_, p_114094_, p_114095_, 0.0F).color(255, 255, 255, 100).uv((float) p_114096_, (float) p_114097_).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(p_114093_).normal(0.0F, 1.0F, 0.0F).endVertex();
     }
-
 }

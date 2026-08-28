@@ -8,6 +8,14 @@ import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityTransmutationTable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.network.chat.Component;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
@@ -17,23 +25,18 @@ import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.material.PushReaction;
-import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -52,10 +55,12 @@ public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecia
     private static final VoxelShape NS_AABB = Shapes.or(BASE_AABB, ARMS_NS);
     private static final VoxelShape EW_AABB = Shapes.or(BASE_AABB, ARMS_EW);
 
-    public BlockTransmutationTable() {
-        super(Properties.of().pushReaction(PushReaction.BLOCK).mapColor(DyeColor.BLACK).noOcclusion().lightLevel((block) -> 2).emissiveRendering((block, world, pos) -> true).sound(SoundType.STONE).strength(1F).requiresCorrectToolForDrops());
+    public BlockTransmutationTable(BlockBehaviour.Properties properties) {
+        super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
+
+    @Override
 
     public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
         return state.getValue(FACING).getAxis() == Direction.Axis.Z ? NS_AABB : EW_AABB;
@@ -83,6 +88,7 @@ public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecia
         builder.add(FACING);
     }
 
+    @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult result) {
         if (level.isClientSide) {
             return InteractionResult.SUCCESS;
@@ -90,11 +96,14 @@ public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecia
             player.openMenu(state.getMenuProvider(level, pos));
             player.awardStat(Stats.INTERACT_WITH_LOOM);
             BlockEntity te = level.getBlockEntity(pos);
-            if(te instanceof TileEntityTransmutationTable){
-                TileEntityTransmutationTable table = (TileEntityTransmutationTable)te;
-
-                AlexsMobs.sendMSGToAll(new MessageUpdateTransmutablesToDisplay(player.getId(), table.getPossibility(0), table.getPossibility(1), table.getPossibility(2)));
-
+            if (te instanceof TileEntityTransmutationTable table) {
+                if (!table.hasPossibilities()) {
+                    table.setRerollPlayerUUID(player.getUUID());
+                    TileEntityTransmutationTable.commonTick(level, pos, state, table);
+                }
+                if (player instanceof ServerPlayer serverPlayer) {
+                    AlexsMobs.sendNonLocal(new MessageUpdateTransmutablesToDisplay(player.getId(), table.getPossibility(0), table.getPossibility(1), table.getPossibility(2)), serverPlayer);
+                }
             }
             return InteractionResult.CONSUME;
         }
@@ -115,15 +124,18 @@ public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecia
     @Override
     public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
         ItemStack tool = builder.getOptionalParameter(LootContextParams.TOOL);
-        if (tool != null && EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool) > 0) {
-            return List.of(new ItemStack(this));
+        if (tool != null) {
+            ServerLevel level = builder.getLevel();
+            if (EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool) > 0) {
+                return List.of(new ItemStack(this));
+            }
         }
         return List.of(new ItemStack(Items.NETHER_STAR));
     }
 
     @Override
     public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (!level.isClientSide && AMConfig.transmutingTableExplodes) {
+        if (!level.isClientSide() && AMConfig.transmutingTableExplodes) {
             level.explode(null, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, 3F, false, Level.ExplosionInteraction.BLOCK);
         }
         super.playerWillDestroy(level, pos, state, player);

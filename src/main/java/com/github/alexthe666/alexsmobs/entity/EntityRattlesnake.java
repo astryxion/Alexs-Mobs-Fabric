@@ -175,7 +175,7 @@ public class EntityRattlesnake extends Animal implements IAnimatedEntity {
         }
         if(isRattling()){
             if(loopSoundTick == 0){
-                this.gameEvent(GameEvent.ENTITY_ROAR);
+                this.gameEvent(GameEvent.ENTITY_INTERACT);
                 this.playSound(AMSoundRegistry.RATTLESNAKE_LOOP, this.getSoundVolume() * 0.5F, this.getVoicePitch());
             }
             loopSoundTick++;
@@ -201,7 +201,7 @@ public class EntityRattlesnake extends Animal implements IAnimatedEntity {
     }
 
     public boolean isFood(ItemStack stack) {
-        return stack.getItem().isEdible() && stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat();
+        return stack.isEdible() && stack.getItem().getFoodProperties() != null && stack.getItem().getFoodProperties().isMeat();
     }
 
     @Nullable

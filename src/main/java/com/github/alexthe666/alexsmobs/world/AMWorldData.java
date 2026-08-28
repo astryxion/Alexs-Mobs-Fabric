@@ -4,6 +4,9 @@ import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
@@ -15,12 +18,15 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseSettings;
 import net.minecraft.world.level.levelgen.RandomState;
+import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.OptionalInt;
 import java.util.Random;
 import java.util.UUID;
@@ -41,6 +47,8 @@ public class AMWorldData extends SavedData {
     private boolean noPupfishChunk;
     private static final Map<Level, AMWorldData> dataMap = new HashMap<>();
     private static final Predicate<BlockState> IS_WATER = (state -> state.is(Blocks.WATER));
+    /** Players who already received the startup animal dictionary in this world (survives quit/rejoin). */
+    private final Set<UUID> animalDictionaryGrantedPlayers = new HashSet<>();
 
     public AMWorldData() {
         super();
@@ -57,7 +65,7 @@ public class AMWorldData extends SavedData {
                     data.level =  overworld;
                     data.setDirty();
                 }
-                dataMap.put(overworld, data);
+                dataMap.put(world, data);
                 return data;
             }
             return fromMap;
@@ -82,7 +90,26 @@ public class AMWorldData extends SavedData {
         if (nbt.contains("NoPupfishChunk")) {
             data.noPupfishChunk = nbt.getBoolean("NoPupfishChunk");
         }
+        if (nbt.contains("AnimalDictionaryPlayers", Tag.TAG_LIST)) {
+            ListTag list = nbt.getList("AnimalDictionaryPlayers", Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) {
+                try {
+                    data.animalDictionaryGrantedPlayers.add(UUID.fromString(list.getString(i)));
+                } catch (Exception ignored) {
+                }
+            }
+        }
         return data;
+    }
+
+    public boolean hasAnimalDictionaryBeenGranted(UUID playerId) {
+        return animalDictionaryGrantedPlayers.contains(playerId);
+    }
+
+    public void markAnimalDictionaryGranted(UUID playerId) {
+        if (animalDictionaryGrantedPlayers.add(playerId)) {
+            setDirty();
+        }
     }
 
     public int getBeachedCachalotSpawnDelay() {
@@ -126,6 +153,13 @@ public class AMWorldData extends SavedData {
         if(this.noPupfishChunk){
             compound.putBoolean("NoPupfishChunk", noPupfishChunk);
         }
+        if (!animalDictionaryGrantedPlayers.isEmpty()) {
+            ListTag list = new ListTag();
+            for (UUID id : animalDictionaryGrantedPlayers) {
+                list.add(StringTag.valueOf(id.toString()));
+            }
+            compound.put("AnimalDictionaryPlayers", list);
+        }
         return compound;
     }
 
@@ -162,25 +196,17 @@ public class AMWorldData extends SavedData {
     }
 
     private void searchForPupfishChunk() {
-        if (level == null) {
-            return;
-        }
-        if (!(level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator chunkGenerator)) {
-            if (!noPupfishChunk) {
-                AlexsMobs.LOGGER.warn("Alex's Mobs: cannot search for Devil's Hole Pupfish chunk — world generator is not noise-based. Disabling pupfish chunk restriction.");
-                noPupfishChunk = true;
+        if (level != null && level.getChunkSource().getGenerator() instanceof NoiseBasedChunkGenerator chunkGenerator) {
+            Random random = new Random(level.getSeed() + pupfishSeedAddition);
+            int randomXCoord = random.nextInt(AMConfig.pupfishChunkSpawnDistance * 2) - AMConfig.pupfishChunkSpawnDistance;
+            int randomZCoord = random.nextInt(AMConfig.pupfishChunkSpawnDistance * 2) - AMConfig.pupfishChunkSpawnDistance;
+            ChunkPos checkPos = new ChunkPos(randomXCoord >> 4, randomZCoord >> 4);
+            BlockPos center = new BlockPos(checkPos.getMiddleBlockX(), chunkGenerator.getSeaLevel(), checkPos.getMiddleBlockZ());
+            int maxWater = getWaterHeight(chunkGenerator, level.getChunkSource().randomState(), center.getX(), center.getZ(), level);
+            if(maxWater > 31 && maxWater < 63){
+                pupfishChunk = checkPos;
+                AlexsMobs.LOGGER.info("Found Pupfish chunk at " + pupfishChunk.getMaxBlockX() + " ~ " + pupfishChunk.getMinBlockZ() + " after " + pupfishSeedAddition + " tries");
             }
-            return;
-        }
-        Random random = new Random(level.getSeed() + pupfishSeedAddition);
-        int randomXCoord = random.nextInt(AMConfig.pupfishChunkSpawnDistance * 2) - AMConfig.pupfishChunkSpawnDistance;
-        int randomZCoord = random.nextInt(AMConfig.pupfishChunkSpawnDistance * 2) - AMConfig.pupfishChunkSpawnDistance;
-        ChunkPos checkPos = new ChunkPos(randomXCoord >> 4, randomZCoord >> 4);
-        BlockPos center = new BlockPos(checkPos.getMiddleBlockX(), chunkGenerator.getSeaLevel(), checkPos.getMiddleBlockZ());
-        int maxWater = getWaterHeight(chunkGenerator, level.getChunkSource().randomState(), center.getX(), center.getZ(), level);
-        if (maxWater > 31 && maxWater < 63) {
-            pupfishChunk = checkPos;
-            AlexsMobs.LOGGER.info("Found Pupfish chunk at " + pupfishChunk.getMaxBlockX() + " ~ " + pupfishChunk.getMinBlockZ() + " after " + pupfishSeedAddition + " tries");
         }
         pupfishSeedAddition++;
     }

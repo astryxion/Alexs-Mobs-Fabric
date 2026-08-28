@@ -27,8 +27,8 @@ public class BlockSculkBoomer extends BaseEntityBlock {
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final BooleanProperty OPEN = BooleanProperty.create("open");
 
-    protected BlockSculkBoomer() {
-        super(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLUE).strength(3.0F, 12.0F).sound(SoundType.SCULK_CATALYST));
+    public BlockSculkBoomer(BlockBehaviour.Properties properties) {
+        super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(OPEN, false).setValue(POWERED, false));
     }
 

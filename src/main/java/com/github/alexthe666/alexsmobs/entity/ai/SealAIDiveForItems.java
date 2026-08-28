@@ -3,6 +3,8 @@ package com.github.alexthe666.alexsmobs.entity.ai;
 import com.github.alexthe666.alexsmobs.entity.EntitySeal;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
@@ -31,7 +33,7 @@ public class SealAIDiveForItems extends Goal {
     private BlockPos digPos;
     private boolean returnToPlayer = false;
     private int digTime = 0;
-    public static final ResourceLocation SEAL_REWARD = new ResourceLocation("alexsmobs","gameplay/seal_reward");
+    public static final ResourceLocation SEAL_REWARD = new ResourceLocation("alexsmobs", "gameplay/seal_reward");
 
     public SealAIDiveForItems(EntitySeal seal) {
         this.seal = seal;

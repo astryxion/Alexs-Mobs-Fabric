@@ -15,6 +15,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -33,15 +34,14 @@ import java.util.List;
 import java.util.Locale;
 
 public class BlockEndPirateAnchor extends BaseEntityBlock implements AMSpecialRenderBlock {
-
     public static final BooleanProperty EASTORWEST = BooleanProperty.create("eastorwest");
     public static final EnumProperty<BlockEndPirateAnchor.PieceType> PIECE = EnumProperty.create("piece", BlockEndPirateAnchor.PieceType.class);
     protected static final VoxelShape FULL_AABB_EW = Block.box(0.0D, 0.0D, 4D, 16.0D, 16.0D, 12.0D);
     protected static final VoxelShape FULL_AABB_NS = Block.box(4.0D, 0.0D, 0.0D, 12.0D, 16.0D, 16.0D);
     protected static final VoxelShape CHAIN_AABB = Block.box(4.0D, 0.0D, 4.0D, 12.0D, 16.0D, 12.0D);
 
-    protected BlockEndPirateAnchor() {
-        super(Properties.of().mapColor(MapColor.COLOR_BLACK).friction(0.97F).strength(10.0F).lightLevel((i) -> 6).sound(SoundType.STONE).noOcclusion());
+    public BlockEndPirateAnchor(BlockBehaviour.Properties properties) {
+        super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(EASTORWEST, Boolean.valueOf(false)).setValue(PIECE, PieceType.ANCHOR));
     }
 
