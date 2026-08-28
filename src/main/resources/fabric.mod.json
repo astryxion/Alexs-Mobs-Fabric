@@ -36,7 +36,7 @@
 		"fabricloader": ">=0.19.3",
 		"minecraft": ">=26.2",
 		"java": ">=25",
-		"citadel": ">=26.2-1.1.0",
+		"citadel": ">=26.2-1.2.0",
 		"fabric-api": "*"
 	}
 }

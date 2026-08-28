@@ -10,6 +10,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.function.Function;
+import net.minecraft.client.renderer.BindGroupLayouts;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.util.Util;
@@ -209,6 +210,7 @@ public final class AMRenderTypes {
             .withShaderDefine("NO_OVERLAY")
             .withShaderDefine("NO_CARDINAL_LIGHTING")
             .withShaderDefine("APPLY_TEXTURE_MATRIX")
+            .withBindGroupLayout(BindGroupLayouts.SAMPLER0)
             .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
             .withCull(false)
             .withVertexBinding(0, DefaultVertexFormat.ENTITY)
@@ -249,6 +251,7 @@ public final class AMRenderTypes {
     public static final RenderPipeline GHOST_PICKAXE_ENTITY_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)
             .withLocation(Identifier.parse("alexsmobs:pipeline/ghost_pickaxe_entity"))
             .withShaderDefine("ALPHA_CUTOUT", 0.1F)
+            .withBindGroupLayout(BindGroupLayouts.SAMPLER1)
             .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
             .withCull(false)
             .build());
