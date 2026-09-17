@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.item;
 
+import net.minecraft.util.Prediction;
+
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
@@ -21,7 +23,7 @@ public class ItemStinkBottle extends AMBlockItem {
             if(context.getPlayer() == null){
                 context.getLevel().addFreshEntity(new ItemEntity(context.getLevel(),context.getClickedPos().getX() + 0.5F, context.getClickedPos().getY() + 0.5F, context.getClickedPos().getZ() + 0.5F, bottle));
             }else if(!context.getPlayer().addItem(bottle)){
-                context.getPlayer().drop(bottle, false);
+                context.getPlayer().drop(bottle, false, Prediction.SERVER_ONLY);
             }
         }
         return result;

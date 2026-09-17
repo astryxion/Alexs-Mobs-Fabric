@@ -8,7 +8,8 @@ import com.github.alexthe666.alexsmobs.entity.EntityMimicube;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
@@ -37,23 +38,24 @@ public class LayerMimicubeHeldItem extends RenderLayer<LivingEntityRenderState, 
         float attackprogress = Mth.lerp(partialTicks, entitylivingbaseIn.prevAttackProgress, entitylivingbaseIn.attackProgress);
         double bob1 = Math.cos(state.ageInTicks * 0.1F) * 0.1F + 0.1F;
         double bob2 = Math.sin(state.ageInTicks * 0.1F) * 0.1F + 0.1F;
-        ItemInHandRenderer itemRenderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
         if (!itemRight.isEmpty()) {
             matrixStackIn.pushPose();
             translateToHand(false, matrixStackIn);
             matrixStackIn.translate(-0.5F, 0.1F - bob1, -0.1F);
             matrixStackIn.scale(0.9F * (1F - rightSwap), 0.9F * (1F - rightSwap), 0.9F * (1F - rightSwap));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(180));
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(180));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(180));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(180));
             if (itemRight.getItem() instanceof ShieldItem) {
                 matrixStackIn.translate(-0.1F, 0, -0.4F);
-                matrixStackIn.mulPose(Axis.YP.rotationDegrees(90));
+                matrixStackIn.rotate(Axis.YP.rotationDegrees(90));
             }
-            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(-10));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(360 * rightSwap));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-40 * attackprogress));
+            matrixStackIn.rotate(Axis.ZP.rotationDegrees(-10));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(360 * rightSwap));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(-40 * attackprogress));
             int lightRight = rightSwap > 0 ? (int) (-100 * rightSwap) : packedLightIn;
-            itemRenderer.renderItem(entitylivingbaseIn, itemRight, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, matrixStackIn, collector, lightRight);
+            ItemStackRenderState _irs = new ItemStackRenderState();
+            Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemRight, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, entitylivingbaseIn);
+            _irs.submit(matrixStackIn, collector, lightRight, OverlayTexture.NO_OVERLAY, 0);
             matrixStackIn.popPose();
         }
         if (!itemLeft.isEmpty()) {
@@ -61,16 +63,18 @@ public class LayerMimicubeHeldItem extends RenderLayer<LivingEntityRenderState, 
             translateToHand(false, matrixStackIn);
             matrixStackIn.translate(0.45F, 0.1F - bob2, -0.1F);
             matrixStackIn.scale(0.9F * (1F - leftSwap), 0.9F * (1F - leftSwap), 0.9F * (1F - leftSwap));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(180));
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(180));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(180));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(180));
             if (itemLeft.getItem() instanceof ShieldItem) {
                 matrixStackIn.translate(-0.2F, 0, -0.4F);
-                matrixStackIn.mulPose(Axis.YP.rotationDegrees(90));
+                matrixStackIn.rotate(Axis.YP.rotationDegrees(90));
             }
-            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(10));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(360 * leftSwap));
+            matrixStackIn.rotate(Axis.ZP.rotationDegrees(10));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(360 * leftSwap));
             int lightLeft = leftSwap > 0 ? (int) (-100 * leftSwap) : packedLightIn;
-            itemRenderer.renderItem(entitylivingbaseIn, itemLeft, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, matrixStackIn, collector, lightLeft);
+            ItemStackRenderState _irs = new ItemStackRenderState();
+            Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemLeft, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, entitylivingbaseIn);
+            _irs.submit(matrixStackIn, collector, lightLeft, OverlayTexture.NO_OVERLAY, 0);
             matrixStackIn.popPose();
         }
     }

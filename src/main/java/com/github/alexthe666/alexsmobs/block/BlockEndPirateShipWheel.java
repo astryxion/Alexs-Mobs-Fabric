@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityEndPirateShipWheel;
@@ -32,10 +31,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
 public class BlockEndPirateShipWheel extends BaseEntityBlock implements AMSpecialRenderBlock{
-    public static final MapCodec<BlockEndPirateShipWheel> CODEC = simpleCodec(BlockEndPirateShipWheel::new);
 
 
     public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
@@ -53,11 +50,6 @@ public class BlockEndPirateShipWheel extends BaseEntityBlock implements AMSpecia
     public BlockEndPirateShipWheel(BlockBehaviour.Properties props) {
         super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
-    }
-
-    @Override
-    public MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
     }
 
     @Override

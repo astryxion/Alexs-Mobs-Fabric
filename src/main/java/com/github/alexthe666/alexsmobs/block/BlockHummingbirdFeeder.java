@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import com.github.alexthe666.alexsmobs.misc.AMTagRegistry;
@@ -40,10 +39,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
 public class BlockHummingbirdFeeder extends Block {
-    public static final MapCodec<BlockHummingbirdFeeder> CODEC = simpleCodec(BlockHummingbirdFeeder::new);
     public static final IntegerProperty CONTENTS = IntegerProperty.create("contents", 0, 3);
     public static final BooleanProperty HANGING = BlockStateProperties.HANGING;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
@@ -57,11 +54,6 @@ public class BlockHummingbirdFeeder extends Block {
     public BlockHummingbirdFeeder(BlockBehaviour.Properties props) {
         super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(CONTENTS, 0).setValue(HANGING, false));
-    }
-
-    @Override
-    public MapCodec<? extends Block> codec() {
-        return CODEC;
     }
 
     @Deprecated
@@ -135,7 +127,7 @@ public class BlockHummingbirdFeeder extends Block {
     }
 
     public PushReaction getPistonPushReaction(BlockState state) {
-        return PushReaction.DESTROY;
+        return PushReaction.POPPED;
     }
 
     @Override

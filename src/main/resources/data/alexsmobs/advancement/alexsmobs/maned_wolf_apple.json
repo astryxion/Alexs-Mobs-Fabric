@@ -26,7 +26,11 @@
           ]
         },
         "entity": {
-          "type": "alexsmobs:maned_wolf"
+          "type": "minecraft:entity_properties",
+          "entity": "this",
+          "predicate": {
+            "minecraft:entity_type": "alexsmobs:maned_wolf"
+          }
         }
       }
     }

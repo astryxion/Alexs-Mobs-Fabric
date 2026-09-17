@@ -40,7 +40,7 @@ public class BoneSerpentAIJump extends JumpGoal {
 
     private boolean canJumpTo(BlockPos pos, int dx, int dz, int scale) {
         BlockPos blockpos = pos.offset(dx * scale, 0, dz * scale);
-        return (this.dolphin.level().getFluidState(blockpos).is(FluidTags.WATER) || this.dolphin.level().getFluidState(blockpos).is(FluidTags.LAVA)) && !this.dolphin.level().getBlockState(blockpos).blocksMotion();
+        return (this.dolphin.level().getFluidState(blockpos).is(FluidTags.WATER) || this.dolphin.level().getFluidState(blockpos).is(FluidTags.LAVA)) && !this.dolphin.level().getBlockState(blockpos).isSolid();
     }
 
     private boolean isAirAbove(BlockPos pos, int dx, int dz, int scale) {

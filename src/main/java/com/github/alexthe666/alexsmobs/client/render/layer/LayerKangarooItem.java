@@ -8,7 +8,8 @@ import com.github.alexthe666.alexsmobs.entity.EntityKangaroo;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
@@ -39,11 +40,12 @@ public class LayerKangarooItem extends RenderLayer<LivingEntityRenderState, Cita
         translateToHand(matrixStackIn, left);
         matrixStackIn.translate(0F, 0.75F, -0.125F);
 
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(-110F));
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(180F));
+        matrixStackIn.rotate(Axis.XP.rotationDegrees(-110F));
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(180F));
         matrixStackIn.scale(0.8F, 0.8F, 0.8F);
-        ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-        renderer.renderItem(entitylivingbaseIn, itemstack, left ? ItemDisplayContext.THIRD_PERSON_LEFT_HAND : ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, matrixStackIn, bufferIn, packedLightIn);
+        ItemStackRenderState _irs = new ItemStackRenderState();
+        Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemstack, left ? ItemDisplayContext.THIRD_PERSON_LEFT_HAND : ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, entitylivingbaseIn);
+        _irs.submit(matrixStackIn, bufferIn, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
         matrixStackIn.popPose();
         matrixStackIn.popPose();
     }

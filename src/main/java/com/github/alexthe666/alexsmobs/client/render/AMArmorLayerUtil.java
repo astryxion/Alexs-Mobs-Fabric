@@ -145,7 +145,7 @@ public final class AMArmorLayerUtil {
             AlexAdvancedEntityModel.withCitadelSubmitPose(pose, scratch, stack -> renderer.render(stack, vc));
         });
         if (glint) {
-            collector.submitCustomGeometry(poseStack, RenderTypes.armorEntityGlint(), (pose, vc) -> {
+            collector.submitCustomGeometry(poseStack, RenderTypes.trimmedArmorGlint(), (pose, vc) -> {
                 snapshot.apply(model);
                 AlexAdvancedEntityModel.withCitadelSubmitPose(pose, scratch, stack -> renderer.render(stack, vc));
             });

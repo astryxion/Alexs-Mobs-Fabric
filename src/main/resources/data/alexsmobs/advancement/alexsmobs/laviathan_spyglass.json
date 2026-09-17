@@ -15,7 +15,6 @@
     "announce_to_chat": true,
     "hidden": false
   },
-
   "criteria": {
     "spyglass_at_bison": {
       "conditions": {
@@ -24,20 +23,17 @@
             "minecraft:spyglass"
           ]
         },
-        "player": [
-          {
-            "condition": "minecraft:entity_properties",
-            "entity": "this",
-            "predicate": {
-              "type_specific": {
-                "type": "player",
-                "looking_at": {
-                  "type": "alexsmobs:laviathan"
-                }
+        "player": {
+          "type": "minecraft:entity_properties",
+          "entity": "this",
+          "predicate": {
+            "minecraft:type_specific/player": {
+              "looking_at": {
+                "minecraft:entity_type": "alexsmobs:laviathan"
               }
             }
           }
-        ]
+        }
       },
       "trigger": "minecraft:using_item"
     }

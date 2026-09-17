@@ -52,9 +52,9 @@ public class RenderTendonSegment extends EntityRenderer<EntityTendonSegment, Ren
     }
 
     @Override
-    public boolean shouldRender(EntityTendonSegment entity, Frustum frustum, double x, double y, double z) {
+    public boolean shouldRender(EntityTendonSegment entity, Frustum frustum, double x, double y, double z, float partialTicks) {
         Entity next = entity.getFromEntity();
-        return next != null && frustum.isVisible(entity.getBoundingBox().minmax(next.getBoundingBox())) || super.shouldRender(entity, frustum, x, y, z);
+        return next != null && frustum.isVisible(entity.getBoundingBox().minmax(next.getBoundingBox())) || super.shouldRender(entity, frustum, x, y, z, partialTicks);
     }
 
     @Override
@@ -117,7 +117,7 @@ public class RenderTendonSegment extends EntityRenderer<EntityTendonSegment, Ren
         double d6 = Mth.lerp(partialTicks, mob.zOld, mob.getZ());
         float f3 = 0;
         if (mob instanceof Player player && segment.isCreator(mob)) {
-            float f = player.getAttackAnim(partialTicks);
+            float f = player.getSwingAnimation(partialTicks);
             float f1 = Mth.sin(Mth.sqrt(f) * Mth.PI);
             float f2 = Mth.lerp(partialTicks, player.yBodyRotO, player.yBodyRot) * Mth.DEG_TO_RAD;
             int i = player.getMainArm() == HumanoidArm.RIGHT ? 1 : -1;

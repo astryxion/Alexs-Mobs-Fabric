@@ -47,7 +47,7 @@ public class RenderCentipedeHead extends MobRenderer<EntityCentipedeHead, Living
 
         Pose pose = entity.getPose();
         if (pose != Pose.SLEEPING) {
-            stack.mulPose(Axis.YP.rotationDegrees(180.0F - yawIn));
+            stack.rotate(Axis.YP.rotationDegrees(180.0F - yawIn));
         }
 
         if (entity.deathTime > 0) {
@@ -57,12 +57,12 @@ public class RenderCentipedeHead extends MobRenderer<EntityCentipedeHead, Living
                 f = 1.0F;
             }
             stack.translate(0, f * 1F, 0);
-            stack.mulPose(Axis.ZP.rotationDegrees(f * this.getFlipDegrees()));
+            stack.rotate(Axis.ZP.rotationDegrees(f * this.getFlipDegrees()));
         } else if (entity.hasCustomName()) {
             String s = ChatFormatting.stripFormatting(entity.getName().getString());
             if (("Dinnerbone".equals(s) || "Grumm".equals(s))) {
                 stack.translate(0.0D, (double) (entity.getBbHeight() + 0.1F), 0.0D);
-                stack.mulPose(Axis.ZP.rotationDegrees(180.0F));
+                stack.rotate(Axis.ZP.rotationDegrees(180.0F));
             }
         }
     }

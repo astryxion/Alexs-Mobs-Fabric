@@ -33,7 +33,7 @@ public class ItemLeafcutterPupa extends Item {
             if(playerentity != null){
                 playerentity.gameEvent(GameEvent.BLOCK_PLACE);
             }
-            world.playSound(playerentity, blockpos, SoundEvents.AXE_STRIP, SoundSource.BLOCKS, 1.0F, 1.0F);
+            world.playSound(playerentity, blockpos, SoundEvents.AXE_STRIP.value(), SoundSource.BLOCKS, 1.0F, 1.0F);
             if (!world.isClientSide()) {
                 world.setBlock(blockpos, AMBlockRegistry.LEAFCUTTER_ANTHILL.defaultBlockState(), 11);
                 world.setBlock(blockpos.below(), AMBlockRegistry.LEAFCUTTER_ANT_CHAMBER.defaultBlockState(), 11);

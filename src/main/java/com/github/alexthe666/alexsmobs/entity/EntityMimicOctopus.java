@@ -316,11 +316,11 @@ public class EntityMimicOctopus extends TamableAnimal implements ISemiAquatic, I
         return this.getMimicState() == MimicState.OVERLAY && this.getMimickedBlock() != null;
     }
 
-    public double getVisibilityPercent(@Nullable Entity lookingEntity) {
+    public double getVisibilityPercent(ServerLevel serverLevel, @Nullable Entity lookingEntity) {
         if (isActiveCamo()) {
-            return super.getVisibilityPercent(lookingEntity) * 0.1F;
+            return super.getVisibilityPercent(serverLevel, lookingEntity) * 0.1F;
         } else {
-            return super.getVisibilityPercent(lookingEntity);
+            return super.getVisibilityPercent(serverLevel, lookingEntity);
         }
     }
 

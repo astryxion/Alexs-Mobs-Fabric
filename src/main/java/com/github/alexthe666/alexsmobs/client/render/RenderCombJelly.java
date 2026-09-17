@@ -55,7 +55,7 @@ public class RenderCombJelly extends MobRenderer<EntityCombJelly, LivingEntityRe
     protected RenderType getRenderType(LivingEntityRenderState state, boolean normal, boolean invis, boolean outline) {
         Identifier tex = this.getTextureLocation(state);
         if (invis) {
-            return RenderTypes.entityTranslucentCullItemTarget(tex);
+            return RenderTypes.entityTranslucentCull(tex);
         } else if (normal) {
             return RenderTypes.entityTranslucent(tex);
         } else {

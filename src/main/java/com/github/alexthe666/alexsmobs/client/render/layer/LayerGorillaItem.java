@@ -9,7 +9,8 @@ import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
@@ -33,7 +34,6 @@ public class LayerGorillaItem extends RenderLayer<LivingEntityRenderState, Citad
         float partialTicks = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
         ItemStack itemstack = entitylivingbaseIn.getItemBySlot(EquipmentSlot.MAINHAND);
         String name = entitylivingbaseIn.getName().getString().toLowerCase();
-        ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
         if (name.contains("harambe")) {
             ItemStack haloStack = new ItemStack(AMItemRegistry.HALO);
             matrixStackIn.pushPose();
@@ -44,9 +44,11 @@ public class LayerGorillaItem extends RenderLayer<LivingEntityRenderState, Citad
             model.head.translateAndRotate(matrixStackIn);
             float f = 0.1F * (float) Math.sin((entitylivingbaseIn.tickCount + partialTicks) * 0.1F) + (entitylivingbaseIn.isBaby() ? 0.2F : 0F);
             matrixStackIn.translate(0.0F, -0.7F - f, -0.2F);
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(90F));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(90F));
             matrixStackIn.scale(1.3F, 1.3F, 1.3F);
-            renderer.renderItem(entitylivingbaseIn, haloStack, ItemDisplayContext.GROUND, matrixStackIn, bufferIn, packedLightIn);
+            ItemStackRenderState _irs = new ItemStackRenderState();
+            Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, haloStack, ItemDisplayContext.GROUND, entitylivingbaseIn);
+            _irs.submit(matrixStackIn, bufferIn, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
             matrixStackIn.popPose();
         }
         matrixStackIn.pushPose();
@@ -60,12 +62,14 @@ public class LayerGorillaItem extends RenderLayer<LivingEntityRenderState, Citad
             translateToHand(false, matrixStackIn);
             matrixStackIn.translate(-0.4F, 0.75F, -0.0F);
         }
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(-2.5F));
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(-2.5F));
+        matrixStackIn.rotate(Axis.XP.rotationDegrees(-90F));
         if (itemstack.getItem() instanceof BlockItem) {
             matrixStackIn.scale(2, 2, 2);
         }
-        renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, matrixStackIn, bufferIn, packedLightIn);
+        ItemStackRenderState _irs = new ItemStackRenderState();
+        Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemstack, ItemDisplayContext.GROUND, entitylivingbaseIn);
+        _irs.submit(matrixStackIn, bufferIn, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
         matrixStackIn.popPose();
     }
 

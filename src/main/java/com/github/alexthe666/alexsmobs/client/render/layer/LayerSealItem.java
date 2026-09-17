@@ -8,7 +8,8 @@ import com.github.alexthe666.alexsmobs.entity.EntitySeal;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
@@ -39,10 +40,11 @@ public class LayerSealItem extends RenderLayer<LivingEntityRenderState, CitadelE
             matrixStackIn.translate(0.0D, 0.1F, -0.6D);
         }
         matrixStackIn.translate(-0.1F, 0.15F, -0.6F);
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(-45F));
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
-        ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-        renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, matrixStackIn, collector, packedLightIn);
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(-45F));
+        matrixStackIn.rotate(Axis.XP.rotationDegrees(-90F));
+        ItemStackRenderState _irs = new ItemStackRenderState();
+        Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemstack, ItemDisplayContext.GROUND, entitylivingbaseIn);
+        _irs.submit(matrixStackIn, collector, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
         matrixStackIn.popPose();
         matrixStackIn.popPose();
     }

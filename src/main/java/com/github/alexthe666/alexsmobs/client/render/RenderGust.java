@@ -38,12 +38,12 @@ public class RenderGust extends EntityRenderer<EntityGust, EntityRenderState> {
         matrixStackIn.pushPose();
         matrixStackIn.translate(0.0D, (double) 0.5F, 0.0D);
         if (!entityIn.getVertical()) {
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(180F));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(180F));
         } else {
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-180F));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(-180F));
 
         }
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 90.0F));
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 90.0F));
         matrixStackIn.scale(0.5F, 0.5F, 0.5F);
         this.model.hideEyes();
         int packedLightIn = state.lightCoords;

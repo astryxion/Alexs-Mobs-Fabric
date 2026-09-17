@@ -114,8 +114,8 @@ public class RenderSquidGrapple extends EntityRenderer<EntitySquidGrapple, Entit
         return p_114496_.isOnFire() ? 15 : p_114496_.level().getBrightness(LightLayer.BLOCK, p_114497_);
     }
 
-    public boolean shouldRender(EntitySquidGrapple grapple, Frustum f, double d1, double d2, double d3) {
-        return super.shouldRender(grapple, f, d1, d2, d3) || grapple.getOwner() != null && (f.isVisible(grapple.getOwner().getBoundingBox()) || grapple.getOwner() == Minecraft.getInstance().player);
+    public boolean shouldRender(EntitySquidGrapple grapple, Frustum f, double d1, double d2, double d3, float partialTicks) {
+        return super.shouldRender(grapple, f, d1, d2, d3, partialTicks) || grapple.getOwner() != null && (f.isVisible(grapple.getOwner().getBoundingBox()) || grapple.getOwner() == Minecraft.getInstance().player);
     }
 
     @Override
@@ -129,8 +129,8 @@ public class RenderSquidGrapple extends EntityRenderer<EntitySquidGrapple, Entit
         int packedLightIn = state.lightCoords;
 
         matrixStackIn.pushPose();
-        matrixStackIn.mulPose(Axis.YN.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot())));
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(180 + Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+        matrixStackIn.rotate(Axis.YN.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot())));
+        matrixStackIn.rotate(Axis.XP.rotationDegrees(180 + Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
         matrixStackIn.translate(0, -1.5F, -0.25F);
         collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(SQUID_TEXTURE), (submitPose, ivertexbuilder) ->
             AlexAdvancedEntityModel.withCitadelSubmitPose(submitPose, this.citadelPoseScratch, scratch ->

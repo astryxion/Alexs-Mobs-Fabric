@@ -2,7 +2,6 @@ package com.github.alexthe666.alexsmobs.block;
 
 import com.github.alexthe666.alexsmobs.entity.AMEntityRegistry;
 import com.github.alexthe666.alexsmobs.entity.EntityTriops;
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
@@ -15,7 +14,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
 
 public class BlockTriopsEggs extends FrogspawnBlock {
-    public static final MapCodec<FrogspawnBlock> CODEC = FrogspawnBlock.CODEC;
 
     public static BlockBehaviour.Properties defaultProperties() {
         return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_ORANGE).instabreak().noOcclusion().noCollision().sound(SoundType.FROGSPAWN).offsetType(BlockBehaviour.OffsetType.XZ);
@@ -23,11 +21,6 @@ public class BlockTriopsEggs extends FrogspawnBlock {
 
     public BlockTriopsEggs(BlockBehaviour.Properties props) {
         super(props);
-    }
-
-    @Override
-    public MapCodec<FrogspawnBlock> codec() {
-        return CODEC;
     }
 
     public void tick(BlockState blockState, ServerLevel serverLevel, BlockPos blockPos, RandomSource randomSource) {

@@ -60,9 +60,9 @@ public class RenderEndPirateFlag<T extends TileEntityEndPirateFlag> implements B
             case SOUTH -> poseStack.translate(0.5, 1.5F, 0.5F);
             case WEST -> poseStack.translate(0.5F, 1.5F, 0.5F);
         }
-        poseStack.mulPose(dir.getOpposite().getRotation());
-        poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
-        poseStack.mulPose(Axis.YN.rotationDegrees(dir.getAxis() == Direction.Axis.Y ? -90.0F : 90.0F));
+        poseStack.rotate(dir.getOpposite().getRotation());
+        poseStack.rotate(Axis.XP.rotationDegrees(90.0F));
+        poseStack.rotate(Axis.YN.rotationDegrees(dir.getAxis() == Direction.Axis.Y ? -90.0F : 90.0F));
         poseStack.pushPose();
         FLAG_MODEL.renderFlag(tileEntityIn, partialTicks);
         int finalLight = light;

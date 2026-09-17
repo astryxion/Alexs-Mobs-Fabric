@@ -45,8 +45,8 @@ public class LayerCachalotWhaleCapturedSquid extends RenderLayer<LivingEntityRen
                     matrixStackIn.pushPose();
                     translateToPouch(matrixStackIn);
                     matrixStackIn.translate(rightSquid ? -1.2F : 1.2F, -0, -3.4F);
-                    matrixStackIn.mulPose(Axis.ZP.rotationDegrees(180F));
-                    matrixStackIn.mulPose(Axis.YP.rotationDegrees(riderRot + (rightSquid ? -90F : 90F)));
+                    matrixStackIn.rotate(Axis.ZP.rotationDegrees(180F));
+                    matrixStackIn.rotate(Axis.YP.rotationDegrees(riderRot + (rightSquid ? -90F : 90F)));
                     ClientProxy.submitEntityInWorld(squid, 0, 0, 0, 0, partialTicks, matrixStackIn, collector);
                     matrixStackIn.popPose();
                     ClientProxy.currentUnrenderedEntities.add(squid.getUUID());

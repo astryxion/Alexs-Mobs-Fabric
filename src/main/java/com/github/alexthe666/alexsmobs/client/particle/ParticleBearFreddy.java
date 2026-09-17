@@ -46,14 +46,14 @@ public class ParticleBearFreddy extends Particle {
         float laterFlip = Mth.clamp(f - 0.1F, 0F, 0.1F) / 0.1F;
         float scale = 1;
         PoseStack posestack = new PoseStack();
-        posestack.mulPose(camera.rotation());
+        posestack.rotate(camera.rotation());
         posestack.translate(0.0D, -1, 0);
-        posestack.mulPose(Axis.XP.rotationDegrees(10F - laterFlip * 35F));
+        posestack.rotate(Axis.XP.rotationDegrees(10F - laterFlip * 35F));
         posestack.scale(-scale, -scale, scale);
         posestack.translate(0.0D, 0.5F, 2 + (1F - initalFlip));
-        posestack.mulPose(Axis.XP.rotationDegrees(initalFlip * 20F - 5F));
+        posestack.rotate(Axis.XP.rotationDegrees(initalFlip * 20F - 5F));
         float swing = laterFlip * (float) Math.sin((this.age + partialTick) * 0.3F) * 20;
-        posestack.mulPose(Axis.ZP.rotationDegrees((1F - initalFlip) * 45F + swing));
+        posestack.rotate(Axis.ZP.rotationDegrees((1F - initalFlip) * 45F + swing));
         boolean baby = this.model.young;
         this.model.young = false;
         this.model.positionForParticle(partialTick, this.age + partialTick);

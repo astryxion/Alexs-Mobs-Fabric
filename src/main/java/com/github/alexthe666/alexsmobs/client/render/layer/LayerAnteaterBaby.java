@@ -43,8 +43,8 @@ public class LayerAnteaterBaby extends RenderLayer<LivingEntityRenderState, Cita
                     matrixStackIn.pushPose();
                     translateToPouch(matrixStackIn);
                     matrixStackIn.translate(0, -0.12F, 0.1F);
-                    matrixStackIn.mulPose(Axis.ZP.rotationDegrees(180F));
-                    matrixStackIn.mulPose(Axis.YP.rotationDegrees(riderRot + 180F));
+                    matrixStackIn.rotate(Axis.ZP.rotationDegrees(180F));
+                    matrixStackIn.rotate(Axis.YP.rotationDegrees(riderRot + 180F));
                     ClientProxy.submitEntityInWorld(passenger, 0, 0, 0, 0, partialTicks, matrixStackIn, bufferIn);
                     matrixStackIn.popPose();
                     ClientProxy.currentUnrenderedEntities.add(passenger.getUUID());

@@ -79,7 +79,7 @@ public class EntityHammerheadShark extends WaterAnimal {
     }
 
     protected void registerGoals() {
-        this.goalSelector.addGoal(1, new TryFindWaterGoal(this));
+        this.goalSelector.addGoal(1, new TryFindLiquidGoal(this, FluidTags.WATER));
         this.goalSelector.addGoal(1, new CirclePreyGoal(this, 1F));
         this.goalSelector.addGoal(4, new RandomSwimmingGoal(this, 0.6F, 7));
         this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));

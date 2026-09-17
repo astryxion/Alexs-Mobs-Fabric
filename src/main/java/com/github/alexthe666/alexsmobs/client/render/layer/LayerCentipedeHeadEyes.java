@@ -2,7 +2,6 @@ package com.github.alexthe666.alexsmobs.client.render.layer;
 
 import com.github.alexthe666.alexsmobs.client.AlexsMobsClientKeys;
 import com.github.alexthe666.alexsmobs.client.render.CitadelEntityModelBridge;
-import com.github.alexthe666.alexsmobs.client.render.RenderCentipedeHead;
 import com.github.alexthe666.alexsmobs.entity.EntityCentipedeHead;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -26,16 +25,14 @@ public class LayerCentipedeHeadEyes extends RenderLayer<LivingEntityRenderState,
         if (entity == null) {
             return;
         }
-        matrixStackIn.pushPose();
-        bufferIn.submitModel(
-                this.getParentModel(),
-                renderState,
-                matrixStackIn,
-                RenderTypes.eyes(TEXTURE),
-                packedLightIn,
-                LivingEntityRenderer.getOverlayCoords(renderState, 0.0F),
-                -1,
-                null);
-        matrixStackIn.popPose();
+        int overlay = LivingEntityRenderer.getOverlayCoords(renderState, 0.0F);
+        this.getParentModel().setupAnim(renderState);
+        bufferIn.submitCustomGeometry(matrixStackIn, RenderTypes.eyes(TEXTURE), (pose, consumer) -> {
+            PoseStack stack = new PoseStack();
+            stack.pushPose();
+            stack.last().set(pose);
+            this.getParentModel().renderCitadelToBuffer(stack, consumer, packedLightIn, overlay, -1);
+            stack.popPose();
+        });
     }
 }

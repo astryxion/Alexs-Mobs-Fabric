@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:brewing",
+  "input": {
+    "item": "alexsmobs:lava_bottle"
+  },
+  "reagent": {
+    "item": "alexsmobs:bone_serpent_tooth"
+  },
+  "output": {
+    "id": "minecraft:potion",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "alexsmobs:lava_vision"
+      }
+    }
+  }
+}

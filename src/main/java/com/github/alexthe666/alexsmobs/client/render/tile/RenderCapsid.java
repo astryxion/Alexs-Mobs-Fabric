@@ -90,7 +90,7 @@ public class RenderCapsid<T extends TileEntityCapsid> implements BlockEntityRend
 
         poseStack.pushPose();
         poseStack.translate(0.5F, 0.5F + state.floatProgress, 0.5F);
-        poseStack.mulPose(new Quaternionf().rotateY(state.displayAngleRad));
+        poseStack.rotate(new Quaternionf().rotateY(state.displayAngleRad));
         poseStack.pushPose();
         poseStack.translate(0.0F, -0.1F, 0.0F);
         if (state.vibrating && Minecraft.getInstance().level != null) {

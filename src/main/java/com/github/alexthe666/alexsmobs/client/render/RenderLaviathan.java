@@ -85,8 +85,8 @@ public class RenderLaviathan extends MobRenderer<EntityLaviathan, CitadelLivingR
     }
 
     @Override
-    public boolean shouldRender(EntityLaviathan livingEntityIn, Frustum camera, double camX, double camY, double camZ) {
-        if (super.shouldRender(livingEntityIn, camera, camX, camY, camZ)) {
+    public boolean shouldRender(EntityLaviathan livingEntityIn, Frustum camera, double camX, double camY, double camZ, float partialTicks) {
+        if (super.shouldRender(livingEntityIn, camera, camX, camY, camZ, partialTicks)) {
             return true;
         } else {
             for (EntityLaviathanPart part : livingEntityIn.allParts) {

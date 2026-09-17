@@ -48,22 +48,22 @@ public class RenderStraddleboard extends EntityRenderer<EntityStraddleboard, Ent
         int packedLightIn = state.lightCoords;
 
         matrixStackIn.pushPose();
-        matrixStackIn.mulPose(new Quaternionf().rotateY(180F * Mth.DEG_TO_RAD));
-        matrixStackIn.mulPose(Axis.YN.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) + 180));
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+        matrixStackIn.rotate(new Quaternionf().rotateY(180F * Mth.DEG_TO_RAD));
+        matrixStackIn.rotate(Axis.YN.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) + 180));
+        matrixStackIn.rotate(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
         matrixStackIn.pushPose();
         boolean lava = entityIn.isVehicle();
         float f2 = entityIn.getRockingAngle(partialTicks);
         if (!Mth.equal(f2, 0.0F)) {
-            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(entityIn.getRockingAngle(partialTicks)));
+            matrixStackIn.rotate(Axis.ZP.rotationDegrees(entityIn.getRockingAngle(partialTicks)));
         }
         int k = entityIn.getColor();
         float r = (float) (k >> 16 & 255) / 255.0F;
         float g = (float) (k >> 8 & 255) / 255.0F;
         float b = (float) (k & 255) / 255.0F;
         float boardRot = entityIn.prevBoardRot + partialTicks * (entityIn.getBoardRot() - entityIn.prevBoardRot);
-        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(boardRot));
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(180));
+        matrixStackIn.rotate(Axis.ZP.rotationDegrees(boardRot));
+        matrixStackIn.rotate(Axis.XP.rotationDegrees(180));
         matrixStackIn.translate(0, -1.5F - Math.abs(boardRot * 0.007F) - (lava ? 0 : 0.25F), 0);
         BOARD_MODEL.animateBoard(entityIn, entityIn.tickCount + partialTicks);
         collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(TEXTURE_OVERLAY), (pose, ivertexbuilder2) -> {
@@ -74,7 +74,7 @@ public class RenderStraddleboard extends EntityRenderer<EntityStraddleboard, Ent
             stackPose.popPose();
         });
         int color = (255 << 24) | ((int) (r * 255) << 16) | ((int) (g * 255) << 8) | (int) (b * 255);
-        collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucentCullItemTarget(TEXTURE), (pose, ivertexbuilder) -> {
+        collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucentCull(TEXTURE), (pose, ivertexbuilder) -> {
             PoseStack stackPose = new PoseStack();
             stackPose.pushPose();
             stackPose.last().set(pose);

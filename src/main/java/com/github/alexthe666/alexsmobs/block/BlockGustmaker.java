@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import com.github.alexthe666.alexsmobs.entity.EntityGust;
 import net.minecraft.core.BlockPos;
@@ -25,10 +24,8 @@ import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
 public class BlockGustmaker extends Block {
-    public static final MapCodec<BlockGustmaker> CODEC = simpleCodec(BlockGustmaker::new);
     public static final EnumProperty<Direction> FACING = DirectionalBlock.FACING;
     public static final BooleanProperty TRIGGERED = BlockStateProperties.TRIGGERED;
 
@@ -39,11 +36,6 @@ public class BlockGustmaker extends Block {
     public BlockGustmaker(BlockBehaviour.Properties props) {
         super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(TRIGGERED, Boolean.valueOf(false)));
-    }
-
-    @Override
-    public MapCodec<? extends Block> codec() {
-        return CODEC;
     }
 
     public static Vec3 getDispensePosition(BlockPos coords, Direction dir) {

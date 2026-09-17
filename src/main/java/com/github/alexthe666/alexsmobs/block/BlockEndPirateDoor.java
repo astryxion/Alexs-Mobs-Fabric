@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityEndPirateDoor;
@@ -38,10 +37,8 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
 public class BlockEndPirateDoor extends BaseEntityBlock {
-    public static final MapCodec<BlockEndPirateDoor> CODEC = simpleCodec(BlockEndPirateDoor::new);
 
     public static final EnumProperty<Direction> HORIZONTAL_FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty OPEN = BooleanProperty.create("open");
@@ -61,11 +58,6 @@ public class BlockEndPirateDoor extends BaseEntityBlock {
     public BlockEndPirateDoor(BlockBehaviour.Properties props) {
         super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(SEGMENT, 0).setValue(OPEN, false).setValue(HINGE, DoorHingeSide.RIGHT).setValue(HORIZONTAL_FACING, Direction.NORTH));
-    }
-
-    @Override
-    public MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
     }
 
     public VoxelShape getShape(BlockState p_52807_, BlockGetter p_52808_, BlockPos p_52809_, CollisionContext p_52810_) {

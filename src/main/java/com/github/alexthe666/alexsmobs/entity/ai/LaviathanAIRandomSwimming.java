@@ -19,9 +19,9 @@ public class LaviathanAIRandomSwimming extends LavaAndWaterAIRandomSwimming {
 
         BlockPos pos = this.mob.blockPosition().offset(RandomPos.generateRandomDirection(this.mob.getRandom(), 16, 5));
 
-        for (int i = 0; pos != null && this.mob.level().getBlockState(new BlockPos(pos)).getFluidState().isEmpty() && i++ < 10; pos = this.mob.blockPosition().offset(RandomPos.generateRandomDirection(this.mob.getRandom(), 16, 5))) {
+        for (int i = 0; pos != null && this.mob.level().getBlockState(pos).getFluidState().isEmpty() && i++ < 10; pos = this.mob.blockPosition().offset(RandomPos.generateRandomDirection(this.mob.getRandom(), 16, 5))) {
         }
-        if (this.mob.level().getBlockState(new BlockPos(pos)).getFluidState().isEmpty()) {
+        if (this.mob.level().getBlockState(pos).getFluidState().isEmpty()) {
             return null;
         }
         if(mob.getRandom().nextInt(3) == 0){

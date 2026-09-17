@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.util.Prediction;
+
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
@@ -450,7 +452,7 @@ public class EntityRhinoceros extends Animal implements IAnimatedEntity {
                 this.usePlayerItem(player, hand, itemstack);
                 ItemStack bottle = new ItemStack(Items.GLASS_BOTTLE);
                 if(!player.addItem(bottle)){
-                    player.drop(bottle, false);
+                    player.drop(bottle, false, Prediction.SERVER_ONLY);
                 }
                 return InteractionResult.SUCCESS;
             }

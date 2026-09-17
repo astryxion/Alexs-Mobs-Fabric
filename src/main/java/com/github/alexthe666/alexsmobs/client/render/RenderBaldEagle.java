@@ -38,11 +38,11 @@ public class RenderBaldEagle extends MobRenderer<EntityBaldEagle, LivingEntityRe
     }
 
     @Override
-    public boolean shouldRender(EntityBaldEagle baldEagle, Frustum p_225626_2_, double p_225626_3_, double p_225626_5_, double p_225626_7_) {
+    public boolean shouldRender(EntityBaldEagle baldEagle, Frustum p_225626_2_, double p_225626_3_, double p_225626_5_, double p_225626_7_, float partialTicks) {
         if (baldEagle.isPassenger() && baldEagle.getVehicle() instanceof Player && Minecraft.getInstance().player == baldEagle.getVehicle() && Minecraft.getInstance().options.getCameraType() == CameraType.FIRST_PERSON) {
             return false;
         }
-        return super.shouldRender(baldEagle, p_225626_2_, p_225626_3_, p_225626_5_, p_225626_7_);
+        return super.shouldRender(baldEagle, p_225626_2_, p_225626_3_, p_225626_5_, p_225626_7_, partialTicks);
     }
 
     @Override
@@ -68,14 +68,14 @@ public class RenderBaldEagle extends MobRenderer<EntityBaldEagle, LivingEntityRe
                         matrixStackIn.translate(-0.3F, -0.7F, 0.5F);
                         humanoidModel.leftArm.translateAndRotate(matrixStackIn);
                         matrixStackIn.translate(-0.2F, 0.5F, -0.18F);
-                        matrixStackIn.mulPose(Axis.XP.rotationDegrees(40F));
-                        matrixStackIn.mulPose(Axis.YP.rotationDegrees(70F));
+                        matrixStackIn.rotate(Axis.XP.rotationDegrees(40F));
+                        matrixStackIn.rotate(Axis.YP.rotationDegrees(70F));
                     } else {
                         matrixStackIn.translate(0.3F, -0.7F, 0.5F);
                         humanoidModel.rightArm.translateAndRotate(matrixStackIn);
                         matrixStackIn.translate(0.2F, 0.5F, -0.18F);
-                        matrixStackIn.mulPose(Axis.XP.rotationDegrees(40F));
-                        matrixStackIn.mulPose(Axis.YP.rotationDegrees(-70F));
+                        matrixStackIn.rotate(Axis.XP.rotationDegrees(40F));
+                        matrixStackIn.rotate(Axis.YP.rotationDegrees(-70F));
                     }
                 }
             }

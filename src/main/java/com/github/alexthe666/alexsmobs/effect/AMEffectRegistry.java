@@ -77,30 +77,6 @@ public class AMEffectRegistry {
     }
 
     public static void registerBrewingRecipes() {
-        try {
-            AMBrewing.reset();
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(Potions.STRENGTH), Ingredient.of(AMItemRegistry.BEAR_FUR), createPotion(KNOCKBACK_RESISTANCE_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(Potions.LONG_STRENGTH), Ingredient.of(AMItemRegistry.BEAR_FUR), createPotion(LONG_KNOCKBACK_RESISTANCE_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(Potions.STRONG_STRENGTH), Ingredient.of(AMItemRegistry.BEAR_FUR), createPotion(STRONG_KNOCKBACK_RESISTANCE_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(KNOCKBACK_RESISTANCE_POTION), Ingredient.of(Items.REDSTONE), createPotion(LONG_KNOCKBACK_RESISTANCE_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(KNOCKBACK_RESISTANCE_POTION), Ingredient.of(Items.GLOWSTONE_DUST), createPotion(STRONG_KNOCKBACK_RESISTANCE_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(new ItemStack(AMItemRegistry.LAVA_BOTTLE), Ingredient.of(AMItemRegistry.BONE_SERPENT_TOOTH), createPotion(LAVA_VISION_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(LAVA_VISION_POTION), Ingredient.of(Items.REDSTONE), createPotion(LONG_LAVA_VISION_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(Potions.POISON), Ingredient.of(AMItemRegistry.RATTLESNAKE_RATTLE), new ItemStack(AMItemRegistry.POISON_BOTTLE)));
-            AMBrewing.register(new ProperBrewingRecipe(new ItemStack(AMItemRegistry.POISON_BOTTLE), Ingredient.of(AMItemRegistry.CENTIPEDE_LEG), createPotion(POISON_RESISTANCE_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(new ItemStack(AMItemRegistry.KOMODO_SPIT_BOTTLE), Ingredient.of(AMItemRegistry.CENTIPEDE_LEG), createPotion(POISON_RESISTANCE_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(POISON_RESISTANCE_POTION), Ingredient.of(AMItemRegistry.KOMODO_SPIT), createPotion(LONG_POISON_RESISTANCE_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(Potions.STRONG_SWIFTNESS), Ingredient.of(AMItemRegistry.GAZELLE_HORN), createPotion(SPEED_III_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(Potions.AWKWARD), Ingredient.of(AMItemRegistry.COCKROACH_WING), createPotion(BUG_PHEROMONES_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(BUG_PHEROMONES_POTION), Ingredient.of(Items.REDSTONE), createPotion(LONG_BUG_PHEROMONES_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(Potions.AWKWARD), Ingredient.of(AMItemRegistry.SOUL_HEART), createPotion(SOULSTEAL_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(SOULSTEAL_POTION), Ingredient.of(Items.REDSTONE), createPotion(LONG_SOULSTEAL_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(SOULSTEAL_POTION), Ingredient.of(Items.GLOWSTONE_DUST), createPotion(STRONG_SOULSTEAL_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(Potions.AWKWARD), Ingredient.of(AMItemRegistry.DROPBEAR_CLAW), createPotion(CLINGING_POTION)));
-            AMBrewing.register(new ProperBrewingRecipe(createPotion(CLINGING_POTION), Ingredient.of(Items.REDSTONE), createPotion(LONG_CLINGING_POTION)));
-        } catch (Throwable t) {
-            AMBrewing.reset();
-            AlexsMobs.LOGGER.warn("Skipped a brewing-recipe registration pass; recipes are registered again when PotionBrewing is rebuilt.", t);
-        }
+        // Brewing mixes are data recipes under data/alexsmobs/recipe/brewing/
     }
 }

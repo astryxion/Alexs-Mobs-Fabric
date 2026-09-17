@@ -4,7 +4,8 @@
       "name": "trader_elephant_chest_emerald",
       "rolls": {
         "min": 0,
-        "max": 1
+        "max": 1,
+        "type": "minecraft:uniform"
       },
       "entries": [
         {
@@ -15,7 +16,8 @@
               "function": "set_count",
               "count": {
                 "min": 0,
-                "max": 1
+                "max": 1,
+                "type": "minecraft:uniform"
               }
             }
           ],
@@ -27,7 +29,8 @@
       "name": "trader_elephant_book",
       "rolls": {
         "min": 0,
-        "max": 1
+        "max": 1,
+        "type": "minecraft:uniform"
       },
       "entries": [
         {
@@ -38,7 +41,8 @@
               "function": "set_count",
               "count": {
                 "min": 0,
-                "max": 1
+                "max": 1,
+                "type": "minecraft:uniform"
               }
             }
           ],
@@ -50,7 +54,8 @@
       "name": "trader_elephant_chest",
       "rolls": {
         "min": 2,
-        "max": 13
+        "max": 13,
+        "type": "minecraft:uniform"
       },
       "entries": [
         {
@@ -81,7 +86,8 @@
               "function": "set_count",
               "count": {
                 "min": 1,
-                "max": 2
+                "max": 2,
+                "type": "minecraft:uniform"
               }
             }
           ],
@@ -125,7 +131,8 @@
               "function": "set_count",
               "count": {
                 "min": 1,
-                "max": 2
+                "max": 2,
+                "type": "minecraft:uniform"
               }
             }
           ],
@@ -139,7 +146,8 @@
               "function": "set_count",
               "count": {
                 "min": 1,
-                "max": 2
+                "max": 2,
+                "type": "minecraft:uniform"
               }
             }
           ],

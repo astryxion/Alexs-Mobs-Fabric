@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:brewing",
+  "input": {
+    "item": "alexsmobs:poison_bottle"
+  },
+  "reagent": {
+    "item": "alexsmobs:centipede_leg"
+  },
+  "output": {
+    "id": "minecraft:potion",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "alexsmobs:poison_resistance"
+      }
+    }
+  }
+}

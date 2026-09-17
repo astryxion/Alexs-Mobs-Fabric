@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityEndPirateFlag;
@@ -28,10 +27,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
 public class BlockEndPirateFlag extends BaseEntityBlock {
-    public static final MapCodec<BlockEndPirateFlag> CODEC = simpleCodec(BlockEndPirateFlag::new);
 
     public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
     private static final VoxelShape AABB = Block.box(6, 0, 6, 10, 16, 10);
@@ -43,11 +40,6 @@ public class BlockEndPirateFlag extends BaseEntityBlock {
     public BlockEndPirateFlag(BlockBehaviour.Properties props) {
         super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
-    }
-
-    @Override
-    public MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
     }
 
     public RenderShape getRenderShape(BlockState p_49232_) {

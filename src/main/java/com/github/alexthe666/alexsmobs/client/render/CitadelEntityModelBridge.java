@@ -36,6 +36,11 @@ public final class CitadelEntityModelBridge<E extends LivingEntity> extends Enti
         this.citadel.renderToBuffer(poseStack, buffer, packedLight, packedOverlay, color);
     }
 
+    /** Overlay/custom-geometry path: {@link SubmitNodeCollector} callbacks supply a {@link PoseStack.Pose}. */
+    public void renderCitadelToBuffer(PoseStack.Pose pose, VertexConsumer buffer, int packedLight, int packedOverlay, int color) {
+        AlexAdvancedEntityModel.renderSubmitted(pose, this.citadel, buffer, packedLight, packedOverlay, color);
+    }
+
     /**
      * Queues the Citadel mesh and restores {@link #setupAnim(LivingEntityRenderState)} at replay so a shared model
      * is not left in another entity's pose when translucent overlays draw.

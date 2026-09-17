@@ -79,7 +79,7 @@ processResources {
 
 	// Bundle only Citadel asset files into Alex's Mobs resources for dev/runtime.
 	// Avoid copying Citadel META-INF/resource root files that conflict in this project.
-	from("src Citadel Fabric 26.2/main/resources/assets/citadel") {
+	from("src Citadel Fabric 26.3/main/resources/assets/citadel") {
 		into "assets/citadel"
 	}
 }

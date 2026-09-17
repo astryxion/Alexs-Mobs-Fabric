@@ -107,10 +107,10 @@ public class RenderSunbird extends MobRenderer<EntitySunbird, CitadelLivingRende
             if (scorchScale > 0.0F) {
                 poseStack.pushPose();
                 poseStack.translate(0.0F, entity.getBbHeight() * 0.5F, 0.0F);
-                poseStack.mulPose(cameraState.orientation);
-                poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+                poseStack.rotate(cameraState.orientation);
+                poseStack.rotate(Axis.YP.rotationDegrees(180.0F));
                 poseStack.pushPose();
-                poseStack.mulPose(Axis.ZP.rotationDegrees(ageInTicks * 8.0F));
+                poseStack.rotate(Axis.ZP.rotationDegrees(ageInTicks * 8.0F));
                 poseStack.translate(-scorchScale * 0.5F, -scorchScale * 0.5F, 0.0F);
                 Matrix4f mat = poseStack.last().pose();
                 int light = state.lightCoords;

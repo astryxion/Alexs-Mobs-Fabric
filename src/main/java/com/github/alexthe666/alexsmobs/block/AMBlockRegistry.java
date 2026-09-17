@@ -9,6 +9,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.storage.loot.providers.number.ints.ContextIntProviders;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -26,7 +27,7 @@ public class AMBlockRegistry {
         return props.setId(ResourceKey.create(Registries.BLOCK, id));
     }
 
-    public static final Block BANANA_PEEL = registerBlockAndItem("banana_peel", key -> new BlockBananaPeel(withBlockId(key, BlockBananaPeel.defaultProperties())));
+    public static final Block BANANA_PEEL = registerBlockAndItem("banana_peel", key -> new BlockBananaPeel(withBlockId(key, BlockBananaPeel.defaultProperties())), new Item.Properties().compostable(ContextIntProviders.COMPOSTABLE_ALWAYS_ADD_ONE), false);
     public static final Block HUMMINGBIRD_FEEDER = registerBlockAndItem("hummingbird_feeder", key -> new BlockHummingbirdFeeder(withBlockId(key, BlockHummingbirdFeeder.defaultProperties())));
     public static final Block CROCODILE_EGG = registerBlockAndItem("crocodile_egg", key -> new BlockReptileEgg(AMEntityRegistry.CROCODILE, withBlockId(key, BlockReptileEgg.defaultProperties())));
     public static final Block GUSTMAKER = registerBlockAndItem("gustmaker", key -> new BlockGustmaker(withBlockId(key, BlockGustmaker.defaultProperties())));
@@ -52,19 +53,22 @@ public class AMBlockRegistry {
     public static final Block CAIMAN_EGG = registerBlockAndItem("caiman_egg", key -> new BlockReptileEgg(AMEntityRegistry.CAIMAN, withBlockId(key, BlockReptileEgg.defaultProperties())));
     public static final Block TRIOPS_EGGS = registerBlockAndItem("triops_eggs", key -> new BlockTriopsEggs(withBlockId(key, BlockTriopsEggs.defaultProperties())));
     /*
-    public static final DeferredHolder<Block, Block> PURPUR_PLANKS = registerBlockAndItem("purpur_planks", key -> new Block(withBlockId(key, purpurPlanksProperties())));
-    public static final DeferredHolder<Block, Block> PURPUR_PLANKS_STAIRS = registerBlockAndItem("purpur_planks_stairs", key -> new StairBlock(PURPUR_PLANKS.get().defaultBlockState(), withBlockId(key, purpurPlanksProperties())));
-    public static final DeferredHolder<Block, Block> PURPUR_PLANKS_SLAB = registerBlockAndItem("purpur_planks_slab", key -> new SlabBlock(withBlockId(key, purpurPlanksProperties())));
-    public static final DeferredHolder<Block, Block> PURPUR_PLANKS_WALL = registerBlockAndItem("purpur_planks_wall", key -> new WallBlock(withBlockId(key, purpurPlanksProperties())));
-    public static final DeferredHolder<Block, Block> END_PIRATE_DOOR = registerBlockAndItem("end_pirate_door", key -> new BlockEndPirateDoor(withBlockId(key, BlockEndPirateDoor.defaultProperties())));
-    public static final DeferredHolder<Block, Block> END_PIRATE_TRAPDOOR = registerBlockAndItem("end_pirate_trapdoor", key -> new TrapDoorBlock(BlockSetType.OAK, withBlockId(key, BlockBehaviour.Properties.of().mapColor(MapColor.TERRACOTTA_PURPLE).lightLevel(state -> 3).strength(3.0F).sound(SoundType.GLASS).noOcclusion())));
-    public static final DeferredHolder<Block, Block> END_PIRATE_ANCHOR = registerBlockAndItem("end_pirate_anchor", key -> new BlockEndPirateAnchor(withBlockId(key, BlockEndPirateAnchor.defaultProperties())));
-    public static final DeferredHolder<Block, Block> END_PIRATE_ANCHOR_WINCH = registerBlockAndItem("end_pirate_anchor_winch", key -> new BlockEndPirateAnchorWinch(withBlockId(key, BlockEndPirateAnchorWinch.defaultProperties())));
-    public static final DeferredHolder<Block, Block> END_PIRATE_SHIP_WHEEL = registerBlockAndItem("end_pirate_ship_wheel", key -> new BlockEndPirateShipWheel(withBlockId(key, BlockEndPirateShipWheel.defaultProperties())));
-    public static final DeferredHolder<Block, Block> END_PIRATE_FLAG = registerBlockAndItem("end_pirate_flag", key -> new BlockEndPirateFlag(withBlockId(key, BlockEndPirateFlag.defaultProperties())));
-    public static final DeferredHolder<Block, Block> PHANTOM_SAIL = registerBlockAndItem("phantom_sail", key -> new BlockEndPirateSail(false, withBlockId(key, BlockEndPirateSail.defaultProperties())));
-    public static final DeferredHolder<Block, Block> SPECTRE_SAIL = registerBlockAndItem("spectre_sail", key -> new BlockEndPirateSail(true, withBlockId(key, BlockEndPirateSail.defaultProperties())));
+    public static final Block PURPUR_PLANKS = registerBlockAndItem("purpur_planks", key -> new Block(withBlockId(key, purpurPlanksProperties())));
+    public static final Block PURPUR_PLANKS_STAIRS = registerBlockAndItem("purpur_planks_stairs", key -> new StairBlock(PURPUR_PLANKS.defaultBlockState(), withBlockId(key, purpurPlanksProperties())));
+    public static final Block PURPUR_PLANKS_SLAB = registerBlockAndItem("purpur_planks_slab", key -> new SlabBlock(withBlockId(key, purpurPlanksProperties())));
+    public static final Block PURPUR_PLANKS_WALL = registerBlockAndItem("purpur_planks_wall", key -> new WallBlock(withBlockId(key, purpurPlanksProperties())));
+    public static final Block END_PIRATE_DOOR = registerBlockAndItem("end_pirate_door", key -> new BlockEndPirateDoor(withBlockId(key, BlockEndPirateDoor.defaultProperties())));
+    public static final Block END_PIRATE_TRAPDOOR = registerBlockAndItem("end_pirate_trapdoor", key -> new TrapDoorBlock(BlockSetType.OAK, withBlockId(key, BlockBehaviour.Properties.of().mapColor(MapColor.TERRACOTTA_PURPLE).lightLevel(state -> 3).strength(3.0F).sound(SoundType.GLASS).noOcclusion())));
+    public static final Block END_PIRATE_ANCHOR = registerBlockAndItem("end_pirate_anchor", key -> new BlockEndPirateAnchor(withBlockId(key, BlockEndPirateAnchor.defaultProperties())));
+    public static final Block END_PIRATE_ANCHOR_WINCH = registerBlockAndItem("end_pirate_anchor_winch", key -> new BlockEndPirateAnchorWinch(withBlockId(key, BlockEndPirateAnchorWinch.defaultProperties())));
+    public static final Block END_PIRATE_SHIP_WHEEL = registerBlockAndItem("end_pirate_ship_wheel", key -> new BlockEndPirateShipWheel(withBlockId(key, BlockEndPirateShipWheel.defaultProperties())));
+    public static final Block END_PIRATE_FLAG = registerBlockAndItem("end_pirate_flag", key -> new BlockEndPirateFlag(withBlockId(key, BlockEndPirateFlag.defaultProperties())));
+    public static final Block PHANTOM_SAIL = registerBlockAndItem("phantom_sail", key -> new BlockEndPirateSail(false, withBlockId(key, BlockEndPirateSail.defaultProperties())));
+    public static final Block SPECTRE_SAIL = registerBlockAndItem("spectre_sail", key -> new BlockEndPirateSail(true, withBlockId(key, BlockEndPirateSail.defaultProperties())));
 
+    private static BlockBehaviour.Properties purpurPlanksProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PINK).strength(0.5F, 1.0F).sound(SoundType.WOOD);
+    }
      */
 
     public static Block registerBlockAndItem(String name, Function<Identifier, Block> block) {

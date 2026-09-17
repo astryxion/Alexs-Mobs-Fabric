@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.world.item.component.SwingAnimation;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.entity.ai.EtherealMoveController;
@@ -317,7 +319,7 @@ public class EntityUnderminer extends PathfinderMob {
             }
         }
         if(entityData.get(VISUALLY_MINING)){
-            this.swing(InteractionHand.MAIN_HAND);
+            this.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
         }
     }
 
@@ -424,7 +426,7 @@ public class EntityUnderminer extends PathfinderMob {
     }
 
     public void aiStep() {
-        this.updateSwingTime();
+        this.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
         super.aiStep();
     }
 

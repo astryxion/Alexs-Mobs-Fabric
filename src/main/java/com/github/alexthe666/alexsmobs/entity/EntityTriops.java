@@ -32,7 +32,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.PanicGoal;
-import net.minecraft.world.entity.ai.goal.TryFindWaterGoal;
+import net.minecraft.world.entity.ai.goal.TryFindLiquidGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WaterBoundPathNavigation;
 import net.minecraft.world.entity.Bucketable;
@@ -94,7 +94,7 @@ public class EntityTriops extends WaterAnimal implements ITargetsDroppedItems, B
         super.registerGoals();
         this.goalSelector.addGoal(0, new BreedGoal());
         this.goalSelector.addGoal(1, new LayEggGoal());
-        this.goalSelector.addGoal(2, new TryFindWaterGoal(this));
+        this.goalSelector.addGoal(2, new TryFindLiquidGoal(this, FluidTags.WATER));
         this.goalSelector.addGoal(3, new PanicGoal(this, 1D));
         this.goalSelector.addGoal(4, new AnimalAISwimBottom(this, 1F, 7));
         this.targetSelector.addGoal(1, new CreatureAITargetItems(this, false, 10));

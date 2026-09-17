@@ -114,8 +114,8 @@ public class RenderUnderminer extends MobRenderer<EntityUnderminer, HumanoidRend
 
     private static HumanoidModel.ArmPose getUnderminerArmPose(EntityUnderminer mob, HumanoidArm arm) {
         ItemStack itemHeldByArm = mob.getItemHeldByArm(arm);
-        SwingAnimation anim = itemHeldByArm.get(DataComponents.SWING_ANIMATION);
-        if (anim != null && anim.type() == SwingAnimationType.STAB && mob.swinging) {
+        SwingAnimation anim = itemHeldByArm.getAttackAnimation();
+        if (anim != null && anim.type() == SwingAnimationType.STAB && mob.getCurrentSwing() != null) {
             return HumanoidModel.ArmPose.SPEAR;
         } else {
             return itemHeldByArm.is(ItemTags.SPEARS) ? HumanoidModel.ArmPose.SPEAR : HumanoidModel.ArmPose.EMPTY;
@@ -139,8 +139,8 @@ public class RenderUnderminer extends MobRenderer<EntityUnderminer, HumanoidRend
     }
 
     @Override
-    public boolean shouldRender(EntityUnderminer livingEntityIn, Frustum camera, double camX, double camY, double camZ) {
-        if (super.shouldRender(livingEntityIn, camera, camX, camY, camZ)) {
+    public boolean shouldRender(EntityUnderminer livingEntityIn, Frustum camera, double camX, double camY, double camZ, float partialTicks) {
+        if (super.shouldRender(livingEntityIn, camera, camX, camY, camZ, partialTicks)) {
             return true;
         } else {
             if (livingEntityIn.getMiningPos() != null) {
@@ -251,16 +251,17 @@ public class RenderUnderminer extends MobRenderer<EntityUnderminer, HumanoidRend
                 double d2 = Mth.lerp(partialTicks, entityIn.zo, entityIn.getZ());
 
                 poseStack.translate((double) miningPos.getX() - d0, (double) miningPos.getY() - d1, (double) miningPos.getZ() - d2);
-                int progress = Math.round((DESTROY_TYPES.size() - 1) * Mth.clamp(entityIn.getMiningProgress(), 0F, 1.0F));
+                int progress = (int) Math.round((DESTROY_TYPES.size() - 1) * (float) Mth.clamp(entityIn.getMiningProgress(), 0F, 1.0F));
+                RenderType destroyType = DESTROY_TYPES.get(progress);
                 BlockState blockState = entityIn.level().getBlockState(miningPos);
-                try {
-                    java.util.ArrayList<net.minecraft.client.renderer.block.dispatch.BlockStateModelPart> parts = new java.util.ArrayList<>();
-                    net.minecraft.util.RandomSource random = net.minecraft.util.RandomSource.create();
-                    random.setSeed(blockState.getSeed(miningPos));
-                    Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(blockState).collectParts(random, parts);
-                    submitNodeCollector.submitBreakingBlockModel(poseStack, java.util.List.copyOf(parts), progress);
-                } catch (Throwable ignored) {
-                }
+                BlockStateModel blockModel = Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(blockState);
+                long seed = miningPos.asLong();
+                submitNodeCollector.submitCustomGeometry(poseStack, destroyType, (pose, baseConsumer) -> {
+                    PoseStack.Pose posestack$pose = poseStack.last();
+                    VertexConsumer vertexconsumer1 = new SheetedDecalTextureGenerator(baseConsumer, posestack$pose, 1.0F);
+                    BlockQuadOutput quadOutput = (x, y, z, quad, instance) -> vertexconsumer1.putBlockBakedQuad(x, y, z, quad, instance);
+                    RenderUnderminer.this.blockRenderer.tesselateBlock(quadOutput, 0.0F, 0.0F, 0.0F, (BlockAndTintGetter) entityIn.level(), miningPos, blockState, blockModel, seed);
+                });
                 poseStack.popPose();
             }
         }
@@ -279,7 +280,7 @@ public class RenderUnderminer extends MobRenderer<EntityUnderminer, HumanoidRend
         boolean shouldSit = entityIn.isPassenger() && entityIn.getVehicle() != null;
         this.dwarfModel.riding = shouldSit;
         this.dwarfModel.young = entityIn.isBaby();
-        this.dwarfModel.attackTime = entityIn.getAttackAnim(partialTicks);
+        this.dwarfModel.attackTime = entityIn.getSwingAnimation(partialTicks);
         this.dwarfModel.crouching = entityIn.isCrouching();
         this.dwarfModel.swimAmount = entityIn.getSwimAmount(partialTicks);
         this.dwarfModel.leftArmPose = state.leftArmPose;

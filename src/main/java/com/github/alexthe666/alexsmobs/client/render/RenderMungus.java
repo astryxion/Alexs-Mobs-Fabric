@@ -82,13 +82,13 @@ public class RenderMungus extends MobRenderer<EntityMungus, CitadelLivingRenderS
         }
         float partialTicks = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
         if (state.deathTime > 0) {
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(180.0F - rotationYaw));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(180.0F - rotationYaw));
             float f = ((float) state.deathTime + partialTicks - 1.0F) / 20.0F * 1.6F;
             f = Mth.sqrt(f);
             if (f > 1.0F) {
                 f = 1.0F;
             }
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(f * -90));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(f * -90));
         } else {
             super.setupRotations(state, matrixStackIn, rotationYaw, scaleFactor);
         }
@@ -113,8 +113,8 @@ public class RenderMungus extends MobRenderer<EntityMungus, CitadelLivingRenderS
     }
 
     @Override
-    public boolean shouldRender(EntityMungus livingEntityIn, Frustum camera, double camX, double camY, double camZ) {
-        if (super.shouldRender(livingEntityIn, camera, camX, camY, camZ)) {
+    public boolean shouldRender(EntityMungus livingEntityIn, Frustum camera, double camX, double camY, double camZ, float partialTicks) {
+        if (super.shouldRender(livingEntityIn, camera, camX, camY, camZ, partialTicks)) {
             return true;
         } else {
             if (livingEntityIn.getBeamTarget() != null) {
@@ -201,8 +201,8 @@ public class RenderMungus extends MobRenderer<EntityMungus, CitadelLivingRenderS
             vector3d2 = vector3d2.normalize();
             float f5 = (float) Math.acos(vector3d2.y);
             float f6 = (float) Math.atan2(vector3d2.z, vector3d2.x);
-            poseStack.mulPose(Axis.YP.rotationDegrees(((Mth.PI / 2F) - f6) * Mth.RAD_TO_DEG));
-            poseStack.mulPose(Axis.XP.rotationDegrees(f5 * Mth.RAD_TO_DEG));
+            poseStack.rotate(Axis.YP.rotationDegrees(((Mth.PI / 2F) - f6) * Mth.RAD_TO_DEG));
+            poseStack.rotate(Axis.XP.rotationDegrees(f5 * Mth.RAD_TO_DEG));
             float f7 = f1 * 0.05F * 1.5F;
             float f8 = 1F;
             int j = (int) (f8 * 255.0F);
@@ -347,7 +347,7 @@ public class RenderMungus extends MobRenderer<EntityMungus, CitadelLivingRenderS
             if (mushroomCount >= 3) {
                 matrixStackIn.pushPose();
                 matrixStackIn.translate(0.76F, -0.4F, 0.1D);
-                matrixStackIn.mulPose(Axis.ZP.rotationDegrees(90F));
+                matrixStackIn.rotate(Axis.ZP.rotationDegrees(90F));
                 matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
                 matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
                 this.renderSingleMushroomBlock(matrixStackIn, collector, packedLightIn, i, blockstate);
@@ -356,7 +356,7 @@ public class RenderMungus extends MobRenderer<EntityMungus, CitadelLivingRenderS
             if (mushroomCount >= 4) {
                 matrixStackIn.pushPose();
                 matrixStackIn.translate(-0.76F, -1.0F, 0.1D);
-                matrixStackIn.mulPose(Axis.ZP.rotationDegrees(-60F));
+                matrixStackIn.rotate(Axis.ZP.rotationDegrees(-60F));
                 matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
                 matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
                 this.renderSingleMushroomBlock(matrixStackIn, collector, packedLightIn, i, blockstate);
@@ -365,7 +365,7 @@ public class RenderMungus extends MobRenderer<EntityMungus, CitadelLivingRenderS
             if (mushroomCount >= 5) {
                 matrixStackIn.pushPose();
                 matrixStackIn.translate(-0.76F, -0.1F, 0.1D);
-                matrixStackIn.mulPose(Axis.ZP.rotationDegrees(-100F));
+                matrixStackIn.rotate(Axis.ZP.rotationDegrees(-100F));
                 matrixStackIn.scale(-1.0F, -1.0F, 1.0F);
                 matrixStackIn.translate(-0.5D, -0.5D, -0.5D);
                 this.renderSingleMushroomBlock(matrixStackIn, collector, packedLightIn, i, blockstate);

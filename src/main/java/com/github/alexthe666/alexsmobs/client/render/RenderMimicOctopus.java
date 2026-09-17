@@ -79,8 +79,8 @@ public class RenderMimicOctopus extends MobRenderer<EntityMimicOctopus, LivingEn
                 vector3d2 = vector3d2.normalize();
                 float f5 = (float) Math.acos(vector3d2.y);
                 float f6 = (float) Math.atan2(vector3d2.z, vector3d2.x);
-                poseStack.mulPose(Axis.YP.rotationDegrees(((Mth.PI / 2F) - f6) * Mth.RAD_TO_DEG));
-                poseStack.mulPose(Axis.XP.rotationDegrees(f5 * Mth.RAD_TO_DEG));
+                poseStack.rotate(Axis.YP.rotationDegrees(((Mth.PI / 2F) - f6) * Mth.RAD_TO_DEG));
+                poseStack.rotate(Axis.XP.rotationDegrees(f5 * Mth.RAD_TO_DEG));
                 float f7 = f1 * 0.05F * -1.5F;
                 float f8 = f * f;
                 int j = 64 + (int) (f8 * 191.0F);
@@ -184,8 +184,8 @@ public class RenderMimicOctopus extends MobRenderer<EntityMimicOctopus, LivingEn
         matrixStackIn.scale(0.9F * octo.getScale(), 0.9F * octo.getScale(), 0.9F * octo.getScale());
     }
 
-    public boolean shouldRender(EntityMimicOctopus livingEntityIn, Frustum camera, double camX, double camY, double camZ) {
-        if (super.shouldRender(livingEntityIn, camera, camX, camY, camZ)) {
+    public boolean shouldRender(EntityMimicOctopus livingEntityIn, Frustum camera, double camX, double camY, double camZ, float partialTicks) {
+        if (super.shouldRender(livingEntityIn, camera, camX, camY, camZ, partialTicks)) {
             return true;
         } else {
             if (livingEntityIn.hasGuardianLaser()) {

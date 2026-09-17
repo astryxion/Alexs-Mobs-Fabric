@@ -6,7 +6,8 @@ import com.github.alexthe666.alexsmobs.entity.EntitySeagull;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
@@ -65,10 +66,11 @@ public class RenderSeagull extends MobRenderer<EntitySeagull, LivingEntityRender
             matrixStackIn.pushPose();
             translateToHand(matrixStackIn);
             matrixStackIn.translate(0, -0.24F, -0.25F);
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(-2.5F));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
-            ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-            renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, matrixStackIn, collector, packedLightIn);
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(-2.5F));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(-90F));
+            ItemStackRenderState _irs = new ItemStackRenderState();
+            Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemstack, ItemDisplayContext.GROUND, entitylivingbaseIn);
+            _irs.submit(matrixStackIn, collector, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
             matrixStackIn.popPose();
             matrixStackIn.popPose();
         }

@@ -33,11 +33,11 @@ public class RenderPotoo extends MobRenderer<EntityPotoo, LivingEntityRenderStat
         return new LivingEntityRenderState();
     }
 
-    public boolean shouldRender(EntityPotoo bird, Frustum p_225626_2_, double p_225626_3_, double p_225626_5_, double p_225626_7_) {
+    public boolean shouldRender(EntityPotoo bird, Frustum p_225626_2_, double p_225626_3_, double p_225626_5_, double p_225626_7_, float partialTicks) {
         if( bird.isPassenger() && bird.getVehicle() instanceof Player && Minecraft.getInstance().player == bird.getVehicle() && Minecraft.getInstance().options.getCameraType() == CameraType.FIRST_PERSON){
             return false;
         }
-        return super.shouldRender(bird, p_225626_2_, p_225626_3_, p_225626_5_, p_225626_7_);
+        return super.shouldRender(bird, p_225626_2_, p_225626_3_, p_225626_5_, p_225626_7_, partialTicks);
     }
 
     @Override
@@ -63,14 +63,14 @@ public class RenderPotoo extends MobRenderer<EntityPotoo, LivingEntityRenderStat
                         matrixStackIn.translate(-0.3F, -0.7F, 0.5F);
                         ((HumanoidModel) ((LivingEntityRenderer) playerRender).getModel()).leftArm.translateAndRotate(matrixStackIn);
                         matrixStackIn.translate(-0.1F, 0.6F, -0.1F);
-                        matrixStackIn.mulPose(Axis.XP.rotationDegrees(55F));
-                        matrixStackIn.mulPose(Axis.YP.rotationDegrees(70F));
+                        matrixStackIn.rotate(Axis.XP.rotationDegrees(55F));
+                        matrixStackIn.rotate(Axis.YP.rotationDegrees(70F));
                     }else{
                         matrixStackIn.translate(0.3F, -0.7F, 0.5F);
                         ((HumanoidModel) ((LivingEntityRenderer) playerRender).getModel()).rightArm.translateAndRotate(matrixStackIn);
                         matrixStackIn.translate(0.1F, 0.6F, -0.1F);
-                        matrixStackIn.mulPose(Axis.XP.rotationDegrees(55F));
-                        matrixStackIn.mulPose(Axis.YP.rotationDegrees(-70F));
+                        matrixStackIn.rotate(Axis.XP.rotationDegrees(55F));
+                        matrixStackIn.rotate(Axis.YP.rotationDegrees(-70F));
                     }
                 }
             }

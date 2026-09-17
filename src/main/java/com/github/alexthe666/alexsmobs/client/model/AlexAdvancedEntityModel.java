@@ -2,6 +2,7 @@ package com.github.alexthe666.alexsmobs.client.model;
 
 import com.github.alexthe666.citadel.client.model.AdvancedEntityModel;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -44,6 +45,10 @@ public abstract class AlexAdvancedEntityModel<T extends Entity> extends Advanced
         while (!scratch.isEmpty()) {
             scratch.popPose();
         }
+    }
+
+    public static void renderSubmitted(PoseStack.Pose submitPose, AdvancedEntityModel<?> model, VertexConsumer consumer, int light, int overlay, int tint) {
+        withCitadelSubmitPose(submitPose, new PoseStack(), scratch -> model.renderToBuffer(scratch, consumer, light, overlay, tint));
     }
 
     /**

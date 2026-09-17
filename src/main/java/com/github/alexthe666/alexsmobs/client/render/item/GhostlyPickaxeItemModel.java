@@ -1,18 +1,38 @@
 package com.github.alexthe666.alexsmobs.client.render.item;
 
 import com.github.alexthe666.alexsmobs.client.render.AMRenderTypes;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.item.ItemModel;
 import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
-import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
+import net.minecraft.client.resources.model.geometry.ItemQuads;
 import net.minecraft.world.entity.ItemOwner;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 public final class GhostlyPickaxeItemModel implements ItemModel {
+
+    private static final Field ACTIVE_LAYER_COUNT;
+    private static final Field LAYERS;
+    private static final Field LAYER_QUADS;
+
+    static {
+        try {
+            ACTIVE_LAYER_COUNT = ItemStackRenderState.class.getDeclaredField("activeLayerCount");
+            ACTIVE_LAYER_COUNT.setAccessible(true);
+            LAYERS = ItemStackRenderState.class.getDeclaredField("layers");
+            LAYERS.setAccessible(true);
+            LAYER_QUADS = ItemStackRenderState.LayerRenderState.class.getDeclaredField("quads");
+            LAYER_QUADS.setAccessible(true);
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     private final ItemModel inner;
 
@@ -23,37 +43,36 @@ public final class GhostlyPickaxeItemModel implements ItemModel {
     @Override
     public void update(ItemStackRenderState state, ItemStack stack, ItemModelResolver resolver, ItemDisplayContext displayContext, @Nullable ClientLevel level, @Nullable ItemOwner owner, int seed) {
         this.inner.update(state, stack, resolver, displayContext, level, owner, seed);
-        state.appendModelIdentityElement(displayContext);
         try {
-            java.lang.reflect.Field countField = ItemStackRenderState.class.getDeclaredField("activeLayerCount");
-            java.lang.reflect.Field layersField = ItemStackRenderState.class.getDeclaredField("layers");
-            countField.setAccessible(true);
-            layersField.setAccessible(true);
-            int n = countField.getInt(state);
-            Object[] layers = (Object[]) layersField.get(state);
-            for (int i = 0; i < n && i < layers.length; i++) {
-                if (layers[i] instanceof ItemStackRenderState.LayerRenderState layer) {
-                    var quads = layer.prepareQuadList();
-                    for (int q = 0; q < quads.size(); q++) {
-                        quads.set(q, fullbrightGhost(quads.get(q), displayContext));
-                    }
+            int n = ACTIVE_LAYER_COUNT.getInt(state);
+            ItemStackRenderState.LayerRenderState[] layers = (ItemStackRenderState.LayerRenderState[]) LAYERS.get(state);
+            for (int i = 0; i < n; i++) {
+                ItemStackRenderState.LayerRenderState layer = layers[i];
+                ItemQuads quads = (ItemQuads) LAYER_QUADS.get(layer);
+                if (quads == null || quads.isEmpty()) {
+                    continue;
                 }
+                List<BakedQuad> rewritten = new ArrayList<>(quads.all().size());
+                for (BakedQuad quad : quads.all()) {
+                    rewritten.add(fullbrightGhost(quad));
+                }
+                layer.setQuads(ItemQuads.split(rewritten));
             }
-        } catch (ReflectiveOperationException ignored) {
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private static BakedQuad fullbrightGhost(BakedQuad quad, ItemDisplayContext displayContext) {
-        var mi = quad.materialInfo();
-        RenderType renderType = displayContext == ItemDisplayContext.GROUND || displayContext == ItemDisplayContext.FIXED
-                ? AMRenderTypes.getGhostPickaxeItemEntity()
-                : AMRenderTypes.getGhostPickaxe();
-        var newMi = new BakedQuad.MaterialInfo(
+    private static BakedQuad fullbrightGhost(BakedQuad quad) {
+        BakedQuad.MaterialInfo mi = quad.materialInfo();
+        BakedQuad.MaterialInfo newMi = new BakedQuad.MaterialInfo(
                 mi.sprite(),
                 mi.layer(),
-                renderType,
+                AMRenderTypes.getGhostPickaxe(mi.sprite().atlasLocation()),
+                mi.itemGlintRenderType(),
+                mi.itemGlintSpecialRenderType(),
                 mi.tintIndex(),
-                mi.shade(),
+                mi.shadeDirectionOverride(),
                 15);
         return new BakedQuad(
                 quad.position0(),

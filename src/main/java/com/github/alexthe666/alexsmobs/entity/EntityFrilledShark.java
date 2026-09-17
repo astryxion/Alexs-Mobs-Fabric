@@ -88,7 +88,7 @@ public class EntityFrilledShark extends WaterAnimal implements IAnimatedEntity, 
     }
 
     protected void registerGoals() {
-        this.goalSelector.addGoal(1, new TryFindWaterGoal(this));
+        this.goalSelector.addGoal(1, new TryFindLiquidGoal(this, FluidTags.WATER));
         this.goalSelector.addGoal(2, new AIMelee());
         this.goalSelector.addGoal(3, new AnimalAISwimBottom(this, 0.8F, 7));
         this.goalSelector.addGoal(4, new RandomSwimmingGoal(this, 0.8F, 3));

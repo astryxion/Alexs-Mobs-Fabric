@@ -44,8 +44,8 @@ public class RenderSandShot extends EntityRenderer<EntitySandShot, LlamaSpitRend
         }
         matrixStackIn.pushPose();
         matrixStackIn.translate(0.0D, (double) 0.15F, 0.0D);
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(state.yRot - 90.0F));
-        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(state.xRot));
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(state.yRot - 90.0F));
+        matrixStackIn.rotate(Axis.ZP.rotationDegrees(state.xRot));
         matrixStackIn.scale(1.2F, 1.2F, 1.2F);
         int i = EntityGuster.getColorForVariant(entityIn.getVariant());
         float r = (float) (i >> 16 & 255) / 255.0F;

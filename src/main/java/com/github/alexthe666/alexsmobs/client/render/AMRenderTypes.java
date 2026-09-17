@@ -1,25 +1,27 @@
 package com.github.alexthe666.alexsmobs.client.render;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.ColorTargetState;
-import com.mojang.blaze3d.pipeline.DepthStencilState;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.renderpearl.api.pipeline.BlendFunction;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.DepthStencilState;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.CompareOp;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.renderpearl.api.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexSorting;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 import net.minecraft.client.renderer.BindGroupLayouts;
+import net.minecraft.client.renderer.StagedVertexBuffer;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.util.Util;
-import net.minecraft.client.renderer.rendertype.OutputTarget;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.rendertype.TextureTransform;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 
@@ -33,6 +35,8 @@ public final class AMRenderTypes {
     }
 
     public static final Identifier STATIC_TEXTURE = Identifier.parse("alexsmobs:textures/static.png");
+
+    private static boolean encounteredMultiConsumerError = false;
 
     private static Matrix4f rainbowMatrix1(float in, long time) {
         long i = Util.getMillis() * time;
@@ -69,28 +73,59 @@ public final class AMRenderTypes {
     private static final TextureTransform STATIC_PARTICLE_TEXTURING = new TextureTransform("entity_glint_texturing", () -> staticMatrix(0.1F, 12L));
     private static final TextureTransform STATIC_ENTITY_TEXTURING = new TextureTransform("entity_glint_texturing", () -> staticMatrix(3F, 12L));
 
+    /**
+     * Entity overlay with a scrolling texture matrix. Vanilla {@link RenderPipelines#GLINT} is item-enchantment
+     * geometry ({@code POSITION_TEX}, additive glint blend) and turns living models into a solid white silhouette.
+     * Vanilla {@link RenderPipelines#ENERGY_SWIRL} is the same shader path but additive, which also blows out skin quads.
+     */
+    public static final RenderPipeline UNDERMINER_PIPELINE = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
+            .withLocation(Identifier.parse("alexsmobs:pipeline/underminer"))
+            .withVertexShader("core/entity")
+            .withFragmentShader("core/entity")
+            .withShaderDefine("ALPHA_CUTOUT", 0.1F)
+            .withShaderDefine("EMISSIVE")
+            .withShaderDefine("NO_OVERLAY")
+            .withShaderDefine("NO_CARDINAL_LIGHTING")
+            .withShaderDefine("APPLY_TEXTURE_MATRIX")
+            .withBindGroupLayout(BindGroupLayouts.SAMPLER0)
+            .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+            .withCull(false)
+            .withVertexBinding(0, DefaultVertexFormat.ENTITY)
+            .withPrimitiveTopology(PrimitiveTopology.QUADS)
+            .withDepthStencilState(DepthStencilState.DEFAULT)
+            .build();
+
+    /**
+     * Scrolling rainbow overlay on living models. Vanilla {@link RenderPipelines#GLINT} is item geometry
+     * ({@code POSITION_TEX}) and cannot draw entity meshes. {@link RenderPipelines#BREEZE_WIND} is translucent
+     * and replaces the skin with an opaque rainbow. This matches original Alex's Mobs: entity shader +
+     * {@link BlendFunction#GLINT} + equal depth so the skin stays and the rainbow tints it.
+     */
+    public static final RenderPipeline RAINBOW_OVERLAY_PIPELINE = RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)
+            .withLocation(Identifier.parse("alexsmobs:pipeline/rainbow_overlay"))
+            .withShaderDefine("ALPHA_CUTOUT", 0.1F)
+            .withShaderDefine("APPLY_TEXTURE_MATRIX")
+            .withShaderDefine("NO_OVERLAY")
+            .withShaderDefine("NO_CARDINAL_LIGHTING")
+            .withColorTargetState(new ColorTargetState(BlendFunction.GLINT))
+            .withCull(false)
+            .withDepthStencilState(new DepthStencilState(CompareOp.EQUAL, false))
+            .build();
+
     private static RenderType glintType(String name, Identifier texture, TextureTransform transform) {
-        RenderSetup setup = RenderSetup.builder(RenderPipelines.GLINT)
+        RenderSetup setup = RenderSetup.builder(RAINBOW_OVERLAY_PIPELINE)
                 .withTexture("Sampler0", texture)
                 .useLightmap()
-                .useOverlay()
                 .setTextureTransform(transform)
-                .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
+                .sortOnUpload()
                 .createRenderSetup();
         return RenderType.create(name, setup);
     }
 
-    public static final RenderType COMBJELLY_RAINBOW_GLINT = Util.make(() -> {
-        RenderSetup setup = RenderSetup.builder(RenderPipelines.ENTITY_TRANSLUCENT_CULL)
-                .withTexture("Sampler0", Identifier.parse("alexsmobs:textures/entity/rainbow_jelly_overlays/glint_rainbow.png"))
-                .useLightmap()
-                .useOverlay()
-                .setTextureTransform(COMB_JELLY_TEXTURING)
-                .sortOnUpload()
-                .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
-                .createRenderSetup();
-        return RenderType.create("cj_rainbow_glint", setup);
-    });
+    public static final RenderType COMBJELLY_RAINBOW_GLINT = glintType(
+            "cj_rainbow_glint",
+            Identifier.parse("alexsmobs:textures/entity/rainbow_jelly_overlays/glint_rainbow.png"),
+            COMB_JELLY_TEXTURING);
 
     public static final RenderType RAINBOW_GLINT = glintType("rainbow_glint", Identifier.parse("alexsmobs:textures/entity/rainbow_jelly_overlays/glint_rainbow.png"), RAINBOW_TEXTURING);
     public static final RenderType TRANS_GLINT = glintType("trans_glint", Identifier.parse("alexsmobs:textures/entity/rainbow_jelly_overlays/glint_trans.png"), RAINBOW_TEXTURING);
@@ -107,7 +142,7 @@ public final class AMRenderTypes {
     /** Same layered end portal as vanilla {@link RenderTypes#endPortal()}. */
     public static final RenderType VOID_WORM_PORTAL_OVERLAY = RenderTypes.endPortal();
 
-    private static final com.mojang.blaze3d.pipeline.RenderPipeline EYES_SHADER = RenderPipelines.ENTITY_TRANSLUCENT_EMISSIVE;
+    private static final RenderPipeline EYES_SHADER = RenderPipelines.ENTITY_TRANSLUCENT_EMISSIVE;
 
     private static final TextureTransform WORM_TRANSPARENCY = new TextureTransform("worm_translucent", () -> new Matrix4f());
 
@@ -192,17 +227,13 @@ public final class AMRenderTypes {
         return glintType("sunbird_shine", Identifier.parse("alexsmobs:textures/entity/sunbird_shine.png"), TextureTransform.GLINT_TEXTURING);
     }
 
-    public static RenderType getSkulkBoom() {
-        return RenderTypes.energySwirl(Identifier.parse("alexsmobs:textures/particle/skulk_boom.png"), 0.0F, 0.0F);
-    }
+    public static final Identifier SKULK_BOOM_TEXTURE = Identifier.parse("alexsmobs:textures/particle/skulk_boom.png");
 
     /**
-     * Same shader path as {@link RenderPipelines#ENERGY_SWIRL} / {@link RenderTypes#energySwirl}, but with
-     * {@link BlendFunction#TRANSLUCENT} like 1.21.1 {@code getUnderminer} ({@code TRANSLUCENT_TRANSPARENCY} + energy swirl
-     * shader). Vanilla {@code energySwirl} uses {@link BlendFunction#ADDITIVE}, which blows out entity skin quads to white.
+     * Energy-swirl entity shader with translucent blend (original shockwave), not vanilla additive {@code energySwirl}.
      */
-    public static final RenderPipeline UNDERMINER_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
-            .withLocation(Identifier.parse("alexsmobs:pipeline/underminer"))
+    public static final RenderPipeline SKULK_BOOM_PIPELINE = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET)
+            .withLocation(Identifier.parse("alexsmobs:pipeline/skulk_boom"))
             .withVertexShader("core/entity")
             .withFragmentShader("core/entity")
             .withShaderDefine("ALPHA_CUTOUT", 0.1F)
@@ -216,7 +247,22 @@ public final class AMRenderTypes {
             .withVertexBinding(0, DefaultVertexFormat.ENTITY)
             .withPrimitiveTopology(PrimitiveTopology.QUADS)
             .withDepthStencilState(DepthStencilState.DEFAULT)
-            .build());
+            .build();
+
+    private static final RenderType SKULK_BOOM_TYPE = RenderType.create(
+            "skulk_boom",
+            RenderSetup.builder(SKULK_BOOM_PIPELINE)
+                    .withTexture("Sampler0", SKULK_BOOM_TEXTURE)
+                    .setTextureTransform(new TextureTransform.OffsetTextureTransform(0.0F, 0.0F))
+                    .useLightmap()
+                    .useOverlay()
+                    .sortOnUpload()
+                    .createRenderSetup()
+    );
+
+    public static RenderType getSkulkBoom() {
+        return SKULK_BOOM_TYPE;
+    }
 
     private static final Function<Identifier, RenderType> UNDERMINER_TYPE = Util.memoize(
             texture -> {
@@ -231,59 +277,39 @@ public final class AMRenderTypes {
             });
 
     public static RenderType getUnderminer(Identifier texture) {
-        return RenderTypes.entityTranslucent(texture);
+        return UNDERMINER_TYPE.apply(texture);
     }
 
     /**
-     * Item shader + lightning blend for GUI / hand (flat item quads). Entity shader on item geometry renders black in 26.2.
+     * Same visual pipeline as 1.21.1 {@code getGhostPickaxe}: item-entity translucent entity shader, lightning blend,
+     * no cull, item-entity output target (see {@link RenderTypes} {@code ENTITY_TRANSLUCENT_CULL_ITEM_TARGET} but with
+     * {@link RenderTypes#entityTranslucentCull} ({@link RenderPipelines#ENTITY_TRANSLUCENT_CULL}) but with
+     * {@link BlendFunction#LIGHTNING} and no cull. {@link BindGroupLayouts#SAMPLER1} matches vanilla translucent-cull
+     * item-entity layout without duplicating {@code Sampler0} from {@link RenderPipelines#ENTITY_SNIPPET}.
      */
-    public static final RenderPipeline GHOST_PICKAXE_ITEM_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.ITEM_SNIPPET)
+    public static final RenderPipeline GHOST_PICKAXE_PIPELINE = RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)
             .withLocation(Identifier.parse("alexsmobs:pipeline/ghost_pickaxe"))
-            .withShaderDefine("ALPHA_CUTOUT", 0.1F)
-            .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
-            .withCull(false)
-            .build());
-
-    /**
-     * Entity shader + lightning blend for dropped item entities / item frames — same intent as 1.20
-     * {@code RENDERTYPE_ITEM_ENTITY_TRANSLUCENT_CULL_SHADER} with {@link BlendFunction#LIGHTNING}.
-     */
-    public static final RenderPipeline GHOST_PICKAXE_ENTITY_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.ENTITY_SNIPPET)
-            .withLocation(Identifier.parse("alexsmobs:pipeline/ghost_pickaxe_entity"))
             .withShaderDefine("ALPHA_CUTOUT", 0.1F)
             .withBindGroupLayout(BindGroupLayouts.SAMPLER1)
             .withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
             .withCull(false)
-            .build());
+            .build();
 
-    private static RenderSetup buildGhostPickaxeSetup(RenderPipeline pipeline, boolean itemEntityTarget) {
-        var builder = RenderSetup.builder(pipeline)
-                .withTexture("Sampler0", TextureAtlas.LOCATION_ITEMS)
-                .useLightmap()
-                .useOverlay()
-                .affectsCrumbling()
-                .sortOnUpload()
-                .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE);
-        if (itemEntityTarget) {
-            builder.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET);
-        }
-        return builder.createRenderSetup();
-    }
+    private static final Function<Identifier, RenderType> GHOST_PICKAXE_TYPE = Util.memoize(
+            texture -> {
+                RenderSetup state = RenderSetup.builder(GHOST_PICKAXE_PIPELINE)
+                        .withTexture("Sampler0", texture)
+                        .useLightmap()
+                        .useOverlay()
+                        .affectsCrumbling()
+                        .sortOnUpload()
+                        .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
+                        .createRenderSetup();
+                return RenderType.create("ghost_pickaxe", state);
+            });
 
-    private static final RenderType GHOST_PICKAXE_TYPE = Util.make(
-            () -> RenderType.create("ghost_pickaxe", buildGhostPickaxeSetup(GHOST_PICKAXE_ITEM_PIPELINE, false)));
-
-    private static final RenderType GHOST_PICKAXE_ITEM_ENTITY_TYPE = Util.make(
-            () -> RenderType.create("ghost_pickaxe_item_entity", buildGhostPickaxeSetup(GHOST_PICKAXE_ENTITY_PIPELINE, true)));
-
-    /** GUI, hand, and other non-world-item contexts — uses the main framebuffer. */
-    public static RenderType getGhostPickaxe() {
-        return GHOST_PICKAXE_TYPE;
-    }
-
-    /** Dropped item entities and item frames — same as 1.20 {@code ITEM_ENTITY_TARGET}. */
-    public static RenderType getGhostPickaxeItemEntity() {
-        return GHOST_PICKAXE_ITEM_ENTITY_TYPE;
+    public static RenderType getGhostPickaxe(Identifier texture) {
+        return GHOST_PICKAXE_TYPE.apply(texture);
     }
 
     public static RenderType getGhostCrumbling(Identifier texture) {
@@ -300,8 +326,36 @@ public final class AMRenderTypes {
         return RenderType.create("farseer_beam", setup);
     }
 
-    public static VertexConsumer createMergedVertexConsumer(VertexConsumer consumer1, VertexConsumer consumer2) {
-        return new MergedVertexConsumer(consumer1, consumer2);
+    public static class BufferSource {
+        private final StagedVertexBuffer stagedVertexBuffer;
+        private final Map<RenderType, StagedVertexBuffer.Draw> draws = new HashMap<>();
+
+        public BufferSource(StagedVertexBuffer stagedVertexBuffer) {
+            this.stagedVertexBuffer = stagedVertexBuffer;
+        }
+
+        public VertexConsumer getBuffer(RenderType renderType) {
+            StagedVertexBuffer.Draw draw = draws.computeIfAbsent(renderType, rt -> {
+                VertexSorting sorting = rt.sortOnUpload() ? VertexSorting.byDistance(0.0F, 0.0F, 0.0F) : null;
+                return stagedVertexBuffer.appendDraw(rt.format(), rt.primitiveTopology(), sorting);
+            });
+            return stagedVertexBuffer.getVertexBuilder(draw);
+        }
+
+        public void endBatch(com.mojang.renderpearl.api.commands.RenderPass renderPass) {
+            if (draws.isEmpty()) {
+                return;
+            }
+            stagedVertexBuffer.upload();
+            for (Map.Entry<RenderType, StagedVertexBuffer.Draw> entry : draws.entrySet()) {
+                StagedVertexBuffer.ExecuteInfo info = stagedVertexBuffer.getExecuteInfo(entry.getValue());
+                if (info != null) {
+                    entry.getKey().prepare().drawFromBuffer(info, renderPass);
+                }
+            }
+            stagedVertexBuffer.endDraw();
+            draws.clear();
+        }
     }
 
     private static final class MergedVertexConsumer implements VertexConsumer {
@@ -321,16 +375,16 @@ public final class AMRenderTypes {
         }
 
         @Override
-        public VertexConsumer setColor(int color) {
-            this.first.setColor(color);
-            this.second.setColor(color);
+        public VertexConsumer setColor(int r, int g, int b, int a) {
+            this.first.setColor(r, g, b, a);
+            this.second.setColor(r, g, b, a);
             return this;
         }
 
         @Override
-        public VertexConsumer setColor(int r, int g, int b, int a) {
-            this.first.setColor(r, g, b, a);
-            this.second.setColor(r, g, b, a);
+        public VertexConsumer setColor(int color) {
+            this.first.setColor(color);
+            this.second.setColor(color);
             return this;
         }
 
@@ -356,6 +410,13 @@ public final class AMRenderTypes {
         }
 
         @Override
+        public VertexConsumer setUv3(float u, float v) {
+            this.first.setUv3(u, v);
+            this.second.setUv3(u, v);
+            return this;
+        }
+
+        @Override
         public VertexConsumer setNormal(float x, float y, float z) {
             this.first.setNormal(x, y, z);
             this.second.setNormal(x, y, z);
@@ -370,19 +431,32 @@ public final class AMRenderTypes {
         }
     }
 
-    /** Replaces removed {@code ItemRenderer#getFoilBuffer} for entity cutouts (e.g. kangaroo armor). */
-    public static void submitEntityFoilGeometry(SubmitNodeCollector collector, com.mojang.blaze3d.vertex.PoseStack poseStack, RenderType base, boolean foil, SubmitNodeCollector.CustomGeometryRenderer renderer) {
-        collector.submitCustomGeometry(poseStack, base, renderer);
-        if (foil) {
-            collector.submitCustomGeometry(poseStack, RenderTypes.entityGlint(), renderer);
+    public static VertexConsumer createMergedVertexConsumer(VertexConsumer consumer1, VertexConsumer consumer2) {
+        VertexConsumer vertexConsumer = consumer2;
+        if (!encounteredMultiConsumerError) {
+            try {
+                vertexConsumer = new MergedVertexConsumer(consumer1, consumer2);
+            } catch (Exception e) {
+                AlexsMobs.LOGGER.warn("Encountered issue mixing two render types together. Likely an issue with Optifine or other rendering mod. This warning will only display once.");
+                encounteredMultiConsumerError = true;
+            }
         }
+        return vertexConsumer;
+    }
+
+    /** Replaces removed {@code ItemRenderer#getFoilBuffer} for entity cutouts (e.g. kangaroo armor). */
+    public static VertexConsumer entityFoilBuffer(BufferSource buffer, RenderType base, boolean foil) {
+        if (!foil) {
+            return buffer.getBuffer(base);
+        }
+        return createMergedVertexConsumer(buffer.getBuffer(base), buffer.getBuffer(RenderTypes.entitySolidGlint(net.minecraft.client.renderer.feature.ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)));
     }
 
     /** Replaces removed {@code ItemRenderer#getArmorFoilBuffer} for armor cutouts. */
-    public static void submitArmorFoilGeometry(SubmitNodeCollector collector, com.mojang.blaze3d.vertex.PoseStack poseStack, RenderType base, boolean foil, SubmitNodeCollector.CustomGeometryRenderer renderer) {
-        collector.submitCustomGeometry(poseStack, base, renderer);
-        if (foil) {
-            collector.submitCustomGeometry(poseStack, RenderTypes.armorEntityGlint(), renderer);
+    public static VertexConsumer armorFoilBuffer(BufferSource buffer, RenderType base, boolean foil) {
+        if (!foil) {
+            return buffer.getBuffer(base);
         }
+        return createMergedVertexConsumer(buffer.getBuffer(base), buffer.getBuffer(RenderTypes.trimmedArmorGlint()));
     }
 }

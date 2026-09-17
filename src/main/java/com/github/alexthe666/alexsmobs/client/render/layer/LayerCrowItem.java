@@ -8,7 +8,8 @@ import com.github.alexthe666.alexsmobs.entity.EntityCrow;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
@@ -37,11 +38,12 @@ public class LayerCrowItem extends RenderLayer<LivingEntityRenderState, CitadelE
         matrixStackIn.pushPose();
         translateToHand(matrixStackIn);
         matrixStackIn.translate(0, -0.09F, -0.125F);
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(-2.5F));
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(-2.5F));
+        matrixStackIn.rotate(Axis.XP.rotationDegrees(-90F));
         matrixStackIn.scale(0.75F, 0.75F, 0.75F);
-        ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-        renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, matrixStackIn, collector, packedLightIn);
+        ItemStackRenderState _irs = new ItemStackRenderState();
+        Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemstack, ItemDisplayContext.GROUND, entitylivingbaseIn);
+        _irs.submit(matrixStackIn, collector, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
         matrixStackIn.popPose();
         matrixStackIn.popPose();
     }

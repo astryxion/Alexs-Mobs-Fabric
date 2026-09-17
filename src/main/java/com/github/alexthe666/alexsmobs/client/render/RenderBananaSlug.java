@@ -57,7 +57,7 @@ public class RenderBananaSlug extends MobRenderer<EntityBananaSlug, CitadelLivin
     protected @Nullable RenderType getRenderType(CitadelLivingRenderState state, boolean isBodyVisible, boolean forceTransparent, boolean appearGlowing) {
         Identifier texture = this.getTextureLocation(state);
         if (forceTransparent) {
-            return RenderTypes.entityTranslucentCullItemTarget(texture);
+            return RenderTypes.entityTranslucentCull(texture);
         } else if (isBodyVisible) {
             return this.model.renderType(texture);
         } else {
@@ -76,24 +76,24 @@ public class RenderBananaSlug extends MobRenderer<EntityBananaSlug, CitadelLivin
 
     private void rotateForAngle(PoseStack matrixStackIn, Direction rotate, float f) {
         if (rotate.getAxis() != Direction.Axis.Y) {
-            matrixStackIn.mulPose(com.mojang.math.Axis.XP.rotationDegrees(90.0F * f));
+            matrixStackIn.rotate(com.mojang.math.Axis.XP.rotationDegrees(90.0F * f));
         }
         switch (rotate) {
             case DOWN:
-                matrixStackIn.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(180.0F * f));
+                matrixStackIn.rotate(com.mojang.math.Axis.ZP.rotationDegrees(180.0F * f));
                 break;
             case UP:
                 break;
             case NORTH:
-                matrixStackIn.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(180.0F * f));
+                matrixStackIn.rotate(com.mojang.math.Axis.ZP.rotationDegrees(180.0F * f));
                 break;
             case SOUTH:
                 break;
             case WEST:
-                matrixStackIn.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(90F * f));
+                matrixStackIn.rotate(com.mojang.math.Axis.ZP.rotationDegrees(90F * f));
                 break;
             case EAST:
-                matrixStackIn.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(-90F * f));
+                matrixStackIn.rotate(com.mojang.math.Axis.ZP.rotationDegrees(-90F * f));
                 break;
         }
     }
@@ -121,7 +121,7 @@ public class RenderBananaSlug extends MobRenderer<EntityBananaSlug, CitadelLivin
             if (entityLiving.prevAttachDir == entityLiving.getAttachmentFacing() && entityLiving.getAttachmentFacing().getAxis() == Direction.Axis.Y) {
                 yawMul = 1.0F;
             }
-            matrixStackIn.mulPose(com.mojang.math.Axis.YP.rotationDegrees((180.0F - yawMul * rotationYaw)));
+            matrixStackIn.rotate(com.mojang.math.Axis.YP.rotationDegrees((180.0F - yawMul * rotationYaw)));
             matrixStackIn.translate(0.0D, trans, 0.0D);
             float prevProg = 1F - progress;
             rotateForAngle(matrixStackIn, rotate(entityLiving.prevAttachDir), prevProg);
@@ -129,7 +129,7 @@ public class RenderBananaSlug extends MobRenderer<EntityBananaSlug, CitadelLivin
             if (entityLiving.getAttachmentFacing() != Direction.DOWN) {
                 matrixStackIn.translate(0.0D, trans, 0.0D);
                 if (entityLiving.getDeltaMovement().y <= -0.001F) {
-                    matrixStackIn.mulPose(com.mojang.math.Axis.YN.rotationDegrees(180 * progress));
+                    matrixStackIn.rotate(com.mojang.math.Axis.YN.rotationDegrees(180 * progress));
                 }
                 matrixStackIn.translate(0.0D, -trans, 0.0D);
             }
@@ -143,17 +143,17 @@ public class RenderBananaSlug extends MobRenderer<EntityBananaSlug, CitadelLivin
                 f = 1.0F;
             }
 
-            matrixStackIn.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(f * 90.0F));
+            matrixStackIn.rotate(com.mojang.math.Axis.ZP.rotationDegrees(f * 90.0F));
         } else if (state.isAutoSpinAttack) {
-            matrixStackIn.mulPose(com.mojang.math.Axis.XP.rotationDegrees(-90.0F - state.xRot));
-            matrixStackIn.mulPose(com.mojang.math.Axis.YP.rotationDegrees(((float) entityLiving.tickCount + partialTicks) * -75.0F));
+            matrixStackIn.rotate(com.mojang.math.Axis.XP.rotationDegrees(-90.0F - state.xRot));
+            matrixStackIn.rotate(com.mojang.math.Axis.YP.rotationDegrees(((float) entityLiving.tickCount + partialTicks) * -75.0F));
         } else if (pose == Pose.SLEEPING) {
 
         } else if (entityLiving.hasCustomName()) {
             String s = ChatFormatting.stripFormatting(entityLiving.getName().getString());
             if (("Dinnerbone".equals(s) || "Grumm".equals(s))) {
                 matrixStackIn.translate(0.0D, (double) (entityLiving.getBbHeight() + 0.1F), 0.0D);
-                matrixStackIn.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(180.0F));
+                matrixStackIn.rotate(com.mojang.math.Axis.ZP.rotationDegrees(180.0F));
             }
         }
     }

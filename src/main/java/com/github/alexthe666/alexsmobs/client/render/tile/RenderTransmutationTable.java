@@ -70,8 +70,8 @@ public class RenderTransmutationTable<T extends TileEntityTransmutationTable> im
             case SOUTH -> poseStack.translate(0.5, 1.5F, 0.5F);
             case WEST -> poseStack.translate(0.5F, 1.5F, 0.5F);
         }
-        poseStack.mulPose(dir.getOpposite().getRotation());
-        poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
+        poseStack.rotate(dir.getOpposite().getRotation());
+        poseStack.rotate(Axis.XP.rotationDegrees(90.0F));
         poseStack.pushPose();
         MODEL.animate(tileEntityIn, partialTicks);
         int finalLight = light;

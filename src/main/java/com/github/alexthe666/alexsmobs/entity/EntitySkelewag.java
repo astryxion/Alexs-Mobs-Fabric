@@ -30,7 +30,7 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.ai.goal.TryFindWaterGoal;
+import net.minecraft.world.entity.ai.goal.TryFindLiquidGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.animal.dolphin.Dolphin;
@@ -97,7 +97,7 @@ public class EntitySkelewag extends Monster implements IAnimatedEntity, IAMUnder
     }
 
     protected void registerGoals() {
-        this.goalSelector.addGoal(1, new TryFindWaterGoal(this));
+        this.goalSelector.addGoal(1, new TryFindLiquidGoal(this, FluidTags.WATER));
         this.goalSelector.addGoal(2, new AttackGoal(this));
         this.goalSelector.addGoal(3, new AnimalAIRandomSwimming(this, 1F, 12, 5));
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this, Drowned.class, EntitySkelewag.class));

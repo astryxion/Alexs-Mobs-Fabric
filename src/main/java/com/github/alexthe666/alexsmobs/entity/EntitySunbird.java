@@ -435,7 +435,7 @@ public class EntitySunbird extends Animal {
             final double extraZ = gatheringCircleDist * Mth.cos(angle);
             if (orbitPos != null) {
                 BlockPos pos = AMBlockPos.fromCoords(orbitPos.getX() + extraX, orbitPos.getY() + parentEntity.random.nextInt(2) + 2, orbitPos.getZ() + extraZ);
-                if (parentEntity.level().isEmptyBlock(new BlockPos(pos))) {
+                if (parentEntity.level().isEmptyBlock(pos)) {
                     return pos;
                 }
             }

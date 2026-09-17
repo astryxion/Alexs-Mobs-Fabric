@@ -38,7 +38,7 @@ public class BlossomLootModifier  {
     @NotNull
     public ObjectArrayList<ItemStack> apply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
         // 1.21 LootContext no longer exposes queried table id; gate by block state parameter.
-        net.minecraft.world.level.block.state.BlockState state = context.getOptionalParameter(LootContextParams.BLOCK_STATE);
+        net.minecraft.world.level.block.state.BlockState state = context.getOptional(LootContextParams.BLOCK_STATE);
         if (state != null && state.is(Blocks.ACACIA_LEAVES)) {
             return this.doApply(generatedLoot, context);
         }
@@ -47,7 +47,7 @@ public class BlossomLootModifier  {
 
     protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
         if (AMConfig.acaciaBlossomsDropFromLeaves) {
-            ItemInstance toolInstance = context.getOptionalParameter(LootContextParams.TOOL);
+            ItemInstance toolInstance = context.getOptional(LootContextParams.TOOL);
             ItemStack ctxTool = toolInstance instanceof ItemStack is ? is : ItemStack.EMPTY;
             RandomSource random = context.getRandom();
             if (!ctxTool.isEmpty()) {

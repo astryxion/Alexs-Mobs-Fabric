@@ -51,9 +51,9 @@ public class RenderTossedItem extends EntityRenderer<EntityTossedItem, EntityRen
         matrixStackIn.pushPose();
         if (entityIn.isDart()) {
             matrixStackIn.translate(0.0D, (double) -0.15F, 0.0D);
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 180F));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 180F));
             matrixStackIn.pushPose();
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
             matrixStackIn.translate(0, 0.5F, 0);
             matrixStackIn.scale(1F, 1F, 1F);
             collector.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(DART_TEXTURE), (pose, ivertexbuilder) ->
@@ -61,11 +61,11 @@ public class RenderTossedItem extends EntityRenderer<EntityTossedItem, EntityRen
             );
             matrixStackIn.popPose();
         } else {
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 90.0F));
-            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 90.0F));
+            matrixStackIn.rotate(Axis.ZP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
             matrixStackIn.translate(0, 0.5F, 0);
             matrixStackIn.scale(1F, 1F, 1F);
-            matrixStackIn.mulPose((new Quaternionf()).rotateZ(Maths.rad(-(entityIn.tickCount + partialTicks) * 30F)));
+            matrixStackIn.rotate((new Quaternionf()).rotateZ(Maths.rad(-(entityIn.tickCount + partialTicks) * 30F)));
             matrixStackIn.translate(0, -0.15F, 0);
             ItemModelResolver resolver = Minecraft.getInstance().getItemModelResolver();
             ItemStackRenderState rs = new ItemStackRenderState();

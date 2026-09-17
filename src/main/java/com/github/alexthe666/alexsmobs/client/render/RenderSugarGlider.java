@@ -76,14 +76,14 @@ public class RenderSugarGlider extends MobRenderer<EntitySugarGlider, CitadelLiv
             if (entityLiving.prevAttachDir == entityLiving.getAttachmentFacing() && entityLiving.getAttachmentFacing().getAxis() == Direction.Axis.Y) {
                 yawMul = 1.0F;
             }
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees((180.0F - yawMul * bodyRot)));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees((180.0F - yawMul * bodyRot)));
 
             if (entityLiving.getAttachmentFacing() == Direction.DOWN) {
                 matrixStackIn.translate(0.0D, trans, 0.0D);
                 if (entityLiving.yOld <= entityLiving.getY()) {
-                    matrixStackIn.mulPose(Axis.XP.rotationDegrees(90 * prevProg));
+                    matrixStackIn.rotate(Axis.XP.rotationDegrees(90 * prevProg));
                 } else {
-                    matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90 * prevProg));
+                    matrixStackIn.rotate(Axis.XP.rotationDegrees(-90 * prevProg));
                 }
                 matrixStackIn.translate(0.0D, -trans, 0.0D);
             }
@@ -91,7 +91,7 @@ public class RenderSugarGlider extends MobRenderer<EntitySugarGlider, CitadelLiv
             matrixStackIn.translate(0.0D, trans, 0.0D);
             Quaternionf targetRot = rotate(entityLiving.getAttachmentFacing()).getRotation();
             Quaternionf blended = new Quaternionf().slerp(targetRot, 1.0F - prevProg);
-            matrixStackIn.mulPose(blended);
+            matrixStackIn.rotate(blended);
             matrixStackIn.translate(0.0D, -trans, 0.0D);
         }
 
@@ -102,15 +102,15 @@ public class RenderSugarGlider extends MobRenderer<EntitySugarGlider, CitadelLiv
                 f = 1.0F;
             }
 
-            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(f * 90.0F));
+            matrixStackIn.rotate(Axis.ZP.rotationDegrees(f * 90.0F));
         } else if (state.isAutoSpinAttack) {
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90.0F - state.xRot));
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(((float) entityLiving.tickCount + partialTicks) * -75.0F));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(-90.0F - state.xRot));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(((float) entityLiving.tickCount + partialTicks) * -75.0F));
         } else if (entityLiving.hasCustomName()) {
             String s = ChatFormatting.stripFormatting(entityLiving.getName().getString());
             if (("Dinnerbone".equals(s) || "Grumm".equals(s))) {
                 matrixStackIn.translate(0.0D, (double) (entityLiving.getBbHeight() + 0.1F), 0.0D);
-                matrixStackIn.mulPose(Axis.ZP.rotationDegrees(180.0F));
+                matrixStackIn.rotate(Axis.ZP.rotationDegrees(180.0F));
             }
         }
     }

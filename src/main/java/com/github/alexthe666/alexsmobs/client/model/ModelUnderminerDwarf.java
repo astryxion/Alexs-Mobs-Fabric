@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.client.model;
 
+import net.minecraft.world.entity.LivingEntity;
+
 import com.github.alexthe666.alexsmobs.entity.EntityUnderminer;
 import com.github.alexthe666.alexsmobs.entity.util.Maths;
 import com.github.alexthe666.citadel.client.model.AdvancedEntityModel;
@@ -347,6 +349,8 @@ public class ModelUnderminerDwarf extends AlexAdvancedEntityModel<EntityUndermin
 
     private HumanoidArm getAttackArm(EntityUnderminer p_102857_) {
         HumanoidArm humanoidarm = p_102857_.getMainArm();
-        return p_102857_.swingingArm == InteractionHand.MAIN_HAND ? humanoidarm : humanoidarm.getOpposite();
+        LivingEntity.SwingDescription swing = p_102857_.getCurrentSwing();
+        InteractionHand swingingHand = swing != null ? swing.hand() : InteractionHand.MAIN_HAND;
+        return swingingHand == InteractionHand.MAIN_HAND ? humanoidarm : humanoidarm.getOpposite();
     }
 }

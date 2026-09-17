@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -23,20 +22,13 @@ import net.minecraft.world.level.material.MapColor;
 
 public class BlockCrystalizedMucus extends TransparentBlock {
 
-    @Override
-    public MapCodec<? extends TransparentBlock> codec() {
-        return CODEC;
-    }
-
-    public static final MapCodec<BlockCrystalizedMucus> CODEC = simpleCodec(BlockCrystalizedMucus::new);
-
     public static final int DECAY_DISTANCE = 7;
     public static final IntegerProperty DISTANCE = BlockStateProperties.DISTANCE;
     public static final BooleanProperty PERSISTENT = BlockStateProperties.PERSISTENT;
     private static final int TICK_DELAY = 1;
 
     public static BlockBehaviour.Properties defaultProperties() {
-        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_YELLOW).strength(0.1F).sound(SoundType.GLASS).noOcclusion().isSuffocating((s, s1, s2) -> false).isViewBlocking((s, s1, s2) -> false);
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_YELLOW).strength(0.1F).sound(SoundType.GLASS).noOcclusion().isSuffocating((s, s1, s2) -> false).isViewBlocking((s, s1, s2, aabb) -> false);
     }
 
     public BlockCrystalizedMucus(BlockBehaviour.Properties props) {

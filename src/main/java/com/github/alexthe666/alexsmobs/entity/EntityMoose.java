@@ -40,7 +40,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ShovelItem;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -330,7 +330,7 @@ public class EntityMoose extends Animal implements IAnimatedEntity {
             this.playSound(SoundEvents.SNOW_PLACE, this.getSoundVolume(), this.getVoicePitch());
             return InteractionResult.SUCCESS;
         }
-        if (item instanceof ShovelItem && this.isSnowy() && !this.level().isClientSide()) {
+        if (item.builtInRegistryHolder().is(ItemTags.SHOVELS) && this.isSnowy() && !this.level().isClientSide()) {
             this.permSnow = false;
             if (!player.isCreative()) {
                 if (player instanceof ServerPlayer sp) itemstack.hurtAndBreak(1, sp, EquipmentSlot.MAINHAND);

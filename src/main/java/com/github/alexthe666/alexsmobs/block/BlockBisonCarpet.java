@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
@@ -14,7 +13,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class BlockBisonCarpet extends CarpetBlock {
-    public static final MapCodec<BlockBisonCarpet> CODEC = simpleCodec(BlockBisonCarpet::new);
 
     protected static final VoxelShape SELECTION_SHAPE = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 2.0D, 16.0D);
 
@@ -24,11 +22,6 @@ public class BlockBisonCarpet extends CarpetBlock {
 
     public BlockBisonCarpet(BlockBehaviour.Properties props) {
         super(props);
-    }
-
-    @Override
-    public MapCodec<? extends CarpetBlock> codec() {
-        return CODEC;
     }
 
     public VoxelShape getVisualShape(BlockState state, BlockGetter getter, BlockPos pos, CollisionContext context) {

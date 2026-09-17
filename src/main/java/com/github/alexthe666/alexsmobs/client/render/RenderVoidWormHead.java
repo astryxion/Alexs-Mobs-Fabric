@@ -48,7 +48,7 @@ public class RenderVoidWormHead extends MobRenderer<EntityVoidWorm, LivingEntity
     protected RenderType getRenderType(LivingEntityRenderState state, boolean normal, boolean invis, boolean outline) {
         Identifier id = this.getTextureLocation(state);
         if (invis) {
-            return RenderTypes.entityTranslucentCullItemTarget(id);
+            return RenderTypes.entityTranslucentCull(id);
         } else if (normal) {
             return RenderTypes.entityTranslucent(id);
         } else {
@@ -57,8 +57,8 @@ public class RenderVoidWormHead extends MobRenderer<EntityVoidWorm, LivingEntity
     }
 
     @Override
-    public boolean shouldRender(EntityVoidWorm worm, Frustum camera, double camX, double camY, double camZ) {
-        return worm.getPortalTicks() <= 0 && super.shouldRender(worm, camera, camX, camY, camZ);
+    public boolean shouldRender(EntityVoidWorm worm, Frustum camera, double camX, double camY, double camZ, float partialTicks) {
+        return worm.getPortalTicks() <= 0 && super.shouldRender(worm, camera, camX, camY, camZ, partialTicks);
     }
 
     @Override

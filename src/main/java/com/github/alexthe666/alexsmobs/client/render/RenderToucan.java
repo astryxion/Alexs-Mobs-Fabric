@@ -6,7 +6,8 @@ import com.github.alexthe666.alexsmobs.entity.EntityToucan;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
@@ -85,7 +86,7 @@ public class RenderToucan extends MobRenderer<EntityToucan, LivingEntityRenderSt
                         stackPose.popPose();
                     }
             );
-            collector.submitCustomGeometry(matrixStackIn, RenderTypes.armorEntityGlint(), (pose, glintVc) ->
+            collector.submitCustomGeometry(matrixStackIn, RenderTypes.trimmedArmorGlint(), (pose, glintVc) ->
                     {                    PoseStack stackPose = new PoseStack();
                         stackPose.pushPose();
                         stackPose.last().set(pose);
@@ -117,10 +118,11 @@ public class RenderToucan extends MobRenderer<EntityToucan, LivingEntityRenderSt
             matrixStackIn.pushPose();
             translateToHand(matrixStackIn);
             matrixStackIn.translate(-0.07F, -0.1F, -0.25F);
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(-45F));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
-            ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-            renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, matrixStackIn, collector, packedLightIn);
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(-45F));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(-90F));
+            ItemStackRenderState _irs = new ItemStackRenderState();
+            Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemstack, ItemDisplayContext.GROUND, entitylivingbaseIn);
+            _irs.submit(matrixStackIn, collector, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
             matrixStackIn.popPose();
             matrixStackIn.popPose();
         }

@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
@@ -31,10 +30,8 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import javax.annotation.Nullable;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
 public class BlockCapsid extends BaseEntityBlock {
-    public static final MapCodec<BlockCapsid> CODEC = simpleCodec(BlockCapsid::new);
 
     public static final EnumProperty<Direction> HORIZONTAL_FACING = HorizontalDirectionalBlock.FACING;
     public static BlockBehaviour.Properties defaultProperties() {
@@ -43,11 +40,6 @@ public class BlockCapsid extends BaseEntityBlock {
 
     public BlockCapsid(BlockBehaviour.Properties props) {
         super(props);
-    }
-
-    @Override
-    public MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
     }
 
     public BlockState rotate(BlockState p_185499_1_, Rotation p_185499_2_) {
@@ -81,12 +73,6 @@ public class BlockCapsid extends BaseEntityBlock {
         return tryInsertItem(worldIn, pos, player, handIn, state);
     }
 
-    @Override
-    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
-        return tryInsertItem(worldIn, pos, player, handIn, state);
-    }
-
-    @Override
     protected InteractionResult useWithoutItem(BlockState state, Level worldIn, BlockPos pos, Player player, BlockHitResult hit) {
         if (worldIn.getBlockEntity(pos) instanceof TileEntityCapsid capsid && !capsid.getItem(0).isEmpty()) {
             popResource(worldIn, pos, capsid.getItem(0).copy());

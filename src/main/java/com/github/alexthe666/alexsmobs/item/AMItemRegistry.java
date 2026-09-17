@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.item;
 
+import net.minecraft.world.level.storage.loot.providers.number.ints.ContextIntProviders;
+
 import static com.github.alexthe666.alexsmobs.item.AMArmorMaterials.*;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
@@ -35,7 +37,6 @@ import net.minecraft.world.item.*;
 import net.minecraft.world.item.equipment.ArmorType;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.ComposterBlock;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.core.HolderSet;
@@ -82,7 +83,7 @@ public class AMItemRegistry {
     public static final Item CROCODILE_SCUTE = registerItem("crocodile_scute", Item::new, Item.Properties::new);
     public static final Item CROCODILE_CHESTPLATE = registerItem("crocodile_chestplate", props -> new ItemModArmor(CROCODILE_ARMOR_MATERIAL, ArmorType.CHESTPLATE, props), Item.Properties::new);
     public static final Item MAGGOT = registerItem("maggot", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(1).saturationModifier(0.2F).build()));
-    public static final Item BANANA = registerItem("banana", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(4).saturationModifier(0.3F).build()));
+    public static final Item BANANA = registerItem("banana", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(4).saturationModifier(0.3F).build()).compostable(ContextIntProviders.COMPOSTABLE_MEDIUM));
     public static final Item ANCIENT_DART = registerItem("ancient_dart", Item::new, () -> new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
     public static final Item HALO = registerItem("halo", ItemInventoryOnly::new, Item.Properties::new);
     public static final Item BLOOD_SAC = registerItem("blood_sac", Item::new, Item.Properties::new);
@@ -118,7 +119,7 @@ public class AMItemRegistry {
     public static final Item COCKROACH_WING_FRAGMENT = registerItem("cockroach_wing_fragment", Item::new, Item.Properties::new);
     public static final Item COCKROACH_WING = registerItem("cockroach_wing", Item::new, Item.Properties::new);
     public static final Item COCKROACH_OOTHECA = registerItem("cockroach_ootheca", ItemAnimalEgg::new, () -> new Item.Properties());
-    public static final Item ACACIA_BLOSSOM = registerItem("acacia_blossom", Item::new, Item.Properties::new);
+    public static final Item ACACIA_BLOSSOM = registerItem("acacia_blossom", Item::new, () -> new Item.Properties().compostable(ContextIntProviders.COMPOSTABLE_MEDIUM));
     public static final Item SOUL_HEART = registerItem("soul_heart", Item::new, Item.Properties::new);
     public static final Item SPIKED_SCUTE = registerItem("spiked_scute", Item::new, Item.Properties::new);
     public static final Item SPIKED_TURTLE_SHELL = registerItem("spiked_turtle_shell", props -> new ItemModArmor(SPIKED_TURTLE_SHELL_ARMOR_MATERIAL, ArmorType.HELMET, props), Item.Properties::new);
@@ -147,7 +148,7 @@ public class AMItemRegistry {
     public static final Item CACHALOT_WHALE_TOOTH = registerItem("cachalot_whale_tooth", Item::new, Item.Properties::new);
     public static final Item ECHOLOCATOR = registerItem("echolocator", props -> new ItemEcholocator(props, ItemEcholocator.EchoType.ECHOLOCATION), () -> new Item.Properties().durability(100));
     public static final Item ENDOLOCATOR = registerItem("endolocator", props -> new ItemEcholocator(props, ItemEcholocator.EchoType.ENDER), () -> new Item.Properties().durability(25));
-    public static final Item GONGYLIDIA = registerItem("gongylidia", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(1.2F).build()));
+    public static final Item GONGYLIDIA = registerItem("gongylidia", Item::new, () -> new Item.Properties().food(new FoodProperties.Builder().nutrition(3).saturationModifier(1.2F).build()).compostable(ContextIntProviders.COMPOSTABLE_MEDIUM_HIGH));
     public static final Item LEAFCUTTER_ANT_PUPA = registerItem("leafcutter_ant_pupa", ItemLeafcutterPupa::new, () -> new Item.Properties());
     public static final Item ENDERIOPHAGE_ROCKET = registerItem("enderiophage_rocket", ItemEnderiophageRocket::new, () -> new Item.Properties());
     public static final Item FALCONRY_GLOVE_INVENTORY = registerItem("falconry_glove_inventory", ItemInventoryOnly::new, Item.Properties::new);
@@ -483,10 +484,6 @@ public class AMItemRegistry {
         DispenserBlock.registerBehavior(LARGE_CATFISH_BUCKET, bucketDispenseBehavior);
         DispenserBlock.registerBehavior(FLYING_FISH_BUCKET, bucketDispenseBehavior);
         DispenserBlock.registerBehavior(MUDSKIPPER_BUCKET, bucketDispenseBehavior);
-        ComposterBlock.COMPOSTABLES.put(BANANA, 0.65F);
-        ComposterBlock.COMPOSTABLES.put(AMBlockRegistry.BANANA_PEEL.asItem(), 1F);
-        ComposterBlock.COMPOSTABLES.put(ACACIA_BLOSSOM, 0.65F);
-        ComposterBlock.COMPOSTABLES.put(GONGYLIDIA, 0.9F);
     }
 
 }

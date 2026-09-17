@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -26,10 +25,8 @@ import net.minecraft.world.level.material.MapColor;
 
 import javax.annotation.Nullable;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
 public class BlockEnderResidue extends TransparentBlock {
-    public static final MapCodec<BlockEnderResidue> CODEC = simpleCodec(BlockEnderResidue::new);
 
     public static final IntegerProperty AGE = BlockStateProperties.AGE_3;
     public static final BooleanProperty SLOW_DECAY = BooleanProperty.create("slow_decay");
@@ -41,11 +38,6 @@ public class BlockEnderResidue extends TransparentBlock {
     public BlockEnderResidue(BlockBehaviour.Properties props) {
         super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(AGE, Integer.valueOf(0)).setValue(SLOW_DECAY, false));
-    }
-
-    @Override
-    public MapCodec<? extends TransparentBlock> codec() {
-        return CODEC;
     }
 
     public void randomTick(BlockState p_53588_, ServerLevel p_53589_, BlockPos p_53590_, RandomSource p_53591_) {

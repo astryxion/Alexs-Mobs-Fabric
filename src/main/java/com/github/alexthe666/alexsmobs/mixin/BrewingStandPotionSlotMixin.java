@@ -10,8 +10,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(targets = {"net.minecraft.world.inventory.BrewingStandMenu$PotionSlot"})
 public class BrewingStandPotionSlotMixin {
 
-    @Inject(method = "mayPlaceItem(Lnet/minecraft/world/item/ItemStack;)Z", at = @At("RETURN"), cancellable = true)
-    private static void alexsmobs$mayPlaceInput(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "mayPlace(Lnet/minecraft/world/item/ItemStack;)Z", at = @At("RETURN"), cancellable = true)
+    private void alexsmobs$mayPlaceInput(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
         if (!cir.getReturnValueZ() && AMBrewing.isInput(stack)) {
             cir.setReturnValue(true);
         }

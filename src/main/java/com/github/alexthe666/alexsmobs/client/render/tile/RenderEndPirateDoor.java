@@ -65,10 +65,10 @@ public class RenderEndPirateDoor<T extends TileEntityEndPirateDoor> implements B
             case SOUTH -> poseStack.translate(0.5, 0.5F, 1.5F);
             case WEST -> poseStack.translate(-0.5F, 0.5F, 0.5F);
         }
-        poseStack.mulPose(dir.getOpposite().getRotation());
+        poseStack.rotate(dir.getOpposite().getRotation());
         poseStack.pushPose();
         poseStack.translate(0, 1, -1);
-        poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
+        poseStack.rotate(Axis.XP.rotationDegrees(90.0F));
         poseStack.scale(0.999F, 0.999F, 0.999F);
         DOOR_MODEL.renderDoor(tileEntityIn, partialTicks, state.hingeLeft);
         int finalLight = light;

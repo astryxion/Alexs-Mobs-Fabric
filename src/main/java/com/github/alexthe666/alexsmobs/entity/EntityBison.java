@@ -40,7 +40,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ShovelItem;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -336,7 +336,7 @@ public class EntityBison extends Animal implements IAnimatedEntity, Shearable {
                 return InteractionResult.SUCCESS;
             }
 
-            if (item instanceof ShovelItem && this.isSnowy()) {
+            if (item.builtInRegistryHolder().is(ItemTags.SHOVELS) && this.isSnowy()) {
                 this.permSnow = false;
                 if (!player.isCreative()) {
                     if (player instanceof ServerPlayer sp) itemstack.hurtAndBreak(1, sp, EquipmentSlot.MAINHAND);

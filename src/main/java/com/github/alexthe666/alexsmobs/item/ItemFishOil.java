@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.item;
 
+import net.minecraft.util.Prediction;
+
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.effect.AMEffectRegistry;
 import net.minecraft.advancements.triggers.CriteriaTriggers;
@@ -38,7 +40,7 @@ public class ItemFishOil extends Item {
                 ItemStack lvt_4_2_ = new ItemStack(Items.GLASS_BOTTLE);
                 Player lvt_5_1_ = (Player)p_77654_3_;
                 if (!lvt_5_1_.getInventory().add(lvt_4_2_)) {
-                    lvt_5_1_.drop(lvt_4_2_, false);
+                    lvt_5_1_.drop(lvt_4_2_, false, Prediction.SERVER_ONLY);
                 }
             }
 

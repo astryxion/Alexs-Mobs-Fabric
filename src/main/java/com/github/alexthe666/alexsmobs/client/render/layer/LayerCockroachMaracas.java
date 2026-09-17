@@ -12,7 +12,8 @@ import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
@@ -44,23 +45,22 @@ public class LayerCockroachMaracas extends RenderLayer<LivingEntityRenderState, 
         }
         this.getParentModel().setupAnim(state);
         int overlay = LivingEntityRenderer.getOverlayCoords(state, 0.0F);
-        ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
         matrixStackIn.pushPose();
         if (entitylivingbaseIn.isBaby()) {
             matrixStackIn.scale(0.65F, 0.65F, 0.65F);
             matrixStackIn.translate(0.0D, 0.815D, 0.125D);
         }
-        renderMaraca(renderer, entitylivingbaseIn, matrixStackIn, bufferIn, packedLightIn, 0, -0.25F, -90F, 60F);
-        renderMaraca(renderer, entitylivingbaseIn, matrixStackIn, bufferIn, packedLightIn, 1, 0.25F, 90F, -120F);
-        renderMaraca(renderer, entitylivingbaseIn, matrixStackIn, bufferIn, packedLightIn, 2, -0.35F, -90F, 60F);
-        renderMaraca(renderer, entitylivingbaseIn, matrixStackIn, bufferIn, packedLightIn, 3, 0.35F, 90F, -120F);
+        renderMaraca(entitylivingbaseIn, matrixStackIn, bufferIn, packedLightIn, 0, -0.25F, -90F, 60F);
+        renderMaraca(entitylivingbaseIn, matrixStackIn, bufferIn, packedLightIn, 1, 0.25F, 90F, -120F);
+        renderMaraca(entitylivingbaseIn, matrixStackIn, bufferIn, packedLightIn, 2, -0.35F, -90F, 60F);
+        renderMaraca(entitylivingbaseIn, matrixStackIn, bufferIn, packedLightIn, 3, 0.35F, 90F, -120F);
         if (!entitylivingbaseIn.isHeadless()) {
             matrixStackIn.pushPose();
             translateToHand(4, matrixStackIn);
             matrixStackIn.translate(0F, -0.4F, -0.01F);
             matrixStackIn.translate(0F, entitylivingbaseIn.danceProgress * 0.045F, entitylivingbaseIn.danceProgress * -0.09F);
             matrixStackIn.scale(0.5F, 0.5F, 0.5F);
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(60F * entitylivingbaseIn.danceProgress * 0.2F));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(60F * entitylivingbaseIn.danceProgress * 0.2F));
             bufferIn.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(SOMBRERO_TEX), (pose, consumer) -> {
                 PoseStack modelStack = new PoseStack();
                 modelStack.last().set(pose);
@@ -75,7 +75,6 @@ public class LayerCockroachMaracas extends RenderLayer<LivingEntityRenderState, 
     }
 
     private void renderMaraca(
-            ItemInHandRenderer renderer,
             EntityCockroach entity,
             PoseStack matrixStackIn,
             SubmitNodeCollector bufferIn,
@@ -89,11 +88,13 @@ public class LayerCockroachMaracas extends RenderLayer<LivingEntityRenderState, 
         translateToHand(hand, matrixStackIn);
         matrixStackIn.translate(xOffset, 0.0F, 0.0F);
         matrixStackIn.scale(1.4F, 1.4F, 1.4F);
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(xRot));
-        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(zRot));
+        matrixStackIn.rotate(Axis.XP.rotationDegrees(xRot));
+        matrixStackIn.rotate(Axis.ZP.rotationDegrees(zRot));
         PoseStack itemPose = new PoseStack();
         itemPose.last().set(matrixStackIn.last());
-        renderer.renderItem(entity, stack, ItemDisplayContext.GROUND, itemPose, bufferIn, packedLightIn);
+        ItemStackRenderState _irs = new ItemStackRenderState();
+        Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, stack, ItemDisplayContext.GROUND, entity);
+        _irs.submit(itemPose, bufferIn, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
         matrixStackIn.popPose();
     }
 

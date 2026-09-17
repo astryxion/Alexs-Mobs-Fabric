@@ -162,9 +162,9 @@ public class ClientEvents {
             int packedLight = state.lightCoords;
             boolean foil = entity.getItemBySlot(EquipmentSlot.CHEST).hasFoil();
             poseStack.translate(0.0D, entity.getBbHeight() - entity.getBbHeight() * 0.5F, 0.0D);
-            poseStack.mulPose(Axis.YN.rotationDegrees(180F + yRot));
-            poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
-            poseStack.mulPose(Axis.XP.rotationDegrees(100F * roll));
+            poseStack.rotate(Axis.YN.rotationDegrees(180F + yRot));
+            poseStack.rotate(Axis.ZP.rotationDegrees(180.0F));
+            poseStack.rotate(Axis.XP.rotationDegrees(100F * roll));
             ROCKY_CHESTPLATE_MODEL.setupAnim(entity, limbSwing, limbSwingAmount, entity.tickCount + partialTick, 0, 0);
             collector.submitCustomGeometry(poseStack, RenderTypes.armorCutoutNoCull(ROCKY_CHESTPLATE_TEXTURE), (pose, vertexConsumer) -> {
                 PoseStack local = new PoseStack();
@@ -174,7 +174,7 @@ public class ClientEvents {
                 local.popPose();
             });
             if (foil) {
-                collector.submitCustomGeometry(poseStack, RenderTypes.armorEntityGlint(), (pose, vertexConsumer) -> {
+                collector.submitCustomGeometry(poseStack, RenderTypes.trimmedArmorGlint(), (pose, vertexConsumer) -> {
                     PoseStack local = new PoseStack();
                     local.pushPose();
                     local.last().set(pose);

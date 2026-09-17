@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity.ai;
 
+import net.minecraft.world.item.component.SwingAnimation;
+
 import com.github.alexthe666.alexsmobs.entity.EntityCapuchinMonkey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -27,7 +29,7 @@ public class CapuchinAIMelee extends MeleeAttackGoal {
         double d0 = (this.mob.getBbWidth() * 2.0F * this.mob.getBbWidth() * 2.0F + enemy.getBbWidth());
         if (distToEnemySqr <= d0) {
             this.resetAttackCooldown();
-            this.mob.swing(InteractionHand.MAIN_HAND);
+            this.mob.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
             if (this.mob.level() instanceof ServerLevel serverLevel) {
                 this.mob.doHurtTarget(serverLevel, enemy);
             }

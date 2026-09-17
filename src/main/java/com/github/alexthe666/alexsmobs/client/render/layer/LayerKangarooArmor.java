@@ -63,7 +63,7 @@ public class LayerKangarooArmor extends RenderLayer<LivingEntityRenderState, Cit
             translateToHead(matrixStackIn);
             float f = 0.1F * (float) Math.sin((roo.tickCount + partialTicks) * 0.1F) + (roo.isBaby() ? 0.2F : 0F);
             matrixStackIn.translate(0.0F, -0.75F - f, -0.2F);
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(90F));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(90F));
             matrixStackIn.scale(1.3F, 1.3F, 1.3F);
             ItemModelResolver resolver = Minecraft.getInstance().getItemModelResolver();
             ItemStackRenderState rs = new ItemStackRenderState();
@@ -91,8 +91,8 @@ public class LayerKangarooArmor extends RenderLayer<LivingEntityRenderState, Cit
                 } else if (!itemstack.isEmpty()) {
                     translateToHead(matrixStackIn);
                     matrixStackIn.translate(0, -0.2, -0.1F);
-                    matrixStackIn.mulPose((new Quaternionf()).rotateX(Mth.PI));
-                    matrixStackIn.mulPose((new Quaternionf()).rotateY(Mth.PI));
+                    matrixStackIn.rotate((new Quaternionf()).rotateX(Mth.PI));
+                    matrixStackIn.rotate((new Quaternionf()).rotateY(Mth.PI));
                     ItemModelResolver resolver = Minecraft.getInstance().getItemModelResolver();
                     ItemStackRenderState rs = new ItemStackRenderState();
                     resolver.updateForTopItem(rs, itemstack, ItemDisplayContext.FIXED, roo.level() instanceof ClientLevel cl ? cl : null, null, 0);

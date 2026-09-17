@@ -110,8 +110,8 @@ public class RenderAnacondaPart extends LivingEntityRenderer<EntityAnacondaPart,
 
         Pose pose = entity.getPose();
         if (pose != Pose.SLEEPING) {
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(180.0F - newYaw));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(entity.getXRot()));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(180.0F - newYaw));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(entity.getXRot()));
         }
 
         if (state.deathTime > 0) {
@@ -120,12 +120,12 @@ public class RenderAnacondaPart extends LivingEntityRenderer<EntityAnacondaPart,
             if (f > 1.0F) {
                 f = 1.0F;
             }
-            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(f * 90.0F));
+            matrixStackIn.rotate(Axis.ZP.rotationDegrees(f * 90.0F));
         } else if (entity.hasCustomName()) {
             String s = ChatFormatting.stripFormatting(entity.getName().getString());
             if (("Dinnerbone".equals(s) || "Grumm".equals(s))) {
                 matrixStackIn.translate(0.0D, (double) (entity.getBbHeight() + 0.1F), 0.0D);
-                matrixStackIn.mulPose(Axis.ZP.rotationDegrees(180.0F));
+                matrixStackIn.rotate(Axis.ZP.rotationDegrees(180.0F));
             }
         }
     }

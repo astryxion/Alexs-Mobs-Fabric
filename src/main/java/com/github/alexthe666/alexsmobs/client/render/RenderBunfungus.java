@@ -6,7 +6,8 @@ import com.github.alexthe666.alexsmobs.entity.EntityBunfungus;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
@@ -74,11 +75,12 @@ public class RenderBunfungus extends MobRenderer<EntityBunfungus, LivingEntityRe
             matrixStackIn.pushPose();
             translateToHand(matrixStackIn);
             matrixStackIn.translate(0.3F, 0.45F, -0.15F);
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(90F));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(90F));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(-90F));
             matrixStackIn.scale(1.15F, 1.15F, 1.15F);
-            ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-            renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, matrixStackIn, collector, packedLightIn);
+            ItemStackRenderState _irs = new ItemStackRenderState();
+            Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemstack, ItemDisplayContext.GROUND, entitylivingbaseIn);
+            _irs.submit(matrixStackIn, collector, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
             matrixStackIn.popPose();
             matrixStackIn.popPose();
         }

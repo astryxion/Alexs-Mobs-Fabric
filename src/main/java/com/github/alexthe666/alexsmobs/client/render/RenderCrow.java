@@ -26,13 +26,13 @@ public class RenderCrow extends MobRenderer<EntityCrow, LivingEntityRenderState,
     }
 
     @Override
-    public boolean shouldRender(EntityCrow crow, Frustum frustum, double camX, double camY, double camZ) {
+    public boolean shouldRender(EntityCrow crow, Frustum frustum, double camX, double camY, double camZ, float partialTicks) {
         if (crow.isPassenger() && crow.getVehicle() instanceof Player player
                 && Minecraft.getInstance().player == player
                 && Minecraft.getInstance().options.getCameraType() == CameraType.FIRST_PERSON) {
             return false;
         }
-        return super.shouldRender(crow, frustum, camX, camY, camZ);
+        return super.shouldRender(crow, frustum, camX, camY, camZ, partialTicks);
     }
 
     @Override

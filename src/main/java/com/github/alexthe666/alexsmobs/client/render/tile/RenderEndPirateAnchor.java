@@ -56,9 +56,9 @@ public class RenderEndPirateAnchor<T extends TileEntityEndPirateAnchor> implemen
         poseStack.pushPose();
         poseStack.translate(0.5F, 1.5F, 0.5F);
         poseStack.pushPose();
-        poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
+        poseStack.rotate(Axis.XP.rotationDegrees(180.0F));
         if (east) {
-            poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
+            poseStack.rotate(Axis.YP.rotationDegrees(90.0F));
         }
         ANCHOR_MODEL.renderAnchor(tileEntityIn, partialTicks, east);
         int finalLight = light;

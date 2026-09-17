@@ -441,7 +441,7 @@ public class AMEntityRegistry {
             return false;
         }
         if (level instanceof ServerLevel serverLevel) {
-            return serverLevel.dimensionType().defaultClock().map(clock -> serverLevel.clockManager().getTotalTicks(clock) % 24000L < 12000L).orElse(true);
+            return serverLevel.dimensionType().defaultClock().map(clock -> serverLevel.clockManager().getInstance(clock).totalTicks() % 24000L < 12000L).orElse(true);
         }
         return true;
     }

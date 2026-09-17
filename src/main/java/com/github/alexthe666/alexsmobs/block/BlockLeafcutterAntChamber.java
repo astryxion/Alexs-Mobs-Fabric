@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import com.github.alexthe666.alexsmobs.entity.EntityLeafcutterAnt;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
@@ -34,12 +33,10 @@ import net.minecraft.world.phys.BlockHitResult;
 import javax.annotation.Nullable;
 import java.util.List;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class BlockLeafcutterAntChamber extends Block {
-    public static final MapCodec<BlockLeafcutterAntChamber> CODEC = simpleCodec(BlockLeafcutterAntChamber::new);
     public static final IntegerProperty FUNGUS = IntegerProperty.create("fungus", 0, 5);
 
     public static BlockBehaviour.Properties defaultProperties() {
@@ -49,11 +46,6 @@ public class BlockLeafcutterAntChamber extends Block {
     public BlockLeafcutterAntChamber(BlockBehaviour.Properties props) {
         super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(FUNGUS, 0));
-    }
-
-    @Override
-    public MapCodec<? extends Block> codec() {
-        return CODEC;
     }
 
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
@@ -89,13 +81,13 @@ public class BlockLeafcutterAntChamber extends Block {
 
     public void randomTick(BlockState state, ServerLevel worldIn, BlockPos pos, RandomSource random) {
             if (!worldIn.hasChunksAt(pos.offset(-3, -3, -3), pos.offset(3, 3, 3)))
-                return; // prevent loading unloaded chunks when checking neighbors
+            return; // Forge: prevent loading unloaded chunks when checking neighbor's light and spreading
         if(worldIn.canSeeSky(pos.above())){
             worldIn.setBlockAndUpdate(pos, Blocks.DIRT.defaultBlockState());
         }
     }
 
-    public void playerDestroy(Level worldIn, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity te, ItemStack stack) {
+    public void playerDestroy(net.minecraft.server.level.ServerLevel worldIn, net.minecraft.server.level.ServerPlayer player, BlockPos pos, BlockState state, @Nullable BlockEntity te, ItemStack stack) {
         super.playerDestroy(worldIn, player, pos, state, te, stack);
         this.angerNearbyAnts(worldIn, pos);
     }

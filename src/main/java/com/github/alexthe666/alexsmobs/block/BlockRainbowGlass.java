@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -15,19 +14,11 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.MapColor;
 
 public class BlockRainbowGlass extends TransparentBlock {
-
-    @Override
-    public MapCodec<? extends TransparentBlock> codec() {
-        return CODEC;
-    }
-
-    public static final MapCodec<BlockRainbowGlass> CODEC = simpleCodec(BlockRainbowGlass::new);
 
     public static final BooleanProperty UP = BooleanProperty.create("up");
     public static final BooleanProperty DOWN = BooleanProperty.create("down");
@@ -37,7 +28,7 @@ public class BlockRainbowGlass extends TransparentBlock {
     public static final BooleanProperty SOUTH = BooleanProperty.create("south");
 
     public static BlockBehaviour.Properties defaultProperties() {
-        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).friction(0.97F).strength(0.2F).lightLevel((i) -> 11).sound(SoundType.GLASS).noOcclusion().isValidSpawn(BlockRainbowGlass::noOption).isRedstoneConductor(BlockRainbowGlass::noPredicate).isSuffocating(BlockRainbowGlass::noPredicate).isViewBlocking(BlockRainbowGlass::noPredicate).emissiveRendering(state -> false);
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).friction(0.97F).strength(0.2F).lightLevel((i) -> 11).sound(SoundType.GLASS).noOcclusion().isValidSpawn(BlockRainbowGlass::noOption).isRedstoneConductor(BlockRainbowGlass::noOption).isSuffocating(BlockRainbowGlass::noOption).isViewBlocking((s, level, pos, aabb) -> BlockRainbowGlass.noOption(s, level, pos)).emissiveRendering(state -> true);
     }
 
     protected BlockRainbowGlass(BlockBehaviour.Properties props) {
@@ -88,8 +79,12 @@ public class BlockRainbowGlass extends TransparentBlock {
         return state.setValue(NORTH, northState.is(this)).setValue(NORTH, northState.is(this)).setValue(EAST, eastState.is(this)).setValue(SOUTH, southState.is(this)).setValue(WEST, westState.is(this)).setValue(UP, upState.is(this)).setValue(DOWN, downState.is(this));
     }
 
-    private static boolean noPredicate(BlockState p_50779_, BlockGetter p_50780_, BlockPos p_50781_) {
-        return false;
+    private static Boolean noOption(BlockState p_50806_, BlockGetter p_50807_, BlockPos p_50808_) {
+        return (boolean)false;
+    }
+
+    private static Boolean yes(BlockState p_50806_, BlockGetter p_50807_, BlockPos p_50808_) {
+        return (boolean)false;
     }
 
     private static Boolean noOption(BlockState p_50779_, BlockGetter p_50780_, BlockPos p_50781_, EntityType<?> p_50782_) {

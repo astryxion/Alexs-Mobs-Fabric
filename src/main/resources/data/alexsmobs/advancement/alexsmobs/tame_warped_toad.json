@@ -21,7 +21,11 @@
       "trigger": "minecraft:tame_animal",
       "conditions": {
         "entity": {
-          "type": "alexsmobs:warped_toad"
+          "type": "minecraft:entity_properties",
+          "entity": "this",
+          "predicate": {
+            "minecraft:entity_type": "alexsmobs:warped_toad"
+          }
         }
       }
     }

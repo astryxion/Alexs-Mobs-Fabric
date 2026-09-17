@@ -1,6 +1,8 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+
 import com.github.alexthe666.alexsmobs.AlexsMobs;
 import com.github.alexthe666.alexsmobs.config.AMConfig;
 import com.github.alexthe666.alexsmobs.inventory.MenuTransmutationTable;
@@ -29,6 +31,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -37,10 +40,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
 public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecialRenderBlock {
-    public static final MapCodec<BlockTransmutationTable> CODEC = simpleCodec(BlockTransmutationTable::new);
 
 
     private static final Component CONTAINER_TITLE = Component.translatable("alexsmobs.container.transmutation_table");
@@ -52,17 +53,12 @@ public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecia
     private static final VoxelShape EW_AABB = Shapes.or(BASE_AABB, ARMS_EW);
 
     public static BlockBehaviour.Properties defaultProperties() {
-        return BlockBehaviour.Properties.of().pushReaction(PushReaction.BLOCK).mapColor(DyeColor.BLACK).noOcclusion().lightLevel((block) -> 2).emissiveRendering(block -> true).sound(SoundType.STONE).strength(1F).requiresCorrectToolForDrops();
+        return BlockBehaviour.Properties.of().pushReaction(PushReaction.IMMOVEABLE).mapColor(DyeColor.BLACK).noOcclusion().lightLevel((block) -> 2).emissiveRendering(state -> true).sound(SoundType.STONE).strength(1F).requiresCorrectToolForDrops();
     }
 
     public BlockTransmutationTable(BlockBehaviour.Properties props) {
         super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
-    }
-
-    @Override
-    public MapCodec<BlockTransmutationTable> codec() {
-        return CODEC;
     }
 
     public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
@@ -122,25 +118,11 @@ public class BlockTransmutationTable extends BaseEntityBlock implements AMSpecia
     }
 
     @Override
-    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (!level.isClientSide() && player.hasInfiniteMaterials()) {
-            explodeOnBreak(level, pos);
-        }
-        return super.playerWillDestroy(level, pos, state, player);
-    }
-
-    @Override
-    public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity te, ItemStack stack) {
-        super.playerDestroy(level, player, pos, state, te, stack);
-        if (!level.isClientSide() && !player.hasInfiniteMaterials()) {
-            explodeOnBreak(level, pos);
-        }
-    }
-
-    private static void explodeOnBreak(Level level, BlockPos pos) {
+    public void playerDestroy(ServerLevel level, ServerPlayer player, BlockPos pos, BlockState state, @Nullable BlockEntity te, ItemStack toolStack) {
         if (AMConfig.transmutingTableExplodes) {
             level.explode(null, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, 3F, false, Level.ExplosionInteraction.BLOCK);
         }
+        super.playerDestroy(level, player, pos, state, te, toolStack);
     }
 }
 

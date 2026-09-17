@@ -39,7 +39,7 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.util.LandRandomPos;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.monster.Enderman;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
@@ -143,7 +143,7 @@ public class EntityEnderiophage extends Animal implements Enemy {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new FlyTowardsTarget(this));
         this.goalSelector.addGoal(2, new AIWalkIdle());
-        this.targetSelector.addGoal(1, new EntityAINearestTarget3D(this, EnderMan.class, 15, true, true, null) {
+        this.targetSelector.addGoal(1, new EntityAINearestTarget3D(this, Enderman.class, 15, true, true, null) {
             public boolean canUse() {
                 return EntityEnderiophage.this.isMissingEye() && super.canUse();
             }
@@ -161,7 +161,7 @@ public class EntityEnderiophage extends Animal implements Enemy {
                 return !EntityEnderiophage.this.isMissingEye() && super.canContinueToUse();
             }
         });
-        this.targetSelector.addGoal(3, new HurtByTargetGoal(this, EnderMan.class));
+        this.targetSelector.addGoal(3, new HurtByTargetGoal(this, Enderman.class));
 
     }
 
@@ -240,12 +240,12 @@ public class EntityEnderiophage extends Animal implements Enemy {
                         boolean mountDamaged = target.getHealth() >= 1.5D && mount.hurtOrSimulate(this.damageSources().mobAttack(this), dmg);
                         if ((target.getHealth() < 1.5D || mountDamaged) && mount instanceof LivingEntity) {
                             dismountCooldown = 100;
-                            if (mount instanceof EnderMan) {
+                            if (mount instanceof Enderman) {
                                 this.setMissingEye(false);
                                 this.gameEvent(GameEvent.EAT);
                                 this.playSound(SoundEvents.ENDER_EYE_DEATH, this.getSoundVolume(), this.getVoicePitch());
                                 this.heal(5);
-                                ((EnderMan) mount).addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 400));
+                                ((Enderman) mount).addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 400));
                                 this.fleeAfterStealTime = 400;
                                 this.setFlying(true);
                                 this.angryEnderman = (PathfinderMob) mount;
@@ -280,7 +280,7 @@ public class EntityEnderiophage extends Animal implements Enemy {
                                 }
                             }
                         }
-                        if (((LivingEntity) mount).getHealth() <= 0 || this.fleeAfterStealTime > 0 || this.isMissingEye() && !(mount instanceof EnderMan) || !this.isMissingEye() && mount instanceof EnderMan) {
+                        if (((LivingEntity) mount).getHealth() <= 0 || this.fleeAfterStealTime > 0 || this.isMissingEye() && !(mount instanceof Enderman) || !this.isMissingEye() && mount instanceof Enderman) {
                             this.removeVehicle();
                             this.setTarget(null);
                             dismountCooldown = 100;
@@ -450,7 +450,7 @@ public class EntityEnderiophage extends Animal implements Enemy {
                 timeFlying = 0;
             }
             if (this.isMissingEye() && this.getTarget() != null) {
-                if (!(this.getTarget() instanceof EnderMan)) {
+                if (!(this.getTarget() instanceof Enderman)) {
                     this.setTarget(null);
                 }
             }
@@ -626,9 +626,9 @@ public class EntityEnderiophage extends Animal implements Enemy {
             return false;
         } else {
             Entity entity = source.getEntity();
-            if (entity instanceof EnderMan) {
+            if (entity instanceof Enderman) {
                 amount = (amount + 1.0F) * 0.35F;
-                angryEnderman = (EnderMan) entity;
+                angryEnderman = (Enderman) entity;
             }
             return super.hurtServer(level, source, amount);
         }
@@ -761,7 +761,7 @@ public class EntityEnderiophage extends Animal implements Enemy {
         }
 
         public boolean canContinueToUse() {
-            return parentEntity.getTarget() != null && !isBittenByPhage(parentEntity.getTarget()) && !parentEntity.horizontalCollision && !parentEntity.isPassenger() && parentEntity.isFlying() && parentEntity.getMoveControl().hasWanted() && parentEntity.fleeAfterStealTime == 0 && (parentEntity.getTarget() instanceof EnderMan || !parentEntity.isMissingEye());
+            return parentEntity.getTarget() != null && !isBittenByPhage(parentEntity.getTarget()) && !parentEntity.horizontalCollision && !parentEntity.isPassenger() && parentEntity.isFlying() && parentEntity.getMoveControl().hasWanted() && parentEntity.fleeAfterStealTime == 0 && (parentEntity.getTarget() instanceof Enderman || !parentEntity.isMissingEye());
         }
 
         public boolean isBittenByPhage(Entity entity) {

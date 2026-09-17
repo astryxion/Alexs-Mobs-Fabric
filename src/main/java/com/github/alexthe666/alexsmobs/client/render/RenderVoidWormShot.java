@@ -46,9 +46,9 @@ public class RenderVoidWormShot extends EntityRenderer<EntityVoidWormShot, Entit
         float partialTicks = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
 
         matrixStackIn.pushPose();
-        matrixStackIn.mulPose((new Quaternionf()).rotateX(Maths.rad(180)));
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot())));
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+        matrixStackIn.rotate((new Quaternionf()).rotateX(Maths.rad(180)));
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot())));
+        matrixStackIn.rotate(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
         matrixStackIn.pushPose();
         MODEL.animate(entityIn, entityIn.tickCount + partialTicks);
         float home = (entityIn.prevStopHomingProgress + (entityIn.getStopHomingProgress() - entityIn.prevStopHomingProgress) * partialTicks) / EntityVoidWormShot.HOME_FOR;

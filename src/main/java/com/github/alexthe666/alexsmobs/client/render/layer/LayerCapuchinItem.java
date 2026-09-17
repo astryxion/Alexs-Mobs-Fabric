@@ -10,7 +10,8 @@ import com.github.alexthe666.alexsmobs.entity.EntityCapuchinMonkey;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
@@ -61,7 +62,7 @@ public class LayerCapuchinItem extends RenderLayer<CitadelLivingRenderState, Ale
             matrixStackIn.translate(0, 0.5F, 0F);
             matrixStackIn.scale(1.2F, 1.2F, 1.2F);
             matrixStackIn.pushPose();
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(f));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(f));
             bufferIn.submitCustomGeometry(matrixStackIn, RenderTypes.entityCutout(DART_TEXTURE), (pose, consumer) ->
                     DART_MODEL.renderToBuffer(DeferredPoseStacks.fromCaptured(pose), consumer, packedLightIn, overlay, -1));
             matrixStackIn.popPose();
@@ -80,10 +81,11 @@ public class LayerCapuchinItem extends RenderLayer<CitadelLivingRenderState, Ale
                 translateToHand(matrixStackIn);
                 matrixStackIn.translate(0.125F, 0.5F, 0.1F);
             }
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(-2.5F));
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90F));
-            ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-            renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, matrixStackIn, bufferIn, packedLightIn);
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(-2.5F));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(-90F));
+            ItemStackRenderState _irs = new ItemStackRenderState();
+            Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemstack, ItemDisplayContext.GROUND, entitylivingbaseIn);
+            _irs.submit(matrixStackIn, bufferIn, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
             matrixStackIn.popPose();
         }
     }

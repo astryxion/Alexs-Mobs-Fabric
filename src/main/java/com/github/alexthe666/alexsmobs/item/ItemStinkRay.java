@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.item;
 
+import net.minecraft.util.Prediction;
+
 import net.minecraft.world.entity.EquipmentSlot;
 
 import com.github.alexthe666.alexsmobs.entity.EntityFart;
@@ -95,7 +97,7 @@ public class ItemStinkRay extends Item {
                 ammo.shrink(1);
                 ItemStack bottle = new ItemStack(Items.GLASS_BOTTLE);
                 if (!playerIn.addItem(bottle)) {
-                    playerIn.drop(bottle, false);
+                    playerIn.drop(bottle, false, Prediction.SERVER_ONLY);
                 }
                 flag = true;
             }

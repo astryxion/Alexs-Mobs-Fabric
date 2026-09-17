@@ -48,6 +48,7 @@ public class AlexsMobs implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        AMEffectRegistry.registerBrewingRecipes();
 
         AMBlockRegistry.bootstrap();
         AMMenuRegistry.init();

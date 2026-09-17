@@ -41,8 +41,8 @@ public class RenderFart extends EntityRenderer<EntityFart, EntityRenderState> {
         float alpha = 1F - f;
         matrixStackIn.pushPose();
         matrixStackIn.translate(0.0D, (double) 0.15F, 0.0D);
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 180.0F));
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entityIn.yRotO, entityIn.getYRot()) - 180.0F));
+        matrixStackIn.rotate(Axis.XP.rotationDegrees(Mth.lerp(partialTicks, entityIn.xRotO, entityIn.getXRot())));
         MODEL.setupAnim(entityIn, 0.0F, 0.0F, partialTicks, 0.0F, 0.0F);
         int packedLightIn = state.lightCoords;
         collector.submitCustomGeometry(matrixStackIn, RenderTypes.entityTranslucent(FART_TEXTURE), (pose, ivertexbuilder) ->

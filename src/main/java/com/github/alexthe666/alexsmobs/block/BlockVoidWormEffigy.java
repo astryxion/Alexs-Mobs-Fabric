@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -13,7 +12,6 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.MapColor;
@@ -22,7 +20,6 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class BlockVoidWormEffigy extends Block {
-    public static final MapCodec<BlockVoidWormEffigy> CODEC = simpleCodec(BlockVoidWormEffigy::new);
     public static final EnumProperty<Direction> FACING = DirectionalBlock.FACING;
     private static final VoxelShape UP_SHAPE = Shapes.or(Block.box(0.0D, 0.0D, 0.0D, 16.0D, 7.0D, 16.0D),
             Block.box(4.0D, 6.0D, 4.0D, 12.0D, 16.0D, 12.0D));
@@ -44,11 +41,6 @@ public class BlockVoidWormEffigy extends Block {
     public BlockVoidWormEffigy(BlockBehaviour.Properties props) {
         super(props);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
-    }
-
-    @Override
-    public MapCodec<? extends Block> codec() {
-        return CODEC;
     }
 
     public BlockState getStateForPlacement(BlockPlaceContext context) {

@@ -346,7 +346,7 @@ public class ClientProxy extends CommonProxy {
                 stackPose.popPose();
             });
             if (stack.hasFoil()) {
-                vertexConsumers.submitCustomGeometry(matrices, RenderTypes.armorEntityGlint(), (pose, vc) -> {
+                vertexConsumers.submitCustomGeometry(matrices, RenderTypes.trimmedArmorGlint(), (pose, vc) -> {
                     PoseStack stackPose = new PoseStack();
                     stackPose.pushPose();
                     stackPose.last().set(pose);

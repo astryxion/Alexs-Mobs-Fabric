@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.entity;
 
+import net.minecraft.util.Prediction;
+
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
@@ -438,7 +440,7 @@ public class EntityFlutter extends TamableAnimal implements IFollower {
             } else if(this.isPotted() && player.isShiftKeyDown()){
                 ItemStack fish = getFishBucket();
                 if (!player.addItem(fish)) {
-                    player.drop(fish, false);
+                    player.drop(fish, false, Prediction.SERVER_ONLY);
                 }
                 this.remove(RemovalReason.DISCARDED);
                 return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;

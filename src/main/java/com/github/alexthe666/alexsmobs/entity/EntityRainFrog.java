@@ -39,7 +39,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ShovelItem;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.Level;
@@ -302,7 +302,7 @@ public class EntityRainFrog extends Animal implements ITargetsDroppedItems,IDanc
         ItemStack itemstack = player.getItemInHand(hand);
         Item item = itemstack.getItem();
         InteractionResult type = super.mobInteract(player, hand);
-        if (item instanceof ShovelItem && (this.isBurrowed() || !this.isDisturbed()) && !this.level().isClientSide()) {
+        if (item.builtInRegistryHolder().is(ItemTags.SHOVELS) && (this.isBurrowed() || !this.isDisturbed()) && !this.level().isClientSide()) {
             this.ambientSoundTime = 1000;
             if (!player.isCreative()) {
                 if (player instanceof ServerPlayer sp) itemstack.hurtAndBreak(1, sp, EquipmentSlot.MAINHAND);

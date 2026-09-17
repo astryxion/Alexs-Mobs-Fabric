@@ -1,5 +1,9 @@
 package com.github.alexthe666.alexsmobs.event;
 
+import net.minecraft.world.item.component.SwingAnimation;
+
+import net.minecraft.util.Prediction;
+
 import com.github.alexthe666.alexsmobs.misc.AMEntityHooks;
 
 import com.github.alexthe666.alexsmobs.AlexsMobs;
@@ -499,7 +503,7 @@ public class ServerEvents {
 
     private static void giveItemToPlayer(Player player, ItemStack stack) {
         if (!player.addItem(stack)) {
-            player.drop(stack, false);
+            player.drop(stack, false, Prediction.SERVER_ONLY);
         }
     }
 
@@ -859,7 +863,7 @@ public class ServerEvents {
         public static void onUseItem(Level level, Player player, InteractionHand hand, ItemStack itemStack) {
         if (itemStack.getItem() == Items.WHEAT && player.getVehicle() instanceof EntityElephant elephant) {
             if (elephant.triggerCharge(itemStack)) {
-                player.swing(hand);
+                player.swing(hand, SwingAnimation.DEFAULT, false);
                 if (!player.isCreative()) {
                     itemStack.shrink(1);
                 }
@@ -879,7 +883,7 @@ public class ServerEvents {
                         if (!player.addItem(new ItemStack(AMItemRegistry.LAVA_BOTTLE))) {
                             AMEntityHooks.drop(player, new ItemStack(AMItemRegistry.LAVA_BOTTLE));
                         }
-                        player.swing(hand);
+                        player.swing(hand, SwingAnimation.DEFAULT, false);
                         if (!player.isCreative()) {
                             itemStack.shrink(1);
                         }
@@ -921,7 +925,7 @@ public class ServerEvents {
                 }
                 ItemStack wetSponge = new ItemStack(Items.WET_SPONGE);
                 if (!player.addItem(wetSponge)) {
-                    player.drop(wetSponge, true);
+                    player.drop(wetSponge, true, Prediction.SERVER_ONLY);
                 }
                 return InteractionResult.SUCCESS;
             }
@@ -963,14 +967,14 @@ public class ServerEvents {
             stack = player.getItemBySlot(EquipmentSlot.MAINHAND);
         }
         if (RainbowUtil.getRainbowType(player) > 0 && stack.is(Items.SPONGE)) {
-            player.swing(InteractionHand.MAIN_HAND);
+            player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
             RainbowUtil.setRainbowType(player, 0);
             if (!player.isCreative()) {
                 stack.shrink(1);
             }
             ItemStack wetSponge = new ItemStack(Items.WET_SPONGE);
             if (!player.addItem(wetSponge)) {
-                player.drop(wetSponge, true);
+                player.drop(wetSponge, true, Prediction.SERVER_ONLY);
             }
         }
     }

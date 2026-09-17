@@ -47,7 +47,7 @@ public class LayerTusklinGear extends RenderLayer<LivingEntityRenderState, Citad
                 stack.popPose();
             });
             if (foil) {
-                collector.submitCustomGeometry(matrixStackIn, RenderTypes.armorEntityGlint(), (pose, vc) -> {
+                collector.submitCustomGeometry(matrixStackIn, RenderTypes.trimmedArmorGlint(), (pose, vc) -> {
                     PoseStack stack = new PoseStack();
                     stack.pushPose();
                     stack.last().set(pose);

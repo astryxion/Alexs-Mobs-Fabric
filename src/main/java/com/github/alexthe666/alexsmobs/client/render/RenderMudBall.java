@@ -30,8 +30,8 @@ public class RenderMudBall extends EntityRenderer<EntityMudBall, EntityRenderSta
     public void submit(EntityRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState cameraState) {
         poseStack.pushPose();
         poseStack.scale(0.7F, 0.7F, 0.7F);
-        poseStack.mulPose(cameraState.orientation);
-        poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+        poseStack.rotate(cameraState.orientation);
+        poseStack.rotate(Axis.YP.rotationDegrees(180.0F));
         PoseStack.Pose stackPose = poseStack.last();
         Matrix4f poseMat = stackPose.pose();
         int packedLight = state.lightCoords;

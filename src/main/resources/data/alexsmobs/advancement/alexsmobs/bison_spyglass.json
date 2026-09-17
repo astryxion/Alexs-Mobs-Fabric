@@ -23,20 +23,17 @@
             "minecraft:spyglass"
           ]
         },
-        "player": [
-          {
-            "condition": "minecraft:entity_properties",
-            "entity": "this",
-            "predicate": {
-              "type_specific": {
-                "type": "player",
-                "looking_at": {
-                  "type": "alexsmobs:bison"
-                }
+        "player": {
+          "type": "minecraft:entity_properties",
+          "entity": "this",
+          "predicate": {
+            "minecraft:type_specific/player": {
+              "looking_at": {
+                "minecraft:entity_type": "alexsmobs:bison"
               }
             }
           }
-        ]
+        }
       },
       "trigger": "minecraft:using_item"
     }

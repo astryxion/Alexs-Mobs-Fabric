@@ -60,7 +60,7 @@ public class LayerMimicubeHelmet extends RenderLayer<LivingEntityRenderState, Ci
         mimicubeModel().innerbody.translateAndRotate(matrixStackIn);
         matrixStackIn.translate(0, customModel ? 0.25F : 0.15F, 0F);
         matrixStackIn.scale(1F + 0.3F * (1 - helmetSwap), 1F + 0.3F * (1 - helmetSwap), 1F + 0.3F * (1 - helmetSwap));
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(360 * helmetSwap));
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(360 * helmetSwap));
         if (customModel) {
             renderMimicubeHelmetPose(armorModel);
         }

@@ -1,5 +1,7 @@
 package com.github.alexthe666.alexsmobs.item;
 
+import net.minecraft.world.item.component.SwingAnimation;
+
 import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.block.BlockCapsid;
 import com.github.alexthe666.alexsmobs.entity.EntityVoidPortal;
@@ -99,7 +101,7 @@ public class ItemDimensionalCarver extends Item {
     }
 
     public void onUseTick(Level level, LivingEntity player, ItemStack itemstack, int count) {
-        player.swing(player.getUsedItemHand());
+        player.swing(player.getUsedItemHand(), SwingAnimation.DEFAULT, false);
         RandomSource random = player.getRandom();
         if (count % 5 == 0) {
             player.gameEvent(GameEvent.ITEM_INTERACT_START);

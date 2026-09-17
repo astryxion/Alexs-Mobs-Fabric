@@ -148,7 +148,7 @@ public class EntityOrca extends TamableAnimal implements IAnimatedEntity {
 
     protected void registerGoals() {
         this.goalSelector.addGoal(0, new BreathAirGoal(this));
-        this.goalSelector.addGoal(1, new TryFindWaterGoal(this));
+        this.goalSelector.addGoal(1, new TryFindLiquidGoal(this, FluidTags.WATER));
         this.goalSelector.addGoal(2, new EntityOrca.SwimWithPlayerGoal(this, 4.0D));
         this.goalSelector.addGoal(4, new RandomSwimmingGoal(this, 1.0D, 10));
         this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));

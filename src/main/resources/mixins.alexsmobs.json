@@ -17,8 +17,6 @@
     "LivingEntityBreathingMixin",
     "LivingEntityVineLassoTickMixin",
     "MobTargetMixin",
-    "PotionBrewingMixin",
-    "PotionBrewingBuilderMixin",
     "BrewingStandPotionSlotMixin",
     "BrewingStandBlockEntityMixin",
     "LootTableMixin",

@@ -1,7 +1,7 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.util.Prediction;
+
 
 import com.github.alexthe666.alexsmobs.client.particle.AMParticleRegistry;
 import com.github.alexthe666.alexsmobs.item.AMItemRegistry;
@@ -36,8 +36,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import java.util.ArrayList;
 
 public class BlockSkunkSpray extends MultifaceBlock implements SimpleWaterloggedBlock {
-    public static final MapCodec<BlockSkunkSpray> CODEC = RecordCodecBuilder.mapCodec(instance ->
-        instance.group(propertiesCodec()).apply(instance, BlockSkunkSpray::new));
 
 
     public static final IntegerProperty AGE = BlockStateProperties.AGE_3;
@@ -49,11 +47,6 @@ public class BlockSkunkSpray extends MultifaceBlock implements SimpleWaterlogged
     public BlockSkunkSpray(BlockBehaviour.Properties props) {
         super(props);
         this.registerDefaultState(this.defaultBlockState().setValue(BlockStateProperties.WATERLOGGED, Boolean.valueOf(false)).setValue(AGE, 0));
-    }
-
-    @Override
-    public MapCodec<BlockSkunkSpray> codec() {
-        return CODEC;
     }
 
     @Override
@@ -99,7 +92,7 @@ public class BlockSkunkSpray extends MultifaceBlock implements SimpleWaterlogged
                worldIn.setBlockAndUpdate(pos, removeStinkFace(state, dir));
                ItemStack bottle = new ItemStack(AMItemRegistry.STINK_BOTTLE);
                if(!player.addItem(bottle)){
-                   player.drop(bottle, false);
+                   player.drop(bottle, false, Prediction.SERVER_ONLY);
                }
                if(!player.isCreative()){
                    itemStack.shrink(1);

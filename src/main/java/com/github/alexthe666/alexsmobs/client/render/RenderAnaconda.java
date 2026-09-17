@@ -55,7 +55,7 @@ public class RenderAnaconda extends MobRenderer<EntityAnaconda, LivingEntityRend
     protected RenderType getRenderType(LivingEntityRenderState state, boolean normal, boolean invis, boolean outline) {
         Identifier id = this.getTextureLocation(state);
         if (invis) {
-            return RenderTypes.entityTranslucentCullItemTarget(id);
+            return RenderTypes.entityTranslucentCull(id);
         } else if (normal) {
             return RenderTypes.entityTranslucent(id);
         } else {

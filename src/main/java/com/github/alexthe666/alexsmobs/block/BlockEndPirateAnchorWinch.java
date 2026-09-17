@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityEndPirateAnchorWinch;
 import net.minecraft.core.BlockPos;
@@ -28,17 +27,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
 public class BlockEndPirateAnchorWinch extends BaseEntityBlock implements AMSpecialRenderBlock{
-    public static final MapCodec<BlockEndPirateAnchorWinch> CODEC = simpleCodec(BlockEndPirateAnchorWinch::new);
-
-
-
-    @Override
-    public MapCodec<BlockEndPirateAnchorWinch> codec() {
-        return CODEC;
-    }
 
     public static final BooleanProperty EASTORWEST = BooleanProperty.create("eastorwest");
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;

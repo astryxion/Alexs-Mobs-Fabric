@@ -305,7 +305,7 @@ public class EntityVoidWormPart extends LivingEntity implements IHurtableMultipa
                 ServerLevel serverLevel = (ServerLevel) this.level();
                 EntityVoidWorm worm2 = AMEntityRegistry.VOID_WORM.create(serverLevel, EntitySpawnReason.TRIGGERED);
                 worm2.setNoAi(worm.isNoAi());
-                worm2.setInvulnerable(worm.isInvulnerable());
+                worm2.setPermanentlyInvulnerable(worm.isInvulnerable());
                 worm2.copyPosition(this);
                 segment.copyPosition(this);
                 worm2.setChildId(segment.getUUID());

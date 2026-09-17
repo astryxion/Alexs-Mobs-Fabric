@@ -83,11 +83,11 @@ public class RenderGiantSquid extends MobRenderer<EntityGiantSquid, LivingEntity
     }
 
     @Override
-    public boolean shouldRender(EntityGiantSquid livingEntityIn, Frustum camera, double camX, double camY, double camZ) {
+    public boolean shouldRender(EntityGiantSquid livingEntityIn, Frustum camera, double camX, double camY, double camZ, float partialTicks) {
         if (livingEntityIn.isCaptured() && livingEntityIn.isAlive()) {
             return false;
         }
-        if (super.shouldRender(livingEntityIn, camera, camX, camY, camZ)) {
+        if (super.shouldRender(livingEntityIn, camera, camX, camY, camZ, partialTicks)) {
             return true;
         }
         for (EntityGiantSquidPart part : livingEntityIn.allParts) {

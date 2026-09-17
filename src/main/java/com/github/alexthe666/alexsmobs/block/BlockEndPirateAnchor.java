@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 import com.github.alexthe666.alexsmobs.tileentity.AMTileEntityRegistry;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityEndPirateAnchor;
 import net.minecraft.core.BlockPos;
@@ -34,17 +33,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
 public class BlockEndPirateAnchor extends BaseEntityBlock implements AMSpecialRenderBlock {
-    public static final MapCodec<BlockEndPirateAnchor> CODEC = simpleCodec(BlockEndPirateAnchor::new);
-
-
-
-    @Override
-    public MapCodec<BlockEndPirateAnchor> codec() {
-        return CODEC;
-    }
 
     public static final BooleanProperty EASTORWEST = BooleanProperty.create("eastorwest");
     public static final EnumProperty<BlockEndPirateAnchor.PieceType> PIECE = EnumProperty.create("piece", BlockEndPirateAnchor.PieceType.class);

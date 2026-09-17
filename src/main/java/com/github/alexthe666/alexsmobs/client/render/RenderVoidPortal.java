@@ -70,7 +70,7 @@ public class RenderVoidPortal extends EntityRenderer<EntityVoidPortal, EntityRen
             return;
         }
         matrixStackIn.pushPose();
-        matrixStackIn.mulPose(entityIn.getAttachmentFacing().getOpposite().getRotation());
+        matrixStackIn.rotate(entityIn.getAttachmentFacing().getOpposite().getRotation());
         matrixStackIn.translate(0.5D, 0, 0.5D);
         matrixStackIn.scale(2F, 2F, 2F);
         renderPortal(entityIn, matrixStackIn, collector, false);

@@ -151,7 +151,7 @@ public class AnimalAIHerdPanic extends Goal {
                         float f1 = (float) ((l - i) * (l - i) + (i1 - j) * (i1 - j) + (j1 - k) * (j1 - k));
                         if (f1 < f) {
                             f = f1;
-                            blockpos1 = new BlockPos(blockpos$mutable);
+                            blockpos1 = blockpos$mutable.immutable();
                         }
                     }
                 }

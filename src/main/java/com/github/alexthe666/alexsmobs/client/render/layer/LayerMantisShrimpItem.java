@@ -9,7 +9,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
@@ -47,14 +48,15 @@ public class LayerMantisShrimpItem extends RenderLayer<LivingEntityRenderState, 
         itemModelResolver.updateForTopItem(itemStackRenderState, itemstack, ItemDisplayContext.GROUND, clientLevel, entitylivingbaseIn, 0);
         if (itemStackRenderState.usesBlockLight()) {
             matrixStackIn.translate(0F, 0F, 0.05F);
-            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(left ? -40F : 40F));
+            matrixStackIn.rotate(Axis.ZP.rotationDegrees(left ? -40F : 40F));
         }
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(-2.5F));
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(-180F));
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(180F));
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(-2.5F));
+        matrixStackIn.rotate(Axis.XP.rotationDegrees(-180F));
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(180F));
         matrixStackIn.scale(1.2F, 1.2F, 1.2F);
-        ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-        renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, matrixStackIn, bufferIn, packedLightIn);
+        ItemStackRenderState _irs = new ItemStackRenderState();
+        Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemstack, ItemDisplayContext.GROUND, entitylivingbaseIn);
+        _irs.submit(matrixStackIn, bufferIn, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
         matrixStackIn.popPose();
         matrixStackIn.popPose();
     }

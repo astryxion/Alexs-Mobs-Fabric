@@ -37,15 +37,15 @@ public class RenderIceShard extends EntityRenderer<EntityIceShard, EntityRenderS
         }
         float p_225623_3_ = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
         p_225623_4_.pushPose();
-        p_225623_4_.mulPose(Axis.YP.rotationDegrees(Mth.lerp(p_225623_3_, p_225623_1_.yRotO, p_225623_1_.getYRot()) - 90.0F));
-        p_225623_4_.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(p_225623_3_, p_225623_1_.xRotO, p_225623_1_.getXRot())));
+        p_225623_4_.rotate(Axis.YP.rotationDegrees(Mth.lerp(p_225623_3_, p_225623_1_.yRotO, p_225623_1_.getYRot()) - 90.0F));
+        p_225623_4_.rotate(Axis.ZP.rotationDegrees(Mth.lerp(p_225623_3_, p_225623_1_.xRotO, p_225623_1_.getXRot())));
         float lvt_17_1_ = 0;
         if (lvt_17_1_ > 0.0F) {
             float lvt_18_1_ = -Mth.sin(lvt_17_1_ * 3.0F) * lvt_17_1_;
-            p_225623_4_.mulPose(Axis.ZP.rotationDegrees(lvt_18_1_));
+            p_225623_4_.rotate(Axis.ZP.rotationDegrees(lvt_18_1_));
         }
 
-        p_225623_4_.mulPose(Axis.XP.rotationDegrees(45.0F));
+        p_225623_4_.rotate(Axis.XP.rotationDegrees(45.0F));
         p_225623_4_.scale(0.05625F, 0.05625F, 0.05625F);
         p_225623_4_.translate(-4.0D, 0.0D, 0.0D);
         int p_225623_6_ = state.lightCoords;
@@ -63,7 +63,7 @@ public class RenderIceShard extends EntityRenderer<EntityIceShard, EntityRenderS
             this.drawVertex(lvt_20_1_, lvt_21_1_, lvt_18_2_, -7, -2, -2, 0.0F, 0.3125F, 1, 0, 0, p_225623_6_);
 
             for (int lvt_22_1_ = 0; lvt_22_1_ < 4; ++lvt_22_1_) {
-                p_225623_4_.mulPose(Axis.XP.rotationDegrees(90.0F));
+                p_225623_4_.rotate(Axis.XP.rotationDegrees(90.0F));
                 this.drawVertex(lvt_20_1_, lvt_21_1_, lvt_18_2_, -8, -2, 0, 0.0F, 0.0F, 0, 1, 0, p_225623_6_);
                 this.drawVertex(lvt_20_1_, lvt_21_1_, lvt_18_2_, 8, -2, 0, 0.5F, 0.0F, 0, 1, 0, p_225623_6_);
                 this.drawVertex(lvt_20_1_, lvt_21_1_, lvt_18_2_, 8, 2, 0, 0.5F, 0.15625F, 0, 1, 0, p_225623_6_);

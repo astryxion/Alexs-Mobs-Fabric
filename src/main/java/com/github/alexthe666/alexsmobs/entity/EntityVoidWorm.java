@@ -346,7 +346,7 @@ public class EntityVoidWorm extends Monster {
                         scale = scale * 0.85F;
                     }
                     EntityVoidWormPart part = new EntityVoidWormPart(AMEntityRegistry.VOID_WORM_PART, partParent,  1.0F + (scale * (tail ? 0.65F : 0.3F)) + (i == 0 ? 0.8F : 0), 180, i == 0 ? -0.0F : i == segments - tailstart ? -0.3F : 0);
-                    part.setInvulnerable(partParent.isInvulnerable());
+                    part.setPermanentlyInvulnerable(partParent.isInvulnerable());
                     part.setParent(partParent);
                     if (updatePostSummon) {
                         part.setPortalTicks(i * 2);

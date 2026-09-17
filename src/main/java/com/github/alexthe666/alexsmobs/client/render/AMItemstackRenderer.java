@@ -316,10 +316,10 @@ public final class AMItemstackRenderer implements SpecialModelRenderer<AMItemsta
             quaternion.mul(quaternion1);
         }
 
-        matrixstack.mulPose(quaternion);
-        matrixstack.mulPose(Axis.XP.rotationDegrees((float) (-xRot)));
-        matrixstack.mulPose(Axis.YP.rotationDegrees((float) yRot));
-        matrixstack.mulPose(Axis.ZP.rotationDegrees((float) zRot));
+        matrixstack.rotate(quaternion);
+        matrixstack.rotate(Axis.XP.rotationDegrees((float) (-xRot)));
+        matrixstack.rotate(Axis.YP.rotationDegrees((float) yRot));
+        matrixstack.rotate(Axis.ZP.rotationDegrees((float) zRot));
         EntityRenderDispatcher entityrenderdispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
         EntityRenderState state = entityrenderdispatcher.extractEntity(entity, partialTicksForRender);
         CameraRenderState cam = ClientProxy.lastCameraRenderState != null ? ClientProxy.lastCameraRenderState : new CameraRenderState();
@@ -402,13 +402,13 @@ public final class AMItemstackRenderer implements SpecialModelRenderer<AMItemsta
                 }
             }
             matrixStackIn.translate(0.4F, -0.75F, 0.5F);
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(-180));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(-180));
             RenderType cutout = AMRenderTypes.entityCutoutNoCull(SHIELD_OF_THE_DEEP_TEXTURE);
             bufferIn.submitCustomGeometry(matrixStackIn, cutout, (pose, consumer) ->
                 AlexAdvancedEntityModel.withCitadelSubmitPose(pose, this.citadelPoseScratch, s ->
                     SHIELD_OF_THE_DEEP_MODEL.renderToBuffer(s, consumer, combinedLightIn, combinedOverlayIn, -1)));
             if (stack.hasFoil()) {
-                bufferIn.submitCustomGeometry(matrixStackIn, RenderTypes.entityGlint(), (pose, consumer) ->
+                bufferIn.submitCustomGeometry(matrixStackIn, RenderTypes.entitySolidGlint(net.minecraft.client.renderer.feature.ItemFeatureRenderer.ENCHANTED_GLINT_ITEM), (pose, consumer) ->
                     AlexAdvancedEntityModel.withCitadelSubmitPose(pose, this.citadelPoseScratch, s ->
                         SHIELD_OF_THE_DEEP_MODEL.renderToBuffer(s, consumer, combinedLightIn, combinedOverlayIn, -1)));
             }
@@ -443,7 +443,7 @@ public final class AMItemstackRenderer implements SpecialModelRenderer<AMItemsta
                         matrixStackIn.last());
             }
             matrixStackIn.translate(0, -2F, 0);
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(-180));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(-180));
             MYTERIOUS_WORM_MODEL.animateStack(stack);
             bufferIn.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(MYTERIOUS_WORM_TEXTURE), (pose, consumer) ->
                 AlexAdvancedEntityModel.withCitadelSubmitPose(pose, this.citadelPoseScratch, s ->
@@ -469,7 +469,7 @@ public final class AMItemstackRenderer implements SpecialModelRenderer<AMItemsta
                     if (transformType.firstPerson()) {
                         matrixStackIn.translate(transformType == ItemDisplayContext.FIRST_PERSON_LEFT_HAND ? -0.3F : 0.3F, 0.0f, -0.5f);
                     }
-                    matrixStackIn.mulPose(Axis.YP.rotation(tick + Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true)));
+                    matrixStackIn.rotate(Axis.YP.rotation(tick + Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true)));
                 }
                 submitChildItem(itemModelResolver, new ItemStack(AMItemRegistry.VINE_LASSO_HAND), transformType, combinedLightIn, combinedOverlayIn, matrixStackIn, bufferIn, level, seed);
             } else {
@@ -502,10 +502,10 @@ public final class AMItemstackRenderer implements SpecialModelRenderer<AMItemsta
                 matrixStackIn.translate(0.0F, 3.0F / 16.0F, 0.0F);
                 matrixStackIn.scale(0.25F, 0.25F, 0.25F);
             } else if (transformType == ItemDisplayContext.FIXED) {
-                matrixStackIn.mulPose(Axis.YP.rotationDegrees(180));
+                matrixStackIn.rotate(Axis.YP.rotationDegrees(180));
                 matrixStackIn.scale(0.5F, 0.5F, 0.5F);
             } else if (transformType == ItemDisplayContext.HEAD) {
-                matrixStackIn.mulPose(Axis.YP.rotationDegrees(180));
+                matrixStackIn.rotate(Axis.YP.rotationDegrees(180));
             } else if (transformType == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
                     || transformType == ItemDisplayContext.THIRD_PERSON_LEFT_HAND) {
                 // Layer always applies NO_TRANSFORM first (-0.5,-0.5,-0.5). Full hand ItemTransform ends with the same
@@ -520,7 +520,7 @@ public final class AMItemstackRenderer implements SpecialModelRenderer<AMItemsta
                 TRANSMUTATION_TABLE_FIRST_PERSON_HAND.apply(leftHand, matrixStackIn.last());
             }
             matrixStackIn.translate(0.5F, 1.6F, 0.5F);
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-180));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(-180));
             TRANSMUTATION_TABLE_MODEL.resetToDefaultPose();
             bufferIn.submitCustomGeometry(matrixStackIn, AMRenderTypes.entityCutoutNoCull(TRANSMUTATION_TABLE_TEXTURE), (pose, consumer) ->
                 AlexAdvancedEntityModel.withCitadelSubmitPose(pose, this.citadelPoseScratch, s ->
@@ -542,8 +542,8 @@ public final class AMItemstackRenderer implements SpecialModelRenderer<AMItemsta
             if (transformType == ItemDisplayContext.FIRST_PERSON_LEFT_HAND) {
                 matrixStackIn.translate(-0.2F, 0, 0);
                 matrixStackIn.scale(1.3F, 1.3F, 1.3F);
-                matrixStackIn.mulPose(Axis.YP.rotationDegrees(180));
-                matrixStackIn.mulPose(Axis.XP.rotationDegrees(60));
+                matrixStackIn.rotate(Axis.YP.rotationDegrees(180));
+                matrixStackIn.rotate(Axis.XP.rotationDegrees(60));
             }
             for (int i = 0; i < shards.size(); i++) {
                 matrixStackIn.pushPose();
@@ -621,7 +621,7 @@ public final class AMItemstackRenderer implements SpecialModelRenderer<AMItemsta
             if (fakeEntity instanceof EntityCockroach) {
                 if (flags == 99) {
                     matrixStackIn.translate(0, 0.25F, 0);
-                    matrixStackIn.mulPose(Axis.XP.rotationDegrees(-80));
+                    matrixStackIn.rotate(Axis.XP.rotationDegrees(-80));
                     ((EntityCockroach) fakeEntity).setMaracas(true);
                 } else {
                     ((EntityCockroach) fakeEntity).setMaracas(false);
@@ -674,8 +674,8 @@ public final class AMItemstackRenderer implements SpecialModelRenderer<AMItemsta
                 double mouseX = (mouseHelper.xpos() * (double) Minecraft.getInstance().getWindow().getGuiScaledWidth()) / (double) Minecraft.getInstance().getWindow().getScreenWidth();
                 double mouseY = mouseHelper.ypos() * (double) Minecraft.getInstance().getWindow().getGuiScaledHeight() / (double) Minecraft.getInstance().getWindow().getScreenHeight();
                 matrixStackIn.translate(0.5F, 0F, 0);
-                matrixStackIn.mulPose(Axis.XP.rotationDegrees(180F));
-                matrixStackIn.mulPose(Axis.YP.rotationDegrees(180F));
+                matrixStackIn.rotate(Axis.XP.rotationDegrees(180F));
+                matrixStackIn.rotate(Axis.YP.rotationDegrees(180F));
                 if (transformType != ItemDisplayContext.GUI) {
                     mouseX = 0;
                     mouseY = 0;

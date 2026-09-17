@@ -36,7 +36,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.SmoothSwimmingLookControl;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
-import net.minecraft.world.entity.ai.goal.TryFindWaterGoal;
+import net.minecraft.world.entity.ai.goal.TryFindLiquidGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WaterBoundPathNavigation;
@@ -184,7 +184,7 @@ public class EntityGiantSquid extends WaterAnimal implements ICustomCollisions {
 
 
     protected void registerGoals() {
-        this.goalSelector.addGoal(1, new TryFindWaterGoal(this));
+        this.goalSelector.addGoal(1, new TryFindLiquidGoal(this, FluidTags.WATER));
         this.goalSelector.addGoal(1, new AIAvoidWhales());
         this.goalSelector.addGoal(2, new AIMelee());
         this.goalSelector.addGoal(3, new AIDeepwaterSwimming());
@@ -741,8 +741,8 @@ public class EntityGiantSquid extends WaterAnimal implements ICustomCollisions {
         }
 
         private BlockPos getDeeperTarget(BlockPos waterAtPos){
-            BlockPos surface = new BlockPos(waterAtPos);
-            BlockPos seafloor = new BlockPos(waterAtPos);
+            BlockPos surface = waterAtPos;
+            BlockPos seafloor = waterAtPos;
             while (EntityGiantSquid.this.level().isWaterAt(surface) && surface.getY() < 320){
                 surface = surface.above();
             }

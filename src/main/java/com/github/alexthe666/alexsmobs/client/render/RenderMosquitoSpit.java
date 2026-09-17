@@ -42,8 +42,8 @@ public class RenderMosquitoSpit extends EntityRenderer<EntityMosquitoSpit, Llama
     public void submit(LlamaSpitRenderState state, PoseStack matrixStackIn, SubmitNodeCollector collector, CameraRenderState cameraState) {
         matrixStackIn.pushPose();
         matrixStackIn.translate(0.0D, (double) 0.15F, 0.0D);
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(state.yRot - 90.0F));
-        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(state.xRot));
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(state.yRot - 90.0F));
+        matrixStackIn.rotate(Axis.ZP.rotationDegrees(state.xRot));
         this.model.setupAnim(state);
         int packedLightIn = state.lightCoords;
         collector.submitCustomGeometry(matrixStackIn, this.model.renderType(SPIT_TEXTURE), (pose, ivertexbuilder) ->

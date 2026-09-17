@@ -1,6 +1,5 @@
 package com.github.alexthe666.alexsmobs.block;
 
-import com.mojang.serialization.MapCodec;
 
 import com.github.alexthe666.alexsmobs.misc.AMSoundRegistry;
 import com.google.common.collect.Lists;
@@ -29,10 +28,8 @@ import javax.annotation.Nullable;
 
 import java.util.Queue;
 
-import static net.minecraft.world.level.block.state.BlockBehaviour.simpleCodec;
 
 public class BlockBananaSlugSlime extends HalfTransparentBlock {
-    public static final MapCodec<BlockBananaSlugSlime> CODEC = simpleCodec(BlockBananaSlugSlime::new);
 
     protected static final VoxelShape SHAPE = Block.box(1.0D, 1.0D, 1.0D, 15.0D, 15.0D, 15.0D);
     private static final int MAXIMUM_BLOCKS_DRAINED = 64;
@@ -44,11 +41,6 @@ public class BlockBananaSlugSlime extends HalfTransparentBlock {
 
     public BlockBananaSlugSlime(BlockBehaviour.Properties props) {
         super(props);
-    }
-
-    @Override
-    public MapCodec<? extends HalfTransparentBlock> codec() {
-        return CODEC;
     }
 
     public VoxelShape getVisualShape(BlockState p_48735_, BlockGetter p_48736_, BlockPos p_48737_, CollisionContext p_48738_) {
@@ -65,28 +57,10 @@ public class BlockBananaSlugSlime extends HalfTransparentBlock {
         entity.setDeltaMovement(entity.getDeltaMovement().scale(0.8));
         super.entityInside(state, level, pos, entity, insideBlockEffectApplier, bl);
     }
-
-    public boolean isSlimeBlock(BlockState state) {
+public boolean propagatesSkylightDown(BlockState p_48740_, BlockGetter p_48741_, BlockPos p_48742_) {
         return true;
     }
-
-    public boolean isStickyBlock(BlockState state) {
-        return true;
-    }
-
-    public boolean propagatesSkylightDown(BlockState p_48740_, BlockGetter p_48741_, BlockPos p_48742_) {
-        return true;
-    }
-
-    public boolean canStickTo(BlockState state, @NotNull BlockState other) {
-        return !isKnownStickyBlock(other) || other.getBlock() == this;
-    }
-
-    private static boolean isKnownStickyBlock(BlockState state) {
-        return state.is(Blocks.SLIME_BLOCK) || state.is(Blocks.HONEY_BLOCK);
-    }
-
-    public void onPlace(BlockState p_56811_, Level p_56812_, BlockPos p_56813_, BlockState p_56814_, boolean p_56815_) {
+public void onPlace(BlockState p_56811_, Level p_56812_, BlockPos p_56813_, BlockState p_56814_, boolean p_56815_) {
         if (!p_56814_.is(p_56811_.getBlock())) {
             this.tryAbsorbWater(p_56812_, p_56813_);
         }
@@ -131,7 +105,7 @@ public class BlockBananaSlugSlime extends HalfTransparentBlock {
                 BlockPos blockpos1 = blockpos.relative(direction);
                 BlockState blockstate = level.getBlockState(blockpos1);
                 FluidState fluidstate = level.getFluidState(blockpos1);
-                if (lastFluidState != null && !fluidstate.isEmpty() && lastFluidState.getType() != fluidstate.getType()) {
+                if (lastFluidState != null && !fluidstate.isEmpty() && !lastFluidState.getType().isSame(fluidstate.getType())) {
                     continue;
                 }
                 if (blockstate.getBlock() instanceof SimpleWaterloggedBlock) {

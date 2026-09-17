@@ -76,7 +76,7 @@ public class RenderTerrapin extends MobRenderer<EntityTerrapin, LivingEntityRend
         Pose pose = entity.getPose();
         if (pose != Pose.SLEEPING && !entity.isSpinning()) {
             float yaw = Mth.rotLerp(partialTickTime, entity.yRotO, entity.getYRot());
-            stack.mulPose(Axis.YP.rotationDegrees(180.0F - yaw));
+            stack.rotate(Axis.YP.rotationDegrees(180.0F - yaw));
         }
 
         if (entity.deathTime > 0) {
@@ -86,14 +86,14 @@ public class RenderTerrapin extends MobRenderer<EntityTerrapin, LivingEntityRend
                 f = 1.0F;
             }
 
-            stack.mulPose(Axis.ZP.rotationDegrees(f * this.getFlipDegrees()));
+            stack.rotate(Axis.ZP.rotationDegrees(f * this.getFlipDegrees()));
         } else if (entity.isAutoSpinAttack()) {
-            stack.mulPose(Axis.XP.rotationDegrees(-90.0F - entity.getXRot()));
-            stack.mulPose(Axis.YP.rotationDegrees(((float) entity.tickCount + partialTickTime) * -75.0F));
+            stack.rotate(Axis.XP.rotationDegrees(-90.0F - entity.getXRot()));
+            stack.rotate(Axis.YP.rotationDegrees(((float) entity.tickCount + partialTickTime) * -75.0F));
         } else if (pose == Pose.SLEEPING) {
         } else if (this.isEntityUpsideDown(entity)) {
             stack.translate(0.0D, (double) (entity.getBbHeight() + 0.1F), 0.0D);
-            stack.mulPose(Axis.ZP.rotationDegrees(180.0F));
+            stack.rotate(Axis.ZP.rotationDegrees(180.0F));
         }
     }
 

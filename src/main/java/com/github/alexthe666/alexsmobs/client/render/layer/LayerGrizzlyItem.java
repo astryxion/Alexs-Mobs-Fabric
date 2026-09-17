@@ -8,7 +8,8 @@ import com.github.alexthe666.alexsmobs.entity.EntityGrizzlyBear;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
@@ -33,7 +34,6 @@ public class LayerGrizzlyItem extends RenderLayer<LivingEntityRenderState, Citad
             return;
         }
         this.getParentModel().setupAnim(state);
-        ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
         matrixStackIn.pushPose();
         if (entitylivingbaseIn.isBaby()) {
             matrixStackIn.scale(0.35F, 0.35F, 0.35F);
@@ -45,10 +45,12 @@ public class LayerGrizzlyItem extends RenderLayer<LivingEntityRenderState, Citad
             translateToHand(false, matrixStackIn);
             matrixStackIn.translate(0.2F, 0.7F, -0.4F);
         }
-        matrixStackIn.mulPose(Axis.YP.rotationDegrees(10F));
-        matrixStackIn.mulPose(Axis.XP.rotationDegrees(100F));
+        matrixStackIn.rotate(Axis.YP.rotationDegrees(10F));
+        matrixStackIn.rotate(Axis.XP.rotationDegrees(100F));
         matrixStackIn.scale(1, 1, 1);
-        renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, matrixStackIn, bufferIn, packedLightIn);
+        ItemStackRenderState _irs = new ItemStackRenderState();
+        Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemstack, ItemDisplayContext.GROUND, entitylivingbaseIn);
+        _irs.submit(matrixStackIn, bufferIn, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
         matrixStackIn.popPose();
     }
 

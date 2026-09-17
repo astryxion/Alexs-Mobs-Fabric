@@ -62,41 +62,41 @@ public class RenderLeafcutterAnt extends MobRenderer<EntityLeafcutterAnt, Living
             float progresso = 1F - (entityLiving.prevAttachChangeProgress + (entityLiving.attachChangeProgress - entityLiving.prevAttachChangeProgress) * partialTicks);
 
             if (entityLiving.getAttachmentFacing() == Direction.DOWN) {
-                matrixStackIn.mulPose(Axis.YP.rotationDegrees(180.0F - bodyRot));
+                matrixStackIn.rotate(Axis.YP.rotationDegrees(180.0F - bodyRot));
                 matrixStackIn.translate(0.0D, trans, 0.0D);
                 if (entityLiving.yOld <= entityLiving.getY()) {
-                    matrixStackIn.mulPose(Axis.XP.rotationDegrees(90 * (1 - progresso)));
+                    matrixStackIn.rotate(Axis.XP.rotationDegrees(90 * (1 - progresso)));
                 } else {
-                    matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90 * (1 - progresso)));
+                    matrixStackIn.rotate(Axis.XP.rotationDegrees(-90 * (1 - progresso)));
                 }
                 matrixStackIn.translate(0.0D, -trans, 0.0D);
 
             } else if (entityLiving.getAttachmentFacing() == Direction.UP) {
-                matrixStackIn.mulPose(Axis.YP.rotationDegrees(180.0F - bodyRot));
-                matrixStackIn.mulPose(Axis.XP.rotationDegrees(180));
-                matrixStackIn.mulPose(Axis.YP.rotationDegrees(180));
+                matrixStackIn.rotate(Axis.YP.rotationDegrees(180.0F - bodyRot));
+                matrixStackIn.rotate(Axis.XP.rotationDegrees(180));
+                matrixStackIn.rotate(Axis.YP.rotationDegrees(180));
                 matrixStackIn.translate(0.0D, -trans, 0.0D);
 
             } else {
                 matrixStackIn.translate(0.0D, trans, 0.0D);
                 switch (entityLiving.getAttachmentFacing()) {
                     case NORTH:
-                        matrixStackIn.mulPose(Axis.XP.rotationDegrees(90.0F * progresso));
-                        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(0));
+                        matrixStackIn.rotate(Axis.XP.rotationDegrees(90.0F * progresso));
+                        matrixStackIn.rotate(Axis.ZP.rotationDegrees(0));
                         break;
                     case SOUTH:
-                        matrixStackIn.mulPose(Axis.YP.rotationDegrees(180.0F));
-                        matrixStackIn.mulPose(Axis.XP.rotationDegrees(90.0F * progresso));
+                        matrixStackIn.rotate(Axis.YP.rotationDegrees(180.0F));
+                        matrixStackIn.rotate(Axis.XP.rotationDegrees(90.0F * progresso));
                         break;
                     case WEST:
-                        matrixStackIn.mulPose(Axis.XP.rotationDegrees(90.0F));
-                        matrixStackIn.mulPose(Axis.YP.rotationDegrees(90F - 90.0F * progresso));
-                        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(-90.0F));
+                        matrixStackIn.rotate(Axis.XP.rotationDegrees(90.0F));
+                        matrixStackIn.rotate(Axis.YP.rotationDegrees(90F - 90.0F * progresso));
+                        matrixStackIn.rotate(Axis.ZP.rotationDegrees(-90.0F));
                         break;
                     case EAST:
-                        matrixStackIn.mulPose(Axis.XP.rotationDegrees(90.0F));
-                        matrixStackIn.mulPose(Axis.YP.rotationDegrees(90.0F * progresso - 90F));
-                        matrixStackIn.mulPose(Axis.ZP.rotationDegrees(90.0F));
+                        matrixStackIn.rotate(Axis.XP.rotationDegrees(90.0F));
+                        matrixStackIn.rotate(Axis.YP.rotationDegrees(90.0F * progresso - 90F));
+                        matrixStackIn.rotate(Axis.ZP.rotationDegrees(90.0F));
                         break;
                     default:
                         break;
@@ -112,15 +112,15 @@ public class RenderLeafcutterAnt extends MobRenderer<EntityLeafcutterAnt, Living
                 f = 1.0F;
             }
 
-            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(f * this.getFlipDegrees()));
+            matrixStackIn.rotate(Axis.ZP.rotationDegrees(f * this.getFlipDegrees()));
         } else if (state.isAutoSpinAttack) {
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-90.0F - state.xRot));
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(((float) entityLiving.tickCount + partialTicks) * -75.0F));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(-90.0F - state.xRot));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(((float) entityLiving.tickCount + partialTicks) * -75.0F));
         } else if (entityLiving.hasCustomName()) {
             String s = ChatFormatting.stripFormatting(entityLiving.getName().getString());
             if (("Dinnerbone".equals(s) || "Grumm".equals(s))) {
                 matrixStackIn.translate(0.0D, (double) (entityLiving.getBbHeight() + 0.1F), 0.0D);
-                matrixStackIn.mulPose(Axis.ZP.rotationDegrees(180.0F));
+                matrixStackIn.rotate(Axis.ZP.rotationDegrees(180.0F));
             }
         }
     }

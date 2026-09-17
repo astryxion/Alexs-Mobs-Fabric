@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:brewing",
+  "input": {
+    "item": "minecraft:potion",
+    "potion_contents": {
+      "potions": "alexsmobs:poison_resistance"
+    }
+  },
+  "reagent": {
+    "item": "alexsmobs:komodo_spit"
+  },
+  "output": {
+    "id": "minecraft:potion",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "alexsmobs:long_poison_resistance"
+      }
+    }
+  }
+}

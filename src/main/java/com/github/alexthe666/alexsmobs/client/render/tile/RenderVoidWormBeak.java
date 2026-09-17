@@ -63,7 +63,7 @@ public class RenderVoidWormBeak<T extends TileEntityVoidWormBeak> implements Blo
             case SOUTH -> poseStack.translate(0.5, 0.5F, 1.5F);
             case WEST -> poseStack.translate(-0.5F, 0.5F, 0.5F);
         }
-        poseStack.mulPose(dir.getOpposite().getRotation());
+        poseStack.rotate(dir.getOpposite().getRotation());
         poseStack.pushPose();
         poseStack.translate(0, -0.01F, 0.0F);
         HEAD_MODEL.renderBeak(tileEntityIn, partialTicks);

@@ -34,7 +34,7 @@ public class PigshoesLootModifier  {
     @NotNull
     public ObjectArrayList<ItemStack> apply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
         // 1.21 LootContext no longer exposes queried table id; piglin entity context approximates bartering table use.
-        net.minecraft.world.entity.Entity entity = context.getOptionalParameter(LootContextParams.THIS_ENTITY);
+        net.minecraft.world.entity.Entity entity = context.getOptional(LootContextParams.THIS_ENTITY);
         if (entity != null && entity.getType() == EntityTypes.PIGLIN) {
             return this.doApply(generatedLoot, context);
         }

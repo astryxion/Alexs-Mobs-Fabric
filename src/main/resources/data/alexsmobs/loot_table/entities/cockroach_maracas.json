@@ -13,14 +13,17 @@
               "function": "set_count",
               "count": {
                 "min": 0,
-                "max": 1
+                "max": 1,
+                "type": "minecraft:uniform"
               }
             },
             {
-              "function": "minecraft:enchanted_count_increase", "enchantment": "minecraft:looting",
+              "function": "minecraft:enchanted_count_increase",
+              "enchantment": "minecraft:looting",
               "count": {
                 "min": 0,
-                "max": 1
+                "max": 1,
+                "type": "minecraft:uniform"
               }
             }
           ]
@@ -31,7 +34,14 @@
       "name": "sombrero",
       "conditions": [
         {
-          "condition": "minecraft:random_chance_with_enchanted_bonus", "enchantment": "minecraft:looting", "unenchanted_chance": 0.2, "enchanted_chance": { "type": "minecraft:linear", "base": 0.2, "per_level_above_first": 0.01 }
+          "condition": "minecraft:random_chance_with_enchanted_bonus",
+          "enchantment": "minecraft:looting",
+          "unenchanted_chance": 0.2,
+          "enchanted_chance": {
+            "type": "minecraft:linear",
+            "base": 0.2,
+            "per_level_above_first": 0.01
+          }
         }
       ],
       "rolls": 1,
@@ -56,7 +66,8 @@
               "function": "set_count",
               "count": {
                 "min": 1,
-                "max": 1
+                "max": 1,
+                "type": "minecraft:uniform"
               }
             }
           ]

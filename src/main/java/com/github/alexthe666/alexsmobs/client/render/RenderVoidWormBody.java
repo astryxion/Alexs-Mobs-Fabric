@@ -116,8 +116,8 @@ public class RenderVoidWormBody extends LivingEntityRenderer<EntityVoidWormPart,
     }
 
     @Override
-    public boolean shouldRender(EntityVoidWormPart worm, Frustum camera, double camX, double camY, double camZ) {
-        return worm.getPortalTicks() <= 0 && super.shouldRender(worm, camera, camX, camY, camZ);
+    public boolean shouldRender(EntityVoidWormPart worm, Frustum camera, double camX, double camY, double camZ, float partialTicks) {
+        return worm.getPortalTicks() <= 0 && super.shouldRender(worm, camera, camX, camY, camZ, partialTicks);
     }
 
     @Override
@@ -142,7 +142,7 @@ public class RenderVoidWormBody extends LivingEntityRenderer<EntityVoidWormPart,
         float partialTicks = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
         Pose pose = entityLiving.getPose();
         if (pose != Pose.SLEEPING) {
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(180.0F - entityLiving.getWormYaw(partialTicks)));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(180.0F - entityLiving.getWormYaw(partialTicks)));
         }
         if (state.deathTime > 0) {
             float f = ((float) state.deathTime + partialTicks - 1.0F) / 20.0F * 1.6F;
@@ -150,7 +150,7 @@ public class RenderVoidWormBody extends LivingEntityRenderer<EntityVoidWormPart,
             if (f > 1.0F) {
                 f = 1.0F;
             }
-            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(f * 90.0F));
+            matrixStackIn.rotate(Axis.ZP.rotationDegrees(f * 90.0F));
         }
     }
 

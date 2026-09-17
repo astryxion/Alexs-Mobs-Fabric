@@ -16,14 +16,22 @@
       "trigger": "minecraft:player_interacted_with_entity",
       "conditions": {
         "item": {
-          "id": "minecraft:water_bucket"
+          "items": "minecraft:water_bucket"
         },
         "entity": {
-          "type": "alexsmobs:mantis_shrimp"
+          "type": "minecraft:entity_properties",
+          "entity": "this",
+          "predicate": {
+            "minecraft:entity_type": "alexsmobs:mantis_shrimp"
+          }
         },
         "player": {
-          "flags":{
-            "is_sneaking": true
+          "type": "minecraft:entity_properties",
+          "entity": "this",
+          "predicate": {
+            "minecraft:flags": {
+              "is_sneaking": true
+            }
           }
         }
       }

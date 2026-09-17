@@ -7,7 +7,8 @@ import com.github.alexthe666.alexsmobs.entity.EntityCosmaw;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemInHandRenderer;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
@@ -58,12 +59,13 @@ public class RenderCosmaw extends MobRenderer<EntityCosmaw, LivingEntityRenderSt
             matrixStackIn.pushPose();
             translateToHand(matrixStackIn);
             matrixStackIn.translate(-0.0, 0.1F, -1.35F);
-            matrixStackIn.mulPose(Axis.XP.rotationDegrees(-45F));
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(-180F));
-            matrixStackIn.mulPose(Axis.ZP.rotationDegrees(135F));
+            matrixStackIn.rotate(Axis.XP.rotationDegrees(-45F));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(-180F));
+            matrixStackIn.rotate(Axis.ZP.rotationDegrees(135F));
             matrixStackIn.scale(2, 2, 2);
-            ItemInHandRenderer renderer = Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer();
-            renderer.renderItem(entitylivingbaseIn, itemstack, ItemDisplayContext.GROUND, matrixStackIn, bufferIn, packedLightIn);
+            ItemStackRenderState _irs = new ItemStackRenderState();
+            Minecraft.getInstance().getItemModelResolver().updateForLiving(_irs, itemstack, ItemDisplayContext.GROUND, entitylivingbaseIn);
+            _irs.submit(matrixStackIn, bufferIn, packedLightIn, OverlayTexture.NO_OVERLAY, 0);
             matrixStackIn.popPose();
         }
 

@@ -7,6 +7,7 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
@@ -39,8 +40,8 @@ public class AncientDartLootModifier  {
         Holder<Structure> jungleTemple = context.getLevel().registryAccess()
                 .lookupOrThrow(Registries.STRUCTURE)
                 .getOrThrow(BuiltinStructures.JUNGLE_TEMPLE);
-        net.minecraft.world.phys.Vec3 origin = context.getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.ORIGIN);
-        if (origin != null && context.getLevel().structureManager().getStructureWithPieceAt(net.minecraft.core.BlockPos.containing(origin), jungleTemple.value()).isValid()) {
+        net.minecraft.world.phys.Vec3 origin = context.getOptional(net.minecraft.world.level.storage.loot.parameters.LootContextParams.ORIGIN);
+        if (origin != null && context.getLevel().structureManager().getStructureWithPieceAt(net.minecraft.core.BlockPos.containing(origin), HolderSet.direct(jungleTemple)).isValid()) {
             return this.doApply(generatedLoot, context);
         }
         return generatedLoot;

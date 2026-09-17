@@ -70,7 +70,7 @@ public class RenderTarantulaHawk extends MobRenderer<
             this.model = this.adultBridge;
             matrixStackIn.scale(0.9F, 0.9F, 0.9F);
             float f = entitylivingbaseIn.prevDragProgress + (entitylivingbaseIn.dragProgress - entitylivingbaseIn.prevDragProgress) * partialTickTime;
-            matrixStackIn.mulPose(Axis.YP.rotationDegrees(f * 180 * 0.2F));
+            matrixStackIn.rotate(Axis.YP.rotationDegrees(f * 180 * 0.2F));
         }
     }
 
@@ -85,7 +85,7 @@ public class RenderTarantulaHawk extends MobRenderer<
     protected RenderType getRenderType(CitadelLivingRenderState state, boolean b0, boolean b1, boolean b2) {
         Identifier id = this.getTextureLocation(state);
         if (b1) {
-            return RenderTypes.entityTranslucentCullItemTarget(id);
+            return RenderTypes.entityTranslucentCull(id);
         } else if (b0) {
             return RenderTypes.entityTranslucent(id);
         } else {
