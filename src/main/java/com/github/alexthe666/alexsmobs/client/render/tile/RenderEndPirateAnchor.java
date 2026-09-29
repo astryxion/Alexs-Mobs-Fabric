@@ -3,6 +3,7 @@ package com.github.alexthe666.alexsmobs.client.render.tile;
 import com.github.alexthe666.alexsmobs.block.BlockEndPirateAnchor;
 import com.github.alexthe666.alexsmobs.client.model.ModelEndPirateAnchor;
 import com.github.alexthe666.alexsmobs.client.render.AMRenderTypes;
+import com.github.alexthe666.alexsmobs.client.render.DeferredPoseStacks;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityEndPirateAnchor;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -60,12 +61,15 @@ public class RenderEndPirateAnchor<T extends TileEntityEndPirateAnchor> implemen
         if (east) {
             poseStack.rotate(Axis.YP.rotationDegrees(90.0F));
         }
-        ANCHOR_MODEL.renderAnchor(tileEntityIn, partialTicks, east);
         int finalLight = light;
-        collector.submitCustomGeometry(poseStack, AMRenderTypes.entityCutoutNoCull(TEXTURE_ANCHOR), (pose, consumer) ->
-            ANCHOR_MODEL.renderToBuffer(poseStack, consumer, finalLight, overlay, -1));
-        collector.submitCustomGeometry(poseStack, RenderTypes.eyes(TEXTURE_ANCHOR_GLOW), (pose, consumer) ->
-            ANCHOR_MODEL.renderToBuffer(poseStack, consumer, finalLight, overlay, -1));
+        collector.submitCustomGeometry(poseStack, AMRenderTypes.entityCutoutNoCull(TEXTURE_ANCHOR), (pose, consumer) -> {
+            ANCHOR_MODEL.renderAnchor(tileEntityIn, partialTicks, east);
+            ANCHOR_MODEL.renderToBuffer(DeferredPoseStacks.fromCaptured(pose), consumer, finalLight, overlay, -1);
+        });
+        collector.submitCustomGeometry(poseStack, RenderTypes.eyes(TEXTURE_ANCHOR_GLOW), (pose, consumer) -> {
+            ANCHOR_MODEL.renderAnchor(tileEntityIn, partialTicks, east);
+            ANCHOR_MODEL.renderToBuffer(DeferredPoseStacks.fromCaptured(pose), consumer, finalLight, overlay, -1);
+        });
 
         poseStack.popPose();
         poseStack.popPose();
