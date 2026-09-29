@@ -3,6 +3,7 @@ package com.github.alexthe666.alexsmobs.client.render.tile;
 import com.github.alexthe666.alexsmobs.block.BlockEndPirateFlag;
 import com.github.alexthe666.alexsmobs.client.model.ModelEndPirateFlag;
 import com.github.alexthe666.alexsmobs.client.render.AMRenderTypes;
+import com.github.alexthe666.alexsmobs.client.render.DeferredPoseStacks;
 import com.github.alexthe666.alexsmobs.tileentity.TileEntityEndPirateFlag;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -64,11 +65,12 @@ public class RenderEndPirateFlag<T extends TileEntityEndPirateFlag> implements B
         poseStack.rotate(Axis.XP.rotationDegrees(90.0F));
         poseStack.rotate(Axis.YN.rotationDegrees(dir.getAxis() == Direction.Axis.Y ? -90.0F : 90.0F));
         poseStack.pushPose();
-        FLAG_MODEL.renderFlag(tileEntityIn, partialTicks);
         int finalLight = light;
         int finalOverlay = overlay;
-        collector.submitCustomGeometry(poseStack, AMRenderTypes.entityCutoutNoCull(TEXTURE), (pose, consumer) ->
-            FLAG_MODEL.renderToBuffer(poseStack, consumer, finalLight, finalOverlay, -1));
+        collector.submitCustomGeometry(poseStack, AMRenderTypes.entityCutoutNoCull(TEXTURE), (pose, consumer) -> {
+            FLAG_MODEL.renderFlag(tileEntityIn, partialTicks);
+            FLAG_MODEL.renderToBuffer(DeferredPoseStacks.fromCaptured(pose), consumer, finalLight, finalOverlay, -1);
+        });
         poseStack.popPose();
         poseStack.popPose();
     }

@@ -2,6 +2,7 @@ package com.github.alexthe666.alexsmobs.client.particle;
 
 import com.github.alexthe666.alexsmobs.client.model.ModelGrizzlyBear;
 import com.github.alexthe666.alexsmobs.client.render.AMRenderTypes;
+import com.github.alexthe666.alexsmobs.client.render.DeferredPoseStacks;
 import com.github.alexthe666.alexsmobs.client.render.RenderGrizzlyBear;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -54,14 +55,20 @@ public class ParticleBearFreddy extends Particle {
         posestack.rotate(Axis.XP.rotationDegrees(initalFlip * 20F - 5F));
         float swing = laterFlip * (float) Math.sin((this.age + partialTick) * 0.3F) * 20;
         posestack.rotate(Axis.ZP.rotationDegrees((1F - initalFlip) * 45F + swing));
-        boolean baby = this.model.young;
-        this.model.young = false;
         this.model.positionForParticle(partialTick, this.age + partialTick);
         collector.submitCustomGeometry(
                 posestack,
                 AMRenderTypes.getFreddy(RenderGrizzlyBear.TEXTURE_FREDDY),
-                (pose, vertexConsumer) -> this.model.renderToBuffer(posestack, vertexConsumer, 240, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF));
-        this.model.young = baby;
+                (pose, vertexConsumer) -> {
+                    boolean wasYoung = this.model.young;
+                    try {
+                        this.model.young = false;
+                        this.model.renderToBuffer(DeferredPoseStacks.fromCaptured(pose), vertexConsumer, 240,
+                                OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
+                    } finally {
+                        this.model.young = wasYoung;
+                    }
+                });
     }
 
     public static final class BearFreddyParticleGroup extends ParticleGroup<ParticleBearFreddy> {
